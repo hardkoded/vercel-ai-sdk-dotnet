@@ -34,10 +34,11 @@ internal static class XaiImageTestSupport
     public static Model CreateModel(
         ParityHandler handler,
         IReadOnlyDictionary<string, string>? headers = null,
-        Func<DateTime>? currentDate = null
+        Func<DateTime>? currentDate = null,
+        string? apiKey = "test-key"
     )
     {
-        var options = new OpenAICompatibleOptions { BaseUrl = BaseUrl, ApiKey = "test-key" };
+        var options = new OpenAICompatibleOptions { BaseUrl = BaseUrl, ApiKey = apiKey };
         foreach (var header in headers ?? new Dictionary<string, string>())
         {
             options.Headers[header.Key] = header.Value;

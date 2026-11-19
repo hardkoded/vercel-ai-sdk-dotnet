@@ -212,14 +212,15 @@ public sealed class DoGenerateTests
         Id + "should pass headers",
         Coverage = UpstreamCoverage.Partial,
         Commit = Commit,
-        Note = "The port's provider always adds its authorization and user-agent headers, so the test checks the custom headers and content-type, not the exact header set."
+        Note = "The port's provider always adds its user-agent header, so the exact header set is checked without user-agent. HttpClient adds content-length, which is also left out."
     )]
     public async Task Should_pass_headers()
     {
         var handler = Server();
         var model = CreateModel(
             handler,
-            new Dictionary<string, string> { ["Custom-Provider-Header"] = "provider-header-value" }
+            new Dictionary<string, string> { ["Custom-Provider-Header"] = "provider-header-value" },
+            apiKey: null
         );
 
         await model.DoGenerateAsync(
@@ -233,9 +234,27 @@ public sealed class DoGenerateTests
         );
 
         var call = Assert.Single(handler.Calls);
-        Assert.Equal("application/json", call.Header("content-type")?.Split(';')[0]);
-        Assert.Equal("provider-header-value", call.Header("custom-provider-header"));
-        Assert.Equal("request-header-value", call.Header("custom-request-header"));
+        var actual = call
+            .Headers.Where(pair =>
+                !string.Equals(pair.Key, "user-agent", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(pair.Key, "content-length", StringComparison.OrdinalIgnoreCase)
+            )
+            .ToDictionary(
+                pair => pair.Key.ToLowerInvariant(),
+                pair =>
+                    pair.Key.Equals("content-type", StringComparison.OrdinalIgnoreCase)
+                        ? pair.Value.Split(';')[0]
+                        : pair.Value
+            );
+        Assert.Equal(
+            new Dictionary<string, string>
+            {
+                ["content-type"] = "application/json",
+                ["custom-provider-header"] = "provider-header-value",
+                ["custom-request-header"] = "request-header-value",
+            },
+            actual
+        );
     }
 
     [Fact]
@@ -381,12 +400,17 @@ public sealed class DoGenerateTests
     public async Task Should_respect_the_abort_signal()
     {
         var handler = Server();
+        handler.RespondAsync = async call =>
+        {
+            await Task.Delay(Timeout.Infinite, call.CancellationToken);
+            return ParityHandler.Json(DefaultResponse);
+        };
         using var source = new CancellationTokenSource();
+
+        var generate = CreateModel(handler)
+            .DoGenerateAsync(Call(cancellationToken: source.Token), source.Token);
         await source.CancelAsync();
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
-            CreateModel(handler)
-                .DoGenerateAsync(Call(cancellationToken: source.Token), source.Token)
-        );
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => generate);
     }
 }
