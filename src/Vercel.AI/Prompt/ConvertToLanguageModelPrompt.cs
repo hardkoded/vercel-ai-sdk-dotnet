@@ -267,6 +267,28 @@ public static class LanguageModelPrompts
         }
     }
 
+    /// <summary>Maps the <c>content</c> output of a tool result to its language model form. Maps to <c>mapToolResultOutput</c>.</summary>
+    /// <param name="output">The parts of the <c>content</c> output.</param>
+    /// <param name="downloadedAssets">Downloaded data by URL.</param>
+    /// <param name="provider">Provider of the model. It is only used to convert the deprecated <c>file-id</c> and <c>image-file-id</c> parts with a string file id.</param>
+    /// <param name="warnings">Receives the deprecation warnings.</param>
+    public static IReadOnlyList<UserContentPart> MapToolResultOutput(
+        IReadOnlyList<UserContentPart> output,
+        IReadOnlyDictionary<string, DownloadResult> downloadedAssets,
+        string? provider = null,
+        ICollection<ModelWarning>? warnings = null
+    )
+    {
+        var sink = warnings ?? new List<ModelWarning>();
+        var content = new List<UserContentPart>(output.Count);
+        foreach (var part in output)
+        {
+            content.Add(ConvertToolResultPart(part, downloadedAssets, provider, sink));
+        }
+
+        return content;
+    }
+
     private static ToolModelMessage ConvertToolResult(
         ToolModelMessage result,
         IReadOnlyDictionary<string, DownloadResult> downloaded,
@@ -279,13 +301,11 @@ public static class LanguageModelPrompts
             return result;
         }
 
+        var content = MapToolResultOutput(result.OutputContent, downloaded, provider, warnings);
         var changed = false;
-        var content = new List<UserContentPart>(result.OutputContent.Count);
-        foreach (var part in result.OutputContent)
+        for (var i = 0; i < content.Count; i++)
         {
-            var converted = ConvertToolResultPart(part, downloaded, provider, warnings);
-            changed |= !ReferenceEquals(converted, part);
-            content.Add(converted);
+            changed |= !ReferenceEquals(content[i], result.OutputContent[i]);
         }
 
         if (!changed)
@@ -311,7 +331,7 @@ public static class LanguageModelPrompts
         UserContentPart part,
         IReadOnlyDictionary<string, DownloadResult> downloaded,
         string? provider,
-        List<ModelWarning> warnings
+        ICollection<ModelWarning> warnings
     )
     {
         switch (part)
@@ -644,6 +664,23 @@ public static class LanguageModelPrompts
         IReadOnlyDictionary<string, DownloadResult> downloaded
     )
     {
+        if (
+            file.Url is not null
+            && FileParts.ConvertToLanguageModelV4FilePart(FilePartInput.FromString(file.Url))
+                is { DataType: "data", Base64: not null } dataUrl
+        )
+        {
+            return new FileContentPart(
+                dataUrl.MediaType ?? file.MediaType,
+                null,
+                DecodeBase64(dataUrl.Base64),
+                file.FileName
+            )
+            {
+                ProviderOptions = file.ProviderOptions,
+            };
+        }
+
         if (
             !TryGetUrl(file, out var url)
             || !downloaded.TryGetValue(url.ToString(), out var result)
