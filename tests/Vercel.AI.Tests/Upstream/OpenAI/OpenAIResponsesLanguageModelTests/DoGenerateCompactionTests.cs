@@ -102,13 +102,8 @@ public sealed class DoGenerateCompactionTests
         var body = JsonNode.Parse(capture.Body)!;
         Assert.Equal("gpt-5.2", body["model"]!.GetValue<string>());
         Assert.False(body["store"]!.GetValue<bool>());
-        var expected = JsonNode.Parse(
-            """[{"type":"compaction","compact_threshold":50000}]"""
-        );
-        Assert.True(
-            JsonNode.DeepEquals(expected, body["context_management"]),
-            body.ToJsonString()
-        );
+        var expected = JsonNode.Parse("""[{"type":"compaction","compact_threshold":50000}]""");
+        Assert.True(JsonNode.DeepEquals(expected, body["context_management"]), body.ToJsonString());
     }
 
     [Fact]

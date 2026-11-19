@@ -65,13 +65,8 @@ public sealed class MixedCitationTypesCompactionTests
         Assert.Equal("gpt-5.2", body["model"]!.GetValue<string>());
         Assert.False(body["store"]!.GetValue<bool>());
         Assert.True(body["stream"]!.GetValue<bool>());
-        var expected = JsonNode.Parse(
-            """[{"type":"compaction","compact_threshold":50000}]"""
-        );
-        Assert.True(
-            JsonNode.DeepEquals(expected, body["context_management"]),
-            body.ToJsonString()
-        );
+        var expected = JsonNode.Parse("""[{"type":"compaction","compact_threshold":50000}]""");
+        Assert.True(JsonNode.DeepEquals(expected, body["context_management"]), body.ToJsonString());
     }
 
     private static LanguageModelCallOptions WithContextManagement()
@@ -81,10 +76,9 @@ public sealed class MixedCitationTypesCompactionTests
         return options;
     }
 
-    private static async Task<(
-        List<LanguageModelStreamPart> Parts,
-        OpenAICapture Capture
-    )> Run(LanguageModelCallOptions options)
+    private static async Task<(List<LanguageModelStreamPart> Parts, OpenAICapture Capture)> Run(
+        LanguageModelCallOptions options
+    )
     {
         var capture = new OpenAICapture
         {
