@@ -165,6 +165,10 @@ internal static class OpenAIResponsesSupport
                     node["result"] = JsonNode.Parse(result.ResultJson);
                     SetMetadata(node, result.ProviderMetadata);
                     break;
+                case GeneratedCustom custom:
+                    node["kind"] = custom.Kind;
+                    SetMetadata(node, custom.ProviderMetadata);
+                    break;
                 case GeneratedToolApprovalRequest approvalRequest:
                     node["approvalId"] = approvalRequest.ApprovalId;
                     node["toolCallId"] = approvalRequest.ToolCallId;
@@ -265,6 +269,10 @@ internal static class OpenAIResponsesSupport
             case ToolApprovalRequestStreamPart approvalRequest:
                 node["approvalId"] = approvalRequest.ApprovalId;
                 node["toolCallId"] = approvalRequest.ToolCallId;
+                break;
+            case CustomStreamPart custom:
+                node["kind"] = custom.Kind;
+                SetMetadata(node, custom.ProviderMetadata);
                 break;
             case FinishStreamPart finish:
                 var finishReason = new JsonObject

@@ -327,6 +327,21 @@ internal static class OpenAIResponsesOutput
     public static JsonElement ItemMetadata(string? id, string providerName = "openai") =>
         OpenAIJson.ProviderMetadata(new JsonObject { ["itemId"] = id }, providerName);
 
+    /// <summary>The provider metadata of an <c>openai.compaction</c> custom part (<c>ResponsesCompactionProviderMetadata</c>).</summary>
+    public static JsonElement CompactionMetadata(
+        OpenAIResponsesApi.Compaction item,
+        string providerName = "openai"
+    ) =>
+        OpenAIJson.ProviderMetadata(
+            new JsonObject
+            {
+                ["type"] = "compaction",
+                ["itemId"] = item.Id,
+                ["encryptedContent"] = item.EncryptedContent,
+            },
+            providerName
+        );
+
     /// <summary>The tool name of an <c>mcp_call</c> item: <c>mcp.</c> and the name of the MCP tool.</summary>
     public static string McpToolName(string name) => "mcp." + name;
 
