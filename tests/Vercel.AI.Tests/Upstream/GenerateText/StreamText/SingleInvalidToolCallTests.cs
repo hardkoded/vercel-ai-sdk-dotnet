@@ -95,7 +95,7 @@ public sealed class SingleInvalidToolCallTests
         Assert.Equal("call-1", call.ToolCallId);
         Assert.Equal("cityAttractions", call.ToolName);
         var error = Assert.IsType<ToolErrorPart>(parts[6]).Result;
-        Assert.StartsWith(ErrorStart, error.ModelOutput);
+        Assert.StartsWith(ErrorStart, ErrorMessage.ToErrorString(error.Error!));
         Assert.Equal("{\"cities\":\"San Francisco\"}", Compact(error.InputJson!));
         Assert.Equal("call-1", error.ToolCallId);
         Assert.Equal("cityAttractions", error.ToolName);

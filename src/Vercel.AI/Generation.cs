@@ -1960,24 +1960,7 @@ internal static class Generation
                     && answeredToolCallIds.Contains(executed.ToolCallId) == answered
                 )
                 {
-                    content.Add(
-                        new GeneratedToolResult(
-                            executed.ToolCallId,
-                            executed.ToolName,
-                            executed.IsError && executed.ModelOutput != null
-                                ? JsonSerializer.Serialize(executed.ModelOutput)
-                                : executed.OutputJson,
-                            executed.IsError
-                        )
-                        {
-                            Error = executed.Error,
-                            Dynamic = executed.Dynamic,
-                            ToolMetadata = executed.ToolMetadata,
-                            ProviderExecuted = false,
-                            InputJson = executed.InputJson,
-                            ModelMessage = ExecutedToolMessage(executed),
-                        }
-                    );
+                    content.Add(ToGeneratedToolResult(executed));
                 }
             }
 
@@ -2208,23 +2191,23 @@ internal static class Generation
         return tools;
     }
 
-    // The tool message for a result the loop produced: its model output, built when the tool ran.
-    private static ToolModelMessage ExecutedToolMessage(ExecutedTool executed)
-    {
-        return executed.ModelOutputContent != null
-            ? new ToolModelMessage(
-                executed.ToolCallId,
-                executed.ToolName,
-                executed.ModelOutputContent
-            )
-            : new ToolModelMessage(
-                executed.ToolCallId,
-                executed.ToolName,
-                executed.ModelOutput ?? executed.OutputJson,
-                executed.IsError,
-                executed.ModelOutputType
-            );
-    }
+    // The tool result content of an executed tool. ToResponseMessages builds its model output.
+    private static GeneratedToolResult ToGeneratedToolResult(ExecutedTool executed) =>
+        new(
+            executed.ToolCallId,
+            executed.ToolName,
+            executed.IsError && executed.Error != null
+                ? JsonSerializer.Serialize(ErrorMessage.ToErrorString(executed.Error))
+                : executed.OutputJson,
+            executed.IsError
+        )
+        {
+            Error = executed.Error,
+            Dynamic = executed.Dynamic,
+            ToolMetadata = executed.ToolMetadata,
+            ProviderExecuted = false,
+            InputJson = executed.InputJson,
+        };
 
     // The tool result of a call that failed to parse. The model reads the error the way upstream sends it: "Name: message".
     internal static ExecutedTool InvalidToolResult(GeneratedToolCall call)
@@ -2241,8 +2224,7 @@ internal static class Generation
             Dynamic = true,
             Title = call.Title,
             ToolMetadata = call.ToolMetadata,
-            ModelOutputType = "error-text",
-            ModelOutput = message,
+            Error = call.Error,
         };
     }
 
@@ -2729,8 +2711,6 @@ internal static class Generation
                         {
                             Error = invalid.Error,
                             InputJson = invalid.Approval.ToolCall.Input.GetRawText(),
-                            ModelOutputType = "error-text",
-                            ModelOutput = message,
                         }
                     )
                 );
@@ -2807,19 +2787,7 @@ internal static class Generation
         foreach (var executed in executions.OfType<ExecutedTool>())
         {
             toolMessages.Add(
-                executed.ModelOutputContent != null
-                    ? new ToolModelMessage(
-                        executed.ToolCallId,
-                        executed.ToolName,
-                        executed.ModelOutputContent
-                    )
-                    : new ToolModelMessage(
-                        executed.ToolCallId,
-                        executed.ToolName,
-                        executed.ModelOutput ?? executed.OutputJson,
-                        executed.IsError,
-                        executed.ModelOutputType
-                    )
+                ToResponseMessages.CreateToolMessage(ToGeneratedToolResult(executed), options.Tools)
             );
         }
 

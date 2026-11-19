@@ -64,7 +64,7 @@ public sealed class ToUIMessageStreamTests
                     new ExecutedTool("call-1", "test-tool", "{}", true)
                     {
                         Dynamic = true,
-                        ModelOutput = "Error: invalid tool input",
+                        Error = invalidToolCallError,
                     }
                 ),
             ],
@@ -112,7 +112,6 @@ public sealed class ToUIMessageStreamTests
                     {
                         Dynamic = true,
                         Error = executionError,
-                        ModelOutput = "Error: execution failed",
                     }
                 ),
             ],
@@ -172,7 +171,6 @@ public sealed class ToUIMessageStreamTests
                 {
                     Dynamic = true,
                     Error = (Exception)errorOutput,
-                    ModelOutput = "Error: execution failed",
                 }
             );
         }
@@ -192,7 +190,7 @@ public sealed class ToUIMessageStreamTests
                 new ExecutedTool("call-1", "test-tool", "{\"value\":\"input\"}", true)
                 {
                     Dynamic = true,
-                    ModelOutput = (string)errorOutput,
+                    Error = new JsError("invalid tool input"),
                 }
             );
         }
