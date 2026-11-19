@@ -24,6 +24,7 @@ xAI provider.
 | [XaiFileSearchOptions](/api/Vercel.AI.Xai/XaiFileSearchOptions/) | Arguments of String). Maps to fileSearchArgsSchema. |
 | [XaiFileUpload](/api/Vercel.AI.Xai/XaiFileUpload/) | Bytes, base64, or a stream uploaded to xAI. |
 | [XaiImageGenerationOptions](/api/Vercel.AI.Xai/XaiImageGenerationOptions/) | Arguments of String). Maps to imageGenerationArgsSchema. |
+| [XaiImageModel](/api/Vercel.AI.Xai/XaiImageModel/) | xAI image model, over /images/generations and /images/edits. Maps to XaiImageModel. |
 | [XaiMcpServerOptions](/api/Vercel.AI.Xai/XaiMcpServerOptions/) | Arguments of String). Maps to mcpServerArgsSchema. |
 | [XaiOptions](/api/Vercel.AI.Xai/XaiOptions/) | xAI settings. Maps to XaiProviderSettings. |
 | [XaiProvider](/api/Vercel.AI.Xai/XaiProvider/) | xAI provider at https://api.x.ai/v1. LanguageModel(string) returns the Responses API model, as upstream does. |
@@ -34,6 +35,8 @@ xAI provider.
 | [XaiReasoning](/api/Vercel.AI.Xai/XaiReasoning/) | Reasoning text that carries the xAI Responses item id and encrypted content. |
 | [XaiResponsesLanguageModel](/api/Vercel.AI.Xai/XaiResponsesLanguageModel/) | xAI Responses API language model. Generate and stream requests post to /responses. Pass xAI provider-defined tools with JsonElement%7d) and the ids xai.websearch, xai.xsearch, xai.codeexecution, xai.viewimage, xai.viewxvideo, xai.imagegeneration, xai.filesearch, and xai.mcp. |
 | [XaiServiceCollectionExtensions](/api/Vercel.AI.Xai/XaiServiceCollectionExtensions/) | Registers XaiProvider. |
+| [XaiSpeechModel](/api/Vercel.AI.Xai/XaiSpeechModel/) | xAI text-to-speech model, over /tts. Maps to XaiSpeechModel. |
+| [XaiSpeechModelOptions](/api/Vercel.AI.Xai/XaiSpeechModelOptions/) | Provider options for xAI speech generation, read from providerOptions.xai. Maps to XaiSpeechModelOptions. |
 | [XaiTools](/api/Vercel.AI.Xai/XaiTools/) | Factories for the xAI provider-defined tools. Each returns a Tool that xAI runs. Maps to xai.tools. The name is the name the model and the results use. It defaults to the tool's wire name. |
 | [XaiTranscriptionModel](/api/Vercel.AI.Xai/XaiTranscriptionModel/) | xAI speech-to-text model, over /stt and its WebSocket. Maps to XaiTranscriptionModel. |
 | [XaiTranscriptionModelOptions](/api/Vercel.AI.Xai/XaiTranscriptionModelOptions/) | xAI transcription options, read from providerOptions.xai. Maps to XaiTranscriptionModelOptions of xai-transcription-model-options.ts. |

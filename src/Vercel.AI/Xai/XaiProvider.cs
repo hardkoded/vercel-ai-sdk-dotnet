@@ -111,6 +111,30 @@ public sealed class XaiProvider : OpenAICompatibleProvider, Operations.IBatchPro
         );
     }
 
+    /// <summary>Creates an image model. The provider id is <c>xai.image</c>.</summary>
+    public override IImageModel ImageModel(string modelId)
+    {
+        return new XaiImageModel(this, modelId);
+    }
+
+    /// <summary>Creates an image model. Same as <see cref="ImageModel(string)"/>.</summary>
+    public XaiImageModel Image(string modelId)
+    {
+        return new XaiImageModel(this, modelId);
+    }
+
+    /// <summary>Creates the xAI text-to-speech model. xAI has one speech model, so the model id is empty. The provider id is <c>xai.speech</c>.</summary>
+    public override ISpeechModel SpeechModel(string modelId)
+    {
+        return new XaiSpeechModel(this, modelId);
+    }
+
+    /// <summary>Creates the xAI text-to-speech model.</summary>
+    public XaiSpeechModel SpeechModel()
+    {
+        return new XaiSpeechModel(this);
+    }
+
     /// <summary>Creates a video model. The provider id is <c>xai.video</c>.</summary>
     public override IVideoModel VideoModel(string modelId)
     {
