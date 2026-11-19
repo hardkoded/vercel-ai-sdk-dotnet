@@ -67,7 +67,8 @@ public sealed class ExtractionModelResolutionTests : DecisionDefaultProviderFixt
     [UpstreamTest(
         Prefix
             + "validates versions returned by model instances, aliases, registries, and defaults",
-        Coverage = UpstreamCoverage.Covered,
+        Coverage = UpstreamCoverage.Partial,
+        Note = "The default provider is the custom provider. A ProviderRegistry is not a ProviderBase, so it cannot be the default provider as upstream does. Issue #1422.",
         Commit = "10ff0b1a1d31adb700625afa17d27583d96dbcff"
     )]
     public void Validates_versions_returned_by_model_instances_aliases_registries_and_defaults()
