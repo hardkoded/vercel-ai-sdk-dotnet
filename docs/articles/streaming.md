@@ -101,7 +101,7 @@ controller.Abort(new JsError("manual abort"));
 
 ## Sources and citations
 
-`Sources` on a step or a `GenerateTextResult` is the retrieved reference set: the URLs a search returned, which can include more references than the model cites in its answer. Inline references hang off the text they support instead. `GeneratedText.Citations` is an optional list of `Citation` values on each text part in `StepResult.Content` (or `GenerateTextResult.Content`, the last step). Use `Citations` to render inline references and `Sources` to list what was retrieved.
+`Sources` on a step or a `GenerateTextResult` is the retrieved reference set: the URLs a search returned, which can include more references than the model cites in its answer. Inline references hang off the text they support instead. `GeneratedText.Citations` is an optional list of `Citation` values on each text part in `StepResult.Content` (or `GenerateTextResult.Content`, which spans every step). Use `Citations` to render inline references and `Sources` to list what was retrieved.
 
 A `Citation` has:
 

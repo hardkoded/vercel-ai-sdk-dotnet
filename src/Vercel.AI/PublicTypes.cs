@@ -1724,6 +1724,13 @@ public sealed class GenerateTextResult
 
         ToolCalls = calls;
         ToolResults = results;
+        var content = new List<GeneratedContent>();
+        foreach (var step in Steps)
+        {
+            content.AddRange(step.Content);
+        }
+
+        Content = content;
         var warnings = new List<CallWarning>();
         var files = new List<GeneratedFile>();
         foreach (var step in Steps)
@@ -1756,8 +1763,8 @@ public sealed class GenerateTextResult
     /// <summary>Reasoning from the last step.</summary>
     public string? ReasoningText { get; }
 
-    /// <summary>Content from the last step. See <see cref="StepResult.Content"/>.</summary>
-    public IReadOnlyList<GeneratedContent> Content => FinalStep.Content;
+    /// <summary>Content from every step. See <see cref="StepResult.Content"/>. Maps to <c>content</c>.</summary>
+    public IReadOnlyList<GeneratedContent> Content { get; }
 
     /// <summary>Every step.</summary>
     public IReadOnlyList<StepResult> Steps { get; }
