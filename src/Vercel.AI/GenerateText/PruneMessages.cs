@@ -146,7 +146,9 @@ public static class MessagePruning
         }
 
         var groups = Group(
-            ToolModelMessage.ExpandApprovalResponses(options.Messages ?? Array.Empty<ModelMessage>())
+            ToolModelMessage.ExpandApprovalResponses(
+                options.Messages ?? Array.Empty<ModelMessage>()
+            )
         );
 
         if (options.Reasoning != PruneReasoning.None)

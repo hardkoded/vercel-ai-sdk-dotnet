@@ -81,7 +81,9 @@ public sealed class WhenASingleToolIsAutomaticallyApprovedTests
         Assert.Equal(2, assistant.Parts.Count);
         AssertToolCallPart(assistant.Parts[0], "call-1", "tool1", "{\"value\":\"value\"}");
         AssertApprovalRequestPart(assistant.Parts[1], "id-1", "call-1", isAutomatic: true);
-        var response = Assert.Single(Assert.IsType<ToolModelMessage>(messages[1]).ApprovalResponses);
+        var response = Assert.Single(
+            Assert.IsType<ToolModelMessage>(messages[1]).ApprovalResponses
+        );
         Assert.Equal("id-1", response.ApprovalId);
         Assert.True(response.Approved);
         Assert.False(response.ProviderExecuted);

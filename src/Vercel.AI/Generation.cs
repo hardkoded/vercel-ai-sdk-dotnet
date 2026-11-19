@@ -2348,7 +2348,12 @@ internal static class Generation
         foreach (var message in prompt)
         {
             if (
-                message is ToolApprovalResponseModelMessage { ProviderExecuted: true, Approved: false } denial
+                message
+                    is ToolApprovalResponseModelMessage
+                    {
+                        ProviderExecuted: true,
+                        Approved: false
+                    } denial
                 && callIds.TryGetValue(denial.ApprovalId, out var deniedCallId)
             )
             {
