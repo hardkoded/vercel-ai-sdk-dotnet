@@ -85,7 +85,8 @@ public sealed class AzureMaiImageGenerateImageIntegrationTests
     [Fact]
     [UpstreamTest(
         File + "sends a transparent background for MAI-Image-2.7 models",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3a48c5dca4ebfc3110524190cf358cb52e952cc1"
     )]
     public async Task SendsATransparentBackgroundForMaiImage27Models()
     {

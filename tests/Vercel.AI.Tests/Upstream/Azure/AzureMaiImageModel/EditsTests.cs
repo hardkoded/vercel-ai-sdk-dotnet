@@ -182,7 +182,11 @@ public sealed class EditsTests
     }
 
     [Fact]
-    [UpstreamTest(File + "sends background as a form field", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        File + "sends background as a form field",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3a48c5dca4ebfc3110524190cf358cb52e952cc1"
+    )]
     public async Task SendsBackgroundAsAFormField()
     {
         var handler = new AzureImageHandler(() => AzureImageHandler.JsonResponse(MaiResponse));
@@ -207,7 +211,8 @@ public sealed class EditsTests
     [Fact]
     [UpstreamTest(
         File + "drops background auto from edits with a warning",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3a48c5dca4ebfc3110524190cf358cb52e952cc1"
     )]
     public async Task DropsBackgroundAutoFromEditsWithAWarning()
     {

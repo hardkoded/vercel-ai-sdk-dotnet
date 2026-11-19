@@ -320,7 +320,11 @@ public sealed class GenerationsTests
     [Theory]
     [InlineData("transparent")]
     [InlineData("opaque")]
-    [UpstreamTest(File + "sends background %s", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        File + "sends background %s",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3a48c5dca4ebfc3110524190cf358cb52e952cc1"
+    )]
     public async Task SendsBackground(string background)
     {
         var handler = MaiHandler();
@@ -350,7 +354,8 @@ public sealed class GenerationsTests
     [InlineData("my-mai-deployment", "mai")]
     [UpstreamTest(
         File + "drops background auto for %s (api=%s) with a warning",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3a48c5dca4ebfc3110524190cf358cb52e952cc1"
     )]
     public async Task DropsBackgroundAutoWithAWarning(string id, string? api)
     {
@@ -376,7 +381,11 @@ public sealed class GenerationsTests
     }
 
     [Fact]
-    [UpstreamTest(File + "rejects invalid background values", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        File + "rejects invalid background values",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3a48c5dca4ebfc3110524190cf358cb52e952cc1"
+    )]
     public async Task RejectsInvalidBackgroundValues()
     {
         var handler = MaiHandler();

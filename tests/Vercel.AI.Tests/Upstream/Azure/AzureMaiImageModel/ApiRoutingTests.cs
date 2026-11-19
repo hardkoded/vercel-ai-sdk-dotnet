@@ -220,7 +220,8 @@ public sealed class ApiRoutingTests
     [InlineData("MAI-Image-2.7", "openai", "opaque")]
     [UpstreamTest(
         File + "sends %s (api=%s) background %s to the OpenAI API without warnings",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3a48c5dca4ebfc3110524190cf358cb52e952cc1"
     )]
     public async Task SendsBackgroundToTheOpenAIApiWithoutWarnings(
         string id,
@@ -249,7 +250,8 @@ public sealed class ApiRoutingTests
     [Fact]
     [UpstreamTest(
         File + "sends background to OpenAI image edits without warnings",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3a48c5dca4ebfc3110524190cf358cb52e952cc1"
     )]
     public async Task SendsBackgroundToOpenAIImageEditsWithoutWarnings()
     {
@@ -272,7 +274,8 @@ public sealed class ApiRoutingTests
     [Fact]
     [UpstreamTest(
         File + "advertises background only for MAI-Image-2.7 models",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3a48c5dca4ebfc3110524190cf358cb52e952cc1"
     )]
     public void AdvertisesBackgroundOnlyForMaiImage27Models()
     {
