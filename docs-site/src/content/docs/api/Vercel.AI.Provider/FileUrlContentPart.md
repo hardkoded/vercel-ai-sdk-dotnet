@@ -24,7 +24,7 @@ Maps to `{ type: 'file-url', url, mediaType?, providerOptions }` in the tool res
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [UserContentPart](/api/Vercel.AI.Provider/UserContentPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L925)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L910)
 
 ## Constructors
 
@@ -48,7 +48,7 @@ Creates a file-url part.
 | `url` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `mediaType` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L928)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L913)
 
 ## Properties
 
@@ -67,7 +67,7 @@ IANA media type. When it is null, it is inferred from the URL.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L939)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L924)
 
 <a id="Vercel_AI_Provider_FileUrlContentPart_ProviderOptions_"></a>
 <a id="Vercel_AI_Provider_FileUrlContentPart_ProviderOptions"></a>
@@ -84,7 +84,7 @@ Provider-specific options for this part.
 
 **Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L942)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L927)
 
 <a id="Vercel_AI_Provider_FileUrlContentPart_Url_"></a>
 <a id="Vercel_AI_Provider_FileUrlContentPart_Url"></a>
@@ -101,4 +101,4 @@ Remote URL.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L936)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L921)

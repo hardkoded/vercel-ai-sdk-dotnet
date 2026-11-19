@@ -108,6 +108,13 @@ internal sealed class ModelCallEndPart : TextStreamPart
     public ModelCallPerformance Performance { get; }
 }
 
+/// <summary>Passed to <see cref="StreamLanguageModelCallOptions.OnStart"/> with the converted prompt. Maps to the <c>{ promptMessages }</c> argument of <c>onStart</c>.</summary>
+internal sealed class StreamLanguageModelCallStartEvent
+{
+    /// <summary>The fully converted prompt, before the model call starts.</summary>
+    public IReadOnlyList<ModelMessage> PromptMessages { get; init; } = [];
+}
+
 /// <summary>Options of <see cref="LanguageModelCallStreaming.StreamLanguageModelCall"/>.</summary>
 internal sealed class StreamLanguageModelCallOptions : GenerateTextOptions
 {
@@ -116,6 +123,12 @@ internal sealed class StreamLanguageModelCallOptions : GenerateTextOptions
 
     /// <summary>Whether to include raw provider chunks in the stream. Maps to <c>includeRawChunks</c>.</summary>
     public bool IncludeRawChunks { get; set; }
+
+    /// <summary>
+    /// Receives the fully converted prompt before the model call starts. Prompt conversion downloads URLs, so it runs once per step
+    /// and telemetry callbacks reuse its result. Maps to <c>onStart</c>.
+    /// </summary>
+    public Func<StreamLanguageModelCallStartEvent, CancellationToken, Task>? OnStart { get; set; }
 
     /// <summary>Whether to collect the content of the call for <see cref="GenerateTextOptions.OnLanguageModelCallEnd"/>. Maps to <c>_internal.collectContent</c>.</summary>
     public bool CollectContent { get; set; } = true;
@@ -206,6 +219,23 @@ internal static class LanguageModelCallStreaming
                 model.Provider.Split('.')[0]
             )
             .ConfigureAwait(false);
+
+        if (options.OnStart != null)
+        {
+            await Generation
+                .NotifyAsync(
+                    () =>
+                        options.OnStart(
+                            new StreamLanguageModelCallStartEvent
+                            {
+                                PromptMessages = callOptions.Prompt,
+                            },
+                            cancellationToken
+                        ),
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
+        }
 
         if (options.OnLanguageModelCallStart != null)
         {

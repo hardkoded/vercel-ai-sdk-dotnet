@@ -2,8 +2,10 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using Vercel.AI.Gateway;
 using Vercel.AI.ProviderUtils;
 using Vercel.AI.Testing;
+using Vercel.AI.Tests.Upstream.GenerateText;
 
 namespace Vercel.AI.Tests.Upstream.ToolLoopAgent;
 
@@ -114,5 +116,40 @@ public sealed class GenerateTests
         var ua = Assert.Single(model.Calls).Headers!["user-agent"];
         Assert.Contains("my-app/1.0", ua);
         Assert.Contains("ai-sdk-agent/tool-loop", ua);
+    }
+
+    private const string Schema =
+        "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}},\"required\":[\"value\"]}";
+
+    [Fact]
+    [UpstreamTest(
+        "packages/ai/src/agent/tool-loop-agent.test.ts::ToolLoopAgent > generate::should forward toolOrder to generateText",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task ShouldForwardToolOrderToGenerateText()
+    {
+        var model = new TestLanguageModel();
+
+        var agent = new Agent(
+            new AgentOptions
+            {
+                Model = model,
+                Tools =
+                [
+                    Tool.Function("zebra", null, Schema, (_, _) => Task.FromResult("\"zebra\"")),
+                    Tool.Function("alpha", null, Schema, (_, _) => Task.FromResult("\"alpha\"")),
+                    Tool.Function("middle", null, Schema, (_, _) => Task.FromResult("\"middle\"")),
+                ],
+                ToolOrder = ["middle"],
+            },
+            ToolLoopAgentInstructions.Client()
+        );
+
+        await agent.GenerateAsync("Hello, world!");
+
+        Assert.Equal(
+            new[] { "middle", "alpha", "zebra" },
+            model.Calls[0].Tools!.Select(tool => tool.Name)
+        );
     }
 }

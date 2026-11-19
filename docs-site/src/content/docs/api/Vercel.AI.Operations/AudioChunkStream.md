@@ -24,7 +24,7 @@ Audio the model may take ownership of. Chunks are written with `Byte%5b%5d)` or
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L130)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L133)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates an audio stream. &lt;code class="paramref"&gt;onCancel&lt;/code&gt; runs
 | --- | --- | --- |
 | `onCancel` | [Action&lt;Exception&gt;](https://learn.microsoft.com/dotnet/api/system.action-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L139)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L142)
 
 ## Properties
 
@@ -66,7 +66,7 @@ Reason from a failed setup cancel.
 
 **Value:** [Exception](https://learn.microsoft.com/dotnet/api/system.exception)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L148)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L151)
 
 <a id="Vercel_AI_Operations_AudioChunkStream_Locked_"></a>
 <a id="Vercel_AI_Operations_AudioChunkStream_Locked"></a>
@@ -83,7 +83,7 @@ True after the model takes a reader.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L145)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L148)
 
 ## Methods
 
@@ -106,7 +106,7 @@ Cancels an unowned stream. A locked stream throws.
 | --- | --- | --- |
 | `error` | [Exception](https://learn.microsoft.com/dotnet/api/system.exception) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L186)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L189)
 
 <a id="Vercel_AI_Operations_AudioChunkStream_Complete_"></a>
 <a id="Vercel_AI_Operations_AudioChunkStream_Complete"></a>
@@ -121,7 +121,7 @@ public void Complete()
 
 Ends the stream after the written chunks.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L169)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L172)
 
 <a id="Vercel_AI_Operations_AudioChunkStream_Fail_"></a>
 <a id="Vercel_AI_Operations_AudioChunkStream_Fail_System_Exception_"></a>
@@ -142,7 +142,7 @@ Fails the stream after the written chunks.
 | --- | --- | --- |
 | `error` | [Exception](https://learn.microsoft.com/dotnet/api/system.exception) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L180)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L183)
 
 <a id="Vercel_AI_Operations_AudioChunkStream_GetReader_"></a>
 <a id="Vercel_AI_Operations_AudioChunkStream_GetReader"></a>
@@ -159,7 +159,7 @@ Locks the stream and returns its only reader.
 
 **Returns:** [AudioChunkReader](/api/Vercel.AI.Operations/AudioChunkReader/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L198)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L201)
 
 <a id="Vercel_AI_Operations_AudioChunkStream_Lock_"></a>
 <a id="Vercel_AI_Operations_AudioChunkStream_Lock"></a>
@@ -174,7 +174,7 @@ public void Lock()
 
 Marks the stream as owned by the model.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L151)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L154)
 
 <a id="Vercel_AI_Operations_AudioChunkStream_Write_"></a>
 <a id="Vercel_AI_Operations_AudioChunkStream_Write_System_Byte___"></a>
@@ -195,7 +195,7 @@ Writes a binary chunk.
 | --- | --- | --- |
 | `chunk` | [byte\[\]](https://learn.microsoft.com/dotnet/api/system.byte) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L157)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L160)
 
 <a id="Vercel_AI_Operations_AudioChunkStream_Write_System_String_"></a>
 
@@ -215,4 +215,4 @@ Writes a base64 chunk.
 | --- | --- | --- |
 | `base64Chunk` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L163)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/MediaStream.cs#L166)

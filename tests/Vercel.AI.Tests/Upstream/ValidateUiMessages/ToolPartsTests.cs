@@ -159,8 +159,7 @@ public sealed class ToolPartsTests : WarningsOff
     }
 
     [UpstreamTest(
-        Suite + "should reject transformed approval input that does not match its schema input",
-        Note = "The input schema is JSON Schema, so ExperimentalRefineToolInput stands in for z.string().transform(Number)."
+        Suite + "should reject transformed approval input that does not match its schema input"
     )]
     [Fact]
     public async Task Should_reject_transformed_approval_input_that_does_not_match_its_schema_input()
@@ -170,8 +169,7 @@ public sealed class ToolPartsTests : WarningsOff
                 Assistant(
                     """[{"type":"tool-count","toolCallId":"call-1","state":"approval-responded","input":{"count":4},"approval":{"id":"approval-1","approved":true,"inputSchemaInput":{"count":"3"}}}]"""
                 ),
-                CountTools(),
-                refine: CountRefine()
+                CountTools()
             )
         );
 
@@ -686,7 +684,7 @@ public sealed class ToolPartsTests : WarningsOff
         AssertMessages(json, await Validate(json, TestTools()));
     }
 
-    /// <summary>The tools of the transformed approval input tests. <c>count</c> is a string that the refinement turns into a number.</summary>
+    /// <summary>The tools of the transformed approval input tests: <c>z.object({ count: z.string().transform(Number) })</c>.</summary>
     internal static Dictionary<string, Tool> CountTools() =>
         new()
         {
@@ -697,14 +695,9 @@ public sealed class ToolPartsTests : WarningsOff
                     """{"type":"object","properties":{"count":{"type":"string"}},"required":["count"]}"""
                 ),
                 null
-            ),
-        };
-
-    internal static Dictionary<string, Func<JsonElement, Task<JsonElement>>> CountRefine() =>
-        new()
-        {
-            ["count"] = input =>
-                Task.FromResult(
+            )
+            {
+                InputTransform = input =>
                     Json(
                         "{\"count\":"
                             + double.Parse(
@@ -713,7 +706,7 @@ public sealed class ToolPartsTests : WarningsOff
                                 )
                                 .ToString(System.Globalization.CultureInfo.InvariantCulture)
                             + "}"
-                    )
-                ),
+                    ),
+            },
         };
 }

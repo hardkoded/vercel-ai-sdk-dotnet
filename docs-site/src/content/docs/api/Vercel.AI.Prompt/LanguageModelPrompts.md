@@ -50,7 +50,7 @@ Converts a message to its language model form. Maps to `convertToLanguageModelMe
 
 **Returns:** [ModelMessage](/api/Vercel.AI.Provider/ModelMessage/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/ConvertToLanguageModelPrompt.cs#L102)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/ConvertToLanguageModelPrompt.cs#L103)
 
 <a id="Vercel_AI_Prompt_LanguageModelPrompts_ConvertToLanguageModelPromptAsync_"></a>
 <a id="Vercel_AI_Prompt_LanguageModelPrompts_ConvertToLanguageModelPromptAsync_System_Collections_Generic_IReadOnlyList_Vercel_AI_Provider_ModelMessage__System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Func_System_Collections_Generic_IReadOnlyList_Vercel_AI_Util_DownloadRequestItem__System_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Vercel_AI_Util_DownloadResult____System_Threading_CancellationToken_System_String_"></a>
@@ -103,4 +103,30 @@ Downloads files from URLs in the user messages. Maps to `downloadAssets`.
 
 **Returns:** [Task&lt;IReadOnlyDictionary&lt;string, DownloadResult&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1) — Downloaded data by URL. Only URLs the download function returned data for.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/ConvertToLanguageModelPrompt.cs#L131)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/ConvertToLanguageModelPrompt.cs#L132)
+
+<a id="Vercel_AI_Prompt_LanguageModelPrompts_MapToolResultOutput_"></a>
+<a id="Vercel_AI_Prompt_LanguageModelPrompts_MapToolResultOutput_System_Collections_Generic_IReadOnlyList_Vercel_AI_Provider_UserContentPart__System_Collections_Generic_IReadOnlyDictionary_System_String_Vercel_AI_Util_DownloadResult__System_String_System_Collections_Generic_ICollection_Vercel_AI_Util_ModelWarning__"></a>
+
+### `MapToolResultOutput(IReadOnlyList<UserContentPart>, IReadOnlyDictionary<string, DownloadResult>, string?, ICollection<ModelWarning>?)`
+
+
+```csharp
+public static IReadOnlyList<UserContentPart> MapToolResultOutput(IReadOnlyList<UserContentPart> output, IReadOnlyDictionary<string, DownloadResult> downloadedAssets, string? provider = null, ICollection<ModelWarning>? warnings = null)
+```
+
+
+Maps the `content` output of a tool result to its language model form. Maps to `mapToolResultOutput`.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `output` | [IReadOnlyList&lt;UserContentPart&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) | The parts of the `content` output. |
+| `downloadedAssets` | [IReadOnlyDictionary&lt;string, DownloadResult&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2) | Downloaded data by URL. |
+| `provider` | [string](https://learn.microsoft.com/dotnet/api/system.string) | Provider of the model. It is only used to convert the deprecated `file-id` and `image-file-id` parts with a string file id. |
+| `warnings` | [ICollection&lt;ModelWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.icollection-1) | Receives the deprecation warnings. |
+
+**Returns:** [IReadOnlyList&lt;UserContentPart&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/ConvertToLanguageModelPrompt.cs#L275)

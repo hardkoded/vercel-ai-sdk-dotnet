@@ -79,9 +79,7 @@ public sealed class WhenIgnoringIncompleteToolCallsTests : WarningsOff
     }
 
     [UpstreamTest(
-        Suite + "should preserve transformed approval input through a UI message round trip",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "A JSON Schema has no transform, so the input schema of the tool is a string count and ExperimentalRefineToolInput turns it into a number, as upstream's z.string().transform(Number) does."
+        Suite + "should preserve transformed approval input through a UI message round trip"
     )]
     [Fact]
     public async Task Should_preserve_transformed_approval_input_through_a_UI_message_round_trip()
@@ -95,7 +93,11 @@ public sealed class WhenIgnoringIncompleteToolCallsTests : WarningsOff
                     """{"type":"object","properties":{"count":{"type":"string"}},"required":["count"]}"""
                 ),
                 null
-            ),
+            )
+            {
+                InputTransform = input =>
+                    Json("{\"count\":" + input.GetProperty("count").GetString() + "}"),
+            },
         };
         var assistantMessage = await RecordAssistantMessageFromChunks(
             """
@@ -109,21 +111,7 @@ public sealed class WhenIgnoringIncompleteToolCallsTests : WarningsOff
         var persistedMessage = Reload(new[] { assistantMessage });
 
         var validatedMessages = await Ai.ValidateUIMessagesAsync(
-            new ValidateUIMessagesOptions
-            {
-                Messages = persistedMessage,
-                Tools = tools,
-                ExperimentalRefineToolInput = new Dictionary<
-                    string,
-                    Func<JsonElement, Task<JsonElement>>
-                >
-                {
-                    ["count"] = input =>
-                        Task.FromResult(
-                            Json("{\"count\":" + input.GetProperty("count").GetString() + "}")
-                        ),
-                },
-            }
+            new ValidateUIMessagesOptions { Messages = persistedMessage, Tools = tools }
         );
         var result = Convert(
             validatedMessages,

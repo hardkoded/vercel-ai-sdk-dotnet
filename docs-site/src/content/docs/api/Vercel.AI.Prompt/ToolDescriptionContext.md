@@ -28,13 +28,13 @@ Context passed to a function-valued tool description.
 ## Constructors
 
 <a id="Vercel_AI_Prompt_ToolDescriptionContext__ctor_"></a>
-<a id="Vercel_AI_Prompt_ToolDescriptionContext__ctor_System_Object_System_String_"></a>
+<a id="Vercel_AI_Prompt_ToolDescriptionContext__ctor_System_Object_Vercel_AI_ProviderUtils_ISandboxSession_"></a>
 
-### ToolDescriptionContext(object?, string?)
+### ToolDescriptionContext(object?, ISandboxSession?)
 
 
 ```csharp
-public ToolDescriptionContext(object? context, string? sandboxDescription)
+public ToolDescriptionContext(object? context, ISandboxSession? experimentalSandbox)
 ```
 
 
@@ -45,7 +45,7 @@ Creates context.
 | Name | Type | Description |
 | --- | --- | --- |
 | `context` | [object](https://learn.microsoft.com/dotnet/api/system.object) |  |
-| `sandboxDescription` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+| `experimentalSandbox` | [ISandboxSession](/api/Vercel.AI.ProviderUtils/ISandboxSession/) |  |
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/PrepareTools.cs#L13)
 
@@ -68,19 +68,19 @@ Per-tool context value.
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/PrepareTools.cs#L20)
 
-<a id="Vercel_AI_Prompt_ToolDescriptionContext_SandboxDescription_"></a>
-<a id="Vercel_AI_Prompt_ToolDescriptionContext_SandboxDescription"></a>
+<a id="Vercel_AI_Prompt_ToolDescriptionContext_ExperimentalSandbox_"></a>
+<a id="Vercel_AI_Prompt_ToolDescriptionContext_ExperimentalSandbox"></a>
 
-### SandboxDescription
+### ExperimentalSandbox
 
 
 ```csharp
-public string? SandboxDescription { get; }
+public ISandboxSession? ExperimentalSandbox { get; }
 ```
 
 
-Sandbox description, when a sandbox is active.
+Sandbox session, when a sandbox is active. Maps to `experimental_sandbox`.
 
-**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+**Value:** [ISandboxSession](/api/Vercel.AI.ProviderUtils/ISandboxSession/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/PrepareTools.cs#L23)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/PrepareTools.cs#L24)

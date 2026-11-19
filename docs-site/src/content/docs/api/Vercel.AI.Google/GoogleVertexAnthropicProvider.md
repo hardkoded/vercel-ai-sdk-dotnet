@@ -15,7 +15,7 @@ Namespace: [Vercel.AI.Google](/api/Vercel.AI.Google/)
 
 
 ```csharp
-public sealed class GoogleVertexAnthropicProvider : AnthropicProvider, IBatchProvider, IDecisionProvider, IEvaluationProvider
+public sealed class GoogleVertexAnthropicProvider : AnthropicProvider, IBatchProvider, IDecisionProvider, IExtractionProvider, IEvaluationProvider
 ```
 
 
@@ -24,7 +24,7 @@ Vertex does not accept URL sources or strict tools. Native output is opt-in.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [ProviderBase](/api/Vercel.AI.Provider/ProviderBase/) → [AnthropicProvider](/api/Vercel.AI.Anthropic/AnthropicProvider/)
 
-**Implements:** [IBatchProvider](/api/Vercel.AI.Operations/IBatchProvider/), [IDecisionProvider](/api/Vercel.AI.Operations/IDecisionProvider/), [IEvaluationProvider](/api/Vercel.AI.Operations/IEvaluationProvider/)
+**Implements:** [IBatchProvider](/api/Vercel.AI.Operations/IBatchProvider/), [IDecisionProvider](/api/Vercel.AI.Operations/IDecisionProvider/), [IExtractionProvider](/api/Vercel.AI.Operations/IExtractionProvider/), [IEvaluationProvider](/api/Vercel.AI.Operations/IEvaluationProvider/)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertexPartners.cs#L73)
 

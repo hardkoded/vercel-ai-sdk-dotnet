@@ -1237,6 +1237,9 @@ public sealed class PrepareStepUpdate
     /// <summary>Replacement tool choice for this step.</summary>
     public ToolChoice? ToolChoice { get; set; }
 
+    /// <summary>Overrides the order in which tools are sent to the provider for this step. See <see cref="GenerateTextOptions.ToolOrder"/>. Maps to <c>toolOrder</c>.</summary>
+    public IReadOnlyList<string>? ToolOrder { get; set; }
+
     /// <summary>
     /// Provider options for this step, such as an Anthropic container id. They are deep-merged onto the call's provider options.
     /// </summary>
@@ -1303,6 +1306,12 @@ public class GenerateTextOptions
 
     /// <summary>Tool names allowed on this call. Null allows every tool.</summary>
     public IReadOnlyList<string>? ActiveTools { get; set; }
+
+    /// <summary>
+    /// Controls the order in which tools are sent to the provider. The list can be partial. Tools not listed are sent after the listed tools,
+    /// sorted alphabetically. This can improve provider-side caching by keeping tool definitions in a stable order. Maps to <c>toolOrder</c>.
+    /// </summary>
+    public IReadOnlyList<string>? ToolOrder { get; set; }
 
     /// <summary>
     /// Maximum number of tool calls that may execute concurrently within a step. Set to 1 to execute them one at a time in model order.

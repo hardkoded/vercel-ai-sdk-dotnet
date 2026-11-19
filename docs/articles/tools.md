@@ -167,6 +167,20 @@ Providers keep the error status:
 - A `LanguageModelTool` with `OutputSchema` is sent to OpenAI Responses as `output_schema`. Its `text` and `execution-denied` results are then sent as JSON string literals, because OpenAI parses the result as JSON.
 - Google sends `error-text`, `error-json`, and `execution-denied` on `functionResponse.response.error`. Successful results stay on `response.content`.
 
+## Tool order
+
+`ToolOrder` on `GenerateTextOptions`, `StreamTextOptions` and `AgentOptions` controls the order in which tools are sent to the provider. The list can be partial. Tools not listed are sent after the listed tools, sorted alphabetically. Without it, tools keep the order you passed them in. A stable order can improve provider-side caching. `PrepareStepUpdate.ToolOrder` overrides it for one step.
+
+```csharp
+await client.GenerateTextAsync(new GenerateTextOptions
+{
+    Model = model,
+    Tools = [zebra, alpha, middle],
+    Prompt = "...",
+    ToolOrder = ["middle"], // sent as middle, alpha, zebra
+});
+```
+
 ## Tool input validation
 
 Before the loop runs a tool, `ToolCallParser.ParseToolCallAsync` parses the call's input and validates it against the tool's `InputSchema`. Empty input counts as `{}`. A call that fails is not executed. It comes back with `Invalid` and `Dynamic` set and the failure in `Error`: a `NoSuchToolError` when the tool is unknown (`AvailableTools` is null when no tools were set), or an `InvalidToolInputError` when the input is not valid JSON or does not match the schema. `GenerateTextAsync`, `StreamTextAsync`, and `Agent` run this parse on every tool call of a model response, with the tools the model was offered (`ActiveTools` narrows them). The validator covers `type`, `enum`, `const`, `properties`, `required`, `additionalProperties`, `items`, `minItems`, `maxItems`, `minLength`, `maxLength`, `minimum`, `maximum`, `anyOf`, `oneOf` and `allOf`.
@@ -361,7 +375,7 @@ The `redirect` option and OAuth (`authProvider`) are not ported ([#585](https://
 
 ## Tool result title, metadata and dynamic flag
 
-`ExecutedTool` carries `Title`, `ToolMetadata` and `Dynamic` from the tool call it answers, and `ToolInputStartPart` carries the tool's `Title`. `Dynamic` is true for a dynamic tool and for an invalid call. The `GeneratedToolResult` of a client tool in `Content` carries `Dynamic` and `ToolMetadata` too, and `ToolInputStartPart` also carries the tool's `ToolMetadata`. That result also sets `ProviderExecuted` to false (a provider's own result keeps it true) and carries the `InputJson` of the call it answers. The response messages of a step (the assistant message and one tool message that carries the approval responses in `ToolModelMessage.ApprovalResponses` and the results in tool call order; a denied call, provider-executed or not, gets an `execution-denied` result) are built from `Content` in one place, as upstream's `toResponseMessages` does. The assistant message now includes the step's files and skips empty text that has no provider metadata.
+`ExecutedTool` carries `Title`, `ToolMetadata` and `Dynamic` from the tool call it answers, and `ToolInputStartPart` carries the tool's `Title`. `Dynamic` is true for a dynamic tool and for an invalid call. The `GeneratedToolResult` of a client tool in `Content` carries `Dynamic` and `ToolMetadata` too, and `ToolInputStartPart` also carries the tool's `ToolMetadata`. That result also sets `ProviderExecuted` to false (a provider's own result keeps it true) and carries the `InputJson` of the call it answers. The response messages of a step (the assistant message and one tool message that carries the approval responses in `ToolModelMessage.ApprovalResponses` and the results in tool call order for `GenerateTextAsync` and in completion order for a streamed step; a denied call, provider-executed or not, gets an `execution-denied` result) are built from `Content` in one place, as upstream's `toResponseMessages` does. The assistant message now includes the step's files and skips empty text that has no provider metadata.
 
 ## MCP tool output
 
@@ -380,3 +394,15 @@ Not ported: `outputSchema` support ([#777](https://github.com/hardkoded/vercel-a
 `ISandboxSession` (maps to `Experimental_SandboxSession`) is a session that runs commands (`RunAsync`, `SpawnAsync`) and reads and writes files (`ReadFileAsync`, `ReadBinaryFileAsync`, `ReadTextFileAsync`, `WriteFileAsync`, `WriteBinaryFileAsync`, `WriteTextFileAsync`, `StatAsync`, `ListDirectoryAsync`, `DeleteFileAsync`). Its `Description` can go into the instructions of an agent. You implement it for your sandbox provider.
 
 Set `ExperimentalSandbox` on `GenerateTextOptions` or `StreamTextOptions` to pass a session to tool execution. A tool reads it as `ToolExecutionOptions.ExperimentalSandbox`. `Agent.GenerateAsync` and `Agent.Stream` take it as the `experimentalSandbox` parameter and pass it to `AgentOptions.PrepareCall` as `ExperimentalSandbox` on the options. `PrepareStepContext.ExperimentalSandbox` is the sandbox the step operates in. Return a `PrepareStepUpdate` with `ExperimentalSandbox` to change it for tool execution in that step only. Maps to `experimental_sandbox`.
+
+A tool `DescriptionFactory` on `PromptTool` receives a `ToolDescriptionContext`. Its `Context` is the tool's context value and its `ExperimentalSandbox` is the active `ISandboxSession`, so a description can read the sandbox. `PromptTools.PrepareTools` takes the session as the `experimentalSandbox` parameter. Maps to the `experimental_sandbox` argument of `prepareTools`.
+
+```csharp
+var tool = new PromptTool("function")
+{
+    DescriptionFactory = context => "Env: " + (context.ExperimentalSandbox?.Description ?? "none"),
+};
+var prepared = PromptTools.PrepareTools(tools, experimentalSandbox: session);
+```
+
+**Breaking change:** `ToolDescriptionContext.SandboxDescription` and the `sandboxDescription` parameter of `PromptTools.PrepareTools` are removed. Pass the session as `experimentalSandbox` and read `context.ExperimentalSandbox?.Description`.

@@ -76,4 +76,4 @@ Gets or sets the HTTP client (stands in for upstream's `fetch`).
 
 **Value:** [ProviderHttp](/api/Vercel.AI.ProviderUtils/ProviderHttp/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayGenerationInfo.cs#L40)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayGenerationInfo.cs#L32)
