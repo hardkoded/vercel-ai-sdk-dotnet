@@ -38,7 +38,7 @@ public sealed class TranslateTests
         Assert.Equal("pcm16", model.Call.InputAudioFormat.Type);
         Assert.Equal("es", model.Call.TargetLanguage);
         Assert.Equal("en", model.Call.SourceLanguage);
-        Assert.Equal("mp3", model.Call.OutputAudioFormat);
+        Assert.Equal("mp3", model.Call.OutputAudioFormat!.Type);
         Assert.False(model.Call.IncludeRawChunks);
         Assert.Equal("1", model.Call.Headers["x-test"]);
         Assert.Equal(AiSdkVersion.UserAgent, model.Call.Headers["user-agent"]);
