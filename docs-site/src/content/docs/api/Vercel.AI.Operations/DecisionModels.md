@@ -124,13 +124,35 @@ Resolves a decision model. &lt;code class="paramref"&gt;model&lt;/code&gt; wins 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionModels.cs#L39)
 
 <a id="Vercel_AI_Operations_DecisionModels_ResolveExtractionModel_"></a>
+<a id="Vercel_AI_Operations_DecisionModels_ResolveExtractionModel_Vercel_AI_Operations_IExtractionCaller_"></a>
+
+### ResolveExtractionModel(IExtractionCaller?)
+
+
+```csharp
+public static IExtractionCaller ResolveExtractionModel(IExtractionCaller? model)
+```
+
+
+Maps to `resolveExtractionModel` for a model instance. A model that is not `v4` throws.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `model` | [IExtractionCaller](/api/Vercel.AI.Operations/IExtractionCaller/) |  |
+
+**Returns:** [IExtractionCaller](/api/Vercel.AI.Operations/IExtractionCaller/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionModels.cs#L104)
+
 <a id="Vercel_AI_Operations_DecisionModels_ResolveExtractionModel_Vercel_AI_Operations_IExtractionCaller_System_String_"></a>
 
 ### ResolveExtractionModel(IExtractionCaller?, string?)
 
 
 ```csharp
-public static IExtractionCaller ResolveExtractionModel(IExtractionCaller? model, string? modelId = null)
+public static IExtractionCaller ResolveExtractionModel(IExtractionCaller? model, string? modelId)
 ```
 
 
@@ -147,4 +169,4 @@ implements [IExtractionProvider](/api/Vercel.AI.Operations/IExtractionProvider/)
 
 **Returns:** [IExtractionCaller](/api/Vercel.AI.Operations/IExtractionCaller/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionModels.cs#L108)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/DecisionModels.cs#L114)

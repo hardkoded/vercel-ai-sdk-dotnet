@@ -100,6 +100,12 @@ public static class DecisionModels
             );
     }
 
+    /// <summary>Maps to <c>resolveExtractionModel</c> for a model instance. A model that is not <c>v4</c> throws.</summary>
+    public static IExtractionCaller ResolveExtractionModel(IExtractionCaller? model)
+    {
+        return ResolveExtractionModel(model, null);
+    }
+
     /// <summary>
     /// Maps to <c>resolveExtractionModel</c>. <paramref name="model"/> wins when set. Otherwise <paramref name="modelId"/> goes
     /// through <see cref="DefaultProvider"/>. Gateway has no extraction models, so a string id without a default provider that
@@ -107,7 +113,7 @@ public static class DecisionModels
     /// </summary>
     public static IExtractionCaller ResolveExtractionModel(
         IExtractionCaller? model,
-        string? modelId = null
+        string? modelId
     )
     {
         if (model is null)
