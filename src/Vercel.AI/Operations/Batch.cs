@@ -553,7 +553,8 @@ public sealed class BatchItemResult<TOutput> : BatchItemResult
             {
                 typed.OutputError = new BatchError
                 {
-                    Message = "No object generated: response did not deserialize to the output type.",
+                    Message =
+                        "No object generated: response did not deserialize to the output type.",
                     Type = "AI_NoObjectGeneratedError",
                 };
             }
@@ -1079,7 +1080,8 @@ public static class Batch
     public static async IAsyncEnumerable<BatchItemResult<TOutput>> GetBatchResults<TOutput>(
         BatchRequestOptions request,
         OutputSpec<TOutput> output,
-        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default
+        [System.Runtime.CompilerServices.EnumeratorCancellation]
+            CancellationToken cancellationToken = default
     )
     {
         if (request == null)
