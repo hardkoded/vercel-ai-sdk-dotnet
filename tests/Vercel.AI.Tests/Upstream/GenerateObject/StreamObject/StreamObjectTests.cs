@@ -21,7 +21,8 @@ public sealed class StreamObjectTests
     [Fact]
     [UpstreamTest(
         "packages/ai/src/generate-object/stream-object.test.ts::sanitizes provider request URLs in streamed object results and callbacks",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "463b139c991058f53e0c21974f62880ba43a85d0"
     )]
     public async Task Sanitizes_provider_request_URLs_in_streamed_object_results_and_callbacks()
     {
