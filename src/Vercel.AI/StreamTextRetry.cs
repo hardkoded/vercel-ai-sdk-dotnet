@@ -62,8 +62,7 @@ internal sealed class StreamTextRetry
                 var part = hasNext ? enumerator.Current : null;
                 if (boundaryPending)
                 {
-                    yield return new StreamRetryBoundaryPart(
-                        RequestOf(Current),
+                    yield return StreamRetryAttemptBoundaryPart.CreateStreamRetryAttemptBoundaryPart(
                         part is ModelCallStartPart start ? start.Warnings : []
                     );
                     boundaryPending = false;
@@ -195,9 +194,6 @@ internal sealed class StreamTextRetry
             await enumerator.DisposeAsync().ConfigureAwait(false);
         }
     }
-
-    public static LanguageModelRequestMetadata RequestOf(StreamLanguageModelCallResult call) =>
-        new() { Body = call.Request?.Body };
 
     private async Task DisposeAttemptAsync(IAsyncEnumerator<TextStreamPart> enumerator)
     {

@@ -43,6 +43,12 @@ internal static class ExecuteToolsFromStream
             // immediately forward all chunks
             yield return chunk;
 
+            if (StreamRetryAttemptBoundaryPart.IsStreamRetryAttemptBoundaryPart(chunk))
+            {
+                toolCallsToExecute.Clear();
+                continue;
+            }
+
             switch (chunk)
             {
                 case ToolCallPart toolCallPart:

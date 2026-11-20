@@ -1442,7 +1442,7 @@ internal static class Generation
 
                         if (
                             !stepStarted
-                            && part is not (ModelCallStartPart or StreamRetryBoundaryPart)
+                            && part is not (ModelCallStartPart or StreamRetryAttemptBoundaryPart)
                         )
                         {
                             stepStarted = true;
@@ -1699,7 +1699,7 @@ internal static class Generation
                                 stepResponseModelId = responseMetadata.ModelId
                                     ?? stepResponseModelId;
                                 break;
-                            case StreamRetryBoundaryPart boundary:
+                            case StreamRetryAttemptBoundaryPart attemptBoundary:
                                 // The model call was rerun. What the failed attempt produced does not belong to the step.
                                 text.Clear();
                                 textBlocks.Clear();
@@ -1721,11 +1721,11 @@ internal static class Generation
                                 );
                                 stepResponseTimestamp = DateTimeOffset.UtcNow;
                                 stepResponseModelId = current.ModelId;
-                                warnings = boundary.Warnings;
+                                warnings = attemptBoundary.Warnings;
                                 // The retried attempt gets its own timeout windows.
                                 timeouts?.ClearModelOutput();
                                 timeouts?.StartFirstChunk();
-                                stepRequest = RequestMetadata(boundary.Request.Body);
+                                stepRequest = RequestMetadata(retry?.Current.Request?.Body);
                                 buffer.Add(new StreamRetryBoundaryPart(stepRequest, warnings));
                                 break;
                             case ModelCallStartPart start:
