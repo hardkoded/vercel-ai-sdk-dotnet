@@ -2129,8 +2129,8 @@ public sealed class GenerateTextResult<TOutput> : GenerateTextResult
         : base(result)
     {
         // Deserialized once, so every read gives the same instance.
-        _output = new Lazy<TOutput?>(
-            () => base.Output is { } json ? spec.Deserialize(json) : default
+        _output = new Lazy<TOutput?>(() =>
+            base.Output is { } json ? spec.Deserialize(json) : default
         );
     }
 
