@@ -176,7 +176,11 @@ public sealed class CompletedFunctionCallAndTextStreamOrderTests
 
     [Theory]
     [MemberData(nameof(Cases))]
-    [UpstreamTest(Prefix + "$name", Coverage = UpstreamCoverage.Covered, Commit = "fd7e8a75d719314f79528f0c9fda734bb83e68f5")]
+    [UpstreamTest(
+        Prefix + "$name",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "fd7e8a75d719314f79528f0c9fda734bb83e68f5"
+    )]
     public async Task Preserves_the_order_of_completed_calls_and_text(
         string provider,
         string name,
@@ -330,8 +334,7 @@ public sealed class CompletedFunctionCallAndTextStreamOrderTests
 
     [Fact]
     [UpstreamTest(
-        Prefix
-            + "preserves text order around a terminal partialArgs function call",
+        Prefix + "preserves text order around a terminal partialArgs function call",
         Coverage = UpstreamCoverage.Covered,
         Commit = "fd7e8a75d719314f79528f0c9fda734bb83e68f5"
     )]
