@@ -104,7 +104,7 @@ so a key written with an escape sequence never matches. Maps to `compileBinaryFi
 | --- | --- |
 | [InvalidArgumentError](/api/Vercel.AI.Util/InvalidArgumentError/) | A path is not valid. |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonBinaryFieldScanner.cs#L138)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonBinaryFieldScanner.cs#L135)
 
 <a id="Vercel_AI_ProviderUtils_JsonBinaryFieldScanner_Finish_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonBinaryFieldScanner_Finish"></a>
@@ -122,7 +122,7 @@ Maps to `finish`.
 
 **Returns:** [JsonBinaryFieldScanResult](/api/Vercel.AI.ProviderUtils/JsonBinaryFieldScanResult/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonBinaryFieldScanner.cs#L351)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonBinaryFieldScanner.cs#L354)
 
 <a id="Vercel_AI_ProviderUtils_JsonBinaryFieldScanner_Push_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonBinaryFieldScanner_Push_System_Byte___System_Int32_"></a>
@@ -144,7 +144,7 @@ Reads the next chunk of the body. Maps to `push`.
 | `chunk` | [byte\[\]](https://learn.microsoft.com/dotnet/api/system.byte) |  |
 | `count` | [int](https://learn.microsoft.com/dotnet/api/system.int32) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonBinaryFieldScanner.cs#L185)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonBinaryFieldScanner.cs#L182)
 
 <a id="Vercel_AI_ProviderUtils_JsonBinaryFieldScanner_ReplaceBinaryFieldPlaceholders_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonBinaryFieldScanner_ReplaceBinaryFieldPlaceholders_System_Text_Json_JsonElement_System_Collections_Generic_IReadOnlyDictionary_System_String_System_Byte____"></a>
@@ -171,4 +171,4 @@ so a string that equals one is ours. Maps to `replaceBinaryFieldPlaceholders`.
 
 **Returns:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonBinaryFieldScanner.cs#L368)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonBinaryFieldScanner.cs#L371)

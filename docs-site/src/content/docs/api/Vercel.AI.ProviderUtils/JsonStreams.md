@@ -41,7 +41,7 @@ Default largest JSON Lines row, in UTF-8 bytes.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L763)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L762)
 
 ## Methods
 
@@ -132,7 +132,7 @@ Events are validated with &lt;code class="paramref"&gt;schema&lt;/code&gt; when 
 
 **Returns:** [IAsyncEnumerable&lt;JsonParseResult&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L872)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L871)
 
 <a id="Vercel_AI_ProviderUtils_JsonStreams_ReadJsonLinesAsync_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonStreams_ReadJsonLinesAsync_System_IO_Stream_System_Text_Json_Nodes_JsonNode_System_Action_System_Threading_CancellationToken_System_Int32_System_String_"></a>
@@ -163,4 +163,4 @@ A row longer than &lt;code class="paramref"&gt;maxLineBytes&lt;/code&gt; UTF-8 b
 
 **Returns:** [IAsyncEnumerable&lt;JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L771)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L770)

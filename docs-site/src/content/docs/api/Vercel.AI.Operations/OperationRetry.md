@@ -61,17 +61,17 @@ Validates &lt;code class="paramref"&gt;maxRetries&lt;/code&gt; and runs &lt;code
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L634)
 
 <a id="Vercel_AI_Operations_OperationRetry_ResolveMaxRetries_"></a>
-<a id="Vercel_AI_Operations_OperationRetry_ResolveMaxRetries_System_Nullable_System_Int32__System_String_"></a>
+<a id="Vercel_AI_Operations_OperationRetry_ResolveMaxRetries_System_Nullable_System_Int32__System_String_System_Int32_"></a>
 
-### ResolveMaxRetries(int?, string)
+### ResolveMaxRetries(int?, string, int)
 
 
 ```csharp
-public static int ResolveMaxRetries(int? maxRetries, string parameter = "maxRetries")
+public static int ResolveMaxRetries(int? maxRetries, string parameter = "maxRetries", int defaultMaxRetries = 2)
 ```
 
 
-Returns the retry count after validation. Null becomes 2.
+Returns the retry count after validation. Null becomes &lt;code class="paramref"&gt;defaultMaxRetries&lt;/code&gt;.
 
 **Parameters**
 
@@ -79,6 +79,7 @@ Returns the retry count after validation. Null becomes 2.
 | --- | --- | --- |
 | `maxRetries` | [int?](https://learn.microsoft.com/dotnet/api/system.int32) |  |
 | `parameter` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+| `defaultMaxRetries` | [int](https://learn.microsoft.com/dotnet/api/system.int32) |  |
 
 **Returns:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
@@ -104,4 +105,4 @@ Throws &lt;code class="paramref"&gt;reason&lt;/code&gt; when the token is cancel
 | `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
 | `reason` | [Exception](https://learn.microsoft.com/dotnet/api/system.exception) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L732)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L736)

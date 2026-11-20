@@ -139,4 +139,39 @@ public sealed class OptionsRepairTextTests
         Assert.Equal(13, noObject.Usage.TotalTokens);
         Assert.Equal(FinishReason.Stop, noObject.FinishReason);
     }
+
+    [Fact]
+    [UpstreamTest(
+        Id + "should support the deprecated experimental_repairText option",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_support_the_deprecated_experimental_repairText_option()
+    {
+        var options = ObjectOptions(RepairModel("{ \"content\": \"repaired\""));
+        options.ExperimentalRepairText = (context, _) =>
+            Task.FromResult<string?>(context.Text + " }");
+        var result = Client().StreamObjectAsync(options);
+
+        await Collect(result.PartialObjectStream());
+
+        Assert.Equal("repaired", (await result.Object).Content);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Id + "should prefer repairText over experimental_repairText",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_prefer_repairText_over_experimental_repairText()
+    {
+        var options = ObjectOptions(RepairModel("{ \"content\": \"repaired\""));
+        options.RepairText = (context, _) => Task.FromResult<string?>(context.Text + " }");
+        options.ExperimentalRepairText = (_, _) =>
+            throw new InvalidOperationException("deprecated alias should not be called");
+        var result = Client().StreamObjectAsync(options);
+
+        await Collect(result.PartialObjectStream());
+
+        Assert.Equal("repaired", (await result.Object).Content);
+    }
 }

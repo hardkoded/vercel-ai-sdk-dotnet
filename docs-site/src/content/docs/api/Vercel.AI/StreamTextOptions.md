@@ -23,7 +23,7 @@ Options for `CancellationToken)`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [GenerateTextOptions](/api/Vercel.AI/GenerateTextOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1831)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1835)
 
 ## Properties
 
@@ -43,7 +43,7 @@ A reason that is an [Exception](https://learn.microsoft.com/dotnet/api/system.ex
 
 **Value:** [AbortSignal](/api/Vercel.AI.Util/AbortSignal/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1846)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1850)
 
 <a id="Vercel_AI_StreamTextOptions_ExperimentalTransform_"></a>
 <a id="Vercel_AI_StreamTextOptions_ExperimentalTransform"></a>
@@ -61,7 +61,7 @@ Use [Create(SmoothStreamOptions)](/api/Vercel.AI.GenerateText/SmoothStream/#Verc
 
 **Value:** [IReadOnlyList&lt;StreamTextTransform&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1837)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1841)
 
 <a id="Vercel_AI_StreamTextOptions_Include_"></a>
 <a id="Vercel_AI_StreamTextOptions_Include"></a>
@@ -78,7 +78,7 @@ What to retain of the request in the [StartStepPart](/api/Vercel.AI/StartStepPar
 
 **Value:** [StreamTextInclude](/api/Vercel.AI/StreamTextInclude/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1840)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1844)
 
 <a id="Vercel_AI_StreamTextOptions_OnAbort_"></a>
 <a id="Vercel_AI_StreamTextOptions_OnAbort"></a>
@@ -97,4 +97,63 @@ results. The stream ends with an [AbortPart](/api/Vercel.AI/AbortPart/) after it
 
 **Value:** [Func&lt;StreamAbortContext, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1853)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1857)
+
+<a id="Vercel_AI_StreamTextOptions_OnChunk_"></a>
+<a id="Vercel_AI_StreamTextOptions_OnChunk"></a>
+
+### OnChunk
+
+
+```csharp
+public Func<StreamTextChunkEvent, CancellationToken, Task>? OnChunk { get; set; }
+```
+
+
+Called for each part of the stream, after the [ExperimentalTransform](#Vercel_AI_StreamTextOptions_ExperimentalTransform) transforms. The stream processing pauses until
+the callback returns. Maps to `onChunk`.
+
+**Value:** [Func&lt;StreamTextChunkEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1863)
+
+<a id="Vercel_AI_StreamTextOptions_OnErrorRetry_"></a>
+<a id="Vercel_AI_StreamTextOptions_OnErrorRetry"></a>
+
+### OnErrorRetry
+
+
+```csharp
+public Func<Exception, CancellationToken, Task<StreamTextOnErrorResult?>>? OnErrorRetry { get; set; }
+```
+
+
+Like [OnError](/api/Vercel.AI/GenerateTextOptions/#Vercel_AI_GenerateTextOptions_OnError), and its result can request one retry of the current model step after a provider
+error that was received from the response stream, when [StreamRetries](#Vercel_AI_StreamTextOptions_StreamRetries) is set. It takes the place of
+[OnError](/api/Vercel.AI/GenerateTextOptions/#Vercel_AI_GenerateTextOptions_OnError). C# has no union of callbacks, so the `onError` that returns `{ retry: true }` is this property.
+
+**Value:** [Func&lt;Exception, CancellationToken, Task&lt;StreamTextOnErrorResult&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1880)
+
+<a id="Vercel_AI_StreamTextOptions_StreamRetries_"></a>
+<a id="Vercel_AI_StreamTextOptions_StreamRetries"></a>
+
+### StreamRetries
+
+
+```csharp
+public int? StreamRetries { get; set; }
+```
+
+
+Maximum number of automatic retries for provider errors received after response streaming has started. Each retry reruns only
+the current model step. Completed earlier steps and their tool results are preserved.
+Partial output from a failed attempt that was already emitted cannot be retracted and remains in consumer-facing streams. It is
+excluded from the recovered step result, structured output parsing, response messages, and subsequent model steps.
+Set it to `0` to disable automatic retries while allowing [OnErrorRetry](#Vercel_AI_StreamTextOptions_OnErrorRetry) to request retries. Leave it
+&lt;a href="https://learn.microsoft.com/dotnet/csharp/language-reference/keywords/null"&gt;null&lt;/a&gt; to disable all stream retry behavior. Maps to `streamRetries`.
+
+**Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1873)

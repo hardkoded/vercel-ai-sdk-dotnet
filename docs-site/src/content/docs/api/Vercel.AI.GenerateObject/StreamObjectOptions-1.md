@@ -88,6 +88,40 @@ Maps to `experimental_download`.
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L70)
 
+<a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_ExperimentalRepairText_"></a>
+<a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_ExperimentalRepairText"></a>
+
+### ExperimentalRepairText
+
+
+```csharp
+public Func<GenerateObjectRepairContext, CancellationToken, Task<string?>>? ExperimentalRepairText { get; set; }
+```
+
+
+Deprecated alias of `RepairText`. Maps to `experimental_repairText`.
+
+**Value:** [Func&lt;GenerateObjectRepairContext, CancellationToken, Task&lt;string&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L134)
+
+<a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_ExperimentalTelemetry_"></a>
+<a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_ExperimentalTelemetry"></a>
+
+### ExperimentalTelemetry
+
+
+```csharp
+public TelemetryOptions? ExperimentalTelemetry { get; set; }
+```
+
+
+Deprecated alias of `Telemetry`. Maps to `experimental_telemetry`.
+
+**Value:** [TelemetryOptions](/api/Vercel.AI/TelemetryOptions/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L144)
+
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_FrequencyPenalty_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_FrequencyPenalty"></a>
 
@@ -240,7 +274,7 @@ callback task completes.
 
 **Value:** [Func&lt;Exception, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L146)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L159)
 
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_OnFinish_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_OnFinish"></a>
@@ -257,7 +291,7 @@ Called when the LLM response and the final object validation are finished.
 
 **Value:** [Func&lt;GenerateObjectEndEvent&lt;T&gt;, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L149)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L162)
 
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_OnStart_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_OnStart"></a>
@@ -274,7 +308,7 @@ Called when the streamObject operation begins, before the LLM call is made.
 
 **Value:** [Func&lt;GenerateObjectStartEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L134)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L147)
 
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_OnStepEnd_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_OnStepEnd"></a>
@@ -291,7 +325,7 @@ Called when the model streaming step completes, with the raw accumulated text be
 
 **Value:** [Func&lt;GenerateObjectStepEndEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L140)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L153)
 
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_OnStepStart_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_OnStepStart"></a>
@@ -308,7 +342,7 @@ Called when the model call (step) begins, before the provider is called.
 
 **Value:** [Func&lt;GenerateObjectStepStartEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L137)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L150)
 
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_Output_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_Output"></a>
@@ -514,6 +548,23 @@ System prompt. `Instructions` wins when both are set.
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L47)
+
+<a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_Telemetry_"></a>
+<a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_Telemetry"></a>
+
+### Telemetry
+
+
+```csharp
+public TelemetryOptions? Telemetry { get; set; }
+```
+
+
+Telemetry configuration. Maps to `telemetry`.
+
+**Value:** [TelemetryOptions](/api/Vercel.AI/TelemetryOptions/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L141)
 
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_Temperature_"></a>
 <a id="Vercel_AI_GenerateObject_StreamObjectOptions_1_Temperature"></a>

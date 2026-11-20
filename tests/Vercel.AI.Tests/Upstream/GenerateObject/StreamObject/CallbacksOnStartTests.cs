@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using Vercel.AI.GenerateObject;
 using Vercel.AI.Provider;
 using static Vercel.AI.Tests.Upstream.GenerateObject.StreamObject.StreamObjectTestSupport;
 
@@ -40,5 +41,32 @@ public sealed class CallbacksOnStartTests
         await Collect(partialObjectStream);
 
         Assert.Equal(["onStart", "doStream"], events);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Id + "should accept deprecated experimental_telemetry as an alias for telemetry",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_accept_deprecated_experimental_telemetry_as_an_alias_for_telemetry()
+    {
+        GenerateObjectStartEvent? startEvent = null;
+        var options = ObjectOptions(Model(TextStream("{ \"content\": \"Hello, world!\" }")));
+        options.ExperimentalTelemetry = new TelemetryOptions
+        {
+            IsEnabled = true,
+            FunctionId = "deprecated-fn",
+        };
+        options.OnStart = (e, _) =>
+        {
+            startEvent = e;
+            return Task.CompletedTask;
+        };
+
+        await Collect(Client().StreamObjectAsync(options).PartialObjectStream());
+
+        Assert.NotNull(startEvent);
+        Assert.Null(typeof(GenerateObjectStartEvent).GetProperty("IsEnabled"));
+        Assert.Null(typeof(GenerateObjectStartEvent).GetProperty("FunctionId"));
     }
 }

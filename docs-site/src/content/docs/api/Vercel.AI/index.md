@@ -98,11 +98,14 @@ Client, text generation, streaming, tools, and agents.
 | [StopCondition](/api/Vercel.AI/StopCondition/) | Stops the tool loop. The default for generateText is IsStepCount(int) of 1. |
 | [StopWhen](/api/Vercel.AI/StopWhen/) | Stop-condition factories. Maps to isStepCount, hasToolCall, and isLoopFinished. |
 | [StreamAbortContext](/api/Vercel.AI/StreamAbortContext/) | Passed to OnAbort. |
+| [StreamTextChunkEvent](/api/Vercel.AI/StreamTextChunkEvent/) | Passed to OnChunk. Maps to the event of onChunk. |
 | [StreamTextInclude](/api/Vercel.AI/StreamTextInclude/) | What streamText keeps of the request and the provider stream. Maps to StreamTextInclude. |
+| [StreamTextOnErrorResult](/api/Vercel.AI/StreamTextOnErrorResult/) | The result of OnErrorRetry. Maps to { retry?: boolean }. |
 | [StreamTextOptions](/api/Vercel.AI/StreamTextOptions/) | Options for CancellationToken). |
 | [StreamTextResult](/api/Vercel.AI/StreamTextResult/) | Result of streamText. Enumerating Stream(CancellationToken) or awaiting Text consumes the same buffered events. |
 | [StreamTextSingleConsumerResult](/api/Vercel.AI/StreamTextSingleConsumerResult/) | A single-consumer view of a text generation, without replay or final content members. Maps to StreamTextSingleConsumerResult. Choose one stream projection. A second one throws. |
 | [StreamTextTransformOptions](/api/Vercel.AI/StreamTextTransformOptions/) | The options a StreamTextTransform receives. Maps to the argument of StreamTextTransform. |
+| [TelemetryOptions](/api/Vercel.AI/TelemetryOptions/) | Telemetry configuration. Maps to TelemetryOptions in telemetry/telemetry-options.ts. |
 | [TextDeltaPart](/api/Vercel.AI/TextDeltaPart/) | Text delta. Maps to text-delta. |
 | [TextEndPart](/api/Vercel.AI/TextEndPart/) | A text block ended. Maps to text-end. |
 | [TextStartPart](/api/Vercel.AI/TextStartPart/) | A text block started. Maps to text-start. |
