@@ -1472,6 +1472,10 @@ public class GenerateTextOptions
     /// <summary>Called after each step. Maps to <c>onStepEnd</c>.</summary>
     public Func<StepResult, CancellationToken, Task>? OnStepEnd { get; set; }
 
+    /// <summary>Deprecated alias for <see cref="OnStepEnd"/>; <see cref="OnStepEnd"/> wins when both are set. Maps to <c>onStepFinish</c>.</summary>
+    [Obsolete("Use OnStepEnd instead.")]
+    public Func<StepResult, CancellationToken, Task>? OnStepFinish { get; set; }
+
     /// <summary>Called when all steps are finished and the response is complete. Maps to <c>onEnd</c>.</summary>
     public Func<GenerateTextResult, CancellationToken, Task>? OnEnd { get; set; }
 
@@ -1851,6 +1855,25 @@ public sealed class StreamTextOptions : GenerateTextOptions
     /// <see cref="GenerateTextOptions.OnEnd"/> are not called. Maps to <c>onAbort</c>.
     /// </summary>
     public Func<StreamAbortContext, CancellationToken, Task>? OnAbort { get; set; }
+
+    /// <summary>
+    /// Called for each part of the stream, after the <see cref="ExperimentalTransform"/> transforms. The stream processing pauses until
+    /// the callback returns. Maps to <c>onChunk</c>.
+    /// </summary>
+    public Func<StreamTextChunkEvent, CancellationToken, Task>? OnChunk { get; set; }
+}
+
+/// <summary>Passed to <see cref="StreamTextOptions.OnChunk"/>. Maps to the event of <c>onChunk</c>.</summary>
+public sealed class StreamTextChunkEvent
+{
+    /// <summary>Creates the event.</summary>
+    public StreamTextChunkEvent(TextStreamPart chunk)
+    {
+        Chunk = chunk;
+    }
+
+    /// <summary>The stream part.</summary>
+    public TextStreamPart Chunk { get; }
 }
 
 /// <summary>Passed to <see cref="StreamTextOptions.OnAbort"/>.</summary>
