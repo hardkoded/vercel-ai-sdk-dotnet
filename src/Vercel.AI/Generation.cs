@@ -4831,17 +4831,42 @@ public sealed class StreamTextResult
             yield break;
         }
 
+        // A failure of the element transform ends the element stream, but not the generation: the stream is read to its end
+        // first, so the producer finishes and the output reports its own error, as in upstream's pipeline.
+        Exception? failure = null;
         await foreach (var (partial, isNewStep) in ReadPartialOutputs(cancellationToken))
         {
-            if (isNewStep)
+            if (isNewStep || failure != null)
             {
                 continue;
             }
 
-            foreach (var element in transform(partial!.Value))
+            using var elements = transform(partial!.Value).GetEnumerator();
+            while (true)
             {
+                JsonElement element;
+                try
+                {
+                    if (!elements.MoveNext())
+                    {
+                        break;
+                    }
+
+                    element = elements.Current;
+                }
+                catch (Exception error) when (error is not OperationCanceledException)
+                {
+                    failure = error;
+                    break;
+                }
+
                 yield return element;
             }
+        }
+
+        if (failure != null)
+        {
+            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failure).Throw();
         }
     }
 
