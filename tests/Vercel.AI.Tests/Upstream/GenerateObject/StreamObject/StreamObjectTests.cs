@@ -9,50 +9,66 @@ using static Vercel.AI.Tests.Upstream.GenerateObject.StreamObject.StreamObjectTe
 
 namespace Vercel.AI.Tests.Upstream.GenerateObject.StreamObject;
 
-/// <summary>Port of the <c>stream-object.test.ts</c> tests that sit outside any <c>describe</c>.</summary>
+/// <summary>Port of the tests of <c>stream-object.test.ts</c> that sit outside any <c>describe</c>.</summary>
 [Collection("LogWarnings")]
 public sealed class StreamObjectTests
 {
-    private const string Id = "packages/ai/src/generate-object/stream-object.test.ts::";
+    private sealed class ValueResult
+    {
+        public string Value { get; set; } = "";
+    }
 
     [Fact]
     [UpstreamTest(
-        Id + "sanitizes provider request URLs in streamed object results and callbacks",
-        Commit = "f3d7a10df6fcf56577d566f13197d5d4a8e7c3f6",
-        Coverage = UpstreamCoverage.Covered
+        "packages/ai/src/generate-object/stream-object.test.ts::sanitizes provider request URLs in streamed object results and callbacks",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "463b139c991058f53e0c21974f62880ba43a85d0"
     )]
     public async Task Sanitizes_provider_request_URLs_in_streamed_object_results_and_callbacks()
     {
-        const string origin = "https://model.example.test:8443";
         var stepEnds = new List<GenerateObjectStepEndEvent>();
-        var finishes = new List<GenerateObjectEndEvent<ContentResult>>();
+        var finishes = new List<GenerateObjectEndEvent<ValueResult>>();
         var model = Model(
-            TextStream("{\"content\":\"hello\"}"),
+            [
+                new TextStartStreamPart("text"),
+                new TextDeltaStreamPart("text", "{\"value\":\"hello\"}"),
+                new TextEndStreamPart("text"),
+                Finish(),
+            ],
             new LanguageModelStreamRequest
             {
                 Url = "https://user:password@model.example.test:8443/private?key=secret#fragment",
             }
         );
-        var options = ObjectOptions(model);
-        options.OnStepEnd = (e, _) =>
-        {
-            stepEnds.Add(e);
-            return Task.CompletedTask;
-        };
-        options.OnFinish = (e, _) =>
-        {
-            finishes.Add(e);
-            return Task.CompletedTask;
-        };
+        var result = Client()
+            .StreamObjectAsync(
+                new StreamObjectOptions<ValueResult>
+                {
+                    Model = model,
+                    Schema =
+                        "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}},\"required\":[\"value\"],\"additionalProperties\":false}",
+                    Prompt = "hello",
+                    SerializerOptions = Json,
+                    OnStepEnd = (@event, _) =>
+                    {
+                        stepEnds.Add(@event);
+                        return Task.CompletedTask;
+                    },
+                    OnFinish = (@event, _) =>
+                    {
+                        finishes.Add(@event);
+                        return Task.CompletedTask;
+                    },
+                }
+            );
 
-        var result = Client().StreamObjectAsync(options);
         await Collect(result.PartialObjectStream());
 
-        Assert.Equal(origin, (await result.Request).Url);
-        Assert.Equal(origin, Assert.Single(stepEnds).Request.Url);
-        Assert.Equal(origin, Assert.Single(finishes).Request.Url);
+        Assert.Equal("https://model.example.test:8443", (await result.Request).Url);
+        Assert.Equal("https://model.example.test:8443", Assert.Single(stepEnds).Request.Url);
+        Assert.Equal("https://model.example.test:8443", Assert.Single(finishes).Request.Url);
         var serialized = JsonSerializer.Serialize(
-            new[] { (await result.Request).Url, stepEnds[0].Request.Url, finishes[0].Request.Url }
+            new[] { stepEnds[0].Request.Url, finishes[0].Request.Url }
         );
         Assert.DoesNotMatch("password|private|secret|fragment", serialized);
     }

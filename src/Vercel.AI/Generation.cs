@@ -89,8 +89,8 @@ internal static class Generation
     /// Runs <c>prepareStep</c> and applies its instructions and messages overrides, which carry forward to later steps.
     /// The prompt keeps the instructions as leading system messages, so <paramref name="instructionCount"/> marks where the messages start.
     /// </summary>
-    private static PrepareStepUpdate? PrepareStep(
-        GenerateTextOptions options,
+    private static PrepareStepUpdate? PrepareStep<TOptions>(
+        ref TOptions options,
         IReadOnlyList<StepResult> steps,
         ILanguageModel model,
         Instructions? initialInstructions,
@@ -101,6 +101,7 @@ internal static class Generation
         ref List<ModelMessage> messages,
         ref int instructionCount
     )
+        where TOptions : GenerateTextOptions
     {
         var update = options.PrepareStep?.Invoke(
             new PrepareStepContext(
@@ -116,8 +117,18 @@ internal static class Generation
             {
                 ExperimentalSteeringMessages = steeringMessages.Count > 0 ? steeringMessages : null,
                 ExperimentalSandbox = options.ExperimentalSandbox,
+                ToolsContext = options.ToolsContext ?? StepResult.EmptyToolsContext,
+                RuntimeContext = options.RuntimeContext ?? StepResult.EmptyRuntimeContext,
             }
         );
+        // The contexts from prepareStep apply to this step and all later steps:
+        if (update?.ToolsContext != null || update?.RuntimeContext != null)
+        {
+            options = (TOptions)options.ShallowCopy();
+            options.ToolsContext = update.ToolsContext ?? options.ToolsContext;
+            options.RuntimeContext = update.RuntimeContext ?? options.RuntimeContext;
+        }
+
         if (update?.Instructions != null || update?.Messages != null)
         {
             instructions = update.Instructions ?? instructions;
@@ -159,7 +170,9 @@ internal static class Generation
         int InstructionCount,
         ILanguageModel Model,
         IReadOnlyList<UserModelMessage> SteeringMessages,
-        IReadOnlyList<UserModelMessage> DeliveredSteeringMessages
+        IReadOnlyList<UserModelMessage> DeliveredSteeringMessages,
+        IReadOnlyDictionary<string, JsonElement>? ToolsContext,
+        IReadOnlyDictionary<string, object?>? RuntimeContext
     )
     {
         // The start-step part of the step was streamed by a cancelled model call.
@@ -392,6 +405,9 @@ internal static class Generation
                     messages = [.. redo.Messages];
                     instructionCount = redo.InstructionCount;
                     current = redo.Model;
+                    options = options.ShallowCopy();
+                    options.ToolsContext = redo.ToolsContext;
+                    options.RuntimeContext = redo.RuntimeContext;
                     steeringMessages = [.. redo.SteeringMessages, .. takenMessages];
                 }
 
@@ -402,10 +418,12 @@ internal static class Generation
                     instructionCount,
                     current,
                     steeringMessages,
-                    []
+                    [],
+                    options.ToolsContext,
+                    options.RuntimeContext
                 );
                 var update = PrepareStep(
-                    options,
+                    ref options,
                     steps,
                     current,
                     initialInstructions,
@@ -1159,6 +1177,9 @@ internal static class Generation
                     messages = [.. redo.Messages];
                     instructionCount = redo.InstructionCount;
                     current = redo.Model;
+                    options = (StreamTextOptions)options.ShallowCopy();
+                    options.ToolsContext = redo.ToolsContext;
+                    options.RuntimeContext = redo.RuntimeContext;
                     steeringMessages = [.. redo.SteeringMessages, .. takenMessages];
                 }
 
@@ -1169,10 +1190,12 @@ internal static class Generation
                     instructionCount,
                     current,
                     steeringMessages,
-                    []
+                    [],
+                    options.ToolsContext,
+                    options.RuntimeContext
                 );
                 var update = PrepareStep(
-                    options,
+                    ref options,
                     steps,
                     current,
                     initialInstructions,
