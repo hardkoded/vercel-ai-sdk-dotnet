@@ -15,7 +15,7 @@ public sealed class GatewayImageModelDoGenerateLargeImagesTests
     private const string Prefix =
         "packages/gateway/src/gateway-image-model.test.ts::GatewayImageModel > doGenerate > large images with experimental streaming decoding::";
 
-    private const string Commit = "89aff56";
+    private const string Commit = "89aff561654b229271a3995bea3d0ff1042fecd2";
 
     private const string StreamingOptions =
         "{\"gateway\":{\"experimental_streamingImageDecoding\":true}}";

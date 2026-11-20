@@ -14,7 +14,7 @@ public sealed class ReadResponseWithSizeLimitOnChunkTests
     private const string Prefix =
         "packages/provider-utils/src/read-response-with-size-limit.test.ts::readResponseWithSizeLimit > onChunk::";
 
-    private const string Commit = "89aff56";
+    private const string Commit = "89aff561654b229271a3995bea3d0ff1042fecd2";
 
     // Like createMockResponse: chunks of 4 bytes, and a record of whether the body was released.
     private sealed class MockContent : HttpContent

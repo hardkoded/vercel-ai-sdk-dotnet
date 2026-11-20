@@ -13,7 +13,7 @@ namespace Vercel.AI.Tests.Upstream.ProviderUtils.JsonBinaryFieldScanner;
 internal static class ScannerSupport
 {
     /// <summary>The upstream commit that adds the scanner tests.</summary>
-    public const string Commit = "89aff56";
+    public const string Commit = "89aff561654b229271a3995bea3d0ff1042fecd2";
 
     public const string TestFile =
         "packages/provider-utils/src/json-binary-field-scanner.test.ts::";

@@ -21,7 +21,7 @@ public sealed class CreateJsonResponseHandlerWithExperimentalBinaryFieldsTests
     private const string Prefix =
         "packages/provider-utils/src/response-handler.test.ts::createJsonResponseHandler with experimental_binaryFields::";
 
-    private const string Commit = "89aff56";
+    private const string Commit = "89aff561654b229271a3995bea3d0ff1042fecd2";
 
     private static readonly string[] BinaryFields = ["images[*]"];
 
