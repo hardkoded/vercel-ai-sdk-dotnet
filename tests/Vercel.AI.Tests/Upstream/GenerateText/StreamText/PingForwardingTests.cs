@@ -79,18 +79,14 @@ public sealed class PingForwardingTests
                 }
             );
 
-        // The port rethrows the no-output error from the stream after yielding the parts.
         var chunks = new List<TextStreamPart>();
-        await Assert.ThrowsAsync<NoOutputGeneratedException>(async () =>
+        await foreach (var part in result.Stream())
         {
-            await foreach (var part in result.Stream())
-            {
-                chunks.Add(part);
-            }
-        });
+            chunks.Add(part);
+        }
 
         Assert.Contains(chunks, chunk => chunk is PingPart);
-        Assert.Contains(chunks, chunk => chunk is ErrorPart);
+        Assert.Contains(chunks, chunk => chunk is ErrorPart { Error: NoOutputGeneratedException });
         await Assert.ThrowsAsync<NoOutputGeneratedException>(() => result.Steps);
     }
 

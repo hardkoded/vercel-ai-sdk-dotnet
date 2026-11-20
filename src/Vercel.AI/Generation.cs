@@ -603,9 +603,9 @@ internal static class Generation
                     )
                     .ConfigureAwait(false);
                 steps.Add(step);
-                if (options.OnStepEnd != null)
+                if (ResolveOnStepEnd(options) is { } onStepEnd)
                 {
-                    await options.OnStepEnd(step, cancellationToken).ConfigureAwait(false);
+                    await onStepEnd(step, cancellationToken).ConfigureAwait(false);
                 }
 
                 TrackPendingDeferredToolCalls(step, options.Tools, pendingDeferredToolCalls);
@@ -718,6 +718,16 @@ internal static class Generation
         }
     }
 
+    // Maps to `onStepEnd ?? onStepFinish`.
+    internal static Func<StepResult, CancellationToken, Task>? ResolveOnStepEnd(
+        GenerateTextOptions options
+    )
+    {
+#pragma warning disable CS0618 // OnStepFinish is the deprecated alias of OnStepEnd
+        return options.OnStepEnd ?? options.OnStepFinish;
+#pragma warning restore CS0618
+    }
+
     // generateText does not stream, so a firstChunkMs or chunkMs timeout has no effect.
     private static void WarnUnsupportedTimeouts(GenerateTextOptions options, ILanguageModel model)
     {
@@ -788,15 +798,28 @@ internal static class Generation
     )
     {
         Vercel.AI.Operations.OperationRetry.ResolveMaxRetries(options.MaxRetries);
+        var streamRetries = Vercel.AI.Operations.OperationRetry.ResolveMaxRetries(
+            options.StreamRetries,
+            "streamRetries",
+            0
+        );
+        var errors = new StreamTextErrorHandling(options);
         ToolCallConcurrencyScheduler.PrepareToolCallConcurrency(options.ToolCallConcurrency);
+        // The consumers read this buffer. The event processor feeds it.
         var buffer = new PartBuffer
         {
             SingleConsumer = singleConsumer,
             HighWaterMark = singleConsumer ? 1 : null,
         };
+        // The event processor reads this buffer: the stream after the transforms and the output transform.
+        var recordedBuffer = new PartBuffer
+        {
+            SingleConsumer = true,
+            HighWaterMark = singleConsumer ? 1 : null,
+        };
         if (options.Output is { IsJson: true } outputSpecification)
         {
-            buffer.Transform = new OutputTransformStream(outputSpecification).Transform;
+            recordedBuffer.Transform = new OutputTransformStream(outputSpecification).Transform;
         }
 
         var textSource = new TaskCompletionSource<string>(
@@ -855,23 +878,63 @@ internal static class Generation
 
         // Decide before execution so a getter access cannot change collection. Maps to the collectContent of streamTextLowMemory.
         var collectContent = !singleConsumer || NeedsContentCollection(options);
-        var producerBuffer = buffer;
+        var pipeline = new CancellationTokenSource();
+        recordedBuffer.OnConsumerStop = abort.Stop;
+        buffer.OnConsumerStop = () =>
+        {
+            abort.Stop();
+            try
+            {
+                pipeline.Cancel();
+            }
+            catch (Exception exception)
+                when (exception is AggregateException or ObjectDisposedException) { }
+        };
+        var producerBuffer = recordedBuffer;
         if (options.ExperimentalTransform is { Count: > 0 } transforms)
         {
-            // The producer writes to its own buffer. The transforms read it and feed the buffer that consumers read.
+            // The producer writes to its own buffer. The transforms read it and feed the buffer that the event processor reads.
             producerBuffer = new PartBuffer
             {
-                OnConsumerStop = abort.Stop,
-                SingleConsumer = singleConsumer,
+                SingleConsumer = true,
                 HighWaterMark = singleConsumer ? 1 : null,
+                OnConsumerStop = abort.Stop,
             };
-            ApplyStreamTextTransforms(producerBuffer, buffer, transforms, options.Tools, abort);
-        }
-        else
-        {
-            buffer.OnConsumerStop = abort.Stop;
+            ApplyStreamTextTransforms(
+                producerBuffer,
+                recordedBuffer,
+                transforms,
+                options.Tools,
+                abort,
+                pipeline.Token
+            );
         }
 
+        var eventProcessor = new StreamTextEventProcessor(
+            options,
+            abort,
+            steeringRun,
+            textSource,
+            finishSource,
+            usageSource,
+            stepsSource,
+            outputSource,
+            errors,
+            collectContent
+        );
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await eventProcessor
+                    .RunAsync(recordedBuffer, buffer, pipeline.Token)
+                    .ConfigureAwait(false);
+            }
+            finally
+            {
+                pipeline.Dispose();
+            }
+        });
         _ = Task.Run(() =>
             ProduceAsync(
                 model,
@@ -882,11 +945,9 @@ internal static class Generation
                 abort,
                 timeouts,
                 collectContent,
-                textSource,
-                finishSource,
-                usageSource,
-                stepsSource,
-                outputSource,
+                eventProcessor,
+                errors,
+                streamRetries,
                 initialResponseMessagesSource
             )
         );
@@ -929,25 +990,19 @@ internal static class Generation
         PartBuffer target,
         IReadOnlyList<StreamTextTransform> transforms,
         IReadOnlyList<Tool>? tools,
-        StreamAbort abort
+        StreamAbort abort,
+        CancellationToken cancellation
     )
     {
-        var cancellation = new CancellationTokenSource();
         var stopped = 0;
-        target.OnConsumerStop = () =>
-        {
-            abort.Stop();
-            try
-            {
-                cancellation.Cancel();
-            }
-            catch (Exception exception)
-                when (exception is AggregateException or ObjectDisposedException) { }
-        };
+        StreamRetryBoundaryPart? pendingBoundary = null;
+        var sourceReader = source.Read(cancellation).GetAsyncEnumerator(cancellation);
 
         void StopStream()
         {
             Volatile.Write(ref stopped, 1);
+            // The stream ends, and the results settle with what the transforms let through, like upstream's terminate.
+            abort.StoppedByTransform = true;
             abort.Stop();
         }
 
@@ -956,10 +1011,18 @@ internal static class Generation
             [EnumeratorCancellation] CancellationToken cancellationToken
         )
         {
-            await foreach (var part in source.Read(cancellationToken).ConfigureAwait(false))
+            // One reader serves all segments, because the buffer releases the parts that were read.
+            while (await sourceReader.MoveNextAsync().ConfigureAwait(false))
             {
+                var part = sourceReader.Current;
                 if (Volatile.Read(ref stopped) == 1)
                 {
+                    yield break;
+                }
+
+                if (part is StreamRetryBoundaryPart boundary)
+                {
+                    pendingBoundary = boundary;
                     yield break;
                 }
 
@@ -971,19 +1034,32 @@ internal static class Generation
         {
             try
             {
-                var stream = Gate(cancellation.Token);
+                // Each segment between two retry boundaries is transformed on its own, with fresh transforms. The boundary is
+                // intercepted outside the user transforms, so they may filter or reconstruct any public part.
                 var transformOptions = new StreamTextTransformOptions(tools, StopStream);
-                foreach (var transform in transforms)
+                while (true)
                 {
-                    stream = transform(transformOptions)(stream, cancellation.Token);
-                }
+                    pendingBoundary = null;
+                    var stream = Gate(cancellation);
+                    foreach (var transform in transforms)
+                    {
+                        stream = transform(transformOptions)(stream, cancellation);
+                    }
 
-                await foreach (
-                    var part in stream.WithCancellation(cancellation.Token).ConfigureAwait(false)
-                )
-                {
-                    await target.WaitForRoomAsync(cancellation.Token).ConfigureAwait(false);
-                    target.Add(part);
+                    await foreach (
+                        var part in stream.WithCancellation(cancellation).ConfigureAwait(false)
+                    )
+                    {
+                        target.Add(part);
+                    }
+
+                    if (pendingBoundary != null)
+                    {
+                        target.Add(pendingBoundary);
+                        continue;
+                    }
+
+                    break;
                 }
 
                 target.Complete();
@@ -997,6 +1073,10 @@ internal static class Generation
                 abort.Stop();
                 target.Fail(exception);
             }
+            finally
+            {
+                await sourceReader.DisposeAsync().ConfigureAwait(false);
+            }
         });
     }
 
@@ -1009,20 +1089,22 @@ internal static class Generation
         StreamAbort abort,
         CallTimeouts? timeouts,
         bool collectContent,
-        TaskCompletionSource<string> textSource,
-        TaskCompletionSource<FinishReason> finishSource,
-        TaskCompletionSource<LanguageModelUsage> usageSource,
-        TaskCompletionSource<IReadOnlyList<StepResult>> stepsSource,
-        TaskCompletionSource<JsonElement?> outputSource,
+        StreamTextEventProcessor recorder,
+        StreamTextErrorHandling errors,
+        int streamRetries,
         TaskCompletionSource<IReadOnlyList<ModelMessage>> initialResponseMessagesSource
     )
     {
-        var steps = new List<StepResult>();
+        // The step loop sees the steps that the event processor recorded from the transformed stream, as upstream.
+        var steps = recorder.Steps;
         if (options.OnAbort is { } onAbort)
         {
             // An abort that follows the consumer's cancellation still reaches onAbort, like upstream's same-tick cancel-then-abort.
             abort.OnLateAbort = error =>
-                onAbort(new StreamAbortContext(steps.ToArray(), error), CancellationToken.None);
+                onAbort(
+                    new StreamAbortContext(recorder.SnapshotSteps(), error),
+                    CancellationToken.None
+                );
         }
         var cancellationToken = abort.Token;
         try
@@ -1038,6 +1120,7 @@ internal static class Generation
             var current = model;
             buffer.Add(new StartPart());
             var callId = (options.GenerateCallId ?? NewCallId)();
+            recorder.CallId = callId;
             await ProcessInitialApprovalsAsync(
                     options,
                     messages,
@@ -1049,6 +1132,7 @@ internal static class Generation
                     callId
                 )
                 .ConfigureAwait(false);
+            recorder.InitialResponseMessages = responseMessages.ToArray();
             initialResponseMessagesSource.TrySetResult(responseMessages.ToArray());
             var textPartIds = new PartIdReserver();
             var reasoningPartIds = new PartIdReserver();
@@ -1128,7 +1212,8 @@ internal static class Generation
                 var now = options.NowMs ?? DefaultNowMs;
                 var stepStartMs = now();
                 // The start-step part of a step is streamed once, even when a cancelled model call already streamed it:
-                var stepStarted = redo?.StartStepStreamed == true;
+                var startStepStreamed = redo?.StartStepStreamed == true;
+                var stepStarted = false;
                 var stepResponseId = Vercel.AI.ProviderUtils.JsonValues.GenerateId("aitxt-");
                 var stepResponseTimestamp = DateTimeOffset.UtcNow;
                 var stepResponseModelId = current.ModelId;
@@ -1145,6 +1230,8 @@ internal static class Generation
                 JsonElement? providerMetadata = null;
                 IReadOnlyList<CallWarning>? warnings = null;
                 var receivedOutput = false;
+                // A model stream that ended with an error or a finish part is complete. Maps to hasReceivedTerminalChunk.
+                var receivedTerminal = false;
                 var usage = LanguageModelUsage.Null;
                 ModelCallPerformance? modelCallPerformance = null;
                 ToolChoiceViolationException? toolChoiceViolation = null;
@@ -1196,49 +1283,65 @@ internal static class Generation
                     redo = stepStart with
                     {
                         DeliveredSteeringMessages = stepDeliveredMessages,
-                        StartStepStreamed = stepStarted,
+                        StartStepStreamed = startStepStreamed || stepStarted,
                     };
                     continue;
                 }
                 catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
                 {
+                    // The event processor reports the error to onError.
                     buffer.Add(new ErrorPart(exception.Message) { Error = exception });
-                    if (options.OnError != null)
-                    {
-                        await options.OnError(exception, cancellationToken).ConfigureAwait(false);
-                    }
-
-                    steeringRun?.End(SteeringNotDeliveredReason.Error);
                     if (steps.Count == 0)
                     {
-                        var noOutput = new NoOutputGeneratedException(
-                            "No output generated. Check the stream for errors."
-                        );
+                        // The event processor rejects the results, because no step was recorded.
                         if (!abort.TryFinish())
                         {
                             throw abort.Error!;
                         }
 
                         buffer.Complete();
-                        textSource.TrySetException(noOutput);
-                        finishSource.TrySetException(noOutput);
-                        usageSource.TrySetException(noOutput);
-                        stepsSource.TrySetException(noOutput);
                         return;
                     }
 
                     break;
                 }
 
-                var stepRequest = new LanguageModelRequestMetadata
-                {
-                    Body = options.Include?.RequestBody == true ? streamResult.Request?.Body : null,
-                    Messages = options.Include?.RequestMessages == true ? stepMessages : null,
-                };
+                LanguageModelRequestMetadata RequestMetadata(JsonElement? requestBody) =>
+                    new()
+                    {
+                        Body = options.Include?.RequestBody == true ? requestBody : null,
+                        Messages = options.Include?.RequestMessages == true ? stepMessages : null,
+                    };
+
+                var stepRequest = RequestMetadata(streamResult.Request?.Body);
+                // The start-step part of a step is streamed once. A model call that follows a cancelled one sends a boundary instead,
+                // which replaces what the step recorded for the cancelled call, such as its request and warnings.
+                TextStreamPart StepStart(IReadOnlyList<CallWarning>? stepWarnings) =>
+                    startStepStreamed
+                        ? new StreamRetryBoundaryPart(stepRequest, stepWarnings)
+                        : new StartStepPart(stepWarnings, stepRequest);
+
                 // executeToolsFromStream decides the approvals as the calls arrive and runs the tools at the end of the model call.
+                // With streamRetries, a provider error part reruns the model call of this step. The tool parts of an attempt
+                // wait until it ends.
+                var retry =
+                    options.StreamRetries == null
+                        ? null
+                        : new StreamTextRetry(
+                            options,
+                            abort,
+                            streamResult,
+                            streamRetries,
+                            errors,
+                            retryToken =>
+                                LanguageModelCallStreaming.StreamLanguageModelCall(
+                                    streamOptions,
+                                    retryToken
+                                )
+                        );
                 var enumerator = ExecuteToolsFromStream
                     .Execute(
-                        streamResult.Stream,
+                        retry == null ? streamResult.Stream : retry.Read(attemptToken),
                         StepOptions(options, update),
                         callId,
                         stepMessages,
@@ -1337,10 +1440,13 @@ internal static class Generation
                             receivedOutput = true;
                         }
 
-                        if (!stepStarted && part is not ModelCallStartPart)
+                        if (
+                            !stepStarted
+                            && part is not (ModelCallStartPart or StreamRetryBoundaryPart)
+                        )
                         {
                             stepStarted = true;
-                            buffer.Add(new StartStepPart(null, stepRequest));
+                            buffer.Add(StepStart(null));
                         }
 
                         switch (part)
@@ -1571,6 +1677,7 @@ internal static class Generation
                                 buffer.Add(reasoningFilePart);
                                 break;
                             case ModelCallEndPart modelCallEnd:
+                                receivedTerminal = true;
                                 finish = modelCallEnd.FinishReason;
                                 rawFinish = modelCallEnd.RawFinishReason;
                                 usage = modelCallEnd.Usage;
@@ -1581,17 +1688,9 @@ internal static class Generation
                                 toolChoiceViolation = violation;
                                 break;
                             case ErrorPart error:
+                                receivedTerminal = true;
+                                finish = FinishReason.Error;
                                 buffer.Add(error);
-                                if (options.OnError != null)
-                                {
-                                    await options
-                                        .OnError(
-                                            error.Error ?? new AiSdkException(error.Message),
-                                            cancellationToken
-                                        )
-                                        .ConfigureAwait(false);
-                                }
-
                                 break;
                             case ModelCallResponseMetadataPart responseMetadata:
                                 stepResponseId = responseMetadata.Id ?? stepResponseId;
@@ -1600,12 +1699,41 @@ internal static class Generation
                                 stepResponseModelId = responseMetadata.ModelId
                                     ?? stepResponseModelId;
                                 break;
+                            case StreamRetryBoundaryPart boundary:
+                                // The model call was rerun. What the failed attempt produced does not belong to the step.
+                                text.Clear();
+                                textBlocks.Clear();
+                                reasoningBlocks.Clear();
+                                contentOrder.Clear();
+                                toolCalls.Clear();
+                                emittedResultIds.Clear();
+                                streamedApprovals = new StreamedApprovals();
+                                finish = null;
+                                rawFinish = null;
+                                providerMetadata = null;
+                                receivedOutput = false;
+                                receivedTerminal = false;
+                                usage = LanguageModelUsage.Null;
+                                modelCallPerformance = null;
+                                toolChoiceViolation = null;
+                                stepResponseId = Vercel.AI.ProviderUtils.JsonValues.GenerateId(
+                                    "aitxt-"
+                                );
+                                stepResponseTimestamp = DateTimeOffset.UtcNow;
+                                stepResponseModelId = current.ModelId;
+                                warnings = boundary.Warnings;
+                                // The retried attempt gets its own timeout windows.
+                                timeouts?.ClearModelOutput();
+                                timeouts?.StartFirstChunk();
+                                stepRequest = RequestMetadata(boundary.Request.Body);
+                                buffer.Add(new StreamRetryBoundaryPart(stepRequest, warnings));
+                                break;
                             case ModelCallStartPart start:
                                 warnings = start.Warnings;
                                 if (!stepStarted)
                                 {
                                     stepStarted = true;
-                                    buffer.Add(new StartStepPart(start.Warnings, stepRequest));
+                                    buffer.Add(StepStart(start.Warnings));
                                 }
 
                                 break;
@@ -1637,7 +1765,9 @@ internal static class Generation
                     timeouts?.ClearModelOutput();
                     try
                     {
-                        await abort.DisposeAsync(disposal).ConfigureAwait(false);
+                        await abort
+                            .DisposeAsync(retry?.Current.Disposal ?? disposal)
+                            .ConfigureAwait(false);
                     }
                     finally
                     {
@@ -1687,7 +1817,7 @@ internal static class Generation
                     redo = stepStart with
                     {
                         DeliveredSteeringMessages = stepDeliveredMessages,
-                        StartStepStreamed = stepStarted,
+                        StartStepStreamed = startStepStreamed || stepStarted,
                     };
                     continue;
                 }
@@ -1695,17 +1825,26 @@ internal static class Generation
                 redo = null;
                 if (!stepStarted)
                 {
-                    buffer.Add(new StartStepPart(null, stepRequest));
+                    buffer.Add(StepStart(null));
                 }
 
                 // A stream that ends without a finish part and without output is rejected instead of recorded as an empty step.
                 // An incomplete stream with partial output keeps the partial result.
-                if (finish == null && !receivedOutput)
+                if (!receivedTerminal && !receivedOutput)
                 {
                     const string noOutputMessage =
                         "No output generated. The model stream ended without a finish chunk.";
-                    buffer.Add(new ErrorPart(noOutputMessage));
-                    throw new NoOutputGeneratedException(noOutputMessage);
+                    // The event processor reports the error and rejects the results.
+                    var noOutputError = new NoOutputGeneratedException(noOutputMessage);
+                    buffer.Add(new ErrorPart(noOutputMessage) { Error = noOutputError });
+                    steeringRun?.End(SteeringNotDeliveredReason.Error);
+                    if (!abort.TryFinish())
+                    {
+                        throw abort.Error!;
+                    }
+
+                    buffer.Complete();
+                    return;
                 }
 
                 var generated = new LanguageModelGenerateResult(
@@ -1725,14 +1864,16 @@ internal static class Generation
                     stepResponseId,
                     stepResponseTimestamp,
                     stepResponseModelId,
-                    streamResult.Response?.Headers
+                    (retry?.Current ?? streamResult).Response?.Headers
                 );
+                // The step that the event processor records from the transformed parts replaces this one. This one carries
+                // the metadata of the model call, and its messages are not used.
                 var step = await FinishStepAsync(
                         generated,
                         StepOptions(options, update),
-                        messages,
+                        [.. messages],
                         instructionCount,
-                        responseMessages,
+                        [],
                         current,
                         cancellationToken,
                         new StepTiming(now, stepStartMs, responseTimeMs, Array.Empty<double>())
@@ -1746,7 +1887,8 @@ internal static class Generation
                         stepDeliveredMessages,
                         null,
                         callId,
-                        steps.Count
+                        steps.Count,
+                        resolveFiles: false
                     )
                     .ConfigureAwait(false);
                 foreach (var toolResult in step.ToolResults)
@@ -1764,12 +1906,18 @@ internal static class Generation
                 }
 
                 buffer.Add(new StepFinishPart(step, stepResponse, rawFinish));
-                steps.Add(step);
-                if (options.OnStepEnd != null)
+
+                // The next step needs the step as the event processor recorded it from the transformed stream.
+                if (!await recorder.WaitForStepAsync(steps.Count + 1).ConfigureAwait(false))
                 {
-                    await options.OnStepEnd(step, cancellationToken).ConfigureAwait(false);
+                    // A transform stopped the stream before the step finished.
+                    cancellationToken.ThrowIfCancellationRequested();
+                    break;
                 }
 
+                step = steps[steps.Count - 1];
+                messages.AddRange(step.Response.Messages);
+                responseMessages.AddRange(step.Response.Messages);
                 TrackPendingDeferredToolCalls(step, options.Tools, pendingDeferredToolCalls);
                 if (
                     !ShouldStartNextStep(
@@ -1788,31 +1936,20 @@ internal static class Generation
 
             steeringRun?.End(steeringEndReason);
             timeouts?.EndStep();
-            // A model answer that does not parse into the output fails the output promise only, not the stream.
-            Exception? outputError = null;
-            GenerateTextResult result;
-            try
+            // The finish part carries the total usage and the finish reason of the last step. The results are settled
+            // by the event processor, from the part as the transforms left it.
+            var totalUsage = LanguageModelUsage.Null;
+            foreach (var recordedStep in steps)
             {
-                result = await ToResultAsync(steps, responseMessages, options, cancellationToken)
-                    .ConfigureAwait(false);
-            }
-            catch (NoObjectGeneratedException error)
-            {
-                outputError = error;
-                result = await ToResultAsync(
-                        steps,
-                        responseMessages,
-                        options,
-                        cancellationToken,
-                        parseOutput: false
-                    )
-                    .ConfigureAwait(false);
+                totalUsage = LanguageModelUsage.Add(totalUsage, recordedStep.Usage);
             }
 
+            var finalFinishReason =
+                steps.Count == 0 ? FinishReason.Other : steps[steps.Count - 1].FinishReason;
             if (telemetry != null && scope != null)
             {
-                telemetry.OnUsage(scope, result.Usage);
-                telemetry.OnFinish(scope, result.FinishReason);
+                telemetry.OnUsage(scope, totalUsage);
+                telemetry.OnFinish(scope, finalFinishReason);
             }
 
             if (!abort.TryFinish())
@@ -1820,42 +1957,7 @@ internal static class Generation
                 throw abort.Error!;
             }
 
-            buffer.Add(new FinishPart(result.FinishReason, result.Usage));
-            textSource.TrySetResult(result.Text);
-            finishSource.TrySetResult(result.FinishReason);
-            usageSource.TrySetResult(result.Usage);
-            if (outputError != null)
-            {
-                outputSource.TrySetException(outputError);
-            }
-            else
-            {
-                // Without a JSON output, the output is the text. Maps to `output ?? text()`.
-                outputSource.TrySetResult(
-                    result.Output
-                        ?? (
-                            options.Output is { IsJson: true }
-                                ? null
-                                : JsonSerializer.SerializeToElement(result.Text)
-                        )
-                );
-            }
-            stepsSource.TrySetResult(result.Steps);
-#pragma warning disable CS0618 // OnFinish is the deprecated alias of OnEnd
-            var onEnd = options.OnEnd ?? options.OnFinish;
-#pragma warning restore CS0618
-            if (onEnd != null)
-            {
-                try
-                {
-                    await onEnd(result, cancellationToken).ConfigureAwait(false);
-                }
-                catch (Exception) when (!cancellationToken.IsCancellationRequested)
-                {
-                    // Errors in callbacks do not break the generation flow (upstream notify).
-                }
-            }
-
+            buffer.Add(new FinishPart(finalFinishReason, totalUsage));
             buffer.Complete();
         }
         catch (Exception exception)
@@ -1868,39 +1970,20 @@ internal static class Generation
             );
             if (abort.Stopped)
             {
-                // The consumer stopped reading. Nobody waits for the stream, so there is nothing to report.
-                textSource.TrySetCanceled();
-                finishSource.TrySetCanceled();
-                usageSource.TrySetCanceled();
-                stepsSource.TrySetCanceled();
+                // The consumer stopped reading. The event processor cancels the results.
                 buffer.Complete();
                 return;
             }
 
             if (abort.Error is { } abortError)
             {
-                await FinishAbortAsync(options, buffer, steps, abortError).ConfigureAwait(false);
+                await FinishAbortAsync(options, buffer, recorder.SnapshotSteps(), abortError)
+                    .ConfigureAwait(false);
                 return;
             }
 
-            textSource.TrySetException(exception);
-            finishSource.TrySetException(exception);
-            usageSource.TrySetException(exception);
-            stepsSource.TrySetException(exception);
-            var streamError = exception;
-            if (options.OnError != null)
-            {
-                try
-                {
-                    await options.OnError(exception, CancellationToken.None).ConfigureAwait(false);
-                }
-                catch (Exception callback)
-                {
-                    streamError = callback;
-                }
-            }
-
-            buffer.Fail(streamError);
+            // The event processor settles the results and reports the error to onError.
+            buffer.Fail(exception);
         }
         finally
         {
@@ -1955,7 +2038,7 @@ internal static class Generation
     private static async Task FinishAbortAsync(
         StreamTextOptions options,
         PartBuffer buffer,
-        List<StepResult> steps,
+        IReadOnlyList<StepResult> steps,
         Exception error
     )
     {
@@ -2354,7 +2437,8 @@ internal static class Generation
         IReadOnlyList<UserModelMessage>? steeringMessages = null,
         Action<ExecutedTool>? onPreliminaryToolResult = null,
         string? callId = null,
-        int stepNumber = 0
+        int stepNumber = 0,
+        bool resolveFiles = true
     )
     {
         var toolExecutionMs = new Dictionary<string, double>(StringComparer.Ordinal);
@@ -2374,7 +2458,7 @@ internal static class Generation
                     generated.Content
                 ),
                 GeneratedToolCall toolCall => ParseProviderExecutedInput(options, toolCall),
-                GeneratedFileUrl remote => await ResolveGeneratedFileDataAsync(
+                GeneratedFileUrl remote when resolveFiles => await ResolveGeneratedFileDataAsync(
                         remote,
                         options.ExperimentalDownload,
                         cancellationToken
@@ -2794,7 +2878,7 @@ internal static class Generation
 
     // .NET-only: the port keeps ExecutedTool apart from GeneratedToolResult, where upstream has one tool-result part. This maps the executed
     // tool to the step content tool-result that upstream builds in runToolsTransformation/generateText. ToResponseMessages builds its model output.
-    private static GeneratedToolResult ToGeneratedToolResult(ExecutedTool executed) =>
+    internal static GeneratedToolResult ToGeneratedToolResult(ExecutedTool executed) =>
         new(
             executed.ToolCallId,
             executed.ToolName,
@@ -3860,12 +3944,13 @@ internal static class Generation
         }
     }
 
-    private static async Task<GenerateTextResult> ToResultAsync(
+    internal static async Task<GenerateTextResult> ToResultAsync(
         List<StepResult> steps,
         List<ModelMessage> responseMessages,
         GenerateTextOptions options,
         CancellationToken cancellationToken,
-        bool parseOutput = true
+        bool parseOutput = true,
+        LanguageModelUsage? totalUsage = null
     )
     {
         var outputSpec = parseOutput ? options.Output : null;
@@ -3888,6 +3973,8 @@ internal static class Generation
             usage = LanguageModelUsage.Add(usage, step.Usage);
             sources.AddRange(step.Sources);
         }
+
+        usage = totalUsage ?? usage;
 
         // A provider-selected structured output text replaces the step text for JSON output only. An empty selection
         // is explicit, so it is parsed (and rejected) instead of falling back to the step text.
@@ -4019,6 +4106,9 @@ internal static class Generation
 // Settles a streamText call exactly once: as aborted, or as finished. Whichever comes first wins.
 internal sealed class StreamAbort
 {
+    // Set when a stream transform called stopStream. The event processor then finishes the results instead of cancelling them.
+    public volatile bool StoppedByTransform;
+
     private static readonly object Done = new();
     private static readonly TimeSpan StopAbortGrace = TimeSpan.FromSeconds(1);
     private readonly CancellationTokenSource _cancellation = new();
@@ -4288,7 +4378,7 @@ internal sealed class OutputTransformStream
 
     public IEnumerable<TextStreamPart> Transform(TextStreamPart chunk)
     {
-        if (chunk is StartStepPart)
+        if (chunk is StartStepPart or StreamRetryBoundaryPart)
         {
             ResetOutputState();
         }
