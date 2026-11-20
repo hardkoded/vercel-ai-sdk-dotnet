@@ -125,7 +125,12 @@ internal static class OpenAIResponsesSupport
         string fixture
     )
     {
-        var expected = JsonNode.Parse(Fixture(fixture + ".generate.snap.json"))!.AsArray();
+        AssertContent(content, JsonNode.Parse(Fixture(fixture + ".generate.snap.json"))!.AsArray());
+    }
+
+    /// <summary>Asserts generated content against an upstream inline snapshot, written as JSON.</summary>
+    internal static void AssertContent(IReadOnlyList<GeneratedContent> content, JsonArray expected)
+    {
         var actual = new JsonArray();
         foreach (var part in content)
         {
