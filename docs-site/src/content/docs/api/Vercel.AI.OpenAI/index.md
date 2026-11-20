@@ -64,9 +64,16 @@ OpenAI Chat Completions, Responses, images, speech, and transcription.
 | [OpenAIRealtimeModelLiveWebRTCSession](/api/Vercel.AI.OpenAI/OpenAIRealtimeModelLiveWebRTCSession/) | The answer of a Live WebRTC session creation. Maps to the result of doCreateWebRTCSession. |
 | [OpenAIRealtimeOptions](/api/Vercel.AI.OpenAI/OpenAIRealtimeOptions/) | Options of OpenAIRealtimeOptions). Maps to OpenAIRealtimeOptions. |
 | [OpenAIRealtimeWebSocketConfig](/api/Vercel.AI.OpenAI/OpenAIRealtimeWebSocketConfig/) | URL and subprotocols a client opens a WebSocket with. Maps to the result of getWebSocketConfig. |
+| [OpenAIResponsesAdditionalTool](/api/Vercel.AI.OpenAI/OpenAIResponsesAdditionalTool/) | A single OpenAI-format tool definition that can be loaded at a position in the conversation. History is replayable, so the provider treats these as references to tools registered for the current request and sends its own definition for the registered tool. Maps to OpenAIResponsesAdditionalTool. |
 | [OpenAIResponsesAllowedTools](/api/Vercel.AI.OpenAI/OpenAIResponsesAllowedTools/) | The tools a request may call, sent as toolchoice: { type: "allowedtools" }. Maps to the allowedTools option of the OpenAI Responses provider options. |
+| [OpenAIResponsesCustomToolDefinition](/api/Vercel.AI.OpenAI/OpenAIResponsesCustomToolDefinition/) | A custom tool definition (type: 'custom'). |
+| [OpenAIResponsesCustomToolFormat](/api/Vercel.AI.OpenAI/OpenAIResponsesCustomToolFormat/) | The input format of a custom tool: free text, or a regex / lark grammar. |
+| [OpenAIResponsesFunctionToolDefinition](/api/Vercel.AI.OpenAI/OpenAIResponsesFunctionToolDefinition/) | A function tool definition (type: 'function'). |
 | [OpenAIResponsesLanguageModel](/api/Vercel.AI.OpenAI/OpenAIResponsesLanguageModel/) | OpenAI Responses API language model. |
+| [OpenAIResponsesNamespaceToolDefinition](/api/Vercel.AI.OpenAI/OpenAIResponsesNamespaceToolDefinition/) | A namespace of function tools (type: 'namespace'). |
 | [OpenAIResponsesPreparedRequest](/api/Vercel.AI.OpenAI/OpenAIResponsesPreparedRequest/) | Responses API request body and the warnings produced while building it. |
+| [OpenAIResponsesSystemMessageOptions](/api/Vercel.AI.OpenAI/OpenAIResponsesSystemMessageOptions/) | The openai options of a system message in Responses history. Maps to OpenAIResponsesSystemMessageOptions. |
+| [OpenAIResponsesToolResultOptions](/api/Vercel.AI.OpenAI/OpenAIResponsesToolResultOptions/) | The openai options of an ordinary tool result in Responses history. Maps to OpenAIResponsesToolResultOptions. |
 | [OpenAIServiceCollectionExtensions](/api/Vercel.AI.OpenAI/OpenAIServiceCollectionExtensions/) | Registers OpenAIProvider. |
 | [OpenAIShellAction](/api/Vercel.AI.OpenAI/OpenAIShellAction/) | The shell action of a OpenAIShellInput. Maps to the action of the upstream shell input. |
 | [OpenAIShellContainerSkill](/api/Vercel.AI.OpenAI/OpenAIShellContainerSkill/) | A skill of a containerAuto shell environment: OpenAIShellSkillReference or OpenAIShellInlineSkill. |
@@ -90,6 +97,8 @@ OpenAI Chat Completions, Responses, images, speech, and transcription.
 | [OpenAISpeechResult](/api/Vercel.AI.OpenAI/OpenAISpeechResult/) | Speech audio plus the response metadata recorded for the call. |
 | [OpenAISpeechTranslationModel](/api/Vercel.AI.OpenAI/OpenAISpeechTranslationModel/) | OpenAI speech translation model. REST calls use /audio/translations. Realtime streaming uses the /realtime/translations WebSocket. |
 | [OpenAIText](/api/Vercel.AI.OpenAI/OpenAIText/) | Generated text that carries the Responses output item id and its annotations. |
+| [OpenAIToolNamespace](/api/Vercel.AI.OpenAI/OpenAIToolNamespace/) | The namespace of an OpenAIToolOptions. |
+| [OpenAIToolOptions](/api/Vercel.AI.OpenAI/OpenAIToolOptions/) | The openai options of a tool. Maps to OpenAIToolOptions in openai-responses-prepare-tools.ts. |
 | [OpenAITools](/api/Vercel.AI.OpenAI/OpenAITools/) | Factories for the OpenAI provider-defined tools, the port of upstream openaiTools. Each builds the LanguageModelTool that OpenAI Responses maps to a hosted tool. |
 | [OpenAIToolSearchToolOptions](/api/Vercel.AI.OpenAI/OpenAIToolSearchToolOptions/) | Options of ToolSearch(OpenAIToolSearchToolOptions). |
 | [OpenAITranscriptionCall](/api/Vercel.AI.OpenAI/OpenAITranscriptionCall/) | Transcription settings beyond the audio payload. |
