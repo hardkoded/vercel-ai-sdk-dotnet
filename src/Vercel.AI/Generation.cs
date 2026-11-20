@@ -1671,6 +1671,9 @@ internal static class Generation
                                 stepResponseTimestamp = DateTimeOffset.UtcNow;
                                 stepResponseModelId = current.ModelId;
                                 warnings = boundary.Warnings;
+                                // The retried attempt gets its own timeout windows.
+                                timeouts?.ClearModelOutput();
+                                timeouts?.StartFirstChunk();
                                 stepRequest = RequestMetadata(boundary.Request.Body);
                                 buffer.Add(new StreamRetryBoundaryPart(stepRequest, warnings));
                                 break;

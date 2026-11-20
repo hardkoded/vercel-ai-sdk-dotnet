@@ -18,7 +18,7 @@ internal sealed class StreamTextEventProcessor
 {
     private readonly StreamTextOptions _options;
     private readonly StreamAbort _abort;
-    private readonly CancellationToken _token;
+    private readonly CancellationToken _abortToken;
     private readonly SteeringRun? _steeringRun;
     private readonly TaskCompletionSource<string> _textSource;
     private readonly TaskCompletionSource<FinishReason> _finishSource;
@@ -58,7 +58,7 @@ internal sealed class StreamTextEventProcessor
     {
         _options = options;
         _abort = abort;
-        _token = abort.Token;
+        _abortToken = abort.Token;
         _steeringRun = steeringRun;
         _textSource = textSource;
         _finishSource = finishSource;
@@ -67,6 +67,10 @@ internal sealed class StreamTextEventProcessor
         _outputSource = outputSource;
         _errors = errors;
     }
+
+    // A transform that stopped the stream cancelled the abort token, but the results still settle, so the callbacks get no token then.
+    private CancellationToken Token =>
+        _abort.StoppedByTransform ? CancellationToken.None : _abortToken;
 
     // The id of the call, set by the step loop. It is the id of the steps the processor records.
     public string CallId { get; set; } = string.Empty;
@@ -186,7 +190,7 @@ internal sealed class StreamTextEventProcessor
 
     private async Task ProcessAsync(TextStreamPart part, PartBuffer target)
     {
-        var cancellationToken = _token;
+        var cancellationToken = Token;
         // The stream retry reported the error parts it saw already.
         var handledForRetry = part is ErrorPart errorPart && _errors.TakeHandled(errorPart);
         if (!handledForRetry)
@@ -338,7 +342,7 @@ internal sealed class StreamTextEventProcessor
             .InvokeOnErrorAsync(
                 _options,
                 error.Error ?? new AiSdkException(error.Message),
-                _token,
+                Token,
                 swallow: false
             )
             .ConfigureAwait(false);
@@ -408,7 +412,7 @@ internal sealed class StreamTextEventProcessor
                             .ResolveGeneratedFileDataAsync(
                                 remote,
                                 _options.ExperimentalDownload,
-                                _token
+                                Token
                             )
                             .ConfigureAwait(false)
                     );
@@ -530,7 +534,7 @@ internal sealed class StreamTextEventProcessor
 
         if (Generation.ResolveOnStepEnd(_options) is { } onStepEnd)
         {
-            await onStepEnd(step, _token).ConfigureAwait(false);
+            await onStepEnd(step, Token).ConfigureAwait(false);
         }
 
         TaskCompletionSource<bool>? waiter;
@@ -595,7 +599,7 @@ internal sealed class StreamTextEventProcessor
             return;
         }
 
-        var cancellationToken = _token;
+        var cancellationToken = Token;
         var responseMessages = new List<ModelMessage>(InitialResponseMessages);
         foreach (var step in steps)
         {
