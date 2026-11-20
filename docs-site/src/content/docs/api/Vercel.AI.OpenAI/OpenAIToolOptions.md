@@ -120,13 +120,13 @@ through `additionalTools`. The tool stays active in the SDK so its calls can sti
 
 
 ```csharp
-public JsonElement? OutputSchema { get; set; }
+public JsonObject? OutputSchema { get; set; }
 ```
 
 
 The JSON Schema of the tool output, an object.
 
-**Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
+**Value:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Responses/OpenAIToolOptions.cs#L29)
 

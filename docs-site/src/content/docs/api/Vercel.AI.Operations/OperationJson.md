@@ -23,7 +23,7 @@ JSON helpers used while normalizing provider options.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L824)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L828)
 
 ## Methods
 
@@ -49,7 +49,7 @@ Reads a property or returns null.
 
 **Returns:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L842)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L846)
 
 <a id="Vercel_AI_Operations_OperationJson_Parse_"></a>
 <a id="Vercel_AI_Operations_OperationJson_Parse_System_String_"></a>
@@ -72,7 +72,7 @@ Parses a JSON string.
 
 **Returns:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L827)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L831)
 
 <a id="Vercel_AI_Operations_OperationJson_Serialize_"></a>
 <a id="Vercel_AI_Operations_OperationJson_Serialize__1___0_"></a>
@@ -101,7 +101,7 @@ Serializes a value.
 
 **Returns:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L836)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L840)
 
 <a id="Vercel_AI_Operations_OperationJson_Utf8Length_"></a>
 <a id="Vercel_AI_Operations_OperationJson_Utf8Length_System_String_"></a>
@@ -124,4 +124,4 @@ UTF-8 size of a string.
 
 **Returns:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L857)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/OperationSupport.cs#L861)

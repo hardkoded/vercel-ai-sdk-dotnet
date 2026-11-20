@@ -23,7 +23,7 @@ A new partial object. Maps to `{ type: 'object' }`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [ObjectStreamPart](/api/Vercel.AI.GenerateObject/ObjectStreamPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L174)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L187)
 
 ## Properties
 
@@ -42,4 +42,4 @@ The partial object. It is not validated.
 
 **Value:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L183)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L196)
