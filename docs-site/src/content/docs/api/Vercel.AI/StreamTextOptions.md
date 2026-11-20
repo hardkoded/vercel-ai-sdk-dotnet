@@ -23,7 +23,7 @@ Options for `CancellationToken)`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [GenerateTextOptions](/api/Vercel.AI/GenerateTextOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1652)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1831)
 
 ## Properties
 
@@ -43,7 +43,7 @@ A reason that is an [Exception](https://learn.microsoft.com/dotnet/api/system.ex
 
 **Value:** [AbortSignal](/api/Vercel.AI.Util/AbortSignal/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1667)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1846)
 
 <a id="Vercel_AI_StreamTextOptions_ExperimentalTransform_"></a>
 <a id="Vercel_AI_StreamTextOptions_ExperimentalTransform"></a>
@@ -61,7 +61,7 @@ Use [Create(SmoothStreamOptions)](/api/Vercel.AI.GenerateText/SmoothStream/#Verc
 
 **Value:** [IReadOnlyList&lt;StreamTextTransform&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1658)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1837)
 
 <a id="Vercel_AI_StreamTextOptions_Include_"></a>
 <a id="Vercel_AI_StreamTextOptions_Include"></a>
@@ -78,7 +78,7 @@ What to retain of the request in the [StartStepPart](/api/Vercel.AI/StartStepPar
 
 **Value:** [StreamTextInclude](/api/Vercel.AI/StreamTextInclude/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1661)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1840)
 
 <a id="Vercel_AI_StreamTextOptions_OnAbort_"></a>
 <a id="Vercel_AI_StreamTextOptions_OnAbort"></a>
@@ -97,4 +97,4 @@ results. The stream ends with an [AbortPart](/api/Vercel.AI/AbortPart/) after it
 
 **Value:** [Func&lt;StreamAbortContext, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1674)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1853)

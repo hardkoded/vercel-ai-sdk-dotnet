@@ -20,10 +20,13 @@ Vercel AI Gateway provider.
 | [GatewayConfig](/api/Vercel.AI.Gateway/GatewayConfig/) | Configuration shared by Gateway fetchers (GatewayConfig). |
 | [GatewayCreditsResponse](/api/Vercel.AI.Gateway/GatewayCreditsResponse/) | The Gateway credit balance. Maps to GatewayCreditsResponse. |
 | [GatewayDecisionModel](/api/Vercel.AI.Gateway/GatewayDecisionModel/) | Answers questions through the Gateway /decision-model route. |
+| [GatewayDecisionModelId](/api/Vercel.AI.Gateway/GatewayDecisionModelId/) | Known AI Gateway model ids. Maps to GatewayDecisionModelId; any other string is accepted too. |
 | [GatewayEmbeddingModel](/api/Vercel.AI.Gateway/GatewayEmbeddingModel/) | Gateway embedding model. |
+| [GatewayEmbeddingModelId](/api/Vercel.AI.Gateway/GatewayEmbeddingModelId/) | Known AI Gateway model ids. Maps to GatewayEmbeddingModelId; any other string is accepted too. |
 | [GatewayError](/api/Vercel.AI.Gateway/GatewayError/) | Base class for AI Gateway errors. The message includes [generationId] when one was returned. |
 | [GatewayErrors](/api/Vercel.AI.Gateway/GatewayErrors/) | Parses Gateway auth headers and error bodies. |
 | [GatewayExtractionModel](/api/Vercel.AI.Gateway/GatewayExtractionModel/) | Extracts typed field values through the Gateway /extraction-model route. Maps to GatewayExtractionModel. |
+| [GatewayExtractionModelId](/api/Vercel.AI.Gateway/GatewayExtractionModelId/) | Known AI Gateway model ids. Maps to GatewayExtractionModelId; any other string is accepted too. |
 | [GatewayFailedDependencyError](/api/Vercel.AI.Gateway/GatewayFailedDependencyError/) | A dependency required by the Gateway request was unavailable. Status 424 is not retried. |
 | [GatewayFetchMetadata](/api/Vercel.AI.Gateway/GatewayFetchMetadata/) | Fetches the available models (GET /config) and the credits (GET /v1/credits) from the Gateway. |
 | [GatewayFetchMetadataResponse](/api/Vercel.AI.Gateway/GatewayFetchMetadataResponse/) | The models the Gateway offers. Maps to GatewayFetchMetadataResponse. |
@@ -32,12 +35,14 @@ Vercel AI Gateway provider.
 | [GatewayGenerationInfoFetcher](/api/Vercel.AI.Gateway/GatewayGenerationInfoFetcher/) | Fetches generation info (GET /v1/generation?id=) from the Gateway. |
 | [GatewayGenerationInfoParams](/api/Vercel.AI.Gateway/GatewayGenerationInfoParams/) | Parameters for CancellationToken). |
 | [GatewayImageModel](/api/Vercel.AI.Gateway/GatewayImageModel/) | Gateway image model. |
+| [GatewayImageModelId](/api/Vercel.AI.Gateway/GatewayImageModelId/) | Known AI Gateway model ids. Maps to GatewayImageModelId; any other string is accepted too. |
 | [GatewayInternalServerError](/api/Vercel.AI.Gateway/GatewayInternalServerError/) | The Gateway failed internally. |
 | [GatewayInvalidRequestError](/api/Vercel.AI.Gateway/GatewayInvalidRequestError/) | The Gateway rejected the request. |
 | [GatewayLanguageModel](/api/Vercel.AI.Gateway/GatewayLanguageModel/) | Gateway language model. The request body is the V4 call options. |
 | [GatewayLanguageModelEntry](/api/Vercel.AI.Gateway/GatewayLanguageModelEntry/) | A model the Gateway offers. Maps to GatewayLanguageModelEntry. |
 | [GatewayLanguageModelSpecification](/api/Vercel.AI.Gateway/GatewayLanguageModelSpecification/) | The AI SDK specification of a Gateway model. Maps to GatewayLanguageModelSpecification. |
 | [GatewayMintedClientSecret](/api/Vercel.AI.Gateway/GatewayMintedClientSecret/) | A client secret minted through the Gateway. ExpiresAt is epoch seconds. |
+| [GatewayModelId](/api/Vercel.AI.Gateway/GatewayModelId/) | Known AI Gateway model ids. Maps to GatewayModelId; any other string is accepted too. |
 | [GatewayModelNotFoundError](/api/Vercel.AI.Gateway/GatewayModelNotFoundError/) | The requested model is not available. |
 | [GatewayModelPricing](/api/Vercel.AI.Gateway/GatewayModelPricing/) | Pricing of a Gateway model, in USD per token. Maps to the pricing of GatewayLanguageModelEntry. |
 | [GatewayNotFoundError](/api/Vercel.AI.Gateway/GatewayNotFoundError/) | A Gateway resource was not found. |
@@ -48,12 +53,14 @@ Vercel AI Gateway provider.
 | [GatewayRealtimeClientSecret](/api/Vercel.AI.Gateway/GatewayRealtimeClientSecret/) | A client secret together with the WebSocket URL to open. Maps to RealtimeModelV4ClientSecretResult. |
 | [GatewayRealtimeModel](/api/Vercel.AI.Gateway/GatewayRealtimeModel/) | Realtime model backed by the AI Gateway. The Gateway normalizes realtime like every other modality, so this model is a thin identity codec over the normalized protocol; only the connection and authentication are Gateway-specific. |
 | [GatewayRealtimeModelConfig](/api/Vercel.AI.Gateway/GatewayRealtimeModelConfig/) | Configuration of a GatewayRealtimeModel. Maps to GatewayRealtimeModelConfig. |
-| [GatewayRealtimeModelId](/api/Vercel.AI.Gateway/GatewayRealtimeModelId/) | Known AI Gateway realtime model ids. Maps to GatewayRealtimeModelId; any other string is accepted too. |
+| [GatewayRealtimeModelId](/api/Vercel.AI.Gateway/GatewayRealtimeModelId/) | Known AI Gateway model ids. Maps to GatewayRealtimeModelId; any other string is accepted too. |
 | [GatewayRealtimeWebSocketConfig](/api/Vercel.AI.Gateway/GatewayRealtimeWebSocketConfig/) | URL and subprotocols a client opens a WebSocket with. Maps to the result of getWebSocketConfig. |
+| [GatewayRerankingModelId](/api/Vercel.AI.Gateway/GatewayRerankingModelId/) | Known AI Gateway model ids. Maps to GatewayRerankingModelId; any other string is accepted too. |
 | [GatewayResponseError](/api/Vercel.AI.Gateway/GatewayResponseError/) | The Gateway error body could not be read. |
 | [GatewayServiceCollectionExtensions](/api/Vercel.AI.Gateway/GatewayServiceCollectionExtensions/) | Registers the Gateway provider. |
 | [GatewaySpeechFactoryGetTokenResult](/api/Vercel.AI.Gateway/GatewaySpeechFactoryGetTokenResult/) | The result of minting a streaming speech client secret. Maps to GatewaySpeechFactoryGetTokenResult. |
 | [GatewaySpeechModel](/api/Vercel.AI.Gateway/GatewaySpeechModel/) | Gateway streaming speech model. Maps to GatewaySpeechModel in gateway-speech-model.ts. Only the URL helper used by experimentalspeech.getToken is ported here; the model itself is tracked in #752. |
+| [GatewaySpeechModelId](/api/Vercel.AI.Gateway/GatewaySpeechModelId/) | Known AI Gateway model ids. Maps to GatewaySpeechModelId; any other string is accepted too. |
 | [GatewaySpendReport](/api/Vercel.AI.Gateway/GatewaySpendReport/) | Fetches a spend report (GET /v1/report) from the Gateway. |
 | [GatewaySpendReportParams](/api/Vercel.AI.Gateway/GatewaySpendReportParams/) | Parameters of CancellationToken). Maps to GatewaySpendReportParams. |
 | [GatewaySpendReportResponse](/api/Vercel.AI.Gateway/GatewaySpendReportResponse/) | A spend report. Maps to GatewaySpendReportResponse. |
@@ -64,7 +71,9 @@ Vercel AI Gateway provider.
 | [GatewayToolError](/api/Vercel.AI.Gateway/GatewayToolError/) | Error returned as the output of a Gateway provider-executed tool instead of a result. Maps to GatewayToolError. |
 | [GatewayTranscriptionFactoryGetTokenResult](/api/Vercel.AI.Gateway/GatewayTranscriptionFactoryGetTokenResult/) | The result of minting a streaming transcription client secret. Maps to GatewayTranscriptionFactoryGetTokenResult. |
 | [GatewayTranscriptionModel](/api/Vercel.AI.Gateway/GatewayTranscriptionModel/) | Gateway transcription model, routed through /transcription-model. Maps to GatewayTranscriptionModel. Streaming transcription runs over the /transcription-model WebSocket. |
+| [GatewayTranscriptionModelId](/api/Vercel.AI.Gateway/GatewayTranscriptionModelId/) | Known AI Gateway model ids. Maps to GatewayTranscriptionModelId; any other string is accepted too. |
 | [GatewayVideoModel](/api/Vercel.AI.Gateway/GatewayVideoModel/) | Gateway video model. CancellationToken) reads the first data event of an SSE response from /video-model. CancellationToken) and CancellationToken) use /video-model/start and /video-model/status. Maps to GatewayVideoModel in gateway-video-model.ts. |
+| [GatewayVideoModelId](/api/Vercel.AI.Gateway/GatewayVideoModelId/) | Known AI Gateway model ids. Maps to GatewayVideoModelId; any other string is accepted too. |
 | [TakoCard](/api/Vercel.AI.Gateway/TakoCard/) | A card of a Tako search response. Maps to TakoCard. |
 | [TakoCardSource](/api/Vercel.AI.Gateway/TakoCardSource/) | A source of a TakoCard. |
 | [TakoCostUsage](/api/Vercel.AI.Gateway/TakoCostUsage/) | Cost of one part of a Tako search. Maps to TakoSearchResponse['usage']['compute'] and ['variablecost']. |

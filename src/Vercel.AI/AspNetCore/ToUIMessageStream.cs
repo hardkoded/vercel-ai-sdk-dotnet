@@ -89,9 +89,20 @@ public static partial class UIMessageStreamConverter
     /// <param name="stream">The parts to convert.</param>
     /// <param name="options">Conversion options.</param>
     /// <param name="cancellationToken">Cancels the read of <paramref name="stream"/>.</param>
-    public static async IAsyncEnumerable<JsonObject> ToUIMessageStream(
+    public static IAsyncEnumerable<JsonObject> ToUIMessageStream(
         IAsyncEnumerable<TextStreamPart> stream,
         UIMessageStreamOptions? options = null,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return ToUIMessageStreamWithDefaultTools(stream, options, null, cancellationToken);
+    }
+
+    // The tools of the call are the default of options.Tools, as the result passes them to toUIMessageStream upstream.
+    internal static async IAsyncEnumerable<JsonObject> ToUIMessageStreamWithDefaultTools(
+        IAsyncEnumerable<TextStreamPart> stream,
+        UIMessageStreamOptions? options,
+        IReadOnlyList<Tool>? defaultTools,
         [EnumeratorCancellation] CancellationToken cancellationToken = default
     )
     {
@@ -142,7 +153,7 @@ public static partial class UIMessageStreamConverter
 
         var chunkOptions = new ToUIMessageChunkOptions
         {
-            Tools = options.Tools,
+            Tools = options.Tools ?? defaultTools,
             SendReasoning = options.SendReasoning,
             SendSources = options.SendSources,
             SendStart = options.SendStart,

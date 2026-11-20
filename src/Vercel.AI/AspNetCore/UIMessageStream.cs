@@ -62,6 +62,32 @@ public static class UIMessageStreamExtensions
     }
 
     /// <summary>
+    /// Converts the stream parts into UI message chunks. The tools of the call mark the chunks of dynamic tools.
+    /// Maps to <c>toUIMessageStream</c>.
+    /// </summary>
+    /// <param name="result">The stream to convert.</param>
+    /// <param name="options">Conversion options.</param>
+    /// <param name="cancellationToken">Cancels the read of the stream.</param>
+    public static IAsyncEnumerable<JsonObject> ToUIMessageStream(
+        this StreamTextResult result,
+        UIMessageStreamOptions? options = null,
+        CancellationToken cancellationToken = default
+    )
+    {
+        if (result is null)
+        {
+            throw new ArgumentNullException(nameof(result));
+        }
+
+        return UIMessageStreamConverter.ToUIMessageStreamWithDefaultTools(
+            result.Stream(cancellationToken),
+            options,
+            result.Tools,
+            cancellationToken
+        );
+    }
+
+    /// <summary>
     /// Pipes the UI message stream to a <see cref="ServerResponse"/> as Server-Sent Events.
     /// Mirrors upstream <c>pipeUIMessageStreamToResponse</c>.
     /// </summary>

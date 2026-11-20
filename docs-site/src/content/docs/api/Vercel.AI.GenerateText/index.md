@@ -42,13 +42,13 @@ Public types in the `Vercel.AI.GenerateText` namespace.
 | [ParseToolCallOptions](/api/Vercel.AI.GenerateText/ParseToolCallOptions/) | Options of CancellationToken). Maps to the options of parseToolCall. |
 | [PruneMessagesOptions](/api/Vercel.AI.GenerateText/PruneMessagesOptions/) | Options of PruneMessages(PruneMessagesOptions). |
 | [PruneToolCallsRule](/api/Vercel.AI.GenerateText/PruneToolCallsRule/) | One rule for pruning tool calls, results, errors, and approvals. Maps to an entry of the toolCalls array, { type: 'all' \| 'before-last-message' \| 'before-last-N-messages', tools }. |
-| [QueueOptions](/api/Vercel.AI.GenerateText/QueueOptions/) | Options of `QueueAsync`. Queued messages wait for the task, so they cannot interrupt. |
+| [QueueOptions](/api/Vercel.AI.GenerateText/QueueOptions/) | Options of QueueAsync. Queued messages wait for the task, so they cannot interrupt. |
 | [SingleToolApprovalOptions](/api/Vercel.AI.GenerateText/SingleToolApprovalOptions/) | The options a SingleToolApprovalFunction receives. Maps to the second argument of SingleToolApprovalFunction. |
 | [SmoothStream](/api/Vercel.AI.GenerateText/SmoothStream/) | Smooths text and reasoning streaming output. Maps to smoothStream. |
 | [SmoothStreamOptions](/api/Vercel.AI.GenerateText/SmoothStreamOptions/) | Options of Create(SmoothStreamOptions). Maps to the options of smoothStream. |
 | [Steering](/api/Vercel.AI.GenerateText/Steering/) | Creates steering objects and starts their runs. Maps to steering.ts. |
 | [SteeringOutcome](/api/Vercel.AI.GenerateText/SteeringOutcome/) | The outcome of a steering message. Maps to SteeringOutcome. |
-| [SteerOptions](/api/Vercel.AI.GenerateText/SteerOptions/) | Options of `SteerAsync`. |
+| [SteerOptions](/api/Vercel.AI.GenerateText/SteerOptions/) | Options of SteerAsync. |
 | [TokenCounts](/api/Vercel.AI.GenerateText/TokenCounts/) | Token-count helpers. Maps to sumTokenCounts. |
 | [TokenRates](/api/Vercel.AI.GenerateText/TokenRates/) | Token-rate helpers. Maps to calculateTokensPerSecond. |
 | [ToolApprovalCollection](/api/Vercel.AI.GenerateText/ToolApprovalCollection/) | Collects tool approvals from the last tool message. Maps to collectToolApprovals. |

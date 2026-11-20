@@ -25,7 +25,7 @@ SSE result for the AI SDK UI message protocol.
 
 **Implements:** [IResult](https://learn.microsoft.com/dotnet/api/microsoft.aspnetcore.http.iresult)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/UIMessageStream.cs#L150)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/UIMessageStream.cs#L176)
 
 ## Constructors
 
@@ -52,7 +52,7 @@ Creates a result that writes &lt;code class="paramref"&gt;result&lt;/code&gt;.
 | `redactToolErrors` | [bool?](https://learn.microsoft.com/dotnet/api/system.boolean) | Replaces the error text of failed tool calls with the result of `onError`. Defaults to `true` when `onError` is provided and to `false` otherwise. |
 | `sendSources` | [bool](https://learn.microsoft.com/dotnet/api/system.boolean) | Whether source parts are sent to the client. Defaults to `false`. Maps to `sendSources`. |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/UIMessageStream.cs#L180)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/UIMessageStream.cs#L206)
 
 ## Methods
 
@@ -77,7 +77,7 @@ Write an HTTP response reflecting the result.
 
 **Returns:** [Task](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task) — A task that represents the asynchronous execute operation.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/UIMessageStream.cs#L197)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/UIMessageStream.cs#L223)
 
 <a id="Vercel_AI_AspNetCore_UIMessageStreamResult_WriteAsync_"></a>
 <a id="Vercel_AI_AspNetCore_UIMessageStreamResult_WriteAsync_Vercel_AI_StreamTextResult_System_IO_Stream_System_Nullable_System_Int32__System_Threading_CancellationToken_System_Func_System_Exception_System_String__System_Nullable_System_Boolean__System_Boolean_"></a>
@@ -106,7 +106,7 @@ Writes the UI message stream to &lt;code class="paramref"&gt;destination&lt;/cod
 
 **Returns:** [Task](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/UIMessageStream.cs#L228)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/UIMessageStream.cs#L254)
 
 <a id="Vercel_AI_AspNetCore_UIMessageStreamResult_WriteChunksAsync_"></a>
 <a id="Vercel_AI_AspNetCore_UIMessageStreamResult_WriteChunksAsync_System_Collections_Generic_IReadOnlyList_System_Text_Json_Nodes_JsonObject__System_IO_Stream_System_Threading_CancellationToken_"></a>
@@ -131,4 +131,4 @@ Writes already-built UI message chunks as SSE, then `data: [DONE]`.
 
 **Returns:** [Task](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/UIMessageStream.cs#L354)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/UIMessageStream.cs#L380)

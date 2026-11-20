@@ -23,7 +23,7 @@ Marks the start of streamed tool input.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [LanguageModelStreamPart](/api/Vercel.AI.Provider/LanguageModelStreamPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2800)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2822)
 
 ## Constructors
 
@@ -52,7 +52,7 @@ Creates a tool-input-start part.
 | `title` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `inputEncoding` | `ToolInputEncoding?` |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2803)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2825)
 
 ## Properties
 
@@ -71,7 +71,7 @@ True for a tool the caller did not declare.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2836)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2858)
 
 <a id="Vercel_AI_Provider_ToolInputStartStreamPart_Id_"></a>
 <a id="Vercel_AI_Provider_ToolInputStartStreamPart_Id"></a>
@@ -88,7 +88,7 @@ Tool call id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2824)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2846)
 
 <a id="Vercel_AI_Provider_ToolInputStartStreamPart_InputEncoding_"></a>
 <a id="Vercel_AI_Provider_ToolInputStartStreamPart_InputEncoding"></a>
@@ -106,7 +106,7 @@ to a raw string. The final tool call input must still be JSON-encoded, whatever 
 
 **Value:** `ToolInputEncoding?`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2845)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2867)
 
 <a id="Vercel_AI_Provider_ToolInputStartStreamPart_ProviderExecuted_"></a>
 <a id="Vercel_AI_Provider_ToolInputStartStreamPart_ProviderExecuted"></a>
@@ -123,7 +123,7 @@ True when the provider executes the tool.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2833)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2855)
 
 <a id="Vercel_AI_Provider_ToolInputStartStreamPart_ProviderMetadata_"></a>
 <a id="Vercel_AI_Provider_ToolInputStartStreamPart_ProviderMetadata"></a>
@@ -140,7 +140,7 @@ Provider metadata for this tool input.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2830)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2852)
 
 <a id="Vercel_AI_Provider_ToolInputStartStreamPart_Title_"></a>
 <a id="Vercel_AI_Provider_ToolInputStartStreamPart_Title"></a>
@@ -157,7 +157,7 @@ Optional tool title.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2839)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2861)
 
 <a id="Vercel_AI_Provider_ToolInputStartStreamPart_ToolName_"></a>
 <a id="Vercel_AI_Provider_ToolInputStartStreamPart_ToolName"></a>
@@ -174,4 +174,4 @@ Tool name.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2827)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2849)

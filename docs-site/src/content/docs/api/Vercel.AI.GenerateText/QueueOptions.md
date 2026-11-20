@@ -1,6 +1,6 @@
 ---
 title: "QueueOptions"
-description: "Options of `QueueAsync`. Queued messages wait for the task, so they cannot interrupt."
+description: "Options of QueueAsync. Queued messages wait for the task, so they cannot interrupt."
 editUrl: false
 prev: false
 next: false

@@ -2,10 +2,13 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Runtime.CompilerServices;
 using Vercel.AI.Gateway;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.Testing;
+using Vercel.AI.Util;
+using static Vercel.AI.Tests.Upstream.GenerateText.OptionsTimeoutSupport;
 
 namespace Vercel.AI.Tests.Upstream.GenerateText.StreamTextWithMinimalRetention;
 
@@ -30,6 +33,21 @@ public sealed class StreamingOnlyContractTests
                 Output = output,
             }
         );
+    }
+
+    internal static StreamTextSingleConsumerResult LowMemory(StreamTextOptions options)
+    {
+        return new AiClient(
+            GatewayProvider.Create(new GatewayOptions { ApiKey = "test" })
+        ).StreamTextLowMemoryAsync(options);
+    }
+
+    private static DelegateModel ModelOf(Func<IAsyncEnumerable<LanguageModelStreamPart>> stream)
+    {
+        return new DelegateModel
+        {
+            Stream = (_, _) => Task.FromResult(new LanguageModelStreamResult(stream())),
+        };
     }
 
     internal static LanguageModelStreamPart[] TextParts(string text = "hello")
@@ -70,6 +88,137 @@ public sealed class StreamingOnlyContractTests
         Assert.Contains("one stream consumer", error.Message);
         Assert.Equal(new[] { "hello" }, await ToList(stream));
         Assert.Equal(FinishReason.Stop, await result.FinishReason);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "cancels the upstream stream and rejects metadata when iteration stops early",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Cancels_the_upstream_stream_and_rejects_metadata_when_iteration_stops_early()
+    {
+        var cancelled = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
+        var result = LowMemory(
+            new StreamTextOptions { Model = ModelOf(() => Endless(cancelled)), Prompt = "test" }
+        );
+
+        var assertion = Assert.ThrowsAnyAsync<OperationCanceledException>(() => result.Usage);
+        await foreach (var delta in result.TextStream())
+        {
+            Assert.Equal("hello", delta);
+            break;
+        }
+
+        await assertion;
+        await cancelled.Task.WaitAsync(SettleTimeout);
+
+        static async IAsyncEnumerable<LanguageModelStreamPart> Endless(
+            TaskCompletionSource cancelled
+        )
+        {
+            try
+            {
+                yield return new TextStartStreamPart("text");
+                while (true)
+                {
+                    yield return new TextDeltaStreamPart("text", "hello");
+                    await Task.Yield();
+                }
+            }
+            finally
+            {
+                cancelled.TrySetResult();
+            }
+        }
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "honors abort signals and preserves onAbort lifecycle delivery",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Honors_abort_signals_and_preserves_onAbort_lifecycle_delivery()
+    {
+        var abort = new AbortController();
+        var onAbort = new List<StreamAbortContext>();
+        var cancelled = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
+        var result = LowMemory(
+            new StreamTextOptions
+            {
+                Model = ModelOf(() => OpenStream(cancelled)),
+                Prompt = "test",
+                AbortSignal = abort.Signal,
+                OnAbort = (context, _) =>
+                {
+                    onAbort.Add(context);
+                    return Task.CompletedTask;
+                },
+            }
+        );
+
+        var parts = new List<TextStreamPart>();
+        await foreach (var part in result.Stream())
+        {
+            parts.Add(part);
+            if (part is TextDeltaPart)
+            {
+                abort.Abort("stop");
+            }
+        }
+
+        Assert.Contains(parts, part => part is AbortPart { Reason: "stop" });
+        var context = Assert.Single(onAbort);
+        Assert.Contains("stop", context.Exception.Message);
+        await cancelled.Task.WaitAsync(SettleTimeout);
+
+        static async IAsyncEnumerable<LanguageModelStreamPart> OpenStream(
+            TaskCompletionSource cancelled,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default
+        )
+        {
+            try
+            {
+                yield return new TextStartStreamPart("text");
+                yield return new TextDeltaStreamPart("text", "hello");
+                await Task.Delay(Timeout.Infinite, cancellationToken);
+            }
+            finally
+            {
+                cancelled.TrySetResult();
+            }
+        }
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "applies backpressure to a slow consumer",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Applies_backpressure_to_a_slow_consumer()
+    {
+        var emitted = 0;
+        var result = LowMemory(new StreamTextOptions { Model = ModelOf(Pulled), Prompt = "test" });
+
+        await using var enumerator = result.TextStream().GetAsyncEnumerator();
+        Assert.True(await enumerator.MoveNextAsync());
+        await Task.Delay(10);
+
+        // The existing orchestration has several bounded stream stages.
+        Assert.True(Volatile.Read(ref emitted) < 30, $"emitted {emitted} parts");
+
+        async IAsyncEnumerable<LanguageModelStreamPart> Pulled()
+        {
+            yield return new TextStartStreamPart("text");
+            while (Interlocked.Increment(ref emitted) <= 1000)
+            {
+                yield return new TextDeltaStreamPart("text", "hello");
+                await Task.Yield();
+            }
+        }
     }
 
     [Fact]

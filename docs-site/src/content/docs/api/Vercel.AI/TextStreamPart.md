@@ -25,7 +25,7 @@ A part of the `streamText` full stream.
 
 **Derived:** [AbortPart](/api/Vercel.AI/AbortPart/), [CustomPart](/api/Vercel.AI/CustomPart/), [DocumentSourcePart](/api/Vercel.AI/DocumentSourcePart/), [ErrorPart](/api/Vercel.AI/ErrorPart/), [FilePart](/api/Vercel.AI/FilePart/), [FinishPart](/api/Vercel.AI/FinishPart/), [PingPart](/api/Vercel.AI/PingPart/), [RawPart](/api/Vercel.AI/RawPart/), [ReasoningDeltaPart](/api/Vercel.AI/ReasoningDeltaPart/), [ReasoningEndPart](/api/Vercel.AI/ReasoningEndPart/), [ReasoningFilePart](/api/Vercel.AI/ReasoningFilePart/), [ReasoningStartPart](/api/Vercel.AI/ReasoningStartPart/), [SourcePart](/api/Vercel.AI/SourcePart/), [StartPart](/api/Vercel.AI/StartPart/), [StartStepPart](/api/Vercel.AI/StartStepPart/), [SteeringMessagePart](/api/Vercel.AI/SteeringMessagePart/), [StepFinishPart](/api/Vercel.AI/StepFinishPart/), [TextDeltaPart](/api/Vercel.AI/TextDeltaPart/), [TextEndPart](/api/Vercel.AI/TextEndPart/), [TextStartPart](/api/Vercel.AI/TextStartPart/), [ToolApprovalRequestPart](/api/Vercel.AI/ToolApprovalRequestPart/), [ToolApprovalResponsePart](/api/Vercel.AI/ToolApprovalResponsePart/), [ToolCallPart](/api/Vercel.AI/ToolCallPart/), [ToolErrorPart](/api/Vercel.AI/ToolErrorPart/), [ToolInputDeltaPart](/api/Vercel.AI/ToolInputDeltaPart/), [ToolInputEndPart](/api/Vercel.AI/ToolInputEndPart/), [ToolInputStartPart](/api/Vercel.AI/ToolInputStartPart/), [ToolOutputDeniedPart](/api/Vercel.AI/ToolOutputDeniedPart/), [ToolResultPart](/api/Vercel.AI/ToolResultPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1807)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2033)
 
 ## Constructors
 
@@ -48,7 +48,7 @@ Creates a part.
 | --- | --- | --- |
 | `type` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1810)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2036)
 
 ## Properties
 
@@ -67,4 +67,4 @@ Part type.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1816)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2042)

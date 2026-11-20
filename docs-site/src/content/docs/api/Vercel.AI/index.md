@@ -46,6 +46,8 @@ Client, text generation, streaming, tools, and agents.
 | [GenerateSpeechOptions](/api/Vercel.AI/GenerateSpeechOptions/) | Speech options. |
 | [GenerateTextOptions](/api/Vercel.AI/GenerateTextOptions/) | Options for CancellationToken). Property names follow generateText. |
 | [GenerateTextResult](/api/Vercel.AI/GenerateTextResult/) | Result of generateText. |
+| [GenerateTextStartEvent](/api/Vercel.AI/GenerateTextStartEvent/) | Passed to OnStart when the generation begins, before any model call. Maps to GenerateTextStartEvent. |
+| [GenerateTextStepStartEvent](/api/Vercel.AI/GenerateTextStepStartEvent/) | Passed to OnStepStart when a step begins, before the provider is called. Maps to GenerateTextStepStartEvent. |
 | [GenerateVideoOptions](/api/Vercel.AI/GenerateVideoOptions/) | Video options. |
 | [ImageCapabilities](/api/Vercel.AI/ImageCapabilities/) | Upstream ModelCapabilities.image. |
 | [LanguageCapabilities](/api/Vercel.AI/LanguageCapabilities/) | Upstream ModelCapabilities.language. |

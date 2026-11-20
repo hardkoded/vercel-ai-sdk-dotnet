@@ -26,6 +26,7 @@ internal sealed class StreamTextEventProcessor
     private readonly TaskCompletionSource<IReadOnlyList<StepResult>> _stepsSource;
     private readonly TaskCompletionSource<JsonElement?> _outputSource;
     private readonly StreamTextErrorHandling _errors;
+    private readonly bool _collectContent;
     private readonly object _gate = new();
     private readonly List<StepResult> _steps = [];
     private readonly Dictionary<int, TaskCompletionSource<bool>> _stepWaiters = [];
@@ -53,7 +54,8 @@ internal sealed class StreamTextEventProcessor
         TaskCompletionSource<LanguageModelUsage> usageSource,
         TaskCompletionSource<IReadOnlyList<StepResult>> stepsSource,
         TaskCompletionSource<JsonElement?> outputSource,
-        StreamTextErrorHandling errors
+        StreamTextErrorHandling errors,
+        bool collectContent
     )
     {
         _options = options;
@@ -66,6 +68,7 @@ internal sealed class StreamTextEventProcessor
         _stepsSource = stepsSource;
         _outputSource = outputSource;
         _errors = errors;
+        _collectContent = collectContent;
     }
 
     // A transform that stopped the stream cancelled the abort token, but the results still settle, so the callbacks get no token then.
@@ -138,6 +141,8 @@ internal sealed class StreamTextEventProcessor
                     continue;
                 }
 
+                // A slow consumer pauses the processor, like upstream's pull model.
+                await target.WaitForRoomAsync(cancellationToken).ConfigureAwait(false);
                 target.Add(part);
                 await ProcessAsync(part, target).ConfigureAwait(false);
             }
@@ -226,11 +231,15 @@ internal sealed class StreamTextEventProcessor
             case TextStartPart textStart:
                 var text = new TextRecord { ProviderMetadata = textStart.ProviderMetadata };
                 _activeText[textStart.Id] = text;
-                _contentOrder.Add(text);
+                Record(_contentOrder, text);
                 break;
             case TextDeltaPart delta:
                 var activeText = FindText(delta.Id);
-                activeText.Text.Append(delta.Text);
+                if (_collectContent)
+                {
+                    activeText.Text.Append(delta.Text);
+                }
+
                 activeText.ProviderMetadata = delta.ProviderMetadata ?? activeText.ProviderMetadata;
                 break;
             case TextEndPart textEnd:
@@ -245,11 +254,15 @@ internal sealed class StreamTextEventProcessor
                     ProviderMetadata = reasoningStart.ProviderMetadata,
                 };
                 _activeReasoning[reasoningStart.Id] = reasoning;
-                _contentOrder.Add(reasoning);
+                Record(_contentOrder, reasoning);
                 break;
             case ReasoningDeltaPart reasoningDelta:
                 var activeReasoning = FindReasoning(reasoningDelta.Id);
-                activeReasoning.Text.Append(reasoningDelta.Text);
+                if (_collectContent)
+                {
+                    activeReasoning.Text.Append(reasoningDelta.Text);
+                }
+
                 activeReasoning.ProviderMetadata = reasoningDelta.ProviderMetadata
                     ?? activeReasoning.ProviderMetadata;
                 break;
@@ -260,16 +273,17 @@ internal sealed class StreamTextEventProcessor
                 _activeReasoning.Remove(reasoningEnd.Id);
                 break;
             case DocumentSourcePart documentSource:
-                _contentOrder.Add(documentSource.Source);
+                Record(_contentOrder, documentSource.Source);
                 break;
             case SourcePart sourcePart:
-                _contentOrder.Add(sourcePart.Source);
+                Record(_contentOrder, sourcePart.Source);
                 break;
             case FilePart filePart:
-                _contentOrder.Add(filePart.File);
+                Record(_contentOrder, filePart.File);
                 break;
             case ReasoningFilePart reasoningFilePart:
-                _contentOrder.Add(
+                Record(
+                    _contentOrder,
                     new GeneratedReasoningFile(
                         reasoningFilePart.File.Data,
                         reasoningFilePart.File.MediaType,
@@ -278,10 +292,11 @@ internal sealed class StreamTextEventProcessor
                 );
                 break;
             case ToolCallPart toolCallPart:
-                _contentOrder.Add(toolCallPart.ToolCall);
+                Record(_contentOrder, toolCallPart.ToolCall);
                 break;
             case ToolApprovalRequestPart approvalRequest:
-                _contentOrder.Add(
+                Record(
+                    _contentOrder,
                     new GeneratedToolApprovalRequest(
                         approvalRequest.ApprovalId,
                         approvalRequest.ToolCall.ToolCallId
@@ -295,7 +310,8 @@ internal sealed class StreamTextEventProcessor
                 );
                 break;
             case ToolApprovalResponsePart approvalResponse:
-                _contentOrder.Add(
+                Record(
+                    _contentOrder,
                     new GeneratedToolApprovalResponse(
                         approvalResponse.ApprovalId,
                         approvalResponse.ToolCall,
@@ -308,18 +324,18 @@ internal sealed class StreamTextEventProcessor
             case ToolResultPart { Result.Preliminary: true }:
                 break;
             case ToolResultPart { Result.ProviderExecuted: true } providerResult:
-                _contentOrder.Add(ProviderResultContent(providerResult.Result));
+                Record(_contentOrder, ProviderResultContent(providerResult.Result));
                 break;
             case ToolErrorPart { Result.ProviderExecuted: true } providerError:
-                _contentOrder.Add(ProviderResultContent(providerError.Result));
+                Record(_contentOrder, ProviderResultContent(providerError.Result));
                 break;
             case ToolResultPart clientResult:
                 _executedResults.Add(clientResult.Result);
-                _contentOrder.Add(Generation.ToGeneratedToolResult(clientResult.Result));
+                Record(_contentOrder, Generation.ToGeneratedToolResult(clientResult.Result));
                 break;
             case ToolErrorPart clientError:
                 _executedResults.Add(clientError.Result);
-                _contentOrder.Add(Generation.ToGeneratedToolResult(clientError.Result));
+                Record(_contentOrder, Generation.ToGeneratedToolResult(clientError.Result));
                 break;
             case StepFinishPart stepFinish:
                 await FinishStepAsync(stepFinish).ConfigureAwait(false);
@@ -328,6 +344,15 @@ internal sealed class StreamTextEventProcessor
                 _recordedTotalUsage = finish.Usage;
                 _recordedFinishReason = finish.FinishReason;
                 break;
+        }
+    }
+
+    // Maps to retention.collectContent: a low-memory stream keeps no content.
+    private void Record(List<object> content, object item)
+    {
+        if (_collectContent)
+        {
+            content.Add(item);
         }
     }
 
@@ -355,7 +380,7 @@ internal sealed class StreamTextEventProcessor
             // A transform dropped the text-start part. The text still belongs to the step.
             record = new TextRecord();
             _activeText[id] = record;
-            _contentOrder.Add(record);
+            Record(_contentOrder, record);
         }
 
         return record;
@@ -367,7 +392,7 @@ internal sealed class StreamTextEventProcessor
         {
             record = new ReasoningRecord();
             _activeReasoning[id] = record;
-            _contentOrder.Add(record);
+            Record(_contentOrder, record);
         }
 
         return record;
