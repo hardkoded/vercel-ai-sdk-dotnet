@@ -27,11 +27,8 @@ public sealed class OptionsOnEndTests
             ),
         };
 
-    // Partial: the upstream inline snapshot of the whole event also covers fields the port's
-    // GenerateTextResult does not carry (callId, performance, content aggregated across steps,
-    // static/dynamic tool call splits). See the PR report.
     [Fact]
-    [UpstreamTest(Prefix + "should send correct information", Coverage = UpstreamCoverage.Partial)]
+    [UpstreamTest(Prefix + "should send correct information", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_send_correct_information()
     {
         GenerateTextResult? result = null;
@@ -40,7 +37,7 @@ public sealed class OptionsOnEndTests
             .GenerateTextAsync(
                 new GenerateTextOptions
                 {
-                    Model = new TestLanguageModel
+                    Model = new TestLanguageModel("mock-model-id")
                     {
                         OnGenerate = _ => new LanguageModelGenerateResult(
                             new GeneratedContent[]
@@ -54,7 +51,11 @@ public sealed class OptionsOnEndTests
                             },
                             FinishReason.Stop,
                             TestUsage,
-                            "stop"
+                            "stop",
+                            responseId: "id-0",
+                            responseModelId: "mock-model-id",
+                            responseTimestamp: DateTimeOffset.FromUnixTimeMilliseconds(0),
+                            responseHeaders: new Dictionary<string, string> { ["call"] = "2" }
                         ),
                     },
                     Tools = new[]
@@ -66,6 +67,8 @@ public sealed class OptionsOnEndTests
                             (_, _) => Task.FromResult("value-result")
                         ),
                     },
+                    GenerateCallId = () => "test-telemetry-call-id",
+                    NowMs = () => 0,
                     OnEnd = (e, _) =>
                     {
                         result = e;
@@ -76,14 +79,63 @@ public sealed class OptionsOnEndTests
             );
 
         Assert.NotNull(result);
-        Assert.Equal("Hello, World!", result!.Text);
+        Assert.Equal("test-telemetry-call-id", result!.CallId);
+        Assert.Equal(0, result.StepNumber);
+        Assert.Equal("mock-model-id", result.ModelId);
         Assert.Equal(FinishReason.Stop, result.FinishReason);
+        Assert.Equal("stop", result.RawFinishReason);
+        Assert.Equal("Hello, World!", result.Text);
+        Assert.Null(result.ReasoningText);
+        Assert.Empty(result.Files);
+        Assert.Empty(result.Sources);
+        Assert.Empty(result.Warnings);
+        Assert.Null(result.ProviderMetadata);
+        Assert.Empty(result.RuntimeContext);
+        Assert.Empty(result.ToolsContext);
         Assert.Equal(TestUsage.TotalTokens, result.Usage.TotalTokens);
-        Assert.Single(result.Steps);
+        Assert.Equal(TestUsage.TotalTokens, result.TotalUsage.TotalTokens);
+
+        Assert.Equal(3, result.Content.Count);
+        Assert.Equal("Hello, World!", Assert.IsType<GeneratedText>(result.Content[0]).Text);
+        Assert.Equal("call-1", Assert.IsType<GeneratedToolCall>(result.Content[1]).ToolCallId);
+
         var call = Assert.Single(result.ToolCalls);
         Assert.Equal("call-1", call.ToolCallId);
         Assert.Equal("tool1", call.ToolName);
+        Assert.False(call.Dynamic);
+        Assert.Equal(call, Assert.Single(result.StaticToolCalls));
+        Assert.Empty(result.DynamicToolCalls);
+
+        var toolResult = Assert.Single(result.ToolResults);
+        Assert.Equal("call-1", toolResult.ToolCallId);
+        Assert.Equal("value-result", toolResult.OutputJson);
+        Assert.Equal(toolResult, Assert.Single(result.StaticToolResults));
+        Assert.Empty(result.DynamicToolResults);
+
+        Assert.Equal("id-0", result.Response.Id);
+        Assert.Equal("mock-model-id", result.Response.ModelId);
+        Assert.Equal(DateTimeOffset.FromUnixTimeMilliseconds(0), result.Response.Timestamp);
+        Assert.Equal("2", result.Response.Headers!["call"]);
         Assert.Equal(2, result.ResponseMessages.Count);
+        Assert.Equal(2, result.Response.Messages.Count);
+
+        var step = Assert.Single(result.Steps);
+        Assert.Same(step, result.FinalStep);
+        Assert.Equal("test-telemetry-call-id", step.CallId);
+        Assert.Equal(0, step.StepNumber);
+        Assert.Equal("test", step.Provider);
+        Assert.Equal("mock-model-id", step.ModelId);
+        var performance = step.Performance;
+        Assert.Equal(0, performance.EffectiveOutputTokensPerSecond);
+        Assert.Equal(0, performance.EffectiveTotalTokensPerSecond);
+        Assert.Null(performance.InputTokensPerSecond);
+        Assert.Null(performance.OutputTokensPerSecond);
+        Assert.Equal(0, performance.ResponseTimeMs);
+        Assert.Equal(0, performance.StepTimeMs);
+        Assert.Null(performance.TimeToFirstOutputMs);
+        Assert.Equal(0, Assert.Single(performance.ToolExecutionMs).Value);
+        Assert.Equal("call-1", Assert.Single(performance.ToolExecutionMs).Key);
+        Assert.Equal(3, step.Content.Count);
     }
 
     [Fact]

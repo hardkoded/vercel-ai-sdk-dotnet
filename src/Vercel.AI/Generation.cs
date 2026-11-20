@@ -143,12 +143,28 @@ internal static class Generation
         return update;
     }
 
+    private static GenerateTextOptions WithActiveTools(
+        GenerateTextOptions options,
+        PrepareStepUpdate? update
+    )
+    {
+        if (update?.ActiveTools == null)
+        {
+            return options;
+        }
+
+        var stepOptions = options.ShallowCopy();
+        stepOptions.ActiveTools = update.ActiveTools;
+        return stepOptions;
+    }
+
     // Maps to `stepSandbox = prepareStepResult?.experimental_sandbox ?? sandbox`. The sandbox from prepareStep applies to tool execution in this step only.
     private static GenerateTextOptions StepOptions(
         GenerateTextOptions options,
         PrepareStepUpdate? update
     )
     {
+        options = WithActiveTools(options, update);
         if (update?.ExperimentalSandbox == null)
         {
             return options;
@@ -395,6 +411,8 @@ internal static class Generation
                     timeouts?.StartStep();
                 }
 
+                // A model from prepareStep applies to one step only. Maps to `prepareStepResult?.model ?? model`.
+                current = model;
                 var takenMessages = steeringRun?.TakeMessages() ?? Array.Empty<UserModelMessage>();
                 IReadOnlyList<UserModelMessage> steeringMessages = takenMessages;
                 if (redo != null)
@@ -453,7 +471,13 @@ internal static class Generation
                 }
 
                 // The model gets a snapshot, because the step appends its own response to `messages` afterwards.
-                var callOptions = CallOptions(options, messages.ToArray(), update?.ToolOrder);
+                // activeTools from prepareStep applies to this step only. Maps to `activeTools: prepareStepResult?.activeTools ?? activeTools`.
+                var stepActiveOptions = WithActiveTools(options, update);
+                var callOptions = CallOptions(
+                    stepActiveOptions,
+                    messages.ToArray(),
+                    update?.ToolOrder
+                );
                 callOptions.AbortSignal = timeouts?.Signal;
                 if (update?.ToolChoice != null)
                 {
@@ -489,7 +513,7 @@ internal static class Generation
                                         Messages = messages.Skip(instructionCount).ToArray(),
                                         Tools = options.Tools,
                                         ToolChoice = update?.ToolChoice ?? options.ToolChoice,
-                                        ActiveTools = options.ActiveTools,
+                                        ActiveTools = stepActiveOptions.ActiveTools,
                                         ToolOrder = update?.ToolOrder ?? options.ToolOrder,
                                         Steps = steps.ToArray(),
                                         ProviderOptions = callOptions.ProviderOptions,
@@ -1167,6 +1191,8 @@ internal static class Generation
                     timeouts?.StartStep();
                 }
 
+                // A model from prepareStep applies to one step only. Maps to `prepareStepResult?.model ?? model`.
+                current = model;
                 var takenMessages = steeringRun?.TakeMessages() ?? Array.Empty<UserModelMessage>();
                 IReadOnlyList<UserModelMessage> steeringMessages = takenMessages;
                 if (redo != null)
@@ -1267,6 +1293,7 @@ internal static class Generation
                 streamOptions.CallId = callId;
                 streamOptions.ToolChoice = update?.ToolChoice ?? options.ToolChoice;
                 streamOptions.ToolOrder = update?.ToolOrder ?? options.ToolOrder;
+                streamOptions.ActiveTools = update?.ActiveTools ?? options.ActiveTools;
                 streamOptions.ProviderOptions = MergeProviderOptions(
                     options.ProviderOptions,
                     update?.ProviderOptions
