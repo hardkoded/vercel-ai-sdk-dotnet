@@ -571,35 +571,45 @@ internal static class Generation
                         cancellationToken
                     )
                     .ConfigureAwait(false);
-                if (options.OnLanguageModelCallEnd != null)
+                var telemetryDispatcher = TelemetryDispatcher.Create(options);
+                if (
+                    options.OnLanguageModelCallEnd != null
+                    || telemetryDispatcher.OnLanguageModelCallEnd != null
+                )
                 {
-                    await NotifyAsync(
-                            () =>
-                                options.OnLanguageModelCallEnd(
-                                    new LanguageModelCallEndEvent(
-                                        current.Provider,
-                                        generated.ResponseModelId ?? current.ModelId,
-                                        generated.FinishReason,
-                                        generated.Usage,
-                                        generated.Content,
-                                        generated.ResponseId,
-                                        generated.ProviderMetadata,
-                                        TimeSpan.FromMilliseconds(responseTimeMs)
-                                    )
-                                    {
-                                        CallId = callId,
-                                        Request = RequestOrigin.GetRequestOrigin(
-                                            modelResponse.Request?.Url
-                                        )
-                                            is { } origin
-                                            ? new LanguageModelStreamRequest { Url = origin }
-                                            : null,
-                                    },
-                                    cancellationToken
-                                ),
-                            cancellationToken
-                        )
-                        .ConfigureAwait(false);
+                    var callEndEvent = new LanguageModelCallEndEvent(
+                        current.Provider,
+                        generated.ResponseModelId ?? current.ModelId,
+                        generated.FinishReason,
+                        generated.Usage,
+                        generated.Content,
+                        generated.ResponseId,
+                        generated.ProviderMetadata,
+                        TimeSpan.FromMilliseconds(responseTimeMs)
+                    )
+                    {
+                        CallId = callId,
+                        Request = RequestOrigin.GetRequestOrigin(modelResponse.Request?.Url)
+                            is { } origin
+                            ? new LanguageModelStreamRequest { Url = origin }
+                            : null,
+                    };
+                    if (options.OnLanguageModelCallEnd != null)
+                    {
+                        await NotifyAsync(
+                                () =>
+                                    options.OnLanguageModelCallEnd(callEndEvent, cancellationToken),
+                                cancellationToken
+                            )
+                            .ConfigureAwait(false);
+                    }
+
+                    if (telemetryDispatcher.OnLanguageModelCallEnd != null)
+                    {
+                        await telemetryDispatcher
+                            .OnLanguageModelCallEnd(callEndEvent, cancellationToken)
+                            .ConfigureAwait(false);
+                    }
                 }
 
                 EnforceToolChoice(callOptions.ToolChoice, generated, current);
@@ -692,6 +702,11 @@ internal static class Generation
                 {
                     // Errors in callbacks do not break the generation flow (upstream notify).
                 }
+            }
+
+            if (TelemetryDispatcher.Create(options).OnEnd is { } telemetryOnEnd)
+            {
+                await telemetryOnEnd(result, cancellationToken).ConfigureAwait(false);
             }
 
             if (outputError != null)
@@ -985,9 +1000,12 @@ internal static class Generation
     }
 
     // Maps to the collectContent decision of streamTextLowMemory. Tools, an output, steps, or a callback need the complete content.
-    // Per-call and global telemetry integrations also decide upstream, and they are not ported.
+    // Enabled telemetry with at least one per-call or global integration also needs the content.
     private static bool NeedsContentCollection(StreamTextOptions options)
     {
+#pragma warning disable CS0618 // the deprecated alias is read like its replacement
+        var telemetry = options.Telemetry ?? options.ExperimentalTelemetry;
+#pragma warning restore CS0618
 #pragma warning disable CS0618 // the deprecated aliases collect content like their replacements
         return options.Tools is { Count: > 0 }
             || options.ToolChoice != null
@@ -998,7 +1016,11 @@ internal static class Generation
             || options.OnFinish != null
             || options.OnStepEnd != null
             || options.OnAbort != null
-            || options.OnLanguageModelCallEnd != null;
+            || options.OnLanguageModelCallEnd != null
+            || (
+                telemetry?.IsEnabled != false
+                && TelemetryDispatcher.ResolveIntegrations(telemetry).Count > 0
+            );
 #pragma warning restore CS0618
     }
 
