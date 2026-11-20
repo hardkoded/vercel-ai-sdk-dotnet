@@ -4,7 +4,9 @@
 
 using System.Globalization;
 using System.Text.Json;
+using Vercel.AI.Gateway;
 using Vercel.AI.GenerateText;
+using Vercel.AI.Prompt;
 using Vercel.AI.Provider;
 
 namespace Vercel.AI.Operations;
@@ -59,8 +61,17 @@ public sealed class BatchRequest
     /// <summary>Model id.</summary>
     public string Model { get; }
 
-    /// <summary>Text prompt.</summary>
+    /// <summary>Text prompt. Cannot be combined with <see cref="Messages"/> on a text request.</summary>
     public string? Prompt { get; set; }
+
+    /// <summary>Prompt messages. File parts with URLs the batch API supports stay URLs, the rest are downloaded.</summary>
+    public IReadOnlyList<ModelMessage>? Messages { get; set; }
+
+    /// <summary>Instructions of a text request. They win over <see cref="System"/>.</summary>
+    public Instructions? Instructions { get; set; }
+
+    /// <summary>Legacy system string of a text request.</summary>
+    public string? System { get; set; }
 
     /// <summary>Image prompt.</summary>
     public ImagePrompt? ImagePrompt { get; set; }
@@ -984,7 +995,8 @@ public static class Batch
                         item.Id,
                         item.Type,
                         item.Model,
-                        TextOptions(item, prepared, request.Output)
+                        await TextOptionsAsync(item, prepared, request.Output, api, token)
+                            .ConfigureAwait(false)
                     )
                 );
             }
@@ -1523,17 +1535,43 @@ public static class Batch
             : string.Empty;
     }
 
-    private static JsonElement TextOptions(
+    private static async Task<JsonElement> TextOptionsAsync(
         BatchRequest request,
         List<JsonElement> tools,
-        OutputSpec? output
+        OutputSpec? output,
+        IBatchApi api,
+        CancellationToken cancellationToken
     )
     {
-        var prompt = OperationJson.Parse(
-            "[{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":"
-                + JsonSerializer.Serialize(request.Prompt ?? string.Empty)
-                + "}]}]"
+        var standardized = Prompts.StandardizePrompt(
+            new StandardizePromptInput
+            {
+                System = request.System,
+                Instructions = request.Instructions,
+                Prompt =
+                    request.Messages == null ? (PromptInput)(request.Prompt ?? string.Empty) : null,
+                Messages = request.Messages,
+            }
         );
+        var messages = new List<ModelMessage>(
+            Generation.InstructionMessages(standardized.Instructions)
+        );
+        messages.AddRange(standardized.Messages);
+
+        // Maps to the supportedUrls argument of convertToLanguageModelPrompt: no custom download function.
+        var converted = await LanguageModelPrompts
+            .ConvertToLanguageModelPromptAsync(
+                messages,
+                api.SupportedUrls,
+                null,
+                cancellationToken,
+                api.Provider.Split('.')[0]
+            )
+            .ConfigureAwait(false);
+        var prompt = OperationJson
+            .Parse(V4Json.CallOptions(new LanguageModelCallOptions { Prompt = converted }))
+            .GetProperty("prompt")
+            .Clone();
         var options = new Dictionary<string, object?>
         {
             ["prompt"] = prompt,
