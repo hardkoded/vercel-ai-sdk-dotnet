@@ -955,6 +955,7 @@ internal static class Generation
     {
         var stopped = 0;
         StreamRetryBoundaryPart? pendingBoundary = null;
+        var sourceReader = source.Read(cancellation).GetAsyncEnumerator(cancellation);
 
         void StopStream()
         {
@@ -969,8 +970,10 @@ internal static class Generation
             [EnumeratorCancellation] CancellationToken cancellationToken
         )
         {
-            await foreach (var part in source.Read(cancellationToken).ConfigureAwait(false))
+            // One reader serves all segments, because the buffer releases the parts that were read.
+            while (await sourceReader.MoveNextAsync().ConfigureAwait(false))
             {
+                var part = sourceReader.Current;
                 if (Volatile.Read(ref stopped) == 1)
                 {
                     yield break;
@@ -1028,6 +1031,10 @@ internal static class Generation
             {
                 abort.Stop();
                 target.Fail(exception);
+            }
+            finally
+            {
+                await sourceReader.DisposeAsync().ConfigureAwait(false);
             }
         });
     }
@@ -1181,6 +1188,8 @@ internal static class Generation
                 JsonElement? providerMetadata = null;
                 IReadOnlyList<CallWarning>? warnings = null;
                 var receivedOutput = false;
+                // A model stream that ended with an error or a finish part is complete. Maps to hasReceivedTerminalChunk.
+                var receivedTerminal = false;
                 var usage = LanguageModelUsage.Null;
                 ModelCallPerformance? modelCallPerformance = null;
                 ToolChoiceViolationException? toolChoiceViolation = null;
@@ -1614,6 +1623,7 @@ internal static class Generation
                                 buffer.Add(reasoningFilePart);
                                 break;
                             case ModelCallEndPart modelCallEnd:
+                                receivedTerminal = true;
                                 finish = modelCallEnd.FinishReason;
                                 rawFinish = modelCallEnd.RawFinishReason;
                                 usage = modelCallEnd.Usage;
@@ -1624,6 +1634,8 @@ internal static class Generation
                                 toolChoiceViolation = violation;
                                 break;
                             case ErrorPart error:
+                                receivedTerminal = true;
+                                finish = FinishReason.Error;
                                 buffer.Add(error);
                                 break;
                             case ModelCallResponseMetadataPart responseMetadata:
@@ -1646,6 +1658,7 @@ internal static class Generation
                                 rawFinish = null;
                                 providerMetadata = null;
                                 receivedOutput = false;
+                                receivedTerminal = false;
                                 usage = LanguageModelUsage.Null;
                                 modelCallPerformance = null;
                                 toolChoiceViolation = null;
@@ -1757,7 +1770,7 @@ internal static class Generation
 
                 // A stream that ends without a finish part and without output is rejected instead of recorded as an empty step.
                 // An incomplete stream with partial output keeps the partial result.
-                if (finish == null && !receivedOutput)
+                if (!receivedTerminal && !receivedOutput)
                 {
                     const string noOutputMessage =
                         "No output generated. The model stream ended without a finish chunk.";

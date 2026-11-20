@@ -118,6 +118,8 @@ internal sealed class StreamTextRetry
                 }
 
                 var failure = error.Error ?? new AiSdkException(error.Message);
+                // The part carries its error, so the event processor can tell that the error was reported.
+                var forwarded = error.Error == null ? new ErrorPart(error.Message) { Error = failure } : error;
                 var isToolChoiceViolation = failure is ToolChoiceViolationException;
                 var result = await _errors.NotifyAsync(error, failure, cancellationToken)
                     .ConfigureAwait(false);
@@ -136,7 +138,7 @@ internal sealed class StreamTextRetry
                     }
 
                     _errors.MarkHandled(failure);
-                    yield return error;
+                    yield return forwarded;
                     continue;
                 }
 
