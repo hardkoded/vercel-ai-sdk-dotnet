@@ -49,6 +49,9 @@ public sealed class PrepareResponsesToolsOptions
 
     /// <summary>Whether the model accepts <c>async</c> tools. When false, the option is dropped with a warning. Default true.</summary>
     public bool SupportsAsyncToolCalling { get; init; } = true;
+
+    /// <summary>Provider options name of the model, such as <c>azure</c>. Tool options under it win over <c>openai</c>. Default <c>openai</c>.</summary>
+    public string ProviderOptionsName { get; init; } = "openai";
 }
 
 /// <summary>Maps to <c>prepareResponsesTools</c>.</summary>
@@ -190,7 +193,7 @@ internal static class OpenAIResponsesPrepareTools
                 continue;
             }
 
-            var openaiOptions = OpenAIToolOptions(tool);
+            var openaiOptions = GetOpenAIToolOptions(tool, options.ProviderOptionsName);
             var outputSchema = OpenAIJson.Child(openaiOptions, "outputSchema") ?? tool.OutputSchema;
             if (outputSchema != null)
             {
@@ -694,13 +697,6 @@ internal static class OpenAIResponsesPrepareTools
             functionality,
             "functionality not supported: " + functionality
         );
-    }
-
-    private static JsonElement? OpenAIToolOptions(LanguageModelTool tool)
-    {
-        return tool.ProviderOptions is { } providerOptions
-            ? OpenAIJson.Child(providerOptions, "openai")
-            : null;
     }
 
     private static JsonObject PrepareFunctionTool(
