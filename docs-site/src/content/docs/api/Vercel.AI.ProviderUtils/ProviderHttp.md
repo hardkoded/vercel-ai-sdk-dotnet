@@ -73,7 +73,7 @@ True for 408, 429, and 500–599.
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderHttp.cs#L553)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderHttp.cs#L593)
 
 <a id="Vercel_AI_ProviderUtils_ProviderHttp_MapStatus_"></a>
 <a id="Vercel_AI_ProviderUtils_ProviderHttp_MapStatus_System_Int32_System_String_"></a>
@@ -97,7 +97,7 @@ Maps an HTTP status onto the SDK exception hierarchy.
 
 **Returns:** [ApiException](/api/Vercel.AI.Provider/ApiException/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderHttp.cs#L472)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderHttp.cs#L512)
 
 <a id="Vercel_AI_ProviderUtils_ProviderHttp_MapStatus_System_Int32_System_String_System_String_"></a>
 
@@ -121,7 +121,7 @@ Maps an HTTP status onto the SDK exception hierarchy with a provider-specific &l
 
 **Returns:** [ApiException](/api/Vercel.AI.Provider/ApiException/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderHttp.cs#L478)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderHttp.cs#L518)
 
 <a id="Vercel_AI_ProviderUtils_ProviderHttp_OpenJsonLinesAsync_"></a>
 <a id="Vercel_AI_ProviderUtils_ProviderHttp_OpenJsonLinesAsync_System_Net_Http_HttpMethod_System_Uri_System_String_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Nullable_System_Int32__System_Threading_CancellationToken_"></a>
@@ -151,7 +151,7 @@ A row above &lt;code class="paramref"&gt;maxLineBytes&lt;/code&gt; UTF-8 bytes t
 
 **Returns:** [Task&lt;IAsyncEnumerable&lt;JsonElement&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderHttp.cs#L389)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderHttp.cs#L429)
 
 <a id="Vercel_AI_ProviderUtils_ProviderHttp_OpenSseAsync_"></a>
 <a id="Vercel_AI_ProviderUtils_ProviderHttp_OpenSseAsync_System_Uri_System_String_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Threading_CancellationToken_"></a>
@@ -178,7 +178,7 @@ The returned sequence yields SSE data payloads as they arrive. Enumerate it once
 
 **Returns:** [Task&lt;IAsyncEnumerable&lt;string&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderHttp.cs#L246)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderHttp.cs#L286)
 
 <a id="Vercel_AI_ProviderUtils_ProviderHttp_OpenSseWithResourceAsync_"></a>
 <a id="Vercel_AI_ProviderUtils_ProviderHttp_OpenSseWithResourceAsync_System_Uri_System_String_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Threading_CancellationToken_"></a>
@@ -204,7 +204,7 @@ Like `CancellationToken)`, and also returns the response so a caller that never 
 
 **Returns:** [Task&lt;(IAsyncEnumerable&lt;string&gt; Events, IDisposable Resource)&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderHttp.cs#L262)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderHttp.cs#L302)
 
 <a id="Vercel_AI_ProviderUtils_ProviderHttp_SendBytesAsync_"></a>
 <a id="Vercel_AI_ProviderUtils_ProviderHttp_SendBytesAsync_System_Net_Http_HttpMethod_System_Uri_System_Net_Http_HttpContent_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Threading_CancellationToken_"></a>
@@ -231,7 +231,7 @@ Sends a request and returns the raw bytes.
 
 **Returns:** [Task&lt;byte\[\]&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderHttp.cs#L112)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderHttp.cs#L152)
 
 <a id="Vercel_AI_ProviderUtils_ProviderHttp_SendJsonAsync_"></a>
 <a id="Vercel_AI_ProviderUtils_ProviderHttp_SendJsonAsync_System_Net_Http_HttpMethod_System_Uri_System_String_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Threading_CancellationToken_"></a>
@@ -287,7 +287,36 @@ A row above &lt;code class="paramref"&gt;maxLineBytes&lt;/code&gt; UTF-8 bytes t
 
 **Returns:** [IAsyncEnumerable&lt;JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderHttp.cs#L360)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderHttp.cs#L400)
+
+<a id="Vercel_AI_ProviderUtils_ProviderHttp_SendJsonResponseAsync_"></a>
+<a id="Vercel_AI_ProviderUtils_ProviderHttp_SendJsonResponseAsync_System_Net_Http_HttpMethod_System_Uri_System_String_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Collections_Generic_IReadOnlyList_System_String__System_Threading_CancellationToken_"></a>
+
+### `SendJsonResponseAsync(HttpMethod, Uri, string?, IReadOnlyDictionary<string, string?>?, IReadOnlyList<string>?, CancellationToken)`
+
+
+```csharp
+public Task<JsonStreams.JsonBody> SendJsonResponseAsync(HttpMethod method, Uri uri, string? jsonBody, IReadOnlyDictionary<string, string?>? headers, IReadOnlyList<string>? experimentalBinaryFields, CancellationToken cancellationToken)
+```
+
+
+Posts JSON and reads the response with `String%7d)`, so that large base64 strings at
+&lt;code class="paramref"&gt;experimentalBinaryFields&lt;/code&gt; are decoded while the body arrives.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `method` | [HttpMethod](https://learn.microsoft.com/dotnet/api/system.net.http.httpmethod) |  |
+| `uri` | [Uri](https://learn.microsoft.com/dotnet/api/system.uri) |  |
+| `jsonBody` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+| `headers` | [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2) |  |
+| `experimentalBinaryFields` | [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
+| `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
+
+**Returns:** [Task&lt;JsonStreams.JsonBody&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderHttp.cs#L115)
 
 <a id="Vercel_AI_ProviderUtils_ProviderHttp_SendJsonStringAsync_"></a>
 <a id="Vercel_AI_ProviderUtils_ProviderHttp_SendJsonStringAsync_System_Net_Http_HttpMethod_System_Uri_System_String_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Threading_CancellationToken_"></a>
@@ -340,4 +369,4 @@ Posts JSON and yields SSE data payloads.
 
 **Returns:** [IAsyncEnumerable&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderHttp.cs#L227)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ProviderHttp.cs#L267)

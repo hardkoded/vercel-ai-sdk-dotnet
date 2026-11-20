@@ -41,7 +41,7 @@ Default largest JSON Lines row, in UTF-8 bytes.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L720)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L763)
 
 ## Methods
 
@@ -69,18 +69,25 @@ Lower-cases response and content header names and joins repeated values with a c
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L623)
 
 <a id="Vercel_AI_ProviderUtils_JsonStreams_ReadJsonAsync_"></a>
-<a id="Vercel_AI_ProviderUtils_JsonStreams_ReadJsonAsync_System_Net_Http_HttpResponseMessage_System_Text_Json_Nodes_JsonNode_System_Threading_CancellationToken_"></a>
+<a id="Vercel_AI_ProviderUtils_JsonStreams_ReadJsonAsync_System_Net_Http_HttpResponseMessage_System_Text_Json_Nodes_JsonNode_System_Threading_CancellationToken_System_Collections_Generic_IReadOnlyList_System_String__"></a>
 
-### ReadJsonAsync(HttpResponseMessage, JsonNode?, CancellationToken)
+### `ReadJsonAsync(HttpResponseMessage, JsonNode?, CancellationToken, IReadOnlyList<string>?)`
 
 
 ```csharp
-public static Task<JsonStreams.JsonBody> ReadJsonAsync(HttpResponseMessage response, JsonNode? schema, CancellationToken cancellationToken = default)
+public static Task<JsonStreams.JsonBody> ReadJsonAsync(HttpResponseMessage response, JsonNode? schema, CancellationToken cancellationToken = default, IReadOnlyList<string>? experimentalBinaryFields = null)
 ```
 
 
 Reads a JSON response. Unknown object properties are removed when the schema says so.
 A body above [DefaultMaxBytes](/api/Vercel.AI.Util/Download/#Vercel_AI_Util_Download_DefaultMaxBytes) throws a [DownloadError](/api/Vercel.AI.Util/DownloadError/) before it is read.
+&lt;code class="paramref"&gt;experimentalBinaryFields&lt;/code&gt; are the paths of string fields that carry large base64 data, such as `images[*]`
+or `content[*].data.data`. A path is a sequence of plain object keys joined by `.`, with `[*]` for every element of an array.
+By default the whole body is buffered, decoded to text, parsed, and the base64 string is decoded again later.
+With paths the body is read as a stream and canonical base64 strings of at least 64 KiB at those paths are decoded to bytes while
+they arrive. [Value](/api/Vercel.AI.ProviderUtils/JsonStreams.JsonBody/#Vercel_AI_ProviderUtils_JsonStreams_JsonBody_Value) and [RawValue](/api/Vercel.AI.ProviderUtils/JsonStreams.JsonBody/#Vercel_AI_ProviderUtils_JsonStreams_JsonBody_RawValue) hold a short placeholder string such as
+`[binary data: 2097152 bytes; ref ...]` in their place, and [Binaries](/api/Vercel.AI.ProviderUtils/JsonStreams.JsonBody/#Vercel_AI_ProviderUtils_JsonStreams_JsonBody_Binaries) maps the placeholder to the bytes.
+Other strings, and strings at other paths, are parsed as usual. Maps to `createJsonResponseHandler`.
 
 **Parameters**
 
@@ -89,10 +96,17 @@ A body above [DefaultMaxBytes](/api/Vercel.AI.Util/Download/#Vercel_AI_Util_Down
 | `response` | [HttpResponseMessage](https://learn.microsoft.com/dotnet/api/system.net.http.httpresponsemessage) |  |
 | `schema` | [JsonNode](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonnode) |  |
 | `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
+| `experimentalBinaryFields` | [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 
 **Returns:** [Task&lt;JsonStreams.JsonBody&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L671)
+**Exceptions**
+
+| Type | Condition |
+| --- | --- |
+| [InvalidArgumentError](/api/Vercel.AI.Util/InvalidArgumentError/) | A path in &lt;code class="paramref"&gt;experimentalBinaryFields&lt;/code&gt; is not valid. |
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L687)
 
 <a id="Vercel_AI_ProviderUtils_JsonStreams_ReadJsonEventsAsync_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonStreams_ReadJsonEventsAsync_System_IO_Stream_System_Text_Json_Nodes_JsonNode_System_Threading_CancellationToken_"></a>
@@ -118,7 +132,7 @@ Events are validated with &lt;code class="paramref"&gt;schema&lt;/code&gt; when 
 
 **Returns:** [IAsyncEnumerable&lt;JsonParseResult&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L829)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L872)
 
 <a id="Vercel_AI_ProviderUtils_JsonStreams_ReadJsonLinesAsync_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonStreams_ReadJsonLinesAsync_System_IO_Stream_System_Text_Json_Nodes_JsonNode_System_Action_System_Threading_CancellationToken_System_Int32_System_String_"></a>
@@ -149,4 +163,4 @@ A row longer than &lt;code class="paramref"&gt;maxLineBytes&lt;/code&gt; UTF-8 b
 
 **Returns:** [IAsyncEnumerable&lt;JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L728)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonSchemas.cs#L771)
