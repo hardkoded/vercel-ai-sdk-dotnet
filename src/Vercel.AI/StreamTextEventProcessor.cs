@@ -561,6 +561,14 @@ internal sealed class StreamTextEventProcessor
             await onStepEnd(step, Token).ConfigureAwait(false);
         }
 
+        LogWarnings.Log(
+            new LogWarningsOptions(
+                _recordedWarnings.Select(Generation.ToModelWarning).ToArray(),
+                baseStep.Provider,
+                baseStep.ModelId
+            )
+        );
+
         TaskCompletionSource<bool>? waiter;
         lock (_gate)
         {

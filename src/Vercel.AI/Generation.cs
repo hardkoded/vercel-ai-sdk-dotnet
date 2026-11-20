@@ -608,6 +608,14 @@ internal static class Generation
                     await onStepEnd(step, cancellationToken).ConfigureAwait(false);
                 }
 
+                LogWarnings.Log(
+                    new LogWarningsOptions(
+                        (generated.Warnings ?? []).Select(ToModelWarning).ToArray(),
+                        current.Provider,
+                        current.ModelId
+                    )
+                );
+
                 TrackPendingDeferredToolCalls(step, options.Tools, pendingDeferredToolCalls);
                 if (
                     !ShouldStartNextStep(
@@ -727,6 +735,21 @@ internal static class Generation
         return options.OnStepEnd ?? options.OnStepFinish;
 #pragma warning restore CS0618
     }
+
+    internal static ModelWarning ToModelWarning(CallWarning warning) =>
+        warning.Type switch
+        {
+            "unsupported" => new UnsupportedWarning(
+                warning.Feature ?? warning.Message,
+                warning.Feature == null ? null : warning.Message
+            ),
+            "compatibility" => new CompatibilityWarning(
+                warning.Feature ?? warning.Message,
+                warning.Feature == null ? null : warning.Message
+            ),
+            "deprecated" => new DeprecatedWarning(warning.Setting ?? string.Empty, warning.Message),
+            _ => new OtherWarning(warning.Message),
+        };
 
     // generateText does not stream, so a firstChunkMs or chunkMs timeout has no effect.
     private static void WarnUnsupportedTimeouts(GenerateTextOptions options, ILanguageModel model)

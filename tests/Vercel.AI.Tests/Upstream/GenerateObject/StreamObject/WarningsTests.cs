@@ -89,4 +89,32 @@ public sealed class WarningsTests
         Assert.Equal("temperature", unsupported.Feature);
         Assert.Equal("Temperature parameter not supported", unsupported.Details);
     }
+
+    [Fact]
+    [UpstreamTest(
+        Id + "should call logWarnings with empty array when no warnings are present",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_call_logWarnings_with_empty_array_when_no_warnings_are_present()
+    {
+        var calls = new List<LogWarningsOptions>();
+        var previous = LogWarnings.Observer;
+        LogWarnings.Observer = calls.Add;
+        try
+        {
+            var result = Client().StreamObjectAsync(ObjectOptions(CreateTestModel(warnings: [])));
+
+            // Consume the stream to completion
+            await Collect(result.PartialObjectStream());
+        }
+        finally
+        {
+            LogWarnings.Observer = previous;
+        }
+
+        Assert.Equal(2, calls.Count);
+        Assert.Equal("mock-provider", calls[1].Provider);
+        Assert.Equal("mock-model-id", calls[1].Model);
+        Assert.Empty(calls[1].Warnings);
+    }
 }
