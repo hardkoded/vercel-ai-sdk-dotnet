@@ -1262,6 +1262,14 @@ public sealed class PrepareStepContext
 
     /// <summary>The sandbox environment that the step is operating in. Maps to <c>experimental_sandbox</c>.</summary>
     public Vercel.AI.ProviderUtils.ISandboxSession? ExperimentalSandbox { get; init; }
+
+    /// <summary>The context of each tool, by tool name. See <see cref="GenerateTextOptions.ToolsContext"/>. Maps to <c>toolsContext</c>.</summary>
+    public IReadOnlyDictionary<string, JsonElement> ToolsContext { get; init; } =
+        StepResult.EmptyToolsContext;
+
+    /// <summary>The user-defined runtime context. See <see cref="GenerateTextOptions.RuntimeContext"/>. Maps to <c>runtimeContext</c>.</summary>
+    public IReadOnlyDictionary<string, object?> RuntimeContext { get; init; } =
+        StepResult.EmptyRuntimeContext;
 }
 
 /// <summary>Optional changes applied before a step.</summary>
@@ -1291,6 +1299,16 @@ public sealed class PrepareStepUpdate
     /// The sandbox environment that the step is operating in. Changing it affects tool execution in this step only. Maps to <c>experimental_sandbox</c>.
     /// </summary>
     public Vercel.AI.ProviderUtils.ISandboxSession? ExperimentalSandbox { get; set; }
+
+    /// <summary>
+    /// Replacement tools context. It affects this step and all later steps, and it is passed into tool execution. Maps to <c>toolsContext</c>.
+    /// </summary>
+    public IReadOnlyDictionary<string, JsonElement>? ToolsContext { get; set; }
+
+    /// <summary>
+    /// Replacement runtime context. It affects this step and all later steps. Maps to <c>runtimeContext</c>.
+    /// </summary>
+    public IReadOnlyDictionary<string, object?>? RuntimeContext { get; set; }
 }
 
 /// <summary>Options for <see cref="IAiClient.GenerateTextAsync"/>. Property names follow <c>generateText</c>.</summary>

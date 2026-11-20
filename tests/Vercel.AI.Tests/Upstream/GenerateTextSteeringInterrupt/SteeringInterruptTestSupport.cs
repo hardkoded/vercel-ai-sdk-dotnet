@@ -67,6 +67,26 @@ internal static class SteeringInterruptTestSupport
     public static Tool Weather(Func<Task<string>> execute) =>
         Tool.Function("weather", null, WeatherSchema, (_, _) => execute());
 
+    /// <summary>A weather tool with a context schema for the unit. Maps to the <c>weather</c> tool with <c>contextSchema: z.object({ unit: z.string() })</c>.</summary>
+    public static Tool UnitWeather()
+    {
+        var tool = Tool.Function(
+            "weather",
+            null,
+            WeatherSchema,
+            (_, _) => Task.FromResult("{\"temperature\":72}")
+        );
+        tool.ContextSchema = value => value;
+        return tool;
+    }
+
+    /// <summary>Maps to <c>toolsContext: { weather: { unit } }</c>.</summary>
+    public static IReadOnlyDictionary<string, System.Text.Json.JsonElement> UnitContext(string unit) =>
+        new Dictionary<string, System.Text.Json.JsonElement>
+        {
+            ["weather"] = System.Text.Json.JsonDocument.Parse($"{{\"unit\":\"{unit}\"}}").RootElement.Clone(),
+        };
+
     /// <summary>Maps to <c>waitForAbort</c>: never returns, and fails when the model call is cancelled.</summary>
     public static Task<T> WaitForAbort<T>(
         LanguageModelCallOptions options,
