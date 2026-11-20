@@ -26,7 +26,7 @@ public sealed class OpenAIToolOptions
     public bool? OmitFromRequestTools { get; set; }
 
     /// <summary>The JSON Schema of the tool output, an object.</summary>
-    public JsonElement? OutputSchema { get; set; }
+    public JsonObject? OutputSchema { get; set; }
 
     /// <summary>The namespace the tool belongs to.</summary>
     public OpenAIToolNamespace? Namespace { get; set; }
@@ -66,7 +66,7 @@ public sealed class OpenAIToolOptions
 
         if (OutputSchema is { } outputSchema)
         {
-            json["outputSchema"] = JsonNode.Parse(outputSchema.GetRawText());
+            json["outputSchema"] = outputSchema.DeepClone();
         }
 
         if (Namespace != null)
