@@ -314,11 +314,10 @@ internal static class OpenResponsesInput
                 case AssistantToolCallPart toolCall:
                     Flush();
                     var call = toolCall.ToolCall;
-                    var isCustomCall = IsCustomTool(
-                        providerToolsByName,
-                        call.ToolName,
-                        customToolId
-                    );
+                    var isCustomCall =
+                        customToolId != null
+                        && providerToolsByName.TryGetValue(call.ToolName, out var callTool)
+                        && callTool.ProviderToolId == customToolId;
                     var item = new JsonObject
                     {
                         ["type"] = isCustomCall ? "custom_tool_call" : "function_call",
@@ -509,12 +508,14 @@ internal static class OpenResponsesInput
             return;
         }
 
+        var isCustomResult =
+            customToolId != null
+            && providerToolsByName.TryGetValue(tool.ToolName, out var resultTool)
+            && resultTool.ProviderToolId == customToolId;
         input.Add(
             new JsonObject
             {
-                ["type"] = IsCustomTool(providerToolsByName, tool.ToolName, customToolId)
-                    ? "custom_tool_call_output"
-                    : "function_call_output",
+                ["type"] = isCustomResult ? "custom_tool_call_output" : "function_call_output",
                 ["call_id"] = tool.ToolCallId,
                 ["output"] =
                     tool.OutputContent != null
@@ -522,18 +523,6 @@ internal static class OpenResponsesInput
                         : ToolOutput(tool),
             }
         );
-    }
-
-    /// <summary>Whether <paramref name="toolName"/> is the provider tool with the id <paramref name="customToolId"/>.</summary>
-    private static bool IsCustomTool(
-        IReadOnlyDictionary<string, LanguageModelTool> providerToolsByName,
-        string toolName,
-        string? customToolId
-    )
-    {
-        return customToolId != null
-            && providerToolsByName.TryGetValue(toolName, out var providerTool)
-            && providerTool.ProviderToolId == customToolId;
     }
 
     private static JsonArray ToolContentOutput(
