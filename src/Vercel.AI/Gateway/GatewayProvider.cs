@@ -1087,6 +1087,8 @@ public sealed class GatewayEmbeddingModel : IEmbeddingModel
 /// <summary>Gateway image model.</summary>
 public sealed class GatewayImageModel : IImageModel, IImageCaller
 {
+    private const string StreamingImageDecodingOption = "experimental_streamingImageDecoding";
+
     private readonly GatewayProvider _provider;
 
     /// <summary>Creates a Gateway image model.</summary>
@@ -1194,9 +1196,37 @@ public sealed class GatewayImageModel : IImageModel, IImageCaller
             body["seed"] = seed;
         }
 
+        var streamingImageDecoding = false;
         if (call.ProviderOptions is { } providerOptions)
         {
-            body["providerOptions"] = JsonNode.Parse(providerOptions.GetRawText());
+            var requestProviderOptions = JsonNode.Parse(providerOptions.GetRawText());
+            if (
+                requestProviderOptions is JsonObject optionsObject
+                && optionsObject["gateway"] is JsonObject gatewayOptions
+                && gatewayOptions.ContainsKey(StreamingImageDecodingOption)
+            )
+            {
+                // A client option: the service never sees it.
+                streamingImageDecoding =
+                    gatewayOptions[StreamingImageDecodingOption] is JsonValue flag
+                    && flag.TryGetValue<bool>(out var enabled)
+                    && enabled;
+                gatewayOptions.Remove(StreamingImageDecodingOption);
+                if (gatewayOptions.Count == 0)
+                {
+                    optionsObject.Remove("gateway");
+                }
+
+                if (optionsObject.Count == 0)
+                {
+                    requestProviderOptions = null;
+                }
+            }
+
+            if (requestProviderOptions != null)
+            {
+                body["providerOptions"] = requestProviderOptions;
+            }
         }
 
         if (call.Files != null)
@@ -1221,26 +1251,54 @@ public sealed class GatewayImageModel : IImageModel, IImageCaller
             headers[pair.Key] = pair.Value;
         }
 
-        ProviderTextResponse response;
+        IReadOnlyDictionary<string, string> responseHeaders;
+        JsonElement root;
+        IReadOnlyDictionary<string, byte[]> binaries = new Dictionary<string, byte[]>();
+        JsonDocument? document = null;
         try
         {
-            response = await _provider
-                .Http.SendJsonStringAsync(
-                    HttpMethod.Post,
-                    _provider.Route("image-model"),
-                    body.ToJsonString(),
-                    await _provider.HeadersAsync(
-                        "ai-image-model-specification-version",
-                        "4",
-                        "ai-model-id",
-                        ModelId,
-                        null,
-                        headers,
+            var requestHeaders = await _provider.HeadersAsync(
+                "ai-image-model-specification-version",
+                "4",
+                "ai-model-id",
+                ModelId,
+                null,
+                headers,
+                cancellationToken
+            );
+            if (streamingImageDecoding)
+            {
+                var json = await _provider
+                    .Http.SendJsonResponseAsync(
+                        HttpMethod.Post,
+                        _provider.Route("image-model"),
+                        body.ToJsonString(),
+                        requestHeaders,
+                        ["images[*]"],
                         cancellationToken
-                    ),
-                    cancellationToken
-                )
-                .ConfigureAwait(false);
+                    )
+                    .ConfigureAwait(false);
+                responseHeaders = json.Headers;
+                root = json.Value;
+                binaries = json.Binaries;
+            }
+            else
+            {
+                var response = await _provider
+                    .Http.SendJsonStringAsync(
+                        HttpMethod.Post,
+                        _provider.Route("image-model"),
+                        body.ToJsonString(),
+                        requestHeaders,
+                        cancellationToken
+                    )
+                    .ConfigureAwait(false);
+                responseHeaders = response.Headers;
+                document = JsonDocument.Parse(
+                    string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body
+                );
+                root = document.RootElement;
+            }
         }
         catch (ApiException exception)
         {
@@ -1250,13 +1308,29 @@ public sealed class GatewayImageModel : IImageModel, IImageCaller
         {
             throw GatewayProvider.MapFailure(exception);
         }
+        catch (Exception exception)
+            when (streamingImageDecoding
+                && exception is Vercel.AI.Util.DownloadError or JsonParseException
+            )
+        {
+            // The streamed body is not valid: report it like any invalid Gateway response, without the image.
+            throw new GatewayResponseError(
+                "Invalid JSON response",
+                validationError: exception.GetType().Name,
+                cause: exception
+            );
+        }
 
-        using var document = JsonDocument.Parse(
-            string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body
-        );
-        var root = document.RootElement;
+        using var ownedDocument = document;
         var images = new List<object?>();
-        if (root.TryGetProperty("images", out var array) && array.ValueKind == JsonValueKind.Array)
+        if (streamingImageDecoding)
+        {
+            images.AddRange(ReadStreamedImages(root, binaries));
+        }
+        else if (
+            root.TryGetProperty("images", out var array)
+            && array.ValueKind == JsonValueKind.Array
+        )
         {
             foreach (var item in array.EnumerateArray())
             {
@@ -1318,9 +1392,55 @@ public sealed class GatewayImageModel : IImageModel, IImageCaller
             warnings,
             usage,
             providerMetadata,
-            new ProviderResponse(response.Headers, timestamp: DateTime.UtcNow, modelId: ModelId),
+            new ProviderResponse(responseHeaders, timestamp: DateTime.UtcNow, modelId: ModelId),
             isRetryable
         );
+    }
+
+    // The images of a streamed response: strings, with the extracted ones as bytes. Maps to `toImageModelImages`.
+    private static List<object?> ReadStreamedImages(
+        JsonElement root,
+        IReadOnlyDictionary<string, byte[]> binaries
+    )
+    {
+        if (
+            !root.TryGetProperty("images", out var array)
+            || array.ValueKind != JsonValueKind.Array
+            || array.EnumerateArray().Any(item => item.ValueKind != JsonValueKind.String)
+        )
+        {
+            // The error does not carry the image.
+            throw new GatewayResponseError(
+                "Invalid JSON response: images must be an array of strings",
+                validationError: "images must be an array of strings"
+            );
+        }
+
+        var images = new List<object?>();
+        var extracted = false;
+        foreach (var item in array.EnumerateArray())
+        {
+            var text = item.GetString()!;
+            if (binaries.TryGetValue(text, out var bytes))
+            {
+                extracted = true;
+                images.Add(bytes);
+            }
+            else
+            {
+                images.Add(text);
+            }
+        }
+
+        if (!extracted)
+        {
+            return images;
+        }
+
+        // A result that mixes bytes and strings is returned as bytes.
+        return images
+            .Select(image => image is string text ? (object?)ByteEncoding.FromBase64(text) : image)
+            .ToList();
     }
 
     private static JsonNode EncodeFile(ImageModelFile file)

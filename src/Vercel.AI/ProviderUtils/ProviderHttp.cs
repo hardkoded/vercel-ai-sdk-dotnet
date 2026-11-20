@@ -108,6 +108,46 @@ public sealed class ProviderHttp
         }
     }
 
+    /// <summary>
+    /// Posts JSON and reads the response with <see cref="JsonStreams.ReadJsonAsync"/>, so that large base64 strings at
+    /// <paramref name="experimentalBinaryFields"/> are decoded while the body arrives.
+    /// </summary>
+    public async Task<JsonStreams.JsonBody> SendJsonResponseAsync(
+        HttpMethod method,
+        Uri uri,
+        string? jsonBody,
+        IReadOnlyDictionary<string, string?>? headers,
+        IReadOnlyList<string>? experimentalBinaryFields,
+        CancellationToken cancellationToken
+    )
+    {
+        using var response = await SendAsync(
+                method,
+                uri,
+                jsonBody,
+                "application/json",
+                headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await CancellableReads
+                .ReadAsStringAsync(response.Content, cancellationToken)
+                .ConfigureAwait(false);
+            throw MapStatusWithHeaders(
+                (int)response.StatusCode,
+                ErrorMessage((int)response.StatusCode, body),
+                body,
+                CopyHeaders(response)
+            );
+        }
+
+        return await JsonStreams
+            .ReadJsonAsync(response, null, cancellationToken, experimentalBinaryFields)
+            .ConfigureAwait(false);
+    }
+
     /// <summary>Sends a request and returns the raw bytes.</summary>
     public async Task<byte[]> SendBytesAsync(
         HttpMethod method,

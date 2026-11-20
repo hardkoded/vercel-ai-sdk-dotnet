@@ -478,6 +478,29 @@ An `uploaded` output never carries the signed upload URL. The Gateway video mode
 
 Videos arrive as `url`, `base64`, or `uploaded` outputs. An `uploaded` output has a media type and no URL or bytes. Byte files in `Image`, `FrameImages`, and `InputReferences` go out as base64, base64 files and URL files pass unchanged, and `ProviderOptions` on a file is kept. `VideoModelFile.FromBase64(base64, mediaType)` creates a file from base64 text, and `VideoModelFile.ProviderOptions` carries per-file options, like `ImageModelFile`. `MaxVideosPerCall` is `int.MaxValue`, so requests are never split client-side.
 
+## Gateway image models
+
+`GatewayProvider.ImageModel(id)` (upstream `GatewayImageModel`) posts the prompt, `n`, `size`, `aspectRatio`, `seed`, files, mask, and provider options to `/image-model`, and `GenerateImage` returns the decoded images. Large images cost memory: by default the whole body is buffered, decoded to text, parsed, and the base64 string is decoded again, which holds about four copies of the image at once.
+
+To reduce peak memory, opt in with the experimental Gateway provider option `experimental_streamingImageDecoding`. Pass it under the `gateway` key of the image call's provider options:
+
+```csharp
+var result = await GenerateImage.GenerateImageAsync(
+    new GenerateImageRequest
+    {
+        Model = (IImageCaller)gateway.ImageModel("bfl/flux-kontext-pro"),
+        Text = "A mountain lake at sunrise",
+        ProviderOptions = JsonDocument
+            .Parse("""{ "gateway": { "experimental_streamingImageDecoding": true } }""")
+            .RootElement.Clone(),
+    }
+);
+```
+
+The option defaults to `false`, which keeps base64 strings in `ImageModelResult.Images`. When it is `true`, canonical base64 images of at least 64 KiB are decoded while the response arrives, and the model returns them as `byte[]`. If a response mixes extracted bytes with smaller images, every image in that result is returned as `byte[]`. A string that cannot be extracted (base64url, a data URL, whitespace, escape sequences, or a missing pad) keeps the regular decoding path. A response whose `images` are not strings fails with a `GatewayResponseError` that does not carry the image. Validation and parse errors hold a short placeholder such as `[binary data: 2097152 bytes; ref ...]` in place of the extracted data.
+
+The option is handled by the client. The image model removes it from `providerOptions` before the request, drops an empty `gateway` object, and omits `providerOptions` when nothing else is left. Other `gateway` options and other providers' options are sent unchanged.
+
 ## HeyGen
 
 The HeyGen provider (`Vercel.AI.HeyGen`) supports `heygen-video-1`, a video generation model with text-to-video, image-to-video, and reference-to-video modes. Generated clips include audio. It also supports [HeyGen Decision](#decision-models) models, which classify, check, and score text, images, and video. HeyGen's avatar, voice, translation, and video editing APIs are not included.
@@ -1961,6 +1984,8 @@ The OpenAI provider supports asynchronous text generation through the [Batch API
 | `CreateStatusCodeErrorResponseAsync` | `createStatusCodeErrorResponseHandler` | An `ApiException` whose message is the status text. |
 
 The binary and error handlers read at most `Download.DefaultMaxBytes`. A larger `Content-Length` throws a `DownloadError` ("exceeded maximum size") before the body is read, and the body is released.
+
+`JsonStreams.ReadJsonAsync` (upstream `createJsonResponseHandler`) takes `experimentalBinaryFields`, a list of paths of string fields that carry large base64 data, such as `images[*]` or `content[*].data.data`. A path is a sequence of plain object keys (letters, digits, `_`, and `-`) joined by `.`, with `[*]` for every element of an array. An invalid path throws `InvalidArgumentError` before the body is read. With paths, the body is read in chunks (`ResponseBodies.ReadResponseWithSizeLimitAsync` passes each chunk to its `onChunk` callback instead of collecting it) and `JsonBinaryFieldScanner` (upstream `json-binary-field-scanner.ts`) decodes the strings at those paths while they arrive. Only canonical standard-alphabet base64 that decodes to at least 64 KiB (`JsonBinaryFieldScanner.DefaultBinaryFieldMinBytes`) is extracted. `JsonBody.Value` and `JsonBody.RawValue` hold a placeholder string in its place, the parse error text holds the placeholder too, and `JsonBody.Binaries` maps each placeholder to its `byte[]`. A `JsonElement` cannot hold bytes, so this differs from upstream, where `value` holds the `Uint8Array`. `JsonBinaryFieldScanner.ReplaceBinaryFieldPlaceholders` turns a parsed value into a tree where the placeholders are replaced with their bytes.
 
 `ApiException` now also carries `Url`, `RequestBodyValues`, `ResponseHeaders`, and `IsRetryable` (408, 409, 429, and 500 and above by default) and `ErrorData`, the provider error parsed from the response body (upstream `APICallError.data`). It is a `JsonElement` when `CreateJsonErrorResponseAsync` parsed the body, and `null` otherwise. It is not called `Data` because `Exception.Data` already exists.
 

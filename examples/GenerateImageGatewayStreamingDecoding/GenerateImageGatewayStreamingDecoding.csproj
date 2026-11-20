@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <Description>Generates an image through the AI Gateway and decodes large base64 images while the response arrives.</Description>
+    </PropertyGroup>
+</Project>
