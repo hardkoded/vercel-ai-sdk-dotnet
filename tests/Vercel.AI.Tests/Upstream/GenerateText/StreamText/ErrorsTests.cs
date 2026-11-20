@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Vercel.AI.GenerateText;
-using Vercel.AI.Provider;
 using Vercel.AI.Operations;
+using Vercel.AI.Provider;
 using Vercel.AI.Tests.Upstream.StreamText;
 using static Vercel.AI.Tests.Upstream.GenerateText.ToolExecutionCallbackSupport;
 
@@ -481,7 +481,8 @@ public sealed class ErrorsTests
     private static Task<List<string>> TextOf(StreamTextResult result) =>
         StreamTextTransformTestSupport.TextStreamAsync(result);
 
-    private static AiClient RetryClient() => Vercel.AI.Tests.Upstream.GenerateTextSteering.SteeringTestSupport.Client();
+    private static AiClient RetryClient() =>
+        Vercel.AI.Tests.Upstream.GenerateTextSteering.SteeringTestSupport.Client();
 
     [Fact]
     [UpstreamTest(
@@ -602,7 +603,9 @@ public sealed class ErrorsTests
         );
         StreamTextTransform reconstruct = _ =>
             StreamTextTransformTestSupport.Map(chunk =>
-                chunk is TextStartPart start ? [new TextStartPart(start.Id, start.ProviderMetadata)] : [chunk]
+                chunk is TextStartPart start
+                    ? [new TextStartPart(start.Id, start.ProviderMetadata)]
+                    : [chunk]
             );
 
         var result = RetryClient()
@@ -628,8 +631,13 @@ public sealed class ErrorsTests
         Assert.Equal("recovered-model", finalStep.Response.ModelId);
         Assert.Equal(DateTimeOffset.FromUnixTimeMilliseconds(2), finalStep.Response.Timestamp);
         Assert.Equal("2", finalStep.Response.Headers!["call"]);
-        var message = Assert.IsType<AssistantModelMessage>(Assert.Single(finalStep.Response.Messages));
-        Assert.Equal("{\"x\":\"ok\"}", Assert.IsType<AssistantTextPart>(Assert.Single(message.Parts)).Text);
+        var message = Assert.IsType<AssistantModelMessage>(
+            Assert.Single(finalStep.Response.Messages)
+        );
+        Assert.Equal(
+            "{\"x\":\"ok\"}",
+            Assert.IsType<AssistantTextPart>(Assert.Single(message.Parts)).Text
+        );
         Assert.Equal(finalStep.Response.Messages, await result.ResponseMessages);
     }
 
@@ -673,14 +681,10 @@ public sealed class ErrorsTests
         var parts = await StreamTextTransformTestSupport.PartsAsync(result);
 
         Assert.Equal(2, model.CallCount);
-        Assert.Contains(
-            parts,
-            part => part is TextDeltaPart { Id: "failed-text", Text: "partial" }
+        Assert.Contains(parts, part =>
+            part is TextDeltaPart { Id: "failed-text", Text: "partial" }
         );
-        Assert.Contains(
-            parts,
-            part => part is ErrorPart { Error: NoOutputGeneratedException }
-        );
+        Assert.Contains(parts, part => part is ErrorPart { Error: NoOutputGeneratedException });
         await Assert.ThrowsAsync<NoOutputGeneratedException>(() => result.Steps);
     }
 
@@ -793,7 +797,9 @@ public sealed class ErrorsTests
         var onErrorCalls = 0;
         var model = new StreamTextTransformTestSupport.CallsModel(
             (call, _) =>
-                new StreamTextTransformTestSupport.CallScript([ProviderError($"provider error {call + 1}")])
+                new StreamTextTransformTestSupport.CallScript([
+                    ProviderError($"provider error {call + 1}"),
+                ])
         );
 
         var result = RetryClient()
@@ -807,7 +813,9 @@ public sealed class ErrorsTests
                     {
                         onErrorCalls++;
                         return Task.FromResult<StreamTextOnErrorResult?>(
-                            model.CallCount <= 2 ? new StreamTextOnErrorResult { Retry = true } : null
+                            model.CallCount <= 2
+                                ? new StreamTextOnErrorResult { Retry = true }
+                                : null
                         );
                     },
                 }
@@ -817,9 +825,8 @@ public sealed class ErrorsTests
 
         Assert.Equal(2, model.CallCount);
         Assert.Equal(2, onErrorCalls);
-        Assert.Contains(
-            parts,
-            part => part is ErrorPart { Error: { } error } && error.Message == "provider error 2"
+        Assert.Contains(parts, part =>
+            part is ErrorPart { Error: { } error } && error.Message == "provider error 2"
         );
     }
 
@@ -874,23 +881,22 @@ public sealed class ErrorsTests
                 switch (call)
                 {
                     case 0:
-                        return new StreamTextTransformTestSupport.CallScript(
-                            [
-                                new TextStartStreamPart("failed-text"),
-                                new TextDeltaStreamPart("failed-text", "partial"),
-                                ProviderError(),
-                            ]
-                        );
+                        return new StreamTextTransformTestSupport.CallScript([
+                            new TextStartStreamPart("failed-text"),
+                            new TextDeltaStreamPart("failed-text", "partial"),
+                            ProviderError(),
+                        ]);
                     case 1:
-                        return new StreamTextTransformTestSupport.CallScript(
-                            [
-                                new TextStartStreamPart("recovered-text"),
-                                new TextDeltaStreamPart("recovered-text", "recovered"),
-                                new TextEndStreamPart("recovered-text"),
-                                new ToolCallStreamPart("tool-call-1", "tool1", "{}"),
-                                StreamTextTransformTestSupport.Finish(FinishReason.ToolCalls, "tool-calls"),
-                            ]
-                        );
+                        return new StreamTextTransformTestSupport.CallScript([
+                            new TextStartStreamPart("recovered-text"),
+                            new TextDeltaStreamPart("recovered-text", "recovered"),
+                            new TextEndStreamPart("recovered-text"),
+                            new ToolCallStreamPart("tool-call-1", "tool1", "{}"),
+                            StreamTextTransformTestSupport.Finish(
+                                FinishReason.ToolCalls,
+                                "tool-calls"
+                            ),
+                        ]);
                     default:
                         nextStepPrompts.Add(
                             string.Concat(
@@ -914,7 +920,11 @@ public sealed class ErrorsTests
                     TextStartPart start => [new TextStartPart(start.Id, start.ProviderMetadata)],
                     TextDeltaPart delta =>
                     [
-                        new TextDeltaPart(delta.Id, delta.Text.ToUpperInvariant(), delta.ProviderMetadata),
+                        new TextDeltaPart(
+                            delta.Id,
+                            delta.Text.ToUpperInvariant(),
+                            delta.ProviderMetadata
+                        ),
                     ],
                     _ => [chunk],
                 }
@@ -928,8 +938,11 @@ public sealed class ErrorsTests
                     Prompt = "test-input",
                     Tools =
                     [
-                        Tool.Function("tool1", null, "{\"type\":\"object\",\"properties\":{}}", (_, _) =>
-                            Task.FromResult("tool result")
+                        Tool.Function(
+                            "tool1",
+                            null,
+                            "{\"type\":\"object\",\"properties\":{}}",
+                            (_, _) => Task.FromResult("tool result")
                         ),
                     ],
                     StopWhen = StopWhen.IsStepCount(2),
@@ -962,12 +975,10 @@ public sealed class ErrorsTests
             (call, _) =>
                 call switch
                 {
-                    0 => new StreamTextTransformTestSupport.CallScript(
-                        [
-                            new ToolCallStreamPart("tool-call-1", "tool1", "{}"),
-                            StreamTextTransformTestSupport.Finish(FinishReason.ToolCalls, "tool-calls"),
-                        ]
-                    ),
+                    0 => new StreamTextTransformTestSupport.CallScript([
+                        new ToolCallStreamPart("tool-call-1", "tool1", "{}"),
+                        StreamTextTransformTestSupport.Finish(FinishReason.ToolCalls, "tool-calls"),
+                    ]),
                     1 => new StreamTextTransformTestSupport.CallScript([ProviderError()]),
                     _ => new StreamTextTransformTestSupport.CallScript(Recovered("1", "recovered")),
                 }
@@ -981,11 +992,16 @@ public sealed class ErrorsTests
                     Prompt = "test-input",
                     Tools =
                     [
-                        Tool.Function("tool1", null, "{\"type\":\"object\",\"properties\":{}}", (_, _) =>
-                        {
-                            executions++;
-                            return Task.FromResult("tool result");
-                        }),
+                        Tool.Function(
+                            "tool1",
+                            null,
+                            "{\"type\":\"object\",\"properties\":{}}",
+                            (_, _) =>
+                            {
+                                executions++;
+                                return Task.FromResult("tool result");
+                            }
+                        ),
                     ],
                     StopWhen = StopWhen.IsStepCount(2),
                     PrepareStep = _ =>
@@ -1039,11 +1055,16 @@ public sealed class ErrorsTests
                     Prompt = "test-input",
                     Tools =
                     [
-                        Tool.Function("tool1", null, "{\"type\":\"object\",\"properties\":{}}", (_, _) =>
-                        {
-                            executions++;
-                            return Task.FromResult("tool result");
-                        }),
+                        Tool.Function(
+                            "tool1",
+                            null,
+                            "{\"type\":\"object\",\"properties\":{}}",
+                            (_, _) =>
+                            {
+                                executions++;
+                                return Task.FromResult("tool result");
+                            }
+                        ),
                     ],
                     StreamRetries = 1,
                     OnError = (_, _) => Task.CompletedTask,

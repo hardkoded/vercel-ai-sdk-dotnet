@@ -906,7 +906,9 @@ internal static class Generation
         {
             try
             {
-                await eventProcessor.RunAsync(recordedBuffer, buffer, pipeline.Token).ConfigureAwait(false);
+                await eventProcessor
+                    .RunAsync(recordedBuffer, buffer, pipeline.Token)
+                    .ConfigureAwait(false);
             }
             finally
             {
@@ -1282,20 +1284,21 @@ internal static class Generation
                 // executeToolsFromStream decides the approvals as the calls arrive and runs the tools at the end of the model call.
                 // With streamRetries, a provider error part reruns the model call of this step. The tool parts of an attempt
                 // wait until it ends.
-                var retry = options.StreamRetries == null
-                    ? null
-                    : new StreamTextRetry(
-                        options,
-                        abort,
-                        streamResult,
-                        streamRetries,
-                        errors,
-                        retryToken =>
-                            LanguageModelCallStreaming.StreamLanguageModelCall(
-                                streamOptions,
-                                retryToken
-                            )
-                    );
+                var retry =
+                    options.StreamRetries == null
+                        ? null
+                        : new StreamTextRetry(
+                            options,
+                            abort,
+                            streamResult,
+                            streamRetries,
+                            errors,
+                            retryToken =>
+                                LanguageModelCallStreaming.StreamLanguageModelCall(
+                                    streamOptions,
+                                    retryToken
+                                )
+                        );
                 var enumerator = ExecuteToolsFromStream
                     .Execute(
                         retry == null ? streamResult.Stream : retry.Read(attemptToken),
@@ -1662,7 +1665,9 @@ internal static class Generation
                                 usage = LanguageModelUsage.Null;
                                 modelCallPerformance = null;
                                 toolChoiceViolation = null;
-                                stepResponseId = Vercel.AI.ProviderUtils.JsonValues.GenerateId("aitxt-");
+                                stepResponseId = Vercel.AI.ProviderUtils.JsonValues.GenerateId(
+                                    "aitxt-"
+                                );
                                 stepResponseTimestamp = DateTimeOffset.UtcNow;
                                 stepResponseModelId = current.ModelId;
                                 warnings = boundary.Warnings;
@@ -1706,7 +1711,8 @@ internal static class Generation
                     timeouts?.ClearModelOutput();
                     try
                     {
-                        await abort.DisposeAsync(retry?.Current.Disposal ?? disposal)
+                        await abort
+                            .DisposeAsync(retry?.Current.Disposal ?? disposal)
                             .ConfigureAwait(false);
                     }
                     finally
@@ -3835,10 +3841,7 @@ internal static class Generation
         }
 
         return tool.DescriptionFactory(
-            new Vercel.AI.Prompt.ToolDescriptionContext(
-                context,
-                options.ExperimentalSandbox
-            )
+            new Vercel.AI.Prompt.ToolDescriptionContext(context, options.ExperimentalSandbox)
         );
     }
 

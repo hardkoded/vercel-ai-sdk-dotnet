@@ -110,9 +110,7 @@ internal static class StreamTextTransformTestSupport
                     scripted.RequestBody == null
                         ? null
                         : new LanguageModelStreamRequest(
-                            System.Text.Json.JsonSerializer.SerializeToElement(
-                                scripted.RequestBody
-                            )
+                            System.Text.Json.JsonSerializer.SerializeToElement(scripted.RequestBody)
                         ),
                     scripted.Headers == null
                         ? null

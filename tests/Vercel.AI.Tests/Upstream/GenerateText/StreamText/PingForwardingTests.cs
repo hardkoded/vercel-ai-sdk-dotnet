@@ -86,10 +86,7 @@ public sealed class PingForwardingTests
         }
 
         Assert.Contains(chunks, chunk => chunk is PingPart);
-        Assert.Contains(
-            chunks,
-            chunk => chunk is ErrorPart { Error: NoOutputGeneratedException }
-        );
+        Assert.Contains(chunks, chunk => chunk is ErrorPart { Error: NoOutputGeneratedException });
         await Assert.ThrowsAsync<NoOutputGeneratedException>(() => result.Steps);
     }
 

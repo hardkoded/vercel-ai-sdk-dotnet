@@ -68,7 +68,7 @@ The response is `text/event-stream` with `x-vercel-ai-ui-message-stream: v1`. Ch
 
 ## A stream that ends without output
 
-When a provider stream ends without a finish part and without any output (no text, reasoning, tool input, or tool call), `StreamTextAsync` does not record an empty step. It reports a `NoOutputGeneratedException` (`AI_NoOutputGeneratedError`) with the message `No output generated. The model stream ended without a finish chunk.` `OnError` receives it, the stream ends with an `ErrorPart` and then fails, and `Text`, `Steps`, `FinishReason`, and `Usage` fault with it. `OnStepEnd` is not called for that step, but steps that finished before it keep their callbacks. When a later step of a tool loop ends this way, the whole call fails.
+When a provider stream ends without a finish part and without any output (no text, reasoning, tool input, or tool call), `StreamTextAsync` does not record an empty step. It reports a `NoOutputGeneratedException` (`AI_NoOutputGeneratedError`) with the message `No output generated. The model stream ended without a finish chunk.` `OnError` receives it, the stream ends with an `ErrorPart` (its `Error` is the `NoOutputGeneratedException`) and then completes without throwing, and `Text`, `Steps`, `FinishReason`, and `Usage` fault with it. `OnStepEnd` is not called for that step, but steps that finished before it keep their callbacks. When a later step of a tool loop ends this way, the whole call fails.
 
 A stream that ends without a finish part after it produced output keeps the partial result. The step finishes with `FinishReason.Other` and `OnError` is not called.
 
@@ -326,4 +326,25 @@ StreamTextTransform stopWord = options => (stream, ct) => StopAtWord(stream, opt
 var result = client.StreamTextAsync(new StreamTextOptions { Model = model, Prompt = "...", ExperimentalTransform = [stopWord] });
 ```
 
-The transforms change the stream that `Stream()`, `TextStream()`, and the UI message stream read. The result tasks (`Text`, `Steps`, and the like) and the callbacks still reflect the untransformed model output, which differs from upstream.
+The transforms run before the event processor, as upstream's `experimental_transform` does. The event processor records the steps, settles the result tasks, and calls the callbacks from the transformed stream. So `Text`, `Steps`, `Response`, `ResponseMessages`, `Usage` (the `FinishPart` usage), `FinishReason` (the `FinishPart` finish reason), `ProviderMetadata`, `OnChunk`, `OnStepEnd`, and `OnEnd` all see what the transforms produced, and the next step of a tool loop is prompted with the transformed response messages. A transform that changes a `ToolCallPart`, a `ToolResultPart`, or the `StepFinishPart` of a step (build a new `StepResult` for it) changes the recorded step. The step is recorded from the parts, so a transform that drops the `StepFinishPart` ends the step loop. After a transform calls `StopStream`, the results settle with what the transforms let through, like upstream's `terminate`.
+
+## Chunk callback
+
+`StreamTextOptions.OnChunk` (maps to `onChunk`) is called for each part of the stream after the transforms. It receives a `StreamTextChunkEvent` with the `Chunk`, and the stream processing waits until it returns.
+
+## Retrying after the stream started
+
+`MaxRetries` retries a model call that fails to start. `StreamTextOptions.StreamRetries` (maps to `streamRetries`) retries the current model step after a provider `ErrorPart` that arrives from the response stream. Leave it `null` to disable all stream retry behavior. It must be 0 or more. A retry reruns only the failed step with the same prompt. Earlier steps and their tool results are kept. The tool parts of an attempt wait until the attempt reaches its model-call end, so a failed attempt starts no tool. Text and reasoning that the failed attempt already streamed stays in `Stream()` and `TextStream()`, its open text and reasoning parts are ended, and what it produced is left out of the recovered step, the structured output, the response messages, and the next steps. The request and response metadata of the step come from the recovered attempt.
+
+`StreamTextOptions.OnErrorRetry` (the `onError` that returns `{ retry: true }`; C# has no union of callbacks) takes the place of `OnError` and returns a `StreamTextOnErrorResult`. With `StreamRetries` set, `Retry = true` retries once more, even with `StreamRetries = 0`. At most one retry per step is directed by the callback, after the automatic retries are used up. A retried error is not sent as an `ErrorPart`, and `OnError` or `OnErrorRetry` is called once for each error part. Without `StreamRetries`, `OnErrorRetry` only observes errors.
+
+```csharp
+var result = client.StreamTextAsync(new StreamTextOptions
+{
+    Model = model,
+    Prompt = "...",
+    StreamRetries = 0,
+    OnErrorRetry = (error, ct) => Task.FromResult<StreamTextOnErrorResult?>(
+        IsTransient(error) ? new StreamTextOnErrorResult { Retry = true } : null),
+});
+```

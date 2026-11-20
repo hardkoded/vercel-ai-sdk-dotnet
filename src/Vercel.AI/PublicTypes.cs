@@ -1877,7 +1877,11 @@ public sealed class StreamTextOptions : GenerateTextOptions
     /// error that was received from the response stream, when <see cref="StreamRetries"/> is set. It takes the place of
     /// <see cref="GenerateTextOptions.OnError"/>. C# has no union of callbacks, so the <c>onError</c> that returns <c>{ retry: true }</c> is this property.
     /// </summary>
-    public Func<Exception, CancellationToken, Task<StreamTextOnErrorResult?>>? OnErrorRetry { get; set; }
+    public Func<
+        Exception,
+        CancellationToken,
+        Task<StreamTextOnErrorResult?>
+    >? OnErrorRetry { get; set; }
 }
 
 /// <summary>The result of <see cref="StreamTextOptions.OnErrorRetry"/>. Maps to <c>{ retry?: boolean }</c>.</summary>

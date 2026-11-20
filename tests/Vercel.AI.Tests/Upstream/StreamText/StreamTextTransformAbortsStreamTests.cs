@@ -56,26 +56,22 @@ public sealed class StreamTextTransformAbortsStreamTests
             });
 
     private static CallsModel StopModel() =>
-        CallsModel.Single(
-            [
-                new TextStartStreamPart("1"),
-                new TextDeltaStreamPart("1", "Hello, "),
-                new TextDeltaStreamPart("1", "STOP"),
-                new TextDeltaStreamPart("1", " World"),
-                new TextEndStreamPart("1"),
-                Finish(),
-            ]
-        );
+        CallsModel.Single([
+            new TextStartStreamPart("1"),
+            new TextDeltaStreamPart("1", "Hello, "),
+            new TextDeltaStreamPart("1", "STOP"),
+            new TextDeltaStreamPart("1", " World"),
+            new TextEndStreamPart("1"),
+            Finish(),
+        ]);
 
     private static CallsModel HelloModel() =>
-        CallsModel.Single(
-            [
-                new TextStartStreamPart("1"),
-                new TextDeltaStreamPart("1", "Hello, "),
-                new TextEndStreamPart("1"),
-                Finish(),
-            ]
-        );
+        CallsModel.Single([
+            new TextStartStreamPart("1"),
+            new TextDeltaStreamPart("1", "Hello, "),
+            new TextEndStreamPart("1"),
+            Finish(),
+        ]);
 
     [Fact]
     [UpstreamTest(
@@ -219,8 +215,13 @@ public sealed class StreamTextTransformAbortsStreamTests
         Assert.Equal("mock-model-id", received.ModelId);
         Assert.Equal("response-id", received.Response.Id);
         Assert.Equal(DateTimeOffset.UnixEpoch, received.Response.Timestamp);
-        var message = Assert.IsType<AssistantModelMessage>(Assert.Single(received.Response.Messages));
-        Assert.Equal("Hello, ", Assert.IsType<AssistantTextPart>(Assert.Single(message.Parts)).Text);
+        var message = Assert.IsType<AssistantModelMessage>(
+            Assert.Single(received.Response.Messages)
+        );
+        Assert.Equal(
+            "Hello, ",
+            Assert.IsType<AssistantTextPart>(Assert.Single(message.Parts)).Text
+        );
         Assert.Equal(0, received.StepNumber);
         Assert.Null(received.Usage.InputTokens);
         Assert.Empty(received.Warnings);

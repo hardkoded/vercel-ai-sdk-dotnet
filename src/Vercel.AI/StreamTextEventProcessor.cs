@@ -189,10 +189,10 @@ internal sealed class StreamTextEventProcessor
         var cancellationToken = _token;
         // The stream retry reported the error parts it saw already.
         var handledForRetry = part is ErrorPart errorPart && _errors.TakeHandled(errorPart);
-        if (_options.OnChunk != null && !handledForRetry)
+        if (!handledForRetry)
         {
-            await _options
-                .OnChunk(new StreamTextChunkEvent(part), cancellationToken)
+            await StreamTextErrorHandling
+                .NotifyChunkAsync(_options, part, cancellationToken)
                 .ConfigureAwait(false);
         }
 
@@ -450,7 +450,13 @@ internal sealed class StreamTextEventProcessor
         // Upstream lists the provider's own results beside the client's; an error result is left out.
         foreach (var item in content)
         {
-            if (item is GeneratedToolResult { IsError: false, ProviderExecuted: true } providerResult)
+            if (
+                item is GeneratedToolResult
+                {
+                    IsError: false,
+                    ProviderExecuted: true
+                } providerResult
+            )
             {
                 toolResults.Add(Generation.ProviderExecutedResult(providerResult, toolCalls));
             }
@@ -577,9 +583,10 @@ internal sealed class StreamTextEventProcessor
         // reject when no output was generated or an incomplete model stream ended a continuation step:
         if (steps.Length == 0 || _recordedNoOutputError != null)
         {
-            var noOutput =
-                _recordedNoOutputError
-                ?? new NoOutputGeneratedException("No output generated. Check the stream for errors.");
+            var noOutput = _recordedNoOutputError
+                ?? new NoOutputGeneratedException(
+                    "No output generated. Check the stream for errors."
+                );
             _textSource.TrySetException(noOutput);
             _finishSource.TrySetException(noOutput);
             _usageSource.TrySetException(noOutput);

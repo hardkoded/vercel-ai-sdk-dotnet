@@ -95,9 +95,14 @@ public sealed class StreamTextTransformBaseTransformationTests
     private static JsonElement? UpperProviderMetadata(StepResult step) =>
         step.ProviderMetadata == null
             ? null
-            : JsonSerializer.SerializeToElement(new { testProvider = new { testKey = "TEST VALUE" } });
+            : JsonSerializer.SerializeToElement(
+                new { testProvider = new { testKey = "TEST VALUE" } }
+            );
 
-    private static StepResult WithProviderMetadata(StepResult step, JsonElement? providerMetadata) =>
+    private static StepResult WithProviderMetadata(
+        StepResult step,
+        JsonElement? providerMetadata
+    ) =>
         new(
             step.Text,
             step.ReasoningText,
@@ -123,11 +128,8 @@ public sealed class StreamTextTransformBaseTransformationTests
         };
 
     private static Tool Tool1() =>
-        Tool.Function(
-            "tool1",
-            null,
-            ValueSchema,
-            (input, _) => Task.FromResult(input.GetProperty("value").GetString()! + "-result")
+        Tool.Function("tool1", null, ValueSchema, (input, _) =>
+            Task.FromResult(input.GetProperty("value").GetString()! + "-result")
         );
 
     private static readonly JsonElement TestMetadata = JsonSerializer.SerializeToElement(
@@ -211,19 +213,19 @@ public sealed class StreamTextTransformBaseTransformationTests
     {
         var usage = new LanguageModelUsage(200, 300, null);
         StreamTextTransform transform = _ =>
-            Map(chunk => chunk is FinishPart finish ? [new FinishPart(finish.FinishReason, usage)] : [chunk]);
+            Map(chunk =>
+                chunk is FinishPart finish ? [new FinishPart(finish.FinishReason, usage)] : [chunk]
+            );
         var result = SteeringTestSupport
             .Client()
             .StreamTextAsync(
                 Options(
-                    CallsModel.Single(
-                        [
-                            new TextStartStreamPart("1"),
-                            new TextDeltaStreamPart("1", "Hello"),
-                            new TextEndStreamPart("1"),
-                            Finish(),
-                        ]
-                    ),
+                    CallsModel.Single([
+                        new TextStartStreamPart("1"),
+                        new TextDeltaStreamPart("1", "Hello"),
+                        new TextEndStreamPart("1"),
+                        Finish(),
+                    ]),
                     transform
                 )
             );
@@ -242,19 +244,21 @@ public sealed class StreamTextTransformBaseTransformationTests
     public async Task Result_finishReason_should_be_transformed()
     {
         StreamTextTransform transform = _ =>
-            Map(chunk => chunk is FinishPart finish ? [new FinishPart(FinishReason.Stop, finish.Usage)] : [chunk]);
+            Map(chunk =>
+                chunk is FinishPart finish
+                    ? [new FinishPart(FinishReason.Stop, finish.Usage)]
+                    : [chunk]
+            );
         var result = SteeringTestSupport
             .Client()
             .StreamTextAsync(
                 Options(
-                    CallsModel.Single(
-                        [
-                            new TextStartStreamPart("1"),
-                            new TextDeltaStreamPart("1", "Hello"),
-                            new TextEndStreamPart("1"),
-                            Finish(FinishReason.Length, "raw-length"),
-                        ]
-                    ),
+                    CallsModel.Single([
+                        new TextStartStreamPart("1"),
+                        new TextDeltaStreamPart("1", "Hello"),
+                        new TextEndStreamPart("1"),
+                        Finish(FinishReason.Length, "raw-length"),
+                    ]),
                     transform
                 )
             );
@@ -275,16 +279,14 @@ public sealed class StreamTextTransformBaseTransformationTests
             .StreamTextAsync(
                 new StreamTextOptions
                 {
-                    Model = CallsModel.Single(
-                        [
-                            new TextStartStreamPart("1"),
-                            new TextDeltaStreamPart("1", "Hello, "),
-                            new TextDeltaStreamPart("1", "world!"),
-                            new TextEndStreamPart("1"),
-                            new ToolCallStreamPart("call-1", "tool1", "{ \"value\": \"value\" }"),
-                            Finish(),
-                        ]
-                    ),
+                    Model = CallsModel.Single([
+                        new TextStartStreamPart("1"),
+                        new TextDeltaStreamPart("1", "Hello, "),
+                        new TextDeltaStreamPart("1", "world!"),
+                        new TextEndStreamPart("1"),
+                        new ToolCallStreamPart("call-1", "tool1", "{ \"value\": \"value\" }"),
+                        Finish(),
+                    ]),
                     Tools = [Tool1()],
                     ExperimentalTransform = [UpperCase],
                     Prompt = "test-input",
@@ -295,7 +297,10 @@ public sealed class StreamTextTransformBaseTransformationTests
 
         Assert.Equal("call-1", call.ToolCallId);
         Assert.Equal("tool1", call.ToolName);
-        Assert.Equal("VALUE", JsonDocument.Parse(call.ArgumentsJson).RootElement.GetProperty("value").GetString());
+        Assert.Equal(
+            "VALUE",
+            JsonDocument.Parse(call.ArgumentsJson).RootElement.GetProperty("value").GetString()
+        );
     }
 
     [Fact]
@@ -311,19 +316,19 @@ public sealed class StreamTextTransformBaseTransformationTests
             .StreamTextAsync(
                 new StreamTextOptions
                 {
-                    Model = CallsModel.Single(
-                        [
-                            new TextStartStreamPart("1"),
-                            new TextDeltaStreamPart("1", "Hello, "),
-                            new TextDeltaStreamPart("1", "world!"),
-                            new TextEndStreamPart("1"),
-                            new ToolCallStreamPart("call-1", "tool1", "{ \"value\": \"value\" }"),
-                            Finish(),
-                        ]
-                    ),
+                    Model = CallsModel.Single([
+                        new TextStartStreamPart("1"),
+                        new TextDeltaStreamPart("1", "Hello, "),
+                        new TextDeltaStreamPart("1", "world!"),
+                        new TextEndStreamPart("1"),
+                        new ToolCallStreamPart("call-1", "tool1", "{ \"value\": \"value\" }"),
+                        Finish(),
+                    ]),
                     Tools =
                     [
-                        Tool.Function("tool1", null, ValueSchema, (_, _) => Task.FromResult("result1")),
+                        Tool.Function("tool1", null, ValueSchema, (_, _) =>
+                            Task.FromResult("result1")
+                        ),
                     ],
                     ExperimentalTransform = [UpperCase],
                     Prompt = "test-input",
@@ -355,24 +360,24 @@ public sealed class StreamTextTransformBaseTransformationTests
             .StreamTextAsync(
                 new StreamTextOptions
                 {
-                    Model = CallsModel.Single(
-                        [
-                            new ResponseMetadataStreamPart(
-                                "id-0",
-                                "mock-model-id",
-                                DateTimeOffset.UnixEpoch
-                            ),
-                            new TextStartStreamPart("1"),
-                            new TextDeltaStreamPart("1", "Hello, "),
-                            new TextDeltaStreamPart("1", "world!"),
-                            new TextEndStreamPart("1"),
-                            new ToolCallStreamPart("call-1", "tool1", "{ \"value\": \"value\" }"),
-                            Finish(),
-                        ]
-                    ),
+                    Model = CallsModel.Single([
+                        new ResponseMetadataStreamPart(
+                            "id-0",
+                            "mock-model-id",
+                            DateTimeOffset.UnixEpoch
+                        ),
+                        new TextStartStreamPart("1"),
+                        new TextDeltaStreamPart("1", "Hello, "),
+                        new TextDeltaStreamPart("1", "world!"),
+                        new TextEndStreamPart("1"),
+                        new ToolCallStreamPart("call-1", "tool1", "{ \"value\": \"value\" }"),
+                        Finish(),
+                    ]),
                     Tools =
                     [
-                        Tool.Function("tool1", null, ValueSchema, (_, _) => Task.FromResult("result1")),
+                        Tool.Function("tool1", null, ValueSchema, (_, _) =>
+                            Task.FromResult("result1")
+                        ),
                     ],
                     ExperimentalTransform = [UpperCase],
                     Prompt = "test-input",
@@ -385,10 +390,7 @@ public sealed class StreamTextTransformBaseTransformationTests
         Assert.Equal("test-telemetry-call-id", step.CallId);
         Assert.Equal(0, step.StepNumber);
         Assert.Equal("HELLO, WORLD!", step.Text);
-        Assert.Equal(
-            ["text", "tool-call", "tool-result"],
-            step.Content.Select(part => part.Type)
-        );
+        Assert.Equal(["text", "tool-call", "tool-result"], step.Content.Select(part => part.Type));
         Assert.Equal("HELLO, WORLD!", Assert.IsType<GeneratedText>(step.Content[0]).Text);
         Assert.Equal(
             "VALUE",
@@ -480,11 +482,11 @@ public sealed class StreamTextTransformBaseTransformationTests
         Assert.Equal("HELLO, WORLD!", received!.Text);
         Assert.Equal(FinishReason.Stop, received.FinishReason);
         var step = Assert.Single(received.Steps);
+        Assert.Equal(["text", "tool-call", "tool-result"], step.Content.Select(part => part.Type));
         Assert.Equal(
-            ["text", "tool-call", "tool-result"],
-            step.Content.Select(part => part.Type)
+            "VALUE-RESULT",
+            Assert.IsType<GeneratedToolResult>(step.Content[2]).ResultJson
         );
-        Assert.Equal("VALUE-RESULT", Assert.IsType<GeneratedToolResult>(step.Content[2]).ResultJson);
         Assert.Equal("VALUE-RESULT", Assert.Single(step.ToolResults).OutputJson);
         Assert.Equal(
             "VALUE",
@@ -499,7 +501,10 @@ public sealed class StreamTextTransformBaseTransformationTests
         );
         Assert.Equal(2, received.ResponseMessages.Count);
         Assert.Equal(3, received.Usage.InputTokens);
-        Assert.Equal("call-1", Assert.Single(received.Steps.SelectMany(s => s.ToolCalls)).ToolCallId);
+        Assert.Equal(
+            "call-1",
+            Assert.Single(received.Steps.SelectMany(s => s.ToolCalls)).ToolCallId
+        );
     }
 
     [Fact]
@@ -558,24 +563,22 @@ public sealed class StreamTextTransformBaseTransformationTests
             .StreamTextAsync(
                 new StreamTextOptions
                 {
-                    Model = CallsModel.Single(
-                        [
-                            new TextStartStreamPart("1"),
-                            new TextDeltaStreamPart("1", "Hello"),
-                            new ReasoningStartStreamPart("2"),
-                            new ReasoningDeltaStreamPart("2", "Feeling clever"),
-                            new ReasoningEndStreamPart("2"),
-                            new ToolInputStartStreamPart("call-1", "tool1"),
-                            new ToolInputDeltaStreamPart("call-1", "{\"value\": \""),
-                            new ToolInputDeltaStreamPart("call-1", "test"),
-                            new ToolInputDeltaStreamPart("call-1", "\"}"),
-                            new ToolInputEndStreamPart("call-1"),
-                            new ToolCallStreamPart("call-1", "tool1", "{ \"value\": \"test\" }"),
-                            new TextDeltaStreamPart("1", " World"),
-                            new TextEndStreamPart("1"),
-                            Finish(),
-                        ]
-                    ),
+                    Model = CallsModel.Single([
+                        new TextStartStreamPart("1"),
+                        new TextDeltaStreamPart("1", "Hello"),
+                        new ReasoningStartStreamPart("2"),
+                        new ReasoningDeltaStreamPart("2", "Feeling clever"),
+                        new ReasoningEndStreamPart("2"),
+                        new ToolInputStartStreamPart("call-1", "tool1"),
+                        new ToolInputDeltaStreamPart("call-1", "{\"value\": \""),
+                        new ToolInputDeltaStreamPart("call-1", "test"),
+                        new ToolInputDeltaStreamPart("call-1", "\"}"),
+                        new ToolInputEndStreamPart("call-1"),
+                        new ToolCallStreamPart("call-1", "tool1", "{ \"value\": \"test\" }"),
+                        new TextDeltaStreamPart("1", " World"),
+                        new TextEndStreamPart("1"),
+                        Finish(),
+                    ]),
                     Tools = [Tool1()],
                     Prompt = "test-input",
                     OnChunk = (chunk, _) =>

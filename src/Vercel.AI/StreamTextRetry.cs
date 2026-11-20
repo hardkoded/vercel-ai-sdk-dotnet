@@ -92,14 +92,14 @@ internal sealed class StreamTextRetry
 
                 var isToolPart =
                     part
-                        is ToolInputStartPart
-                            or ToolInputDeltaPart
-                            or ToolInputEndPart
-                            or ToolCallPart
-                            or ToolApprovalRequestPart
-                            or ToolApprovalResponsePart
-                            or ToolResultPart
-                            or ToolErrorPart;
+                    is ToolInputStartPart
+                        or ToolInputDeltaPart
+                        or ToolInputEndPart
+                        or ToolCallPart
+                        or ToolApprovalRequestPart
+                        or ToolApprovalResponsePart
+                        or ToolResultPart
+                        or ToolErrorPart;
                 if (
                     _bufferToolParts
                     && part is not (ErrorPart or PingPart)
@@ -119,9 +119,11 @@ internal sealed class StreamTextRetry
 
                 var failure = error.Error ?? new AiSdkException(error.Message);
                 // The part carries its error, so the event processor can tell that the error was reported.
-                var forwarded = error.Error == null ? new ErrorPart(error.Message) { Error = failure } : error;
+                var forwarded =
+                    error.Error == null ? new ErrorPart(error.Message) { Error = failure } : error;
                 var isToolChoiceViolation = failure is ToolChoiceViolationException;
-                var result = await _errors.NotifyAsync(error, failure, cancellationToken)
+                var result = await _errors
+                    .NotifyAsync(error, failure, cancellationToken)
                     .ConfigureAwait(false);
                 var callbackRequestedRetry = _canRetryViaOnError && result?.Retry == true;
                 var automaticRetry = !isToolChoiceViolation && _automaticRetries < _streamRetries;
@@ -248,7 +250,7 @@ internal sealed class StreamTextRetry
 internal sealed class StreamTextErrorHandling
 {
     private readonly StreamTextOptions _options;
-    private readonly HashSet<Exception> _handled = new(ReferenceEqualityComparer.Instance);
+    private readonly HashSet<Exception> _handled = new();
 
     public StreamTextErrorHandling(StreamTextOptions options)
     {
@@ -283,15 +285,33 @@ internal sealed class StreamTextErrorHandling
         CancellationToken cancellationToken
     )
     {
-        if (_options.OnChunk != null)
+        await NotifyChunkAsync(_options, part, cancellationToken).ConfigureAwait(false);
+        return await InvokeOnErrorAsync(_options, error, cancellationToken, swallow: true)
+            .ConfigureAwait(false);
+    }
+
+    // Maps to notify of onChunk. Errors in the callback do not break the stream.
+    public static async Task NotifyChunkAsync(
+        StreamTextOptions options,
+        TextStreamPart part,
+        CancellationToken cancellationToken
+    )
+    {
+        if (options.OnChunk == null)
         {
-            await _options
+            return;
+        }
+
+        try
+        {
+            await options
                 .OnChunk(new StreamTextChunkEvent(part), cancellationToken)
                 .ConfigureAwait(false);
         }
-
-        return await InvokeOnErrorAsync(_options, error, cancellationToken, swallow: true)
-            .ConfigureAwait(false);
+        catch (Exception) when (!cancellationToken.IsCancellationRequested)
+        {
+            // Errors in callbacks do not break the generation flow (upstream notify).
+        }
     }
 
     // Maps to onError: the callback that may request a retry, or the plain one.
