@@ -41,7 +41,8 @@ internal static class OpenResponsesInput
         string providerOptionsName = OpenResponsesProvider.ProviderName,
         bool strictResponseInput = false,
         OpenResponsesExtensionRegistry? extensionRegistry = null,
-        IReadOnlyDictionary<string, LanguageModelTool>? providerToolsByName = null
+        IReadOnlyDictionary<string, LanguageModelTool>? providerToolsByName = null,
+        string? customToolId = null
     )
     {
         providerToolsByName ??= new Dictionary<string, LanguageModelTool>(StringComparer.Ordinal);
@@ -76,7 +77,8 @@ internal static class OpenResponsesInput
                         providerOptionsName,
                         strictResponseInput,
                         extensionRegistry,
-                        providerToolsByName
+                        providerToolsByName,
+                        customToolId
                     );
                     break;
                 case ToolModelMessage tool:
@@ -87,7 +89,8 @@ internal static class OpenResponsesInput
                         replayedExtensionItems,
                         providerOptionsName,
                         extensionRegistry,
-                        providerToolsByName
+                        providerToolsByName,
+                        customToolId
                     );
                     break;
             }
@@ -184,7 +187,8 @@ internal static class OpenResponsesInput
         string providerOptionsName,
         bool strictResponseInput,
         OpenResponsesExtensionRegistry? extensionRegistry,
-        IReadOnlyDictionary<string, LanguageModelTool> providerToolsByName
+        IReadOnlyDictionary<string, LanguageModelTool> providerToolsByName,
+        string? customToolId
     )
     {
         var content = new JsonArray();
@@ -310,7 +314,15 @@ internal static class OpenResponsesInput
                 case AssistantToolCallPart toolCall:
                     Flush();
                     var call = toolCall.ToolCall;
-                    var item = new JsonObject { ["type"] = "function_call" };
+                    var isCustomCall = IsCustomTool(
+                        providerToolsByName,
+                        call.ToolName,
+                        customToolId
+                    );
+                    var item = new JsonObject
+                    {
+                        ["type"] = isCustomCall ? "custom_tool_call" : "function_call",
+                    };
                     if (ItemId(providerData) is { } callItemId)
                     {
                         item["id"] = callItemId;
@@ -318,7 +330,7 @@ internal static class OpenResponsesInput
 
                     item["call_id"] = call.ToolCallId;
                     item["name"] = call.ToolName;
-                    item["arguments"] = call.ArgumentsJson;
+                    item[isCustomCall ? "input" : "arguments"] = call.ArgumentsJson;
                     input.Add(item);
                     break;
             }
@@ -466,7 +478,8 @@ internal static class OpenResponsesInput
         HashSet<string> replayedExtensionItems,
         string providerOptionsName,
         OpenResponsesExtensionRegistry? extensionRegistry,
-        IReadOnlyDictionary<string, LanguageModelTool> providerToolsByName
+        IReadOnlyDictionary<string, LanguageModelTool> providerToolsByName,
+        string? customToolId
     )
     {
         if (
@@ -499,7 +512,9 @@ internal static class OpenResponsesInput
         input.Add(
             new JsonObject
             {
-                ["type"] = "function_call_output",
+                ["type"] = IsCustomTool(providerToolsByName, tool.ToolName, customToolId)
+                    ? "custom_tool_call_output"
+                    : "function_call_output",
                 ["call_id"] = tool.ToolCallId,
                 ["output"] =
                     tool.OutputContent != null
@@ -507,6 +522,18 @@ internal static class OpenResponsesInput
                         : ToolOutput(tool),
             }
         );
+    }
+
+    /// <summary>Whether <paramref name="toolName"/> is the provider tool with the id <paramref name="customToolId"/>.</summary>
+    private static bool IsCustomTool(
+        IReadOnlyDictionary<string, LanguageModelTool> providerToolsByName,
+        string toolName,
+        string? customToolId
+    )
+    {
+        return customToolId != null
+            && providerToolsByName.TryGetValue(toolName, out var providerTool)
+            && providerTool.ProviderToolId == customToolId;
     }
 
     private static JsonArray ToolContentOutput(
