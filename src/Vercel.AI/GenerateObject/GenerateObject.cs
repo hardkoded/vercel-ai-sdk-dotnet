@@ -137,6 +137,9 @@ public sealed class GenerateObjectOptions<T>
 
     /// <summary>Called after the object is parsed and validated.</summary>
     public Func<GenerateObjectEndEvent<T>, CancellationToken, Task>? OnFinish { get; set; }
+
+    /// <summary>Generates the id of the call. Tests replace it. Maps to <c>_internal.generateId</c>.</summary>
+    internal Func<string>? GenerateId { get; set; }
 }
 
 /// <summary>Input passed to <see cref="GenerateObjectOptions{T}.RepairText"/>.</summary>

@@ -192,7 +192,7 @@ public sealed class AiClient : IAiClient
         );
 
         var model = ResolveLanguage(options.Model, options.ModelId);
-        var callId = ProviderUtils.JsonValues.GenerateId("aiobj-");
+        var callId = options.GenerateId?.Invoke() ?? ProviderUtils.JsonValues.GenerateId("aiobj-");
         if (options.OnStart != null)
         {
             await NotifyCallbackAsync(
@@ -229,23 +229,6 @@ public sealed class AiClient : IAiClient
                                 Schema = ParseSchema(options.Schema),
                                 SchemaName = options.SchemaName,
                                 SchemaDescription = options.SchemaDescription,
-                            },
-                            cancellationToken
-                        ),
-                    cancellationToken
-                )
-                .ConfigureAwait(false);
-        }
-
-        if (options.OnStepStart != null)
-        {
-            await NotifyCallbackAsync(
-                    () =>
-                        options.OnStepStart(
-                            new GenerateObjectStepStartEvent(callId, model.Provider, model.ModelId)
-                            {
-                                ProviderOptions = options.ProviderOptions,
-                                Headers = options.Headers,
                             },
                             cancellationToken
                         ),
@@ -302,6 +285,33 @@ public sealed class AiClient : IAiClient
                         ),
                     token
                 );
+        }
+
+        if (options.OnStepStart != null)
+        {
+            var promptMessages = await Vercel
+                .AI.Prompt.LanguageModelPrompts.ConvertToLanguageModelPromptAsync(
+                    Generation.BuildPrompt(generateOptions),
+                    model.SupportedUrls,
+                    null,
+                    cancellationToken,
+                    model.Provider.Split('.')[0]
+                )
+                .ConfigureAwait(false);
+            await NotifyCallbackAsync(
+                    () =>
+                        options.OnStepStart(
+                            new GenerateObjectStepStartEvent(callId, model.Provider, model.ModelId)
+                            {
+                                ProviderOptions = options.ProviderOptions,
+                                Headers = options.Headers,
+                                PromptMessages = promptMessages,
+                            },
+                            cancellationToken
+                        ),
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
         }
 
         var generated = await Generation
