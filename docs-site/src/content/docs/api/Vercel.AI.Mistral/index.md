@@ -25,6 +25,7 @@ Public types in the `Vercel.AI.Mistral` namespace.
 | [MistralLanguageModelEntry](/api/Vercel.AI.Mistral/MistralLanguageModelEntry/) | Language model entry of the Mistral catalog. Maps to MistralLanguageModelEntry. |
 | [MistralModelCatalog](/api/Vercel.AI.Mistral/MistralModelCatalog/) | Mistral model catalog. Maps to mistral-model-catalog.ts. |
 | [MistralModelEntry](/api/Vercel.AI.Mistral/MistralModelEntry/) | An entry of Entries. Maps to MistralModelEntry. Exactly the sections the model declares are set. |
+| [MistralOptions](/api/Vercel.AI.Mistral/MistralOptions/) | Mistral settings. Maps to MistralProviderSettings. |
 | [MistralProvider](/api/Vercel.AI.Mistral/MistralProvider/) | Mistral provider. OpenAI Chat Completions compatible at https://api.mistral.ai/v1. |
 | [MistralProviderOptions](/api/Vercel.AI.Mistral/MistralProviderOptions/) | Known options accepted under providerOptions.mistral. Maps to mistralProviderOptions. |
 | [MistralReasoningCapabilities](/api/Vercel.AI.Mistral/MistralReasoningCapabilities/) | Reasoning support of a model. Maps to the catalog's ReasoningCapabilities. |
