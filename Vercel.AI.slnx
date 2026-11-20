@@ -54,6 +54,7 @@
         <Project Path="examples/GenerateVideoXaiUploadUrl/GenerateVideoXaiUploadUrl.csproj" />
         <Project Path="examples/GenerateVideoXaiWebhookOptions/GenerateVideoXaiWebhookOptions.csproj" />
         <Project Path="examples/McpImageContent/McpImageContent.csproj" />
+        <Project Path="examples/OpenResponsesBareExtension/OpenResponsesBareExtension.csproj" />
         <Project Path="examples/Providers/Providers.csproj" />
         <Project Path="examples/StreamText/StreamText.csproj" />
         <Project Path="examples/StreamTextCerebrasServiceTier/StreamTextCerebrasServiceTier.csproj" />

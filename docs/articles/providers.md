@@ -199,6 +199,8 @@ var webSearch = new OpenResponsesExtension
 };
 ```
 
+A runnable example with a mocked `HttpClient` is in `examples/OpenResponsesBareExtension`. It encodes a bare tool, decodes a provider-executed call, and replays the original item on the next turn.
+
 Set `AllowBareTypes = true` when using `BareToolType`, `BareItemTypes`, or `BareEventTypes`, and only then. These fields accept only non-namespaced values. They do not enable unknown JSON passthrough: a bare discriminator is handled only when it exactly matches a registered value. Core Open Responses discriminators and duplicate registrations are rejected, and `ToolType` and `BareToolType` cannot be set together. Use the normal namespaced fields whenever the implementation supports them.
 
 Set `ProviderExecuted` on each decoded tool call or `ToolInputStartStreamPart`. It can vary by item or event. An extension can define:

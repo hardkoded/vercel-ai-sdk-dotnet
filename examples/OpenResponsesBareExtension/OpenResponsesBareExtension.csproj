@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <Description>Registers a bare Open Responses extension and replays its item. The HTTP calls are mocked, no API key needed.</Description>
+    </PropertyGroup>
+</Project>
