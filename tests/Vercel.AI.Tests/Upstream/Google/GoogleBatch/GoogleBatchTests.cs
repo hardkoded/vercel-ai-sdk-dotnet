@@ -344,8 +344,7 @@ public sealed class GoogleBatchTests
     [Fact]
     [UpstreamTest(
         "packages/google/src/google-batch.test.ts::GoogleBatch::starts a batch with inline requests when the creation body is under 20 MB",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Does not assert that the abort signal reaches fetch."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Starts_a_batch_with_inline_requests_when_the_creation_body_is_under_20_MB()
     {
@@ -382,13 +381,16 @@ public sealed class GoogleBatchTests
                 .RootElement.Clone()
         );
 
+        using var abort = new CancellationTokenSource();
+        handler.ObserveAbort(abort, 1);
         var result = await batch.DoStartAsync(
             StartCall(
                 [request],
                 "https://example.com/google-batch-webhook",
-                new Dictionary<string, string> { ["Operation-Header"] = "operation" }
+                new Dictionary<string, string> { ["Operation-Header"] = "operation" },
+                abort.Token
             ),
-            CancellationToken.None
+            abort.Token
         );
 
         Assert.Null(result.ProviderMetadata);
@@ -426,6 +428,7 @@ public sealed class GoogleBatchTests
         );
 
         var call = Assert.Single(handler.Calls);
+        Assert.True(handler.Calls[^1].SawCancellation);
         Assert.Equal(Create, call.Url);
         Assert.Equal("POST", call.Method);
         Assert.Equal("provider", call.Headers["provider-header"]);
@@ -477,8 +480,7 @@ public sealed class GoogleBatchTests
     [Fact]
     [UpstreamTest(
         "packages/google/src/google-batch.test.ts::GoogleBatch::cancels a batch",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Does not assert that the abort signal reaches fetch."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Cancels_a_batch()
     {
@@ -487,11 +489,14 @@ public sealed class GoogleBatchTests
             options.Headers["Provider-Header"] = "provider"
         );
 
+        using var abort = new CancellationTokenSource();
+        handler.ObserveAbort(abort, 1);
         var result = await batch.DoCancelAsync(
             OperationCall(
-                headers: new Dictionary<string, string> { ["Operation-Header"] = "operation" }
+                headers: new Dictionary<string, string> { ["Operation-Header"] = "operation" },
+                cancellationToken: abort.Token
             ),
-            CancellationToken.None
+            abort.Token
         );
 
         Assert.Null(result.ProviderMetadata);
@@ -502,13 +507,13 @@ public sealed class GoogleBatchTests
         Assert.Equal("test-api-key", call.Headers["x-goog-api-key"]);
         Assert.Equal("provider", call.Headers["provider-header"]);
         Assert.Equal("operation", call.Headers["operation-header"]);
+        Assert.True(handler.Calls[^1].SawCancellation);
     }
 
     [Fact]
     [UpstreamTest(
         "packages/google/src/google-batch.test.ts::GoogleBatch::lists and normalizes a page of batches",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Does not assert that the abort signal reaches fetch."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Lists_and_normalizes_a_page_of_batches()
     {
@@ -551,14 +556,17 @@ public sealed class GoogleBatchTests
             options.Headers["Provider-Header"] = "provider"
         );
 
+        using var abort = new CancellationTokenSource();
+        handler.ObserveAbort(abort, 1);
         var page = await batch.DoListAsync(
             OperationCall(
                 "",
                 new Dictionary<string, string> { ["Operation-Header"] = "operation" },
                 2,
-                "page-token-1"
+                "page-token-1",
+                abort.Token
             ),
-            CancellationToken.None
+            abort.Token
         );
 
         Assert.Equal("page-token-2", page.NextCursor);
@@ -591,6 +599,7 @@ public sealed class GoogleBatchTests
         Assert.Equal("provider", call.Headers["provider-header"]);
         Assert.Equal("operation", call.Headers["operation-header"]);
         Assert.Equal("?pageSize=2&pageToken=page-token-1", new Uri(call.FullUrl).Query);
+        Assert.True(handler.Calls[^1].SawCancellation);
     }
 
     [Theory]
@@ -615,7 +624,7 @@ public sealed class GoogleBatchTests
     [UpstreamTest(
         "packages/google/src/google-batch.test.ts::GoogleBatch::uses a resumable file upload when the creation body reaches 20 MB",
         Coverage = UpstreamCoverage.Partial,
-        Note = "Does not assert that the abort signal reaches fetch."
+        Note = "Asserts the abort signal reached the final HTTP call only; HttpClient disposes the token of each earlier call before the test can cancel it."
     )]
     public async Task Uses_a_resumable_file_upload_when_the_creation_body_reaches_20_MB()
     {
@@ -647,13 +656,16 @@ public sealed class GoogleBatchTests
             options.Headers["Provider-Header"] = "provider"
         );
 
+        using var abort = new CancellationTokenSource();
+        handler.ObserveAbort(abort, 3);
         var result = await batch.DoStartAsync(
             StartCall(
                 [Request("small-request", "small"), Request("large-request", prompt)],
                 webhook,
-                new Dictionary<string, string> { ["Operation-Header"] = "operation" }
+                new Dictionary<string, string> { ["Operation-Header"] = "operation" },
+                abort.Token
             ),
-            CancellationToken.None
+            abort.Token
         );
 
         Assert.Empty(result.Warnings);
@@ -690,6 +702,8 @@ public sealed class GoogleBatchTests
         Assert.StartsWith("{\"key\":\"small-request\",\"request\":", uploadText);
         Assert.Contains("\n{\"key\":\"large-request\",\"request\":", uploadText);
         Assert.EndsWith("\n", uploadText);
+        Assert.Equal(3, handler.Calls.Count);
+        Assert.True(handler.Calls[^1].SawCancellation);
 
         static JsonObject InlinedRequest(string id, string text) =>
             new()
@@ -901,8 +915,7 @@ public sealed class GoogleBatchTests
     [Fact]
     [UpstreamTest(
         "packages/google/src/google-batch.test.ts::GoogleBatch::surfaces Google HTTP errors from status retrieval",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Asserts the status code and message; the error does not carry the request URL."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Surfaces_Google_HTTP_errors_from_status_retrieval()
     {
@@ -921,13 +934,13 @@ public sealed class GoogleBatchTests
 
         Assert.Equal("Batch not found.", error.Message);
         Assert.Equal(404, error.StatusCode);
+        Assert.Equal(Batch, error.Url);
     }
 
     [Fact]
     [UpstreamTest(
         "packages/google/src/google-batch.test.ts::GoogleBatch::surfaces Google HTTP errors from starting a batch",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Asserts the status code and message; the error does not carry the request URL."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Surfaces_Google_HTTP_errors_from_starting_a_batch()
     {
@@ -949,5 +962,6 @@ public sealed class GoogleBatchTests
 
         Assert.Equal("The batch input was invalid.", error.Message);
         Assert.Equal(400, error.StatusCode);
+        Assert.Equal(Create, error.Url);
     }
 }

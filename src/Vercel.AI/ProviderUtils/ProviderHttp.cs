@@ -55,7 +55,8 @@ public sealed class ProviderHttp
                 (int)response.StatusCode,
                 ErrorMessage((int)response.StatusCode, body),
                 body,
-                CopyHeaders(response)
+                CopyHeaders(response),
+                uri.AbsoluteUri
             );
         }
 
@@ -96,7 +97,8 @@ public sealed class ProviderHttp
                     (int)response.StatusCode,
                     ErrorMessage((int)response.StatusCode, body),
                     body,
-                    CopyHeaders(response)
+                    CopyHeaders(response),
+                    uri.AbsoluteUri
                 );
             }
 
@@ -139,7 +141,8 @@ public sealed class ProviderHttp
                 (int)response.StatusCode,
                 ErrorMessage((int)response.StatusCode, body),
                 body,
-                CopyHeaders(response)
+                CopyHeaders(response),
+                uri.AbsoluteUri
             );
         }
 
@@ -211,7 +214,8 @@ public sealed class ProviderHttp
                 (int)response.StatusCode,
                 ErrorMessage((int)response.StatusCode, text),
                 text,
-                CopyHeaders(response)
+                CopyHeaders(response),
+                uri.AbsoluteUri
             );
         }
 
@@ -246,7 +250,8 @@ public sealed class ProviderHttp
                     (int)response.StatusCode,
                     ErrorMessage((int)response.StatusCode, text),
                     text,
-                    CopyHeaders(response)
+                    CopyHeaders(response),
+                    uri.AbsoluteUri
                 );
             }
 
@@ -357,7 +362,8 @@ public sealed class ProviderHttp
                     (int)response.StatusCode,
                     ErrorMessage((int)response.StatusCode, body),
                     body,
-                    CopyHeaders(response)
+                    CopyHeaders(response),
+                    uri.AbsoluteUri
                 );
             }
 
@@ -465,7 +471,8 @@ public sealed class ProviderHttp
                     (int)response.StatusCode,
                     ErrorMessage((int)response.StatusCode, body),
                     body,
-                    CopyHeaders(response)
+                    CopyHeaders(response),
+                    uri.AbsoluteUri
                 );
             }
 
