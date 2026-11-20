@@ -228,8 +228,7 @@ public sealed class GenerateTextExperimentalSteeringInterruptTests
     [UpstreamTest(
         Prefix
             + "should run prepareStep again for the redo, notify onStepStart once, and start two model calls",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "GenerateTextOptions has no OnStepStart, so the once-per-step notification is not checked.",
+        Coverage = UpstreamCoverage.Covered,
         Commit = Commit
     )]
     public async Task Should_run_prepareStep_again_for_the_redo_and_start_two_model_calls()
@@ -238,6 +237,7 @@ public sealed class GenerateTextExperimentalSteeringInterruptTests
         var prepareStepContexts = new List<PrepareStepContext>();
         var callStarts = 0;
         var callEnds = 0;
+        var stepStarts = 0;
         var model = InterruptTestModel.HangingFirstCall(
             options =>
                 _ = steering.SteerAsync(
@@ -253,6 +253,11 @@ public sealed class GenerateTextExperimentalSteeringInterruptTests
                 Model = model,
                 Prompt = PromptText,
                 ExperimentalSteering = steering,
+                OnStepStart = (_, _) =>
+                {
+                    stepStarts++;
+                    return Task.CompletedTask;
+                },
                 PrepareStep = context =>
                 {
                     prepareStepContexts.Add(context);
@@ -277,6 +282,7 @@ public sealed class GenerateTextExperimentalSteeringInterruptTests
             "Use Paris, Texas instead.",
             Text(Assert.Single(prepareStepContexts[1].ExperimentalSteeringMessages!))
         );
+        Assert.Equal(1, stepStarts);
         Assert.Equal(2, callStarts);
         Assert.Equal(1, callEnds);
     }

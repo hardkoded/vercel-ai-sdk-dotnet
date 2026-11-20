@@ -591,8 +591,7 @@ public sealed class StreamTextExperimentalSteeringInterruptTests
     [UpstreamTest(
         Prefix
             + "should run prepareStep again for the redo, notify onStepStart once, and start two model calls",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "StreamTextOptions has no OnStepStart, so the once-per-step notification is not checked.",
+        Coverage = UpstreamCoverage.Covered,
         Commit = Commit
     )]
     public async Task Should_run_prepareStep_again_for_the_redo_and_start_two_model_calls()
@@ -601,6 +600,7 @@ public sealed class StreamTextExperimentalSteeringInterruptTests
         var prepareStepContexts = new List<PrepareStepContext>();
         var callStarts = 0;
         var callEnds = 0;
+        var stepStarts = 0;
         var model = CreateModel(
             (options, token) => Hanging(options, token),
             () => _ = Interrupt(steering),
@@ -613,6 +613,11 @@ public sealed class StreamTextExperimentalSteeringInterruptTests
                 Model = model,
                 Prompt = PromptText,
                 ExperimentalSteering = steering,
+                OnStepStart = (_, _) =>
+                {
+                    Interlocked.Increment(ref stepStarts);
+                    return Task.CompletedTask;
+                },
                 PrepareStep = context =>
                 {
                     prepareStepContexts.Add(context);
@@ -638,6 +643,7 @@ public sealed class StreamTextExperimentalSteeringInterruptTests
             "Use Paris, Texas instead.",
             Text(Assert.Single(prepareStepContexts[1].ExperimentalSteeringMessages!))
         );
+        Assert.Equal(1, stepStarts);
         Assert.Equal(2, callStarts);
         Assert.Equal(1, callEnds);
     }
