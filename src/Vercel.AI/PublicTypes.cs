@@ -1150,7 +1150,9 @@ public abstract class OutputSpec<TOutput> : OutputSpec
     // Maps to the typed result of parseCompleteOutput. A mismatch throws JsonException.
     internal TOutput? Deserialize(JsonElement output)
     {
-        return output.Deserialize<TOutput>(s_options);
+        return output.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined
+            ? default
+            : output.Deserialize<TOutput>(s_options);
     }
 }
 
@@ -2121,25 +2123,22 @@ public class GenerateTextResult
 /// <typeparam name="TOutput">The type of the parsed output.</typeparam>
 public sealed class GenerateTextResult<TOutput> : GenerateTextResult
 {
-    private readonly OutputSpec<TOutput> _spec;
+    private readonly Lazy<TOutput?> _output;
 
     internal GenerateTextResult(GenerateTextResult result, OutputSpec<TOutput> spec)
         : base(result)
     {
-        _spec = spec;
+        // Deserialized once, so every read gives the same instance.
+        _output = new Lazy<TOutput?>(
+            () => base.Output is { } json ? spec.Deserialize(json) : default
+        );
     }
 
     /// <summary>
     /// The parsed output, or <see langword="default"/> when the call generated none, as <see cref="GenerateTextResult.Output"/>.
     /// A mismatch with <typeparamref name="TOutput"/> throws <see cref="JsonException"/>. Maps to <c>output</c>.
     /// </summary>
-    public new TOutput? Output
-    {
-        get
-        {
-            return base.Output is { } json ? _spec.Deserialize(json) : default;
-        }
-    }
+    public new TOutput? Output => _output.Value;
 }
 
 /// <summary>A part of the <c>streamText</c> full stream.</summary>

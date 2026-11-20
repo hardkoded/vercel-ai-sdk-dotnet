@@ -5111,6 +5111,9 @@ public sealed class StreamTextResult<TOutput> : StreamTextResult
         : base(result)
     {
         Output = Typed(result.Output, spec);
+
+        // As the base class does for its tasks: a caller that never awaits Output leaves no unobserved exception.
+        _ = Output.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
     }
 
     /// <summary>
