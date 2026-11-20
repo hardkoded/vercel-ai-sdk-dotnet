@@ -618,32 +618,41 @@ public static class GoogleMessages
             }
             else if (message is AssistantModelMessage assistant)
             {
+                // The parts keep their order, so text around a tool call stays around it.
                 var parts = new List<GoogleAssistantPart>();
-                if (!string.IsNullOrEmpty(assistant.Reasoning))
+                foreach (var part in assistant.Parts)
                 {
-                    parts.Add(new GoogleReasoningAssistantPart(assistant.Reasoning!));
-                }
-
-                if (!string.IsNullOrEmpty(assistant.Text))
-                {
-                    parts.Add(new GoogleTextAssistantPart(assistant.Text!));
-                }
-
-                foreach (var call in assistant.ToolCalls)
-                {
-                    var tool = new GoogleToolCallAssistantPart(call.ToolName, call.ArgumentsJson)
+                    switch (part)
                     {
-                        ToolCallId = call.ToolCallId,
-                    };
-                    if (call.ProviderMetadata is { } metadata)
-                    {
-                        tool.ProviderOptions = new Dictionary<string, JsonElement>
-                        {
-                            ["google"] = metadata,
-                        };
+                        case AssistantReasoningPart reasoning:
+                            parts.Add(
+                                new GoogleReasoningAssistantPart(reasoning.Text)
+                                {
+                                    ProviderOptions = reasoning.ProviderOptions,
+                                }
+                            );
+                            break;
+                        case AssistantTextPart text:
+                            parts.Add(
+                                new GoogleTextAssistantPart(text.Text)
+                                {
+                                    ProviderOptions = text.ProviderOptions,
+                                }
+                            );
+                            break;
+                        case AssistantToolCallPart call:
+                            parts.Add(
+                                new GoogleToolCallAssistantPart(
+                                    call.ToolCall.ToolName,
+                                    call.ToolCall.ArgumentsJson
+                                )
+                                {
+                                    ToolCallId = call.ToolCall.ToolCallId,
+                                    ProviderOptions = call.ProviderOptions,
+                                }
+                            );
+                            break;
                     }
-
-                    parts.Add(tool);
                 }
 
                 turns.Add(new GoogleAssistantTurn(parts));
@@ -766,7 +775,7 @@ public static class GoogleMessages
         var signature = Signature(options);
         if (part is GoogleTextAssistantPart text)
         {
-            if (text.Text.Length == 0)
+            if (text.Text.Length == 0 && signature == null)
             {
                 return null;
             }
@@ -778,7 +787,7 @@ public static class GoogleMessages
 
         if (part is GoogleReasoningAssistantPart reasoning)
         {
-            if (reasoning.Text.Length == 0)
+            if (reasoning.Text.Length == 0 && signature == null)
             {
                 return null;
             }

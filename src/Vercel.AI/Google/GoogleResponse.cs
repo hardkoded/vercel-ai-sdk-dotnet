@@ -200,7 +200,7 @@ public static class GoogleResponse
         return sources;
     }
 
-    private static void AppendPart(
+    internal static void AppendPart(
         List<GeneratedContent> content,
         JsonElement part,
         GoogleParseContext context,

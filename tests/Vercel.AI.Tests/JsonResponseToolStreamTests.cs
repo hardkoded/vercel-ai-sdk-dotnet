@@ -101,7 +101,7 @@ public sealed class JsonResponseToolStreamTests
     }
 
     [Fact]
-    public async Task Google_keeps_reasoning_open_until_the_response_tool_call_is_converted()
+    public async Task Google_closes_reasoning_before_the_response_tool_call_is_converted()
     {
         var reasoning = new JsonObject { ["text"] = "Thinking.", ["thought"] = true };
         var call = new JsonObject
@@ -146,19 +146,19 @@ public sealed class JsonResponseToolStreamTests
                 "stream-start",
                 "reasoning-start",
                 "reasoning-delta",
+                "reasoning-end",
                 "text-start",
                 "text-delta",
                 "text-end",
-                "reasoning-end",
                 "finish",
             },
             parts.Select(part => part.Type)
         );
         Assert.Equal("Thinking.", Assert.IsType<ReasoningDeltaStreamPart>(parts[2]).Delta);
-        Assert.Equal("call-1", Assert.IsType<TextStartStreamPart>(parts[3]).Id);
+        Assert.Equal("call-1", Assert.IsType<TextStartStreamPart>(parts[4]).Id);
         Assert.Equal(
             "{\"date\":\"2031-06-17\"}",
-            Assert.IsType<TextDeltaStreamPart>(parts[4]).Delta
+            Assert.IsType<TextDeltaStreamPart>(parts[5]).Delta
         );
         Assert.Equal(FinishReason.Stop, Assert.IsType<FinishStreamPart>(parts[7]).FinishReason);
     }
