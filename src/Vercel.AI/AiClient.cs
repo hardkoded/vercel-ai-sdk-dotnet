@@ -157,6 +157,17 @@ public sealed class AiClient : IAiClient
         );
     }
 
+    private static JsonElement? ParseSchema(string schema)
+    {
+        if (string.IsNullOrEmpty(schema))
+        {
+            return null;
+        }
+
+        using var document = JsonDocument.Parse(schema);
+        return document.RootElement.Clone();
+    }
+
     /// <inheritdoc />
     public async Task<GenerateObjectResult<T>> GenerateObjectAsync<T>(
         GenerateObjectOptions<T> options,
@@ -193,7 +204,32 @@ public sealed class AiClient : IAiClient
                                 model.ModelId,
                                 options.Prompt,
                                 options.Messages
-                            ),
+                            )
+                            {
+                                OperationId = "ai.generateObject",
+                                System = options.Instructions
+                                    ?? (
+                                        options.System != null
+                                            ? Vercel.AI.Prompt.Instructions.From(options.System)
+                                            : null
+                                    ),
+                                MaxOutputTokens = options.MaxOutputTokens,
+                                Temperature = options.Temperature,
+                                TopP = options.TopP,
+                                TopK = options.TopK,
+                                PresencePenalty = options.PresencePenalty,
+                                FrequencyPenalty = options.FrequencyPenalty,
+                                Seed = options.Seed,
+                                MaxRetries = Vercel.AI.Operations.OperationRetry.ResolveMaxRetries(
+                                    options.MaxRetries
+                                ),
+                                Headers = options.Headers,
+                                ProviderOptions = options.ProviderOptions,
+                                Output = "object",
+                                Schema = ParseSchema(options.Schema),
+                                SchemaName = options.SchemaName,
+                                SchemaDescription = options.SchemaDescription,
+                            },
                             cancellationToken
                         ),
                     cancellationToken
@@ -206,7 +242,11 @@ public sealed class AiClient : IAiClient
             await NotifyCallbackAsync(
                     () =>
                         options.OnStepStart(
-                            new GenerateObjectStepStartEvent(callId, model.Provider, model.ModelId),
+                            new GenerateObjectStepStartEvent(callId, model.Provider, model.ModelId)
+                            {
+                                ProviderOptions = options.ProviderOptions,
+                                Headers = options.Headers,
+                            },
                             cancellationToken
                         ),
                     cancellationToken
