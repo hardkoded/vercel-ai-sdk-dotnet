@@ -65,6 +65,40 @@ public sealed class OutputObjectTests
     }
 
     [Fact]
+    [UpstreamTest(Id + "should return warnings", Coverage = UpstreamCoverage.Covered)]
+    public async Task Should_return_warnings()
+    {
+        var result = await new AiClient(
+            Vercel.AI.Gateway.GatewayProvider.Create(
+                new Vercel.AI.Gateway.GatewayOptions { ApiKey = "test" }
+            )
+        ).GenerateObjectAsync(
+            new GenerateObjectOptions<ContentResult>
+            {
+                Model = new TestLanguageModel
+                {
+                    OnGenerate = _ => new LanguageModelGenerateResult(
+                        [new GeneratedText("{ \"content\": \"Hello, world!\" }")],
+                        FinishReason.Stop,
+                        new LanguageModelUsage(3, 10, 13),
+                        warnings: [new("other", "Setting is not supported")]
+                    ),
+                },
+                Schema = Schema,
+                Prompt = "prompt",
+                SerializerOptions = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true,
+                },
+            }
+        );
+
+        var warning = Assert.Single(result.Warnings);
+        Assert.Equal("other", warning.Type);
+        Assert.Equal("Setting is not supported", warning.Message);
+    }
+
+    [Fact]
     [UpstreamTest(
         Id + "should call logWarnings with the correct warnings",
         Coverage = UpstreamCoverage.Covered
