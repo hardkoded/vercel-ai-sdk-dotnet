@@ -746,9 +746,12 @@ public abstract class OutputSpec
     internal virtual bool IsJson => Schema != null;
 
     // Maps to parseCompleteOutput. Invalid JSON throws JsonParseException, a mismatch throws TypeValidationException.
-    internal virtual JsonElement ParseCompleteOutput(string text)
+    internal virtual JsonElement ParseCompleteOutput(string? text)
     {
-        return ProviderUtils.JsonParsing.Parse(text, JsonNode.Parse(Schema!.Value.GetRawText()));
+        return ProviderUtils.JsonParsing.Parse(
+            text ?? "undefined",
+            JsonNode.Parse(Schema!.Value.GetRawText())
+        );
     }
 
     // Maps to parsePartialOutput. Null means undefined: there is no partial output yet.
@@ -782,9 +785,10 @@ public abstract class OutputSpec
         public static readonly TextOutput Instance = new();
 
         // Maps to Output.text parseCompleteOutput: the text as is, without a schema.
-        internal override JsonElement ParseCompleteOutput(string text)
+        internal override JsonElement ParseCompleteOutput(string? text)
         {
-            return JsonSerializer.SerializeToElement(text);
+            // An undefined text stays undefined, like the upstream cast test expects.
+            return text is null ? default : JsonSerializer.SerializeToElement(text);
         }
     }
 
@@ -857,9 +861,9 @@ public abstract class OutputSpec
 
         internal override string? SchemaDescription => Description;
 
-        internal override JsonElement ParseCompleteOutput(string text)
+        internal override JsonElement ParseCompleteOutput(string? text)
         {
-            var outer = ProviderUtils.JsonParsing.Parse(text);
+            var outer = ProviderUtils.JsonParsing.Parse(text ?? "undefined");
             if (
                 outer.ValueKind != JsonValueKind.Object
                 || !outer.TryGetProperty("elements", out var elements)
@@ -1055,9 +1059,9 @@ public abstract class OutputSpec
 
         internal override string? SchemaDescription => Description;
 
-        internal override JsonElement ParseCompleteOutput(string text)
+        internal override JsonElement ParseCompleteOutput(string? text)
         {
-            var outer = ProviderUtils.JsonParsing.Parse(text);
+            var outer = ProviderUtils.JsonParsing.Parse(text ?? "undefined");
             if (
                 outer.ValueKind != JsonValueKind.Object
                 || !outer.TryGetProperty("result", out var result)
@@ -1129,9 +1133,9 @@ public abstract class OutputSpec
 
         internal override bool IsJson => true;
 
-        internal override JsonElement ParseCompleteOutput(string text)
+        internal override JsonElement ParseCompleteOutput(string? text)
         {
-            return ProviderUtils.JsonParsing.Parse(text);
+            return ProviderUtils.JsonParsing.Parse(text ?? "undefined");
         }
     }
 }
@@ -1165,7 +1169,7 @@ internal sealed class TypedOutput<TOutput>(OutputSpec inner) : OutputSpec<TOutpu
 
     internal override bool IsJson => inner.IsJson;
 
-    internal override JsonElement ParseCompleteOutput(string text)
+    internal override JsonElement ParseCompleteOutput(string? text)
     {
         return inner.ParseCompleteOutput(text);
     }

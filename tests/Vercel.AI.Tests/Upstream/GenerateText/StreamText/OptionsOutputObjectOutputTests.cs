@@ -422,7 +422,7 @@ public sealed class OptionsOutputObjectOutputTests
 
         internal override string? SchemaDescription => inner.SchemaDescription;
 
-        internal override JsonElement ParseCompleteOutput(string text)
+        internal override JsonElement ParseCompleteOutput(string? text)
         {
             Interlocked.Increment(ref _parseCompleteOutputCalls);
             return inner.ParseCompleteOutput(text);

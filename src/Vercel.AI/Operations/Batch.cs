@@ -477,8 +477,8 @@ public class BatchItemResult
     /// <summary>Response id.</summary>
     public string? ResponseId { get; set; }
 
-    /// <summary>Response timestamp.</summary>
-    public DateTime? Timestamp { get; set; }
+    /// <summary>Response timestamp as an ISO 8601 string, so the result serializes.</summary>
+    public string? Timestamp { get; set; }
 
     /// <summary>Response model id.</summary>
     public string? ResponseModelId { get; set; }
@@ -1223,7 +1223,7 @@ public static class Batch
 
             result.Images = images;
             result.Warnings = item.Image.Warnings;
-            result.Timestamp = item.Image.Response?.Timestamp;
+            result.Timestamp = ToIsoTimestamp(item.Image.Response?.Timestamp);
             result.ResponseModelId = item.Image.Response?.ModelId;
             result.ProviderMetadata = item.Image.ProviderMetadata;
             result.ImageUsage = item.Image.Usage;
@@ -1293,7 +1293,7 @@ public static class Batch
             result.RawFinishReason = item.Text.RawFinishReason;
             result.Usage = item.Text.Usage == null ? null : BatchUsage.FromModel(item.Text.Usage);
             result.ResponseId = item.Text.ResponseId;
-            result.Timestamp = item.Text.Timestamp;
+            result.Timestamp = ToIsoTimestamp(item.Text.Timestamp);
             result.ResponseModelId = item.Text.ModelId;
             result.ProviderMetadata = item.Text.ProviderMetadata;
             if (output != null)
@@ -1304,6 +1304,11 @@ public static class Batch
 
         return result;
     }
+
+    private static string? ToIsoTimestamp(DateTime? timestamp) =>
+        timestamp
+            ?.ToUniversalTime()
+            .ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture);
 
     private static JsonElement ParseInput(string? text)
     {
