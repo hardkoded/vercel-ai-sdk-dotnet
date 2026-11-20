@@ -730,7 +730,7 @@ internal static class StreamObject
             }
             catch (Exception error)
             {
-                result.RejectResultPromises(error);
+                result.RejectResultPromises(GatewayErrorWrappers.WrapGatewayError(error));
                 await EmitAsync(new ObjectStreamErrorPart(error)).ConfigureAwait(false);
             }
             finally
@@ -747,7 +747,11 @@ internal static class StreamObject
             {
                 await Generation
                     .NotifyAsync(
-                        () => options.OnError(error.Error, _cancellationToken),
+                        () =>
+                            options.OnError(
+                                GatewayErrorWrappers.WrapGatewayError(error.Error),
+                                _cancellationToken
+                            ),
                         _cancellationToken
                     )
                     .ConfigureAwait(false);
@@ -866,7 +870,12 @@ internal static class StreamObject
             double startTimestampMs
         )
         {
-            var request = new LanguageModelRequestMetadata { Body = call.Request?.Body };
+            var sanitized = RequestOrigin.SanitizeRequestMetadata(call.Request);
+            var request = new LanguageModelRequestMetadata
+            {
+                Body = sanitized?.Body,
+                Url = sanitized?.Url,
+            };
             result.ResolveRequest(request);
 
             IReadOnlyList<CallWarning>? warnings = null;
@@ -888,6 +897,8 @@ internal static class StreamObject
             JsonElement? latestObjectJson = null;
             JsonElement? latestObject = null;
             var isFirstDelta = true;
+            var isFirstChunk = true;
+            double? msToFirstChunk = null;
 
             LanguageModelResponseMetadata ResponseWithHeaders() =>
                 new(
@@ -905,11 +916,17 @@ internal static class StreamObject
                         .ConfigureAwait(false)
                 )
                 {
+                    if (chunk is not ModelCallStartPart && isFirstChunk)
+                    {
+                        msToFirstChunk = now() - startTimestampMs;
+                        isFirstChunk = false;
+                    }
+
                     switch (chunk)
                     {
                         case ModelCallStartPart start:
                             warnings = start.Warnings;
-                            break;
+                            continue;
 
                         case TextDeltaPart delta:
                         {
@@ -1011,8 +1028,9 @@ internal static class StreamObject
                         case ErrorPart errorPart:
                             if (terminalError == null)
                             {
-                                terminalError = errorPart.Error
-                                    ?? new AiSdkException(errorPart.Message);
+                                terminalError = GatewayErrorWrappers.WrapGatewayError(
+                                    errorPart.Error ?? new AiSdkException(errorPart.Message)
+                                );
                                 error = terminalError;
                                 finishReason = FinishReason.Error;
                                 result.RejectResultPromises(terminalError);
@@ -1098,18 +1116,19 @@ internal static class StreamObject
             catch (Exception streamError) when (!_cancellationToken.IsCancellationRequested)
             {
                 // A raw stream error stops the stream: readers of the full stream throw it, and flush does not run.
-                result.RejectResultPromises(streamError);
+                var wrappedError = GatewayErrorWrappers.WrapGatewayError(streamError);
+                result.RejectResultPromises(wrappedError);
                 if (options.OnError != null)
                 {
                     await Generation
                         .NotifyAsync(
-                            () => options.OnError(streamError, _cancellationToken),
+                            () => options.OnError(wrappedError, _cancellationToken),
                             _cancellationToken
                         )
                         .ConfigureAwait(false);
                 }
 
-                buffer.Fail(streamError);
+                buffer.Fail(wrappedError);
                 return;
             }
 
@@ -1132,7 +1151,8 @@ internal static class StreamObject
                                         warnings ?? [],
                                         request,
                                         ResponseWithHeaders(),
-                                        providerMetadata
+                                        providerMetadata,
+                                        msToFirstChunk
                                     ),
                                     _cancellationToken
                                 ),

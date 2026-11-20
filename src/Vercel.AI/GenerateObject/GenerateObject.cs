@@ -239,10 +239,12 @@ public sealed class GenerateObjectStepEndEvent : GenerateObjectEvent
         IReadOnlyList<CallWarning> warnings,
         LanguageModelRequestMetadata request,
         LanguageModelResponseMetadata response,
-        JsonElement? providerMetadata
+        JsonElement? providerMetadata,
+        double? msToFirstChunk = null
     )
         : base(callId, provider, modelId)
     {
+        MsToFirstChunk = msToFirstChunk;
         ObjectText = objectText;
         FinishReason = finishReason;
         Usage = usage;
@@ -285,6 +287,9 @@ public sealed class GenerateObjectStepEndEvent : GenerateObjectEvent
 
     /// <summary>Provider-specific response metadata.</summary>
     public JsonElement? ProviderMetadata { get; }
+
+    /// <summary>Milliseconds from the start of the stream to the first chunk. Set only by <c>streamObject</c>.</summary>
+    public double? MsToFirstChunk { get; }
 }
 
 /// <summary>Event sent after the generated object has been parsed and validated.</summary>

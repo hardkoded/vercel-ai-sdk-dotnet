@@ -2107,6 +2107,9 @@ public sealed class LanguageModelRequestMetadata
     /// <summary>Request metadata with no messages and no body.</summary>
     public static LanguageModelRequestMetadata Empty { get; } = new();
 
+    /// <summary>HTTP origin used for this request, without URL credentials, paths, queries or fragments. Maps to <c>url</c>.</summary>
+    public string? Url { get; init; }
+
     /// <summary>The input messages that were sent to the model for this step.</summary>
     public IReadOnlyList<ModelMessage>? Messages { get; init; }
 
