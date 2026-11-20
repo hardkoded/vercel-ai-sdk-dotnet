@@ -310,6 +310,8 @@ internal static class Generation
         CancellationToken callerToken
     )
     {
+        options = options.ShallowCopy();
+        options.TelemetrySnapshot = TelemetryDispatcher.Create(options);
         // With a timeout, the model and the tools get a token that also cancels when the timeout expires.
         using var timeouts = CallTimeouts.Create(options.Timeout, null, false, callerToken);
         var cancellationToken = timeouts?.Token ?? callerToken;
@@ -830,6 +832,8 @@ internal static class Generation
         bool singleConsumer
     )
     {
+        options = (StreamTextOptions)options.ShallowCopy();
+        options.TelemetrySnapshot = TelemetryDispatcher.Create(options);
         Vercel.AI.Operations.OperationRetry.ResolveMaxRetries(options.MaxRetries);
         var streamRetries = Vercel.AI.Operations.OperationRetry.ResolveMaxRetries(
             options.StreamRetries,
@@ -1003,9 +1007,6 @@ internal static class Generation
     // Enabled telemetry with at least one per-call or global integration also needs the content.
     private static bool NeedsContentCollection(StreamTextOptions options)
     {
-#pragma warning disable CS0618 // the deprecated alias is read like its replacement
-        var telemetry = options.Telemetry ?? options.ExperimentalTelemetry;
-#pragma warning restore CS0618
 #pragma warning disable CS0618 // the deprecated aliases collect content like their replacements
         return options.Tools is { Count: > 0 }
             || options.ToolChoice != null
@@ -1017,10 +1018,7 @@ internal static class Generation
             || options.OnStepEnd != null
             || options.OnAbort != null
             || options.OnLanguageModelCallEnd != null
-            || (
-                telemetry?.IsEnabled != false
-                && TelemetryDispatcher.ResolveIntegrations(telemetry).Count > 0
-            );
+            || TelemetryDispatcher.Create(options).HasIntegrations;
 #pragma warning restore CS0618
     }
 

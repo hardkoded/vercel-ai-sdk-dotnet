@@ -318,10 +318,11 @@ public sealed class StreamingOnlyContractTests
         ];
         try
         {
-            var result = LowMemory(TextParts());
+            var text = "hello-" + Guid.NewGuid().ToString("N");
+            var result = LowMemory(TextParts(text));
             await result.ConsumeStreamAsync();
-            // Like toHaveBeenCalledWith, any call may match: other tests run while the global integration is set.
-            Assert.Contains(ends, end => end.Text == "hello");
+            // The text is unique to this call, so a concurrent test cannot satisfy the assertion.
+            Assert.Contains(ends, end => end.Text == text);
         }
         finally
         {

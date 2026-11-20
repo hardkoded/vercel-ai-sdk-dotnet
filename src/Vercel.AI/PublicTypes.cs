@@ -1314,6 +1314,9 @@ public sealed class PrepareStepUpdate
 /// <summary>Options for <see cref="IAiClient.GenerateTextAsync"/>. Property names follow <c>generateText</c>.</summary>
 public class GenerateTextOptions
 {
+    /// <summary>The integrations resolved once at the start of a call, so retention and every callback agree.</summary>
+    internal TelemetryDispatcher? TelemetrySnapshot { get; set; }
+
     /// <summary>Telemetry configuration. Maps to <c>telemetry</c>.</summary>
     public TelemetryOptions? Telemetry { get; set; }
 

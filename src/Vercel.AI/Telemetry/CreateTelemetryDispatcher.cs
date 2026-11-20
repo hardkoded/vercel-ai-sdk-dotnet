@@ -10,6 +10,9 @@ namespace Vercel.AI;
 /// </summary>
 internal sealed class TelemetryDispatcher
 {
+    /// <summary>Whether the call has an enabled integration, which needs the content of the generation.</summary>
+    public bool HasIntegrations { get; init; }
+
     /// <summary>Maps to <c>onEnd</c>. Null when no integration has it.</summary>
     public Func<GenerateTextResult, CancellationToken, Task>? OnEnd { get; init; }
 
@@ -30,7 +33,8 @@ internal sealed class TelemetryDispatcher
     internal static TelemetryDispatcher Create(GenerateTextOptions options)
     {
 #pragma warning disable CS0618 // the deprecated alias is read like its replacement
-        return Create(options.Telemetry ?? options.ExperimentalTelemetry);
+        return options.TelemetrySnapshot
+            ?? Create(options.Telemetry ?? options.ExperimentalTelemetry);
 #pragma warning restore CS0618
     }
 
@@ -46,6 +50,7 @@ internal sealed class TelemetryDispatcher
         var integrations = ResolveIntegrations(telemetry);
         return new TelemetryDispatcher
         {
+            HasIntegrations = integrations.Count > 0,
             OnEnd = Merge(integrations.Select(i => i.OnEnd)),
             OnLanguageModelCallEnd = Merge(integrations.Select(i => i.OnLanguageModelCallEnd)),
         };
