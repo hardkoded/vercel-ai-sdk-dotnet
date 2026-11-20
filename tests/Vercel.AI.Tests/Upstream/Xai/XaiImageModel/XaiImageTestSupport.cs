@@ -33,21 +33,21 @@ internal static class XaiImageTestSupport
     /// <summary>Port of <c>createModel</c>.</summary>
     public static Model CreateModel(
         ParityHandler handler,
-        IReadOnlyDictionary<string, string>? headers = null,
-        Func<DateTime>? currentDate = null,
-        string? apiKey = "test-key"
+        Func<IReadOnlyDictionary<string, string?>>? headers = null,
+        Func<DateTime>? currentDate = null
     )
     {
-        var options = new OpenAICompatibleOptions { BaseUrl = BaseUrl, ApiKey = apiKey };
-        foreach (var header in headers ?? new Dictionary<string, string>())
-        {
-            options.Headers[header.Key] = header.Value;
-        }
-
         return new Model(
-            Vercel.AI.Xai.XaiProvider.Create(options, handler),
             "grok-imagine-image",
-            currentDate
+            new XaiImageModelConfig(
+                "xai.image",
+                BaseUrl,
+                headers ?? (() => new Dictionary<string, string?> { ["api-key"] = "test-key" }),
+                new HttpClient(handler)
+            )
+            {
+                CurrentDate = currentDate,
+            }
         );
     }
 

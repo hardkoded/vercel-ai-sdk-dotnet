@@ -33,7 +33,7 @@ public sealed class CapabilitiesTests
         var provider = Vercel.AI.Xai.XaiProvider.Create(
             new OpenAICompatibleOptions { BaseUrl = BaseUrl, ApiKey = "test-key" }
         );
-        var model = new Model(provider, modelId);
+        var model = provider.Image(modelId);
 
         Assert.Equal(supportsFileInputs, model.SupportsFileInputs);
         Assert.Equal(supportsMaskInputs, model.SupportsMaskInputs);
