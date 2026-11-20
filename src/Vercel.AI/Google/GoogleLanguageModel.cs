@@ -989,12 +989,11 @@ public sealed class GoogleLanguageModel : ILanguageModel
             return false;
         }
 
-        var hasArgs =
-            call.TryGetProperty("args", out var args) && args.ValueKind != JsonValueKind.Null;
         var willContinue =
             call.TryGetProperty("willContinue", out var cont)
             && cont.ValueKind == JsonValueKind.True;
-        return hasArgs || !willContinue;
+        // A named call that continues streams its arguments and completes later.
+        return !willContinue;
     }
 
     // Gemini sends a function call whole, without arguments, or streamed: a named

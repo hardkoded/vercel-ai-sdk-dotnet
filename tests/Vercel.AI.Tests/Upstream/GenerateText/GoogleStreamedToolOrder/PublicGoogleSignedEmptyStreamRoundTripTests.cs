@@ -213,6 +213,30 @@ public sealed class PublicGoogleSignedEmptyStreamRoundTripTests
         );
         Assert.Equal(expected, assistant.Parts.Select(Summarize));
 
+        var signedEvents = events
+            .Select(part =>
+                part switch
+                {
+                    TextStartPart e => ("text-start", SignatureOf(e.ProviderMetadata)),
+                    TextDeltaPart e => ("text-delta", SignatureOf(e.ProviderMetadata)),
+                    TextEndPart e => ("text-end", SignatureOf(e.ProviderMetadata)),
+                    ReasoningStartPart e => ("reasoning-start", SignatureOf(e.ProviderMetadata)),
+                    ReasoningDeltaPart e => ("reasoning-delta", SignatureOf(e.ProviderMetadata)),
+                    _ => ("", null),
+                }
+            )
+            .Where(item => item.Item2 == Signature)
+            .ToList();
+        var signedExpected = expected.FirstOrDefault(item => item.EndsWith("|" + Signature));
+        if (signedExpected != null)
+        {
+            Assert.NotEmpty(signedEvents);
+            var expectedType = signedExpected[..signedExpected.IndexOf(':')];
+            Assert.All(signedEvents, item =>
+                Assert.StartsWith(expectedType + "-", item.Item1, StringComparison.Ordinal)
+            );
+        }
+
         var messages = new List<ModelMessage>
         {
             new UserModelMessage("Synthetic preservation check"),

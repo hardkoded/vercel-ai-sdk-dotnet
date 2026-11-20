@@ -177,8 +177,8 @@ public static class AmazonBedrockMessages
                                 Text.Length: 0,
                                 ProviderOptions: { } options
                             }
-                        || options.ContainsKey("amazonBedrock")
-                        || options.ContainsKey("bedrock")
+                        || HasNativeOptions(options, "amazonBedrock")
+                        || HasNativeOptions(options, "bedrock")
                     )
                     .ToList();
                 var hasReasoningBlocks = parts.Any(p => p is AssistantReasoningPart);
@@ -283,6 +283,14 @@ public static class AmazonBedrockMessages
         FlushAssistant();
         messages = built;
     }
+
+    // A native namespace counts only when its value is not null.
+    private static bool HasNativeOptions(
+        IReadOnlyDictionary<string, JsonElement> options,
+        string name
+    ) =>
+        options.TryGetValue(name, out var value)
+        && value.ValueKind is not (JsonValueKind.Null or JsonValueKind.Undefined);
 
     private static JsonObject ToolResultBlock(
         ToolModelMessage result,

@@ -105,13 +105,22 @@ public sealed class PublicEmptyTextResponseMetadataPreservationTests
         var message = Assert.IsType<AssistantModelMessage>(Assert.Single(step.Response.Messages));
         var texts = message.Parts.Cast<AssistantTextPart>().ToList();
         Assert.Equal(retain ? ["A", "", "B"] : ["A", "B"], texts.Select(part => part.Text));
-        Assert.All(texts.Where(part => part.Text != "A" && part.Text != "B"), part =>
-            Assert.NotNull(part.ProviderOptions)
+        Assert.All(texts.Where(part => part.Text.Length > 0), part =>
+            Assert.Null(part.ProviderOptions)
         );
         if (retain)
         {
-            Assert.Contains(step.Content.OfType<GeneratedText>(), text =>
-                text.Text.Length == 0 && text.ProviderMetadata is not null
+            var empty = Assert.Single(texts, part => part.Text.Length == 0);
+            Assert.Equal(
+                JsonSerializer.Serialize(metadata!.Value),
+                JsonSerializer.Serialize(empty.ProviderOptions)
+            );
+            var content = Assert.Single(step.Content.OfType<GeneratedText>(), text =>
+                text.Text.Length == 0
+            );
+            Assert.Equal(
+                JsonSerializer.Serialize(metadata.Value),
+                JsonSerializer.Serialize(content.ProviderMetadata!.Value)
             );
         }
     }
