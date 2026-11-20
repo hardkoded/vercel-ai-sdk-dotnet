@@ -68,6 +68,9 @@ internal sealed class StreamTextEventProcessor
         _errors = errors;
     }
 
+    // The id of the call, set by the step loop. It is the id of the steps the processor records.
+    public string CallId { get; set; } = string.Empty;
+
     // The response messages of the initial approvals, set by the step loop. Maps to initialResponseMessages.
     public IReadOnlyList<ModelMessage> InitialResponseMessages { get; set; } = [];
 
@@ -511,10 +514,10 @@ internal sealed class StreamTextEventProcessor
             part.RawFinishReason
         )
         {
-            CallId = baseStep.CallId,
+            CallId = CallId,
             StepNumber = SnapshotCount(),
-            ToolsContext = baseStep.ToolsContext,
-            RuntimeContext = baseStep.RuntimeContext,
+            ToolsContext = _options.ToolsContext ?? StepResult.EmptyToolsContext,
+            RuntimeContext = _options.RuntimeContext ?? StepResult.EmptyRuntimeContext,
             StructuredOutputText = baseStep.StructuredOutputText,
             ExperimentalSteeringMessages = baseStep.ExperimentalSteeringMessages,
         };
@@ -547,7 +550,7 @@ internal sealed class StreamTextEventProcessor
     private async Task FlushAsync(PartBuffer target)
     {
         var steps = SnapshotSteps();
-        if (_abort.Stopped)
+        if (_abort.Stopped && !_abort.StoppedByTransform)
         {
             _textSource.TrySetCanceled();
             _finishSource.TrySetCanceled();

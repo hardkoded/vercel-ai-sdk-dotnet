@@ -959,6 +959,8 @@ internal static class Generation
         void StopStream()
         {
             Volatile.Write(ref stopped, 1);
+            // The stream ends, and the results settle with what the transforms let through, like upstream's terminate.
+            abort.StoppedByTransform = true;
             abort.Stop();
         }
 
@@ -1069,6 +1071,7 @@ internal static class Generation
             var current = model;
             buffer.Add(new StartPart());
             var callId = (options.GenerateCallId ?? NewCallId)();
+            recorder.CallId = callId;
             await ProcessInitialApprovalsAsync(
                     options,
                     messages,
@@ -4033,6 +4036,9 @@ internal static class Generation
 // Settles a streamText call exactly once: as aborted, or as finished. Whichever comes first wins.
 internal sealed class StreamAbort
 {
+    // Set when a stream transform called stopStream. The event processor then finishes the results instead of cancelling them.
+    public volatile bool StoppedByTransform;
+
     private static readonly object Done = new();
     private static readonly TimeSpan StopAbortGrace = TimeSpan.FromSeconds(1);
     private readonly CancellationTokenSource _cancellation = new();

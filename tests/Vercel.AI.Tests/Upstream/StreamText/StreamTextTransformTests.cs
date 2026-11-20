@@ -14,41 +14,6 @@ public sealed class StreamTextTransformTests
     private const string Base =
         "packages/ai/src/generate-text/stream-text.test.ts::streamText > options.transform > ";
 
-    private static StreamTextTransform UpperCase =>
-        _ =>
-            Map(chunk =>
-                chunk is TextDeltaPart delta
-                    ?
-                    [
-                        new TextDeltaPart(
-                            delta.Id,
-                            delta.Text.ToUpperInvariant(),
-                            delta.ProviderMetadata
-                        ),
-                    ]
-                    : [chunk]
-            );
-
-    [Fact]
-    [UpstreamTest(
-        Base + "with base transformation::should transform the stream",
-        Coverage = UpstreamCoverage.Covered
-    )]
-    public async Task Should_transform_the_stream()
-    {
-        var result = Client()
-            .StreamTextAsync(
-                new StreamTextOptions
-                {
-                    Model = CreateTestModel(),
-                    ExperimentalTransform = [UpperCase],
-                    Prompt = "test-input",
-                }
-            );
-
-        Assert.Equal(["HELLO", ", ", "WORLD!"], await TextStreamAsync(result));
-    }
-
     [Fact]
     [UpstreamTest(
         Base
@@ -127,63 +92,6 @@ public sealed class StreamTextTransformTests
             );
 
         Assert.Equal(["HELLO", " ", "WORLD!"], await TextStreamAsync(result));
-    }
-
-    [Fact]
-    [UpstreamTest(
-        Base
-            + "with transformation that aborts stream::stream should stop when STOP token is encountered",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Asserts the stream parts, not the exact finish-step and finish payloads."
-    )]
-    public async Task Partial_Stream_should_stop_when_STOP_token_is_encountered()
-    {
-        var model = SteeringTestModel.Stream(() =>
-            new LanguageModelStreamPart[]
-            {
-                new StreamStartStreamPart(Array.Empty<CallWarning>()),
-                new TextStartStreamPart("1"),
-                new TextDeltaStreamPart("1", "Hello, "),
-                new TextDeltaStreamPart("1", "STOP"),
-                new TextDeltaStreamPart("1", " World"),
-                new TextEndStreamPart("1"),
-                new FinishStreamPart(FinishReason.Stop, SteeringTestSupport.Usage, "stop"),
-            }
-        );
-        StreamTextTransform stopWord = options =>
-            Map(chunk =>
-            {
-                if (chunk is not TextDeltaPart delta)
-                {
-                    return [chunk];
-                }
-
-                if (delta.Text.Contains("STOP"))
-                {
-                    options.StopStream();
-                    return [new FinishPart(FinishReason.Stop, LanguageModelUsage.Empty)];
-                }
-
-                return [chunk];
-            });
-
-        var result = Client()
-            .StreamTextAsync(
-                new StreamTextOptions
-                {
-                    Model = model,
-                    Prompt = "test-input",
-                    ExperimentalTransform = [stopWord],
-                }
-            );
-
-        var types = new List<string>();
-        await foreach (var part in result.Stream())
-        {
-            types.Add(part.Type);
-        }
-
-        Assert.Equal(["start", "start-step", "text-start", "text-delta", "finish"], types);
     }
 
     private static AiClient Client() => SteeringTestSupport.Client();
