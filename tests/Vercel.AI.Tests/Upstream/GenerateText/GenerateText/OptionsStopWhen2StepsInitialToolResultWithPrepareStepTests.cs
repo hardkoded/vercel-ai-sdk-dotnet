@@ -147,7 +147,10 @@ public sealed class OptionsStopWhen2StepsInitialToolResultWithPrepareStepTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should contain all prepareStep calls", Coverage = UpstreamCoverage.Partial)]
+    [UpstreamTest(
+        Prefix + "should contain all prepareStep calls",
+        Coverage = UpstreamCoverage.Partial
+    )]
     public async Task Should_contain_all_prepareStep_calls()
     {
         var run = await RunAsync();
@@ -158,7 +161,10 @@ public sealed class OptionsStopWhen2StepsInitialToolResultWithPrepareStepTests
         Assert.Equal(0, calls[0].StepNumber);
         Assert.Empty(calls[0].Steps);
         var first = Assert.IsType<UserModelMessage>(Assert.Single(calls[0].Messages));
-        Assert.Equal("test-input", Assert.IsType<TextContentPart>(Assert.Single(first.Content)).Text);
+        Assert.Equal(
+            "test-input",
+            Assert.IsType<TextContentPart>(Assert.Single(first.Content)).Text
+        );
         Assert.Equal("state1", calls[0].RuntimeContext["context"]);
 
         Assert.Equal(1, calls[1].StepNumber);
@@ -313,7 +319,10 @@ public sealed class OptionsStopWhen2StepsInitialToolResultWithPrepareStepTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "result.steps should contain all steps", Coverage = UpstreamCoverage.Partial)]
+    [UpstreamTest(
+        Prefix + "result.steps should contain all steps",
+        Coverage = UpstreamCoverage.Partial
+    )]
     public async Task Result_steps_should_contain_all_steps()
     {
         var run = await RunAsync();
@@ -324,16 +333,10 @@ public sealed class OptionsStopWhen2StepsInitialToolResultWithPrepareStepTests
             new[] { "test-id-1-from-model", "test-id-2-from-model" },
             steps.Select(step => step.Response.Id).ToArray()
         );
-        Assert.Equal(
-            new[] { 0, 1 },
-            steps.Select(step => step.StepNumber).ToArray()
-        );
+        Assert.Equal(new[] { 0, 1 }, steps.Select(step => step.StepNumber).ToArray());
         Assert.Equal("state2", steps[0].RuntimeContext["context"]);
         Assert.Equal("state3", steps[1].RuntimeContext["context"]);
-        Assert.Equal(
-            "response-header-value",
-            steps[1].Response.Headers!["custom-response-header"]
-        );
+        Assert.Equal("response-header-value", steps[1].Response.Headers!["custom-response-header"]);
     }
 
     [Fact]
