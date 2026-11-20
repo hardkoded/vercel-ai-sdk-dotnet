@@ -25,6 +25,7 @@ internal sealed class StreamTextEventProcessor
     private readonly TaskCompletionSource<LanguageModelUsage> _usageSource;
     private readonly TaskCompletionSource<IReadOnlyList<StepResult>> _stepsSource;
     private readonly TaskCompletionSource<JsonElement?> _outputSource;
+    private readonly StreamTextErrorHandling _errors;
     private readonly object _gate = new();
     private readonly List<StepResult> _steps = [];
     private readonly Dictionary<int, TaskCompletionSource<bool>> _stepWaiters = [];
@@ -51,7 +52,8 @@ internal sealed class StreamTextEventProcessor
         TaskCompletionSource<FinishReason> finishSource,
         TaskCompletionSource<LanguageModelUsage> usageSource,
         TaskCompletionSource<IReadOnlyList<StepResult>> stepsSource,
-        TaskCompletionSource<JsonElement?> outputSource
+        TaskCompletionSource<JsonElement?> outputSource,
+        StreamTextErrorHandling errors
     )
     {
         _options = options;
@@ -63,6 +65,7 @@ internal sealed class StreamTextEventProcessor
         _usageSource = usageSource;
         _stepsSource = stepsSource;
         _outputSource = outputSource;
+        _errors = errors;
     }
 
     // The response messages of the initial approvals, set by the step loop. Maps to initialResponseMessages.
@@ -151,11 +154,18 @@ internal sealed class StreamTextEventProcessor
             _usageSource.TrySetException(exception);
             _stepsSource.TrySetException(exception);
             var streamError = exception;
-            if (_options.OnError != null)
+            if (_options.OnError != null || _options.OnErrorRetry != null)
             {
                 try
                 {
-                    await _options.OnError(exception, CancellationToken.None).ConfigureAwait(false);
+                    await StreamTextErrorHandling
+                        .InvokeOnErrorAsync(
+                            _options,
+                            exception,
+                            CancellationToken.None,
+                            swallow: false
+                        )
+                        .ConfigureAwait(false);
                 }
                 catch (Exception callback)
                 {
@@ -174,7 +184,9 @@ internal sealed class StreamTextEventProcessor
     private async Task ProcessAsync(TextStreamPart part, PartBuffer target)
     {
         var cancellationToken = _token;
-        if (_options.OnChunk != null)
+        // The stream retry reported the error parts it saw already.
+        var handledForRetry = part is ErrorPart errorPart && _errors.TakeHandled(errorPart);
+        if (_options.OnChunk != null && !handledForRetry)
         {
             await _options
                 .OnChunk(new StreamTextChunkEvent(part), cancellationToken)
@@ -183,12 +195,17 @@ internal sealed class StreamTextEventProcessor
 
         switch (part)
         {
-            case ErrorPart { Error: NoOutputGeneratedException noOutput }:
-                // The stream fails with the same error, which is reported to onError once.
-                _recordedNoOutputError = noOutput;
-                break;
-            case ErrorPart:
-                await NotifyErrorAsync(part).ConfigureAwait(false);
+            case ErrorPart error:
+                if (error.Error is NoOutputGeneratedException noOutput)
+                {
+                    _recordedNoOutputError = noOutput;
+                }
+
+                if (!handledForRetry)
+                {
+                    await NotifyErrorAsync(error).ConfigureAwait(false);
+                }
+
                 break;
             case StartStepPart start:
                 // reset the recorded data when a new step starts:
@@ -307,15 +324,20 @@ internal sealed class StreamTextEventProcessor
         }
     }
 
-    private async Task NotifyErrorAsync(TextStreamPart part)
+    private async Task NotifyErrorAsync(ErrorPart error)
     {
-        if (_options.OnError == null || part is not ErrorPart error)
+        if (_options.OnError == null && _options.OnErrorRetry == null)
         {
             return;
         }
 
-        await _options
-            .OnError(error.Error ?? new AiSdkException(error.Message), _token)
+        await StreamTextErrorHandling
+            .InvokeOnErrorAsync(
+                _options,
+                error.Error ?? new AiSdkException(error.Message),
+                _token,
+                swallow: false
+            )
             .ConfigureAwait(false);
     }
 

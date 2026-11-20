@@ -654,8 +654,12 @@ public static class OperationRetry
         );
     }
 
-    /// <summary>Returns the retry count after validation. Null becomes 2.</summary>
-    public static int ResolveMaxRetries(int? maxRetries, string parameter = "maxRetries")
+    /// <summary>Returns the retry count after validation. Null becomes <paramref name="defaultMaxRetries"/>.</summary>
+    public static int ResolveMaxRetries(
+        int? maxRetries,
+        string parameter = "maxRetries",
+        int defaultMaxRetries = 2
+    )
     {
         if (maxRetries is int value)
         {
@@ -665,7 +669,7 @@ public static class OperationRetry
             }
         }
 
-        return maxRetries ?? 2;
+        return maxRetries ?? defaultMaxRetries;
     }
 
     private static async Task<T> ExecuteResolvedAsync<T>(

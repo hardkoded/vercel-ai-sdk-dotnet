@@ -794,6 +794,12 @@ internal static class Generation
     )
     {
         Vercel.AI.Operations.OperationRetry.ResolveMaxRetries(options.MaxRetries);
+        var streamRetries = Vercel.AI.Operations.OperationRetry.ResolveMaxRetries(
+            options.StreamRetries,
+            "streamRetries",
+            0
+        );
+        var errors = new StreamTextErrorHandling(options);
         ToolCallConcurrencyScheduler.PrepareToolCallConcurrency(options.ToolCallConcurrency);
         // The consumers read this buffer. The event processor feeds it.
         var buffer = new PartBuffer { SingleConsumer = singleConsumer };
@@ -893,7 +899,8 @@ internal static class Generation
             finishSource,
             usageSource,
             stepsSource,
-            outputSource
+            outputSource,
+            errors
         );
         _ = Task.Run(async () =>
         {
@@ -916,6 +923,8 @@ internal static class Generation
                 abort,
                 timeouts,
                 eventProcessor,
+                errors,
+                streamRetries,
                 initialResponseMessagesSource
             )
         );
@@ -1030,6 +1039,8 @@ internal static class Generation
         StreamAbort abort,
         CallTimeouts? timeouts,
         StreamTextEventProcessor recorder,
+        StreamTextErrorHandling errors,
+        int streamRetries,
         TaskCompletionSource<IReadOnlyList<ModelMessage>> initialResponseMessagesSource
     )
     {
@@ -1241,11 +1252,14 @@ internal static class Generation
                     break;
                 }
 
-                var stepRequest = new LanguageModelRequestMetadata
-                {
-                    Body = options.Include?.RequestBody == true ? streamResult.Request?.Body : null,
-                    Messages = options.Include?.RequestMessages == true ? stepMessages : null,
-                };
+                LanguageModelRequestMetadata RequestMetadata(JsonElement? requestBody) =>
+                    new()
+                    {
+                        Body = options.Include?.RequestBody == true ? requestBody : null,
+                        Messages = options.Include?.RequestMessages == true ? stepMessages : null,
+                    };
+
+                var stepRequest = RequestMetadata(streamResult.Request?.Body);
                 // The start-step part of a step is streamed once. A model call that follows a cancelled one sends a boundary instead,
                 // which replaces what the step recorded for the cancelled call, such as its request and warnings.
                 TextStreamPart StepStart(IReadOnlyList<CallWarning>? stepWarnings) =>
@@ -1254,9 +1268,25 @@ internal static class Generation
                         : new StartStepPart(stepWarnings, stepRequest);
 
                 // executeToolsFromStream decides the approvals as the calls arrive and runs the tools at the end of the model call.
+                // With streamRetries, a provider error part reruns the model call of this step. The tool parts of an attempt
+                // wait until it ends.
+                var retry = options.StreamRetries == null
+                    ? null
+                    : new StreamTextRetry(
+                        options,
+                        abort,
+                        streamResult,
+                        streamRetries,
+                        errors,
+                        retryToken =>
+                            LanguageModelCallStreaming.StreamLanguageModelCall(
+                                streamOptions,
+                                retryToken
+                            )
+                    );
                 var enumerator = ExecuteToolsFromStream
                     .Execute(
-                        streamResult.Stream,
+                        retry == null ? streamResult.Stream : retry.Read(attemptToken),
                         StepOptions(options, update),
                         callId,
                         stepMessages,
@@ -1352,7 +1382,10 @@ internal static class Generation
                             receivedOutput = true;
                         }
 
-                        if (!stepStarted && part is not ModelCallStartPart)
+                        if (
+                            !stepStarted
+                            && part is not (ModelCallStartPart or StreamRetryBoundaryPart)
+                        )
                         {
                             stepStarted = true;
                             buffer.Add(StepStart(null));
@@ -1597,6 +1630,29 @@ internal static class Generation
                                 stepResponseModelId = responseMetadata.ModelId
                                     ?? stepResponseModelId;
                                 break;
+                            case StreamRetryBoundaryPart boundary:
+                                // The model call was rerun. What the failed attempt produced does not belong to the step.
+                                text.Clear();
+                                textBlocks.Clear();
+                                reasoningBlocks.Clear();
+                                contentOrder.Clear();
+                                toolCalls.Clear();
+                                emittedResultIds.Clear();
+                                streamedApprovals = new StreamedApprovals();
+                                finish = null;
+                                rawFinish = null;
+                                providerMetadata = null;
+                                receivedOutput = false;
+                                usage = LanguageModelUsage.Null;
+                                modelCallPerformance = null;
+                                toolChoiceViolation = null;
+                                stepResponseId = Vercel.AI.ProviderUtils.JsonValues.GenerateId("aitxt-");
+                                stepResponseTimestamp = DateTimeOffset.UtcNow;
+                                stepResponseModelId = current.ModelId;
+                                warnings = boundary.Warnings;
+                                stepRequest = RequestMetadata(boundary.Request.Body);
+                                buffer.Add(new StreamRetryBoundaryPart(stepRequest, warnings));
+                                break;
                             case ModelCallStartPart start:
                                 warnings = start.Warnings;
                                 if (!stepStarted)
@@ -1634,7 +1690,8 @@ internal static class Generation
                     timeouts?.ClearModelOutput();
                     try
                     {
-                        await abort.DisposeAsync(disposal).ConfigureAwait(false);
+                        await abort.DisposeAsync(retry?.Current.Disposal ?? disposal)
+                            .ConfigureAwait(false);
                     }
                     finally
                     {
@@ -1701,9 +1758,17 @@ internal static class Generation
                 {
                     const string noOutputMessage =
                         "No output generated. The model stream ended without a finish chunk.";
+                    // The event processor reports the error and rejects the results.
                     var noOutputError = new NoOutputGeneratedException(noOutputMessage);
                     buffer.Add(new ErrorPart(noOutputMessage) { Error = noOutputError });
-                    throw noOutputError;
+                    steeringRun?.End(SteeringNotDeliveredReason.Error);
+                    if (!abort.TryFinish())
+                    {
+                        throw abort.Error!;
+                    }
+
+                    buffer.Complete();
+                    return;
                 }
 
                 var generated = new LanguageModelGenerateResult(
@@ -1723,7 +1788,7 @@ internal static class Generation
                     stepResponseId,
                     stepResponseTimestamp,
                     stepResponseModelId,
-                    streamResult.Response?.Headers
+                    (retry?.Current ?? streamResult).Response?.Headers
                 );
                 // The step that the event processor records from the transformed parts replaces this one. This one carries
                 // the metadata of the model call, and its messages are not used.

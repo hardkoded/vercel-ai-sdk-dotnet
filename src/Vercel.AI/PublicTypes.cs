@@ -1861,6 +1861,30 @@ public sealed class StreamTextOptions : GenerateTextOptions
     /// the callback returns. Maps to <c>onChunk</c>.
     /// </summary>
     public Func<StreamTextChunkEvent, CancellationToken, Task>? OnChunk { get; set; }
+
+    /// <summary>
+    /// Maximum number of automatic retries for provider errors received after response streaming has started. Each retry reruns only
+    /// the current model step. Completed earlier steps and their tool results are preserved.
+    /// Partial output from a failed attempt that was already emitted cannot be retracted and remains in consumer-facing streams. It is
+    /// excluded from the recovered step result, structured output parsing, response messages, and subsequent model steps.
+    /// Set it to <c>0</c> to disable automatic retries while allowing <see cref="OnErrorRetry"/> to request retries. Leave it
+    /// <see langword="null"/> to disable all stream retry behavior. Maps to <c>streamRetries</c>.
+    /// </summary>
+    public int? StreamRetries { get; set; }
+
+    /// <summary>
+    /// Like <see cref="GenerateTextOptions.OnError"/>, and its result can request one retry of the current model step after a provider
+    /// error that was received from the response stream, when <see cref="StreamRetries"/> is set. It takes the place of
+    /// <see cref="GenerateTextOptions.OnError"/>. C# has no union of callbacks, so the <c>onError</c> that returns <c>{ retry: true }</c> is this property.
+    /// </summary>
+    public Func<Exception, CancellationToken, Task<StreamTextOnErrorResult?>>? OnErrorRetry { get; set; }
+}
+
+/// <summary>The result of <see cref="StreamTextOptions.OnErrorRetry"/>. Maps to <c>{ retry?: boolean }</c>.</summary>
+public sealed class StreamTextOnErrorResult
+{
+    /// <summary>Whether to retry the current model step. Maps to <c>retry</c>.</summary>
+    public bool Retry { get; init; }
 }
 
 /// <summary>Passed to <see cref="StreamTextOptions.OnChunk"/>. Maps to the event of <c>onChunk</c>.</summary>
