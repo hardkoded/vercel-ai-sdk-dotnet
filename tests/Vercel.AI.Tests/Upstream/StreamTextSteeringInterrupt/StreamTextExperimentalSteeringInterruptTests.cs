@@ -686,7 +686,8 @@ public sealed class StreamTextExperimentalSteeringInterruptTests
                         ),
                         RuntimeContext = new Dictionary<string, object?>
                         {
-                            ["prepareStepCalls"] = (int)context.RuntimeContext["prepareStepCalls"]! + 1,
+                            ["prepareStepCalls"] =
+                                (int)context.RuntimeContext["prepareStepCalls"]! + 1,
                         },
                         ToolsContext = UnitContext("celsius"),
                     };

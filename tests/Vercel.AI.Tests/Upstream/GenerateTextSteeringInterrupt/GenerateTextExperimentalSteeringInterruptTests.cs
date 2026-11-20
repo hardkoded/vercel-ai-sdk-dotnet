@@ -328,7 +328,8 @@ public sealed class GenerateTextExperimentalSteeringInterruptTests
                         ),
                         RuntimeContext = new Dictionary<string, object?>
                         {
-                            ["prepareStepCalls"] = (int)context.RuntimeContext["prepareStepCalls"]! + 1,
+                            ["prepareStepCalls"] =
+                                (int)context.RuntimeContext["prepareStepCalls"]! + 1,
                         },
                         ToolsContext = UnitContext("celsius"),
                     };
