@@ -421,6 +421,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                 CustomProviderToolNames = customProviderToolNames,
                 OutputSchemaToolNames = outputSchemaToolNames,
                 SupportsAsyncToolCalling = capabilities.SupportsAsyncToolCalling,
+                ProviderOptionsName = providerOptionsName,
             }
         );
         var allowedTools = ParseAllowedTools(openai);
