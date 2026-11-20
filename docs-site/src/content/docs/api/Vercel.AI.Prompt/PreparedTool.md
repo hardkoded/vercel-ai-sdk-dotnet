@@ -1,6 +1,6 @@
 ---
 title: "PreparedTool"
-description: "A tool after String)."
+description: "A tool after ISandboxSession)."
 editUrl: false
 prev: false
 next: false
@@ -19,11 +19,11 @@ public sealed class PreparedTool
 ```
 
 
-A tool after `String)`.
+A tool after `ISandboxSession)`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/PrepareTools.cs#L64)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/PrepareTools.cs#L65)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates a prepared tool.
 | `type` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `name` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/PrepareTools.cs#L67)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/PrepareTools.cs#L68)
 
 ## Properties
 
@@ -66,7 +66,7 @@ Provider tool arguments.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/PrepareTools.cs#L98)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/PrepareTools.cs#L99)
 
 <a id="Vercel_AI_Prompt_PreparedTool_Description_"></a>
 <a id="Vercel_AI_Prompt_PreparedTool_Description"></a>
@@ -83,7 +83,7 @@ Resolved description.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/PrepareTools.cs#L80)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/PrepareTools.cs#L81)
 
 <a id="Vercel_AI_Prompt_PreparedTool_Id_"></a>
 <a id="Vercel_AI_Prompt_PreparedTool_Id"></a>
@@ -100,7 +100,7 @@ Provider tool id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/PrepareTools.cs#L95)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/PrepareTools.cs#L96)
 
 <a id="Vercel_AI_Prompt_PreparedTool_InputExamples_"></a>
 <a id="Vercel_AI_Prompt_PreparedTool_InputExamples"></a>
@@ -117,7 +117,7 @@ Input examples.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/PrepareTools.cs#L92)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/PrepareTools.cs#L93)
 
 <a id="Vercel_AI_Prompt_PreparedTool_InputSchema_"></a>
 <a id="Vercel_AI_Prompt_PreparedTool_InputSchema"></a>
@@ -134,7 +134,7 @@ Input schema for function tools.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/PrepareTools.cs#L83)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/PrepareTools.cs#L84)
 
 <a id="Vercel_AI_Prompt_PreparedTool_Name_"></a>
 <a id="Vercel_AI_Prompt_PreparedTool_Name"></a>
@@ -151,7 +151,7 @@ Tool name.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/PrepareTools.cs#L77)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/PrepareTools.cs#L78)
 
 <a id="Vercel_AI_Prompt_PreparedTool_ProviderOptions_"></a>
 <a id="Vercel_AI_Prompt_PreparedTool_ProviderOptions"></a>
@@ -168,7 +168,7 @@ Provider options.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/PrepareTools.cs#L89)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/PrepareTools.cs#L90)
 
 <a id="Vercel_AI_Prompt_PreparedTool_Strict_"></a>
 <a id="Vercel_AI_Prompt_PreparedTool_Strict"></a>
@@ -185,7 +185,7 @@ Strict mode.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/PrepareTools.cs#L86)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/PrepareTools.cs#L87)
 
 <a id="Vercel_AI_Prompt_PreparedTool_Type_"></a>
 <a id="Vercel_AI_Prompt_PreparedTool_Type"></a>
@@ -202,4 +202,4 @@ public string Type { get; }
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/PrepareTools.cs#L74)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/PrepareTools.cs#L75)

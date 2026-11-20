@@ -44,7 +44,7 @@ True when cancellation is implemented.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIBatchApi.cs#L44)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIBatchApi.cs#L48)
 
 <a id="Vercel_AI_OpenAI_OpenAIBatchApi_CanList_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIBatchApi_CanList"></a>
@@ -61,7 +61,7 @@ True when listing is implemented.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIBatchApi.cs#L47)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIBatchApi.cs#L51)
 
 <a id="Vercel_AI_OpenAI_OpenAIBatchApi_Provider_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIBatchApi_Provider"></a>
@@ -77,6 +77,23 @@ public override string Provider { get; }
 Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIBatchApi.cs#L45)
+
+<a id="Vercel_AI_OpenAI_OpenAIBatchApi_SupportedUrls_"></a>
+<a id="Vercel_AI_OpenAI_OpenAIBatchApi_SupportedUrls"></a>
+
+### SupportedUrls
+
+
+```csharp
+public override IReadOnlyDictionary<string, string> SupportedUrls { get; }
+```
+
+
+Supported URL patterns (regular expression text) by media type for requests in this batch API.
+
+**Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIBatchApi.cs#L41)
 
@@ -104,7 +121,7 @@ Cancels a batch.
 
 **Returns:** [Task&lt;BatchCancelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIBatchApi.cs#L232)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIBatchApi.cs#L236)
 
 <a id="Vercel_AI_OpenAI_OpenAIBatchApi_DoGetResultsAsync_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIBatchApi_DoGetResultsAsync_Vercel_AI_Operations_BatchOperationCall_System_Threading_CancellationToken_"></a>
@@ -129,7 +146,7 @@ Errors found while reading, such as a malformed row, throw from the stream.
 
 **Returns:** [Task&lt;IAsyncEnumerable&lt;BatchItem&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIBatchApi.cs#L302)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIBatchApi.cs#L306)
 
 <a id="Vercel_AI_OpenAI_OpenAIBatchApi_DoGetStatusAsync_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIBatchApi_DoGetStatusAsync_Vercel_AI_Operations_BatchOperationCall_System_Threading_CancellationToken_"></a>
@@ -153,7 +170,7 @@ Reads status.
 
 **Returns:** [Task&lt;BatchStatus&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIBatchApi.cs#L220)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIBatchApi.cs#L224)
 
 <a id="Vercel_AI_OpenAI_OpenAIBatchApi_DoListAsync_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIBatchApi_DoListAsync_Vercel_AI_Operations_BatchOperationCall_System_Threading_CancellationToken_"></a>
@@ -177,7 +194,7 @@ Lists batches. The implementation is invoked on this instance.
 
 **Returns:** [Task&lt;BatchListResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIBatchApi.cs#L249)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIBatchApi.cs#L253)
 
 <a id="Vercel_AI_OpenAI_OpenAIBatchApi_DoStartAsync_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIBatchApi_DoStartAsync_Vercel_AI_Operations_BatchOperationCall_System_Threading_CancellationToken_"></a>
@@ -203,4 +220,4 @@ input file TTL in seconds (3600 to 2592000, default 48 hours).
 
 **Returns:** [Task&lt;BatchStartResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIBatchApi.cs#L54)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIBatchApi.cs#L58)

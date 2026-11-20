@@ -58,7 +58,33 @@ Mirrors upstream `pipeUIMessageStreamToResponse`.
 
 **Returns:** [Task](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task) — A task that completes when the stream has been written and the response has ended.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/UIMessageStream.cs#L79)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/UIMessageStream.cs#L105)
+
+<a id="Vercel_AI_AspNetCore_UIMessageStreamExtensions_ToUIMessageStream_"></a>
+<a id="Vercel_AI_AspNetCore_UIMessageStreamExtensions_ToUIMessageStream_Vercel_AI_StreamTextResult_Vercel_AI_AspNetCore_UIMessageStreamOptions_System_Threading_CancellationToken_"></a>
+
+### ToUIMessageStream(StreamTextResult, UIMessageStreamOptions?, CancellationToken)
+
+
+```csharp
+public static IAsyncEnumerable<JsonObject> ToUIMessageStream(this StreamTextResult result, UIMessageStreamOptions? options = null, CancellationToken cancellationToken = default)
+```
+
+
+Converts the stream parts into UI message chunks. The tools of the call mark the chunks of dynamic tools.
+Maps to `toUIMessageStream`.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `result` | [StreamTextResult](/api/Vercel.AI/StreamTextResult/) | The stream to convert. |
+| `options` | [UIMessageStreamOptions](/api/Vercel.AI.AspNetCore/UIMessageStreamOptions/) | Conversion options. |
+| `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) | Cancels the read of the stream. |
+
+**Returns:** [IAsyncEnumerable&lt;JsonObject&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AspNetCore/UIMessageStream.cs#L71)
 
 <a id="Vercel_AI_AspNetCore_UIMessageStreamExtensions_ToUIMessageStreamResult_"></a>
 <a id="Vercel_AI_AspNetCore_UIMessageStreamExtensions_ToUIMessageStreamResult_Vercel_AI_StreamTextResult_System_Nullable_System_Int32__System_Func_System_Exception_System_String__System_Nullable_System_Boolean__System_Boolean_"></a>

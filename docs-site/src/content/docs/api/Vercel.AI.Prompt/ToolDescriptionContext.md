@@ -23,7 +23,7 @@ Context passed to a function-valued tool description.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/PrepareTools.cs#L10)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/PrepareTools.cs#L11)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates context.
 | `context` | [object](https://learn.microsoft.com/dotnet/api/system.object) |  |
 | `experimentalSandbox` | [ISandboxSession](/api/Vercel.AI.ProviderUtils/ISandboxSession/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/PrepareTools.cs#L13)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/PrepareTools.cs#L14)
 
 ## Properties
 
@@ -66,7 +66,7 @@ Per-tool context value.
 
 **Value:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/PrepareTools.cs#L20)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Prompt/PrepareTools.cs#L21)
 
 <a id="Vercel_AI_Prompt_ToolDescriptionContext_ExperimentalSandbox_"></a>
 <a id="Vercel_AI_Prompt_ToolDescriptionContext_ExperimentalSandbox"></a>

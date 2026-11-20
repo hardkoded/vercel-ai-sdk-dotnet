@@ -13,6 +13,10 @@ using Vercel.AI.GenerateText;
 using Vercel.AI.Prompt;
 using Vercel.AI.Provider;
 using Vercel.AI.Util;
+#if NET
+using Microsoft.AspNetCore.Http;
+using Vercel.AI.AspNetCore;
+#endif
 
 namespace Vercel.AI;
 
@@ -785,7 +789,11 @@ internal static class Generation
     {
         Vercel.AI.Operations.OperationRetry.ResolveMaxRetries(options.MaxRetries);
         ToolCallConcurrencyScheduler.PrepareToolCallConcurrency(options.ToolCallConcurrency);
-        var buffer = new PartBuffer { SingleConsumer = singleConsumer };
+        var buffer = new PartBuffer
+        {
+            SingleConsumer = singleConsumer,
+            HighWaterMark = singleConsumer ? 1 : null,
+        };
         if (options.Output is { IsJson: true } outputSpecification)
         {
             buffer.Transform = new OutputTransformStream(outputSpecification).Transform;
@@ -845,11 +853,18 @@ internal static class Generation
             );
         }
 
+        // Decide before execution so a getter access cannot change collection. Maps to the collectContent of streamTextLowMemory.
+        var collectContent = !singleConsumer || NeedsContentCollection(options);
         var producerBuffer = buffer;
         if (options.ExperimentalTransform is { Count: > 0 } transforms)
         {
             // The producer writes to its own buffer. The transforms read it and feed the buffer that consumers read.
-            producerBuffer = new PartBuffer { OnConsumerStop = abort.Stop };
+            producerBuffer = new PartBuffer
+            {
+                OnConsumerStop = abort.Stop,
+                SingleConsumer = singleConsumer,
+                HighWaterMark = singleConsumer ? 1 : null,
+            };
             ApplyStreamTextTransforms(producerBuffer, buffer, transforms, options.Tools, abort);
         }
         else
@@ -866,6 +881,7 @@ internal static class Generation
                 producerBuffer,
                 abort,
                 timeouts,
+                collectContent,
                 textSource,
                 finishSource,
                 usageSource,
@@ -887,6 +903,24 @@ internal static class Generation
             Tools = options.Tools,
             OutputSpecification = options.Output,
         };
+    }
+
+    // Maps to the collectContent decision of streamTextLowMemory. Tools, an output, steps, or a callback need the complete content.
+    // Per-call and global telemetry integrations also decide upstream, and they are not ported.
+    private static bool NeedsContentCollection(StreamTextOptions options)
+    {
+#pragma warning disable CS0618 // the deprecated aliases collect content like their replacements
+        return options.Tools is { Count: > 0 }
+            || options.ToolChoice != null
+            || options.Output != null
+            || options.PrepareStep != null
+            || options.StopWhen != null
+            || options.OnEnd != null
+            || options.OnFinish != null
+            || options.OnStepEnd != null
+            || options.OnAbort != null
+            || options.OnLanguageModelCallEnd != null;
+#pragma warning restore CS0618
     }
 
     // Maps to applyStreamTextTransforms.
@@ -948,6 +982,7 @@ internal static class Generation
                     var part in stream.WithCancellation(cancellation.Token).ConfigureAwait(false)
                 )
                 {
+                    await target.WaitForRoomAsync(cancellation.Token).ConfigureAwait(false);
                     target.Add(part);
                 }
 
@@ -973,6 +1008,7 @@ internal static class Generation
         PartBuffer buffer,
         StreamAbort abort,
         CallTimeouts? timeouts,
+        bool collectContent,
         TaskCompletionSource<string> textSource,
         TaskCompletionSource<FinishReason> finishSource,
         TaskCompletionSource<LanguageModelUsage> usageSource,
@@ -1223,6 +1259,9 @@ internal static class Generation
                     {
                         cancellationToken.ThrowIfCancellationRequested();
 
+                        // A slow consumer pauses the pull of the model stream, like upstream's highWaterMark 0 pull model.
+                        await buffer.WaitForRoomAsync(cancellationToken).ConfigureAwait(false);
+
                         // A model stream can ignore the token, so race each read against the abort and the interrupt.
                         var next = enumerator.MoveNextAsync().AsTask();
                         nextPending = true;
@@ -1329,8 +1368,12 @@ internal static class Generation
                                     buffer,
                                     contentOrder
                                 );
-                                text.Append(delta.Text);
-                                activeText.Text.Append(delta.Text);
+                                if (collectContent)
+                                {
+                                    text.Append(delta.Text);
+                                    activeText.Text.Append(delta.Text);
+                                }
+
                                 if (delta.Text.Length > 0 || delta.ProviderMetadata != null)
                                 {
                                     buffer.Add(
@@ -1408,7 +1451,11 @@ internal static class Generation
                                     buffer,
                                     contentOrder
                                 );
-                                activeReasoning.Text.Append(reasoningDelta.Text);
+                                if (collectContent)
+                                {
+                                    activeReasoning.Text.Append(reasoningDelta.Text);
+                                }
+
                                 activeReasoning.ProviderMetadata = reasoningDelta.ProviderMetadata
                                     ?? activeReasoning.ProviderMetadata;
                                 buffer.Add(
@@ -3764,10 +3811,7 @@ internal static class Generation
         }
 
         return tool.DescriptionFactory(
-            new Vercel.AI.Prompt.ToolDescriptionContext(
-                context,
-                options.ExperimentalSandbox?.Description
-            )
+            new Vercel.AI.Prompt.ToolDescriptionContext(context, options.ExperimentalSandbox)
         );
     }
 
@@ -4390,6 +4434,28 @@ internal sealed class PartBuffer
     // Maps to retention.replay === false. The buffer then serves one consumer and drops each part once it is read.
     public bool SingleConsumer { get; set; }
 
+    // Maps to the pull model of the single-consumer stream. The producer waits while this many parts are unread.
+    public int? HighWaterMark { get; set; }
+
+    private readonly SemaphoreSlim _room = new(0);
+
+    // Waits until the consumer has read enough parts for the producer to pull the next one.
+    public async Task WaitForRoomAsync(CancellationToken cancellationToken)
+    {
+        while (true)
+        {
+            lock (_gate)
+            {
+                if (HighWaterMark is not { } limit || _parts.Count < limit || _completed)
+                {
+                    return;
+                }
+            }
+
+            await _room.WaitAsync(cancellationToken).ConfigureAwait(false);
+        }
+    }
+
     // Maps to teeStream's AI_StreamAlreadyConsumedError.
     public void Claim()
     {
@@ -4492,6 +4558,11 @@ internal sealed class PartBuffer
                                 _parts.Clear();
                                 index = 0;
                             }
+
+                            if (_room.CurrentCount == 0)
+                            {
+                                _room.Release();
+                            }
                         }
                         else
                         {
@@ -4532,6 +4603,10 @@ internal sealed class PartBuffer
             if (Interlocked.Decrement(ref _readers) == 0 && !finished)
             {
                 OnConsumerStop?.Invoke();
+                if (_room.CurrentCount == 0)
+                {
+                    _room.Release();
+                }
             }
         }
     }
@@ -4563,6 +4638,7 @@ public sealed class StreamTextResult
         FinishReason = finishReason;
         Usage = usage;
         Steps = steps;
+        RawFinishReason = FromFinalStep(steps, step => step.RawFinishReason);
         Files = FromFinalStep(steps, step => step.Files);
         Request = FromFinalStep(steps, step => step.Request);
         Response = FromFinalStep(steps, step => step.Response);
@@ -4571,6 +4647,10 @@ public sealed class StreamTextResult
         Output = FromSteps(steps, output);
 
         // Steps carries the failure. These tasks fail with it, so a caller that never awaits them leaves no unobserved exception.
+        _ = RawFinishReason.ContinueWith(
+            task => _ = task.Exception,
+            TaskContinuationOptions.OnlyOnFaulted
+        );
         _ = Files.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
         _ = Request.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
         _ = Response.ContinueWith(
@@ -4623,6 +4703,47 @@ public sealed class StreamTextResult
     {
         _buffer.Claim();
         await foreach (var _ in _buffer.Read(cancellationToken).ConfigureAwait(false)) { }
+    }
+
+    /// <summary>
+    /// Builds a <c>text/plain</c> response of the text deltas. Each delta is its own UTF-8 body chunk. Maps to <c>toTextStreamResponse</c>.
+    /// </summary>
+    public TextStreamResponse ToTextStreamResponse(
+        int? status = null,
+        string? statusText = null,
+        HeaderCollection? headers = null,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return TextStreams.CreateTextStreamResponse(
+            ReadableStream<string>.From(TextStream(cancellationToken)),
+            status,
+            statusText,
+            headers
+        );
+    }
+
+    /// <summary>Writes the text deltas to <paramref name="response"/> as <c>text/plain</c>. Maps to <c>pipeTextStreamToResponse</c>.</summary>
+    public Task PipeTextStreamToResponseAsync(
+        ServerResponse response,
+        int? status = null,
+        string? statusText = null,
+        HeaderCollection? headers = null,
+        CancellationToken cancellationToken = default
+    )
+    {
+        if (response is null)
+        {
+            throw new ArgumentNullException(nameof(response));
+        }
+
+        return TextStreams.PipeTextStreamToResponseAsync(
+            response,
+            ReadableStream<string>.From(TextStream(cancellationToken)),
+            status,
+            statusText,
+            headers
+        );
     }
 
     /// <summary>Text deltas only.</summary>
@@ -4710,17 +4831,42 @@ public sealed class StreamTextResult
             yield break;
         }
 
+        // A failure of the element transform ends the element stream, but not the generation: the stream is read to its end
+        // first, so the producer finishes and the output reports its own error, as in upstream's pipeline.
+        Exception? failure = null;
         await foreach (var (partial, isNewStep) in ReadPartialOutputs(cancellationToken))
         {
-            if (isNewStep)
+            if (isNewStep || failure != null)
             {
                 continue;
             }
 
-            foreach (var element in transform(partial!.Value))
+            using var elements = transform(partial!.Value).GetEnumerator();
+            while (true)
             {
+                JsonElement element;
+                try
+                {
+                    if (!elements.MoveNext())
+                    {
+                        break;
+                    }
+
+                    element = elements.Current;
+                }
+                catch (Exception error) when (error is not OperationCanceledException)
+                {
+                    failure = error;
+                    break;
+                }
+
                 yield return element;
             }
+        }
+
+        if (failure != null)
+        {
+            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failure).Throw();
         }
     }
 
@@ -4793,6 +4939,9 @@ public sealed class StreamTextResult
     /// <summary>Finish reason. Completes when the stream finishes.</summary>
     public Task<FinishReason> FinishReason { get; }
 
+    /// <summary>The finish reason exactly as the provider reported it, or <see langword="null"/> when it reported none. Completes when the stream finishes. Maps to <c>rawFinishReason</c>.</summary>
+    public Task<string?> RawFinishReason { get; }
+
     /// <summary>Total usage. Completes when the stream finishes.</summary>
     public Task<LanguageModelUsage> Usage { get; }
 
@@ -4838,10 +4987,92 @@ public sealed class StreamTextSingleConsumerResult
     /// <summary>Finish reason. Completes when the stream finishes. Maps to <c>finishReason</c>.</summary>
     public Task<FinishReason> FinishReason => _result.FinishReason;
 
+    /// <summary>The finish reason as the provider reported it. Completes when the stream finishes. Maps to <c>rawFinishReason</c>.</summary>
+    public Task<string?> RawFinishReason => _result.RawFinishReason;
+
     /// <summary>Consumes the stream without processing the parts. Maps to <c>consumeStream</c>.</summary>
     public Task ConsumeStreamAsync(CancellationToken cancellationToken = default)
     {
         return _result.ConsumeStreamAsync(cancellationToken);
+    }
+
+#if NET
+    /// <summary>Converts the stream parts into UI message chunks. Maps to <c>toUIMessageStream</c>.</summary>
+    public IAsyncEnumerable<JsonObject> ToUIMessageStream(
+        UIMessageStreamOptions? options = null,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return _result.ToUIMessageStream(options, cancellationToken);
+    }
+
+    /// <summary>Returns a <c>text/event-stream</c> result of the UI message stream. Maps to <c>toUIMessageStreamResponse</c>.</summary>
+    public IResult ToUIMessageStreamResult(
+        int? keepAliveMs = null,
+        Func<Exception, string>? onError = null,
+        bool? redactToolErrors = null,
+        bool sendSources = false
+    )
+    {
+        return _result.ToUIMessageStreamResult(keepAliveMs, onError, redactToolErrors, sendSources);
+    }
+#endif
+
+    /// <summary>Builds a <c>text/plain</c> response of the text deltas. Maps to <c>toTextStreamResponse</c>.</summary>
+    public TextStreamResponse ToTextStreamResponse(
+        int? status = null,
+        string? statusText = null,
+        HeaderCollection? headers = null,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return _result.ToTextStreamResponse(status, statusText, headers, cancellationToken);
+    }
+
+#if NET
+    /// <summary>Pipes the UI message stream to <paramref name="response"/>. Maps to <c>pipeUIMessageStreamToResponse</c>.</summary>
+    public Task PipeUIMessageStreamToResponseAsync(
+        ServerResponse response,
+        int? status = null,
+        string? statusText = null,
+        HeaderCollection? headers = null,
+        int? keepAliveMs = null,
+        Func<Exception, string>? onError = null,
+        bool? redactToolErrors = null,
+        CancellationToken cancellationToken = default,
+        bool sendSources = false
+    )
+    {
+        return _result.PipeUIMessageStreamToResponseAsync(
+            response,
+            status,
+            statusText,
+            headers,
+            keepAliveMs,
+            onError,
+            redactToolErrors,
+            cancellationToken,
+            sendSources
+        );
+    }
+#endif
+
+    /// <summary>Pipes the text deltas to <paramref name="response"/>. Maps to <c>pipeTextStreamToResponse</c>.</summary>
+    public Task PipeTextStreamToResponseAsync(
+        ServerResponse response,
+        int? status = null,
+        string? statusText = null,
+        HeaderCollection? headers = null,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return _result.PipeTextStreamToResponseAsync(
+            response,
+            status,
+            statusText,
+            headers,
+            cancellationToken
+        );
     }
 
     /// <summary>Text deltas only. Maps to <c>textStream</c>.</summary>

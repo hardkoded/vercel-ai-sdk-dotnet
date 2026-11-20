@@ -1,6 +1,6 @@
 ---
 title: "SteerOptions"
-description: "Options of `SteerAsync`."
+description: "Options of SteerAsync."
 editUrl: false
 prev: false
 next: false

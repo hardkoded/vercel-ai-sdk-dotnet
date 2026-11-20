@@ -23,7 +23,7 @@ A provider-specific part, identified by [Kind](#Vercel_AI_Provider_CustomStreamP
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [LanguageModelStreamPart](/api/Vercel.AI.Provider/LanguageModelStreamPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3198)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3223)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates a custom part.
 | `kind` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `providerMetadata` | [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3201)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3226)
 
 ## Properties
 
@@ -66,7 +66,7 @@ Provider-scoped kind, such as `anthropic.message_start`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3209)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3234)
 
 <a id="Vercel_AI_Provider_CustomStreamPart_ProviderMetadata_"></a>
 <a id="Vercel_AI_Provider_CustomStreamPart_ProviderMetadata"></a>
@@ -83,4 +83,4 @@ Provider metadata for this part, keyed by provider name.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3212)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3237)

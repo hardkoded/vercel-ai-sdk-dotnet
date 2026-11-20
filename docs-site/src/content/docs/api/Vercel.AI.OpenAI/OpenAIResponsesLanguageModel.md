@@ -50,7 +50,7 @@ Creates an Azure OpenAI Responses model. Message and request options are read fr
 | `provider` | [AzureOpenAIProvider](/api/Vercel.AI.Azure/AzureOpenAIProvider/) |  |
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Responses/OpenAIResponsesLanguageModel.cs#L82)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Responses/OpenAIResponsesLanguageModel.cs#L90)
 
 <a id="Vercel_AI_OpenAI_OpenAIResponsesLanguageModel__ctor_Vercel_AI_Azure_AzureOpenAIProvider_System_String_Vercel_AI_Azure_AzureOpenAILanguageModelSettings_"></a>
 
@@ -74,7 +74,7 @@ drives capability detection. Requests always use &lt;code class="paramref"&gt;de
 | `deploymentId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `settings` | [AzureOpenAILanguageModelSettings](/api/Vercel.AI.Azure/AzureOpenAILanguageModelSettings/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Responses/OpenAIResponsesLanguageModel.cs#L90)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Responses/OpenAIResponsesLanguageModel.cs#L98)
 
 <a id="Vercel_AI_OpenAI_OpenAIResponsesLanguageModel__ctor_Vercel_AI_OpenAI_OpenAIProvider_System_String_"></a>
 
@@ -95,7 +95,7 @@ Creates a Responses model.
 | `provider` | [OpenAIProvider](/api/Vercel.AI.OpenAI/OpenAIProvider/) |  |
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Responses/OpenAIResponsesLanguageModel.cs#L63)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Responses/OpenAIResponsesLanguageModel.cs#L71)
 
 ## Properties
 
@@ -114,7 +114,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Responses/OpenAIResponsesLanguageModel.cs#L128)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Responses/OpenAIResponsesLanguageModel.cs#L131)
 
 <a id="Vercel_AI_OpenAI_OpenAIResponsesLanguageModel_Provider_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIResponsesLanguageModel_Provider"></a>
@@ -131,7 +131,7 @@ Provider id, such as `openai`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Responses/OpenAIResponsesLanguageModel.cs#L125)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Responses/OpenAIResponsesLanguageModel.cs#L128)
 
 <a id="Vercel_AI_OpenAI_OpenAIResponsesLanguageModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIResponsesLanguageModel_SpecificationVersion"></a>
@@ -148,7 +148,7 @@ Always `V4`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Responses/OpenAIResponsesLanguageModel.cs#L114)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Responses/OpenAIResponsesLanguageModel.cs#L122)
 
 <a id="Vercel_AI_OpenAI_OpenAIResponsesLanguageModel_SupportedUrls_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIResponsesLanguageModel_SupportedUrls"></a>
@@ -166,7 +166,7 @@ must match. Prompt file URLs that match are passed through. All others are downl
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Responses/OpenAIResponsesLanguageModel.cs#L117)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Responses/OpenAIResponsesLanguageModel.cs#L125)
 
 <a id="Vercel_AI_OpenAI_OpenAIResponsesLanguageModel_SupportsWebSearchSourcesInclude_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIResponsesLanguageModel_SupportsWebSearchSourcesInclude"></a>
@@ -185,7 +185,7 @@ Whether a request with a `web_search` or `web_search_preview` tool adds
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Responses/OpenAIResponsesLanguageModel.cs#L60)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Responses/OpenAIResponsesLanguageModel.cs#L68)
 
 ## Methods
 
@@ -211,7 +211,7 @@ Generates a complete result.
 
 **Returns:** [Task&lt;LanguageModelGenerateResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Responses/OpenAIResponsesLanguageModel.cs#L911)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Responses/OpenAIResponsesLanguageModel.cs#L914)
 
 <a id="Vercel_AI_OpenAI_OpenAIResponsesLanguageModel_DoStreamAsync_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIResponsesLanguageModel_DoStreamAsync_Vercel_AI_Provider_LanguageModelCallOptions_System_Threading_CancellationToken_"></a>
@@ -235,7 +235,7 @@ Streams partial results. The result carries the stream with the request and resp
 
 **Returns:** [Task&lt;LanguageModelStreamResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Responses/OpenAIResponsesLanguageModel.cs#L971)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Responses/OpenAIResponsesLanguageModel.cs#L984)
 
 <a id="Vercel_AI_OpenAI_OpenAIResponsesLanguageModel_Prepare_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIResponsesLanguageModel_Prepare_System_String_Vercel_AI_Provider_LanguageModelCallOptions_System_Boolean_"></a>
@@ -260,7 +260,7 @@ Builds the Responses body for &lt;code class="paramref"&gt;modelId&lt;/code&gt;.
 
 **Returns:** [OpenAIResponsesPreparedRequest](/api/Vercel.AI.OpenAI/OpenAIResponsesPreparedRequest/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Responses/OpenAIResponsesLanguageModel.cs#L291)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Responses/OpenAIResponsesLanguageModel.cs#L294)
 
 <a id="Vercel_AI_OpenAI_OpenAIResponsesLanguageModel_Prepare_System_String_Vercel_AI_Provider_LanguageModelCallOptions_System_Boolean_System_String_System_Boolean_"></a>
 
@@ -287,7 +287,7 @@ Builds the Responses body. Options come from &lt;code class="paramref"&gt;provid
 
 **Returns:** [OpenAIResponsesPreparedRequest](/api/Vercel.AI.OpenAI/OpenAIResponsesPreparedRequest/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Responses/OpenAIResponsesLanguageModel.cs#L304)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Responses/OpenAIResponsesLanguageModel.cs#L307)
 
 <a id="Vercel_AI_OpenAI_OpenAIResponsesLanguageModel_Prepare_System_String_Vercel_AI_Provider_LanguageModelCallOptions_System_Boolean_System_String_System_Boolean_System_String_System_Boolean_"></a>
 
@@ -317,7 +317,7 @@ Builds the Responses body. &lt;code class="paramref"&gt;modelId&lt;/code&gt; dri
 
 **Returns:** [OpenAIResponsesPreparedRequest](/api/Vercel.AI.OpenAI/OpenAIResponsesPreparedRequest/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Responses/OpenAIResponsesLanguageModel.cs#L327)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Responses/OpenAIResponsesLanguageModel.cs#L330)
 
 <a id="Vercel_AI_OpenAI_OpenAIResponsesLanguageModel_PrepareResponsesTools_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIResponsesLanguageModel_PrepareResponsesTools_System_Collections_Generic_IReadOnlyList_Vercel_AI_Provider_LanguageModelTool__Vercel_AI_Provider_ToolChoice_Vercel_AI_OpenAI_PrepareResponsesToolsOptions_"></a>
@@ -350,4 +350,4 @@ Maps to `prepareResponsesTools`.
 | [TypeValidationException](/api/Vercel.AI.ProviderUtils/TypeValidationException/) | The arguments of a provider-defined tool are invalid. |
 | [UnsupportedFunctionalityException](/api/Vercel.AI.Operations/UnsupportedFunctionalityException/) | The tools or the tool choice cannot be expressed for OpenAI. |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Responses/OpenAIResponsesLanguageModel.cs#L136)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Responses/OpenAIResponsesLanguageModel.cs#L139)

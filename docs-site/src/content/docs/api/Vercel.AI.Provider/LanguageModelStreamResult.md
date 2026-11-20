@@ -29,7 +29,7 @@ Disposing is safe to repeat, and it does nothing after the stream has ended.
 
 **Implements:** [IAsyncEnumerable&lt;LanguageModelStreamPart&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1), [IAsyncDisposable](https://learn.microsoft.com/dotnet/api/system.iasyncdisposable), [IDisposable](https://learn.microsoft.com/dotnet/api/system.idisposable)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3304)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3329)
 
 ## Constructors
 
@@ -55,7 +55,7 @@ Creates a stream result.
 | `response` | [LanguageModelStreamResponse](/api/Vercel.AI.Provider/LanguageModelStreamResponse/) | Response info. |
 | `resource` | [IDisposable](https://learn.microsoft.com/dotnet/api/system.idisposable) | A resource the provider opened for the stream, such as the HTTP response. The result disposes it once. |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3316)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3341)
 
 ## Properties
 
@@ -74,7 +74,7 @@ Request info, when the model reports it.
 
 **Value:** [LanguageModelStreamRequest](/api/Vercel.AI.Provider/LanguageModelStreamRequest/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3333)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3358)
 
 <a id="Vercel_AI_Provider_LanguageModelStreamResult_Response_"></a>
 <a id="Vercel_AI_Provider_LanguageModelStreamResult_Response"></a>
@@ -91,7 +91,7 @@ Response info, when the model reports it.
 
 **Value:** [LanguageModelStreamResponse](/api/Vercel.AI.Provider/LanguageModelStreamResponse/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3336)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3361)
 
 <a id="Vercel_AI_Provider_LanguageModelStreamResult_Stream_"></a>
 <a id="Vercel_AI_Provider_LanguageModelStreamResult_Stream"></a>
@@ -108,7 +108,7 @@ The stream parts.
 
 **Value:** [IAsyncEnumerable&lt;LanguageModelStreamPart&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3330)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3355)
 
 ## Methods
 
@@ -134,7 +134,7 @@ unambiguous, because the result is both an async enumerable and an async disposa
 
 **Returns:** [ConfiguredCancelableAsyncEnumerable&lt;LanguageModelStreamPart&gt;](https://learn.microsoft.com/dotnet/api/system.runtime.compilerservices.configuredcancelableasyncenumerable-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3350)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3375)
 
 <a id="Vercel_AI_Provider_LanguageModelStreamResult_Dispose_"></a>
 <a id="Vercel_AI_Provider_LanguageModelStreamResult_Dispose"></a>
@@ -149,7 +149,7 @@ public void Dispose()
 
 Releases the resource the provider opened for this stream. Safe to call more than once.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3358)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3383)
 
 <a id="Vercel_AI_Provider_LanguageModelStreamResult_DisposeAsync_"></a>
 <a id="Vercel_AI_Provider_LanguageModelStreamResult_DisposeAsync"></a>
@@ -166,7 +166,7 @@ Releases the resource the provider opened for this stream. Safe to call more tha
 
 **Returns:** [ValueTask](https://learn.microsoft.com/dotnet/api/system.threading.tasks.valuetask)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3364)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3389)
 
 <a id="Vercel_AI_Provider_LanguageModelStreamResult_GetAsyncEnumerator_"></a>
 <a id="Vercel_AI_Provider_LanguageModelStreamResult_GetAsyncEnumerator_System_Threading_CancellationToken_"></a>
@@ -189,4 +189,4 @@ Returns an enumerator that iterates asynchronously through the collection.
 
 **Returns:** [IAsyncEnumerator&lt;LanguageModelStreamPart&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerator-1) — An enumerator that can be used to iterate asynchronously through the collection.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3339)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3364)

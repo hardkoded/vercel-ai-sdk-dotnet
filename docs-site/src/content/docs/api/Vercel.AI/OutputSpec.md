@@ -25,7 +25,7 @@ Structured output selector. Maps to `Output`.
 
 **Derived:** [OutputSpec&lt;TOutput&gt;](/api/Vercel.AI/OutputSpec-1/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L568)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L610)
 
 ## Methods
 
@@ -60,7 +60,7 @@ Array output with the element schema as a string. Maps to `Output.array`.
 | --- | --- |
 | [InvalidArgumentError](/api/Vercel.AI.Util/InvalidArgumentError/) | &lt;code class="paramref"&gt;minItems&lt;/code&gt; or &lt;code class="paramref"&gt;maxItems&lt;/code&gt; is negative, or &lt;code class="paramref"&gt;minItems&lt;/code&gt; is greater than &lt;code class="paramref"&gt;maxItems&lt;/code&gt;. |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L615)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L657)
 
 <a id="Vercel_AI_OutputSpec_Array_System_Text_Json_JsonElement_System_Nullable_System_Int32__System_Nullable_System_Int32__System_String_System_String_"></a>
 
@@ -93,7 +93,7 @@ Array output. Each element is validated against &lt;code class="paramref"&gt;ele
 | --- | --- |
 | [InvalidArgumentError](/api/Vercel.AI.Util/InvalidArgumentError/) | &lt;code class="paramref"&gt;minItems&lt;/code&gt; or &lt;code class="paramref"&gt;maxItems&lt;/code&gt; is negative, or &lt;code class="paramref"&gt;minItems&lt;/code&gt; is greater than &lt;code class="paramref"&gt;maxItems&lt;/code&gt;. |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L602)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L644)
 
 <a id="Vercel_AI_OutputSpec_Array__1_System_String_System_Nullable_System_Int32__System_Nullable_System_Int32__System_String_System_String_"></a>
 
@@ -125,7 +125,7 @@ Array output with the element schema as a string, deserialized to &lt;code class
 
 **Returns:** `OutputSpec&lt;IReadOnlyList&lt;TElement&gt;&gt;`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L684)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L726)
 
 <a id="Vercel_AI_OutputSpec_Array__1_System_Text_Json_JsonElement_System_Nullable_System_Int32__System_Nullable_System_Int32__System_String_System_String_"></a>
 
@@ -158,7 +158,7 @@ with an inferred element type.
 
 **Returns:** `OutputSpec&lt;IReadOnlyList&lt;TElement&gt;&gt;`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L670)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L712)
 
 <a id="Vercel_AI_OutputSpec_Choice_"></a>
 <a id="Vercel_AI_OutputSpec_Choice_System_Collections_Generic_IReadOnlyList_System_String__System_String_System_String_"></a>
@@ -167,7 +167,7 @@ with an inferred element type.
 
 
 ```csharp
-public static OutputSpec Choice(IReadOnlyList<string> options, string? name = null, string? description = null)
+public static OutputSpec<string> Choice(IReadOnlyList<string> options, string? name = null, string? description = null)
 ```
 
 
@@ -181,9 +181,9 @@ Choice output. The model answers with `{ "result": option }` and the output is t
 | `name` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `description` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-**Returns:** [OutputSpec](./)
+**Returns:** `OutputSpec&lt;string&gt;`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L628)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L670)
 
 <a id="Vercel_AI_OutputSpec_Json_"></a>
 <a id="Vercel_AI_OutputSpec_Json_System_String_System_String_"></a>
@@ -192,7 +192,7 @@ Choice output. The model answers with `{ "result": option }` and the output is t
 
 
 ```csharp
-public static OutputSpec Json(string? name = null, string? description = null)
+public static OutputSpec<JsonElement> Json(string? name = null, string? description = null)
 ```
 
 
@@ -205,9 +205,9 @@ Unstructured JSON output. The output is the parsed JSON value. Maps to `Output.j
 | `name` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `description` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-**Returns:** [OutputSpec](./)
+**Returns:** `OutputSpec&lt;JsonElement&gt;`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L638)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L680)
 
 <a id="Vercel_AI_OutputSpec_Object_"></a>
 <a id="Vercel_AI_OutputSpec_Object_System_String_System_String_System_String_"></a>
@@ -232,7 +232,7 @@ JSON object output validated against a schema string.
 
 **Returns:** [OutputSpec](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L587)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L629)
 
 <a id="Vercel_AI_OutputSpec_Object_System_Text_Json_JsonElement_System_String_System_String_"></a>
 
@@ -256,7 +256,7 @@ JSON object output validated against &lt;code class="paramref"&gt;schema&lt;/cod
 
 **Returns:** [OutputSpec](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L577)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L619)
 
 <a id="Vercel_AI_OutputSpec_Object__1_System_String_System_String_System_String_"></a>
 
@@ -286,7 +286,7 @@ JSON object output from a schema string, deserialized to &lt;code class="typepar
 
 **Returns:** `OutputSpec&lt;TOutput&gt;`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L657)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L699)
 
 <a id="Vercel_AI_OutputSpec_Object__1_System_Text_Json_JsonElement_System_String_System_String_"></a>
 
@@ -317,7 +317,7 @@ inferred output type.
 
 **Returns:** `OutputSpec&lt;TOutput&gt;`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L647)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L689)
 
 <a id="Vercel_AI_OutputSpec_Text_"></a>
 <a id="Vercel_AI_OutputSpec_Text"></a>
@@ -326,12 +326,12 @@ inferred output type.
 
 
 ```csharp
-public static OutputSpec Text()
+public static OutputSpec<string> Text()
 ```
 
 
-Plain text output.
+Plain text output. The output type is [string](https://learn.microsoft.com/dotnet/api/system.string). Maps to `Output.text`.
 
-**Returns:** [OutputSpec](./)
+**Returns:** `OutputSpec&lt;string&gt;`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L571)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L613)

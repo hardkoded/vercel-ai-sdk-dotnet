@@ -1,6 +1,6 @@
 ---
 title: "GatewayRealtimeModelId"
-description: "Known AI Gateway realtime model ids. Maps to GatewayRealtimeModelId; any other string is accepted too."
+description: "Known AI Gateway model ids. Maps to GatewayRealtimeModelId; any other string is accepted too."
 editUrl: false
 prev: false
 next: false
@@ -19,7 +19,7 @@ public static class GatewayRealtimeModelId
 ```
 
 
-Known AI Gateway realtime model ids. Maps to `GatewayRealtimeModelId`; any other string is accepted too.
+Known AI Gateway model ids. Maps to `GatewayRealtimeModelId`; any other string is accepted too.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
