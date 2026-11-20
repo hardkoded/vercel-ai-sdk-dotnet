@@ -2,7 +2,6 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
-using System.Net.WebSockets;
 using System.Text.Json;
 using NAudio.Wave;
 using Vercel.AI.OpenAI;
@@ -30,6 +29,8 @@ public sealed class MainForm : Form
         ScrollBars = ScrollBars.Vertical,
     };
     private readonly WaveFormat _format = new(SampleRate, 16, 1);
+    private readonly SemaphoreSlim _sendLock = new(1, 1);
+    private OpenAIProvider? _provider;
     private OpenAIRealtimeModelLive? _model;
     private IRealtimeSession? _session;
     private WaveInEvent? _microphone;
@@ -37,6 +38,8 @@ public sealed class MainForm : Form
     private BufferedWaveProvider? _playback;
     private CancellationTokenSource? _cts;
     private Task? _reader;
+    private bool _stopping;
+    private string? _lastSpeaker; // UI thread only
 
     public MainForm()
     {
@@ -46,11 +49,33 @@ public sealed class MainForm : Form
         Controls.Add(_log);
         Controls.Add(_talk);
         _talk.Click += async (_, _) => await ToggleAsync();
-        FormClosing += async (_, _) => await StopAsync();
+        FormClosing += async (_, e) =>
+        {
+            if (_stopping)
+            {
+                e.Cancel = true;
+                return;
+            }
+
+            if (_session is null)
+            {
+                return;
+            }
+
+            // WinForms does not wait for an async handler. Stop first, then close again.
+            e.Cancel = true;
+            await StopAsync();
+            Close();
+        };
     }
 
     private async Task ToggleAsync()
     {
+        if (_stopping)
+        {
+            return;
+        }
+
         if (_session is not null)
         {
             await StopAsync();
@@ -67,15 +92,23 @@ public sealed class MainForm : Form
         _talk.Enabled = false;
         try
         {
-            var provider = OpenAIProvider.Create(
+            _provider ??= OpenAIProvider.Create(
                 new OpenAIOptions { ApiKey = apiKey, BaseUrl = "https://ai-gateway.vercel.sh/v1" }
             );
-            _model = (OpenAIRealtimeModelLive)
-                provider.RealtimeModel(ModelId, new OpenAIRealtimeOptions { Api = "live" });
-            _cts = new CancellationTokenSource();
-            _session = await _model.ConnectAsync(_cts.Token);
+            var model = (OpenAIRealtimeModelLive)
+                _provider.RealtimeModel(ModelId, new OpenAIRealtimeOptions { Api = "live" });
+            var cts = new CancellationTokenSource();
+            _model = model;
+            _cts = cts;
+            var session = await model.ConnectAsync(cts.Token);
+            _session = session;
 
-            _playback = new BufferedWaveProvider(_format) { DiscardOnBufferOverflow = true };
+            // Realtime audio can arrive faster than it plays, so keep a long buffer.
+            _playback = new BufferedWaveProvider(_format)
+            {
+                BufferDuration = TimeSpan.FromSeconds(60),
+                DiscardOnBufferOverflow = true,
+            };
             _speaker = new WaveOutEvent();
             _speaker.Init(_playback);
             _speaker.Play();
@@ -83,7 +116,7 @@ public sealed class MainForm : Form
             var started = new TaskCompletionSource(
                 TaskCreationOptions.RunContinuationsAsynchronously
             );
-            _reader = Task.Run(() => ReadEventsAsync(_session, _model, started, _cts.Token));
+            _reader = Task.Run(() => ReadEventsAsync(session, model, started, cts.Token));
 
             await SendAsync(
                 new RealtimeModelV4ClientEvent("session-start")
@@ -97,7 +130,7 @@ public sealed class MainForm : Form
             );
 
             // The gateway rejects audio sent before the session has started.
-            await started.Task.WaitAsync(TimeSpan.FromSeconds(15), _cts.Token);
+            await started.Task.WaitAsync(TimeSpan.FromSeconds(15), cts.Token);
 
             // 20 ms chunks.
             _microphone = new WaveInEvent { WaveFormat = _format, BufferMilliseconds = 20 };
@@ -141,7 +174,7 @@ public sealed class MainForm : Form
                             _playback?.AddSamples(pcm, 0, pcm.Length);
                             break;
                         case "transcript-fragment":
-                            Append((e.Speaker == "user" ? "You: " : "AI: ") + e.Delta);
+                            AppendTranscript(e.Speaker, e.Delta);
                             break;
                         case "error":
                             started.TrySetException(new InvalidOperationException(e.Message));
@@ -159,8 +192,17 @@ public sealed class MainForm : Form
         }
         catch (Exception ex)
         {
-            started.TrySetException(ex);
             Append("Error: " + ex.Message);
+        }
+        finally
+        {
+            // Wakes a start that is still waiting, with the real reason instead of a timeout.
+            started.TrySetException(new InvalidOperationException("The session closed."));
+            if (!_stopping && !cancellationToken.IsCancellationRequested)
+            {
+                // The gateway ended the session. Reset the button and release the devices.
+                Post(async () => await StopAsync());
+            }
         }
     }
 
@@ -168,86 +210,174 @@ public sealed class MainForm : Form
     {
         try
         {
+            // Drop a chunk when the previous send is still running, so audio never queues up.
             await SendAsync(
                 new RealtimeModelV4ClientEvent("input-audio-append")
                 {
                     Audio = Convert.ToBase64String(e.Buffer, 0, e.BytesRecorded),
-                }
+                },
+                dropIfBusy: true
             );
         }
-        catch (Exception ex)
-            when (ex is OperationCanceledException or WebSocketException or ObjectDisposedException)
+        catch (Exception)
         {
-            // The session is closing.
+            // async void must not throw. A dead session is reported by the reader.
         }
     }
 
-    private Task SendAsync(RealtimeModelV4ClientEvent clientEvent)
+    private async Task SendAsync(RealtimeModelV4ClientEvent clientEvent, bool dropIfBusy = false)
     {
         var session = _session;
         var model = _model;
+        var token = _cts?.Token ?? CancellationToken.None;
         if (session is null || model is null)
         {
-            return Task.CompletedTask;
+            return;
         }
 
-        return session.SendAsync(
-            model.SerializeClientEvent(clientEvent).ToJsonString(),
-            _cts?.Token ?? CancellationToken.None
-        );
+        // A WebSocket allows one send at a time.
+        if (dropIfBusy)
+        {
+            if (!_sendLock.Wait(0, CancellationToken.None))
+            {
+                return;
+            }
+        }
+        else
+        {
+            await _sendLock.WaitAsync(token);
+        }
+
+        try
+        {
+            await session.SendAsync(model.SerializeClientEvent(clientEvent).ToJsonString(), token);
+        }
+        finally
+        {
+            _sendLock.Release();
+        }
     }
 
     private async Task StopAsync()
     {
-        _microphone?.StopRecording();
-        _microphone?.Dispose();
-        _microphone = null;
+        if (_stopping)
+        {
+            return;
+        }
+
+        _stopping = true;
+        _talk.Enabled = false;
+        try
+        {
+            var microphone = _microphone;
+            _microphone = null;
+            Quiet(() => microphone?.StopRecording());
+            Quiet(() => microphone?.Dispose());
+
+            try
+            {
+                // Ask the gateway to close, then give it a moment to send the final events.
+                await SendAsync(new RealtimeModelV4ClientEvent("session-close"));
+                if (_reader is not null)
+                {
+                    await _reader.WaitAsync(TimeSpan.FromSeconds(5));
+                }
+            }
+            catch (Exception)
+            {
+                // Closing is best effort. The session is disposed below either way.
+            }
+
+            Quiet(() => _cts?.Cancel());
+            if (_session is not null)
+            {
+                try
+                {
+                    await _session.DisposeAsync();
+                }
+                catch (Exception)
+                {
+                    // Already closed.
+                }
+            }
+
+            Quiet(() => _speaker?.Dispose());
+            Quiet(() => _cts?.Dispose());
+        }
+        finally
+        {
+            _session = null;
+            _model = null;
+            _reader = null;
+            _cts = null;
+            _speaker = null;
+            _playback = null;
+            _stopping = false;
+            if (!IsDisposed)
+            {
+                _talk.Text = "Start talking";
+                _talk.Enabled = true;
+            }
+        }
+    }
+
+    // Teardown runs every step even when an earlier one throws, for example when a device is unplugged.
+    private static void Quiet(Action action)
+    {
+        try
+        {
+            action();
+        }
+        catch (Exception)
+        {
+            // Best effort.
+        }
+    }
+
+    private void Post(Action action)
+    {
+        if (IsDisposed || !IsHandleCreated)
+        {
+            return;
+        }
 
         try
         {
-            // Ask the gateway to close, then give it a moment to send the final events.
-            await SendAsync(new RealtimeModelV4ClientEvent("session-close"));
-            if (_reader is not null)
-            {
-                await _reader.WaitAsync(TimeSpan.FromSeconds(5));
-            }
+            BeginInvoke(action);
         }
-        catch (Exception ex)
-            when (ex
-                    is OperationCanceledException
-                        or TimeoutException
-                        or WebSocketException
-                        or ObjectDisposedException
-            )
+        catch (InvalidOperationException)
         {
-            // Closing is best effort.
+            // The form closed while this was queued.
         }
-
-        _cts?.Cancel();
-        if (_session is not null)
-        {
-            await _session.DisposeAsync();
-        }
-
-        _session = null;
-        _model = null;
-        _reader = null;
-        _cts?.Dispose();
-        _cts = null;
-        _speaker?.Dispose();
-        _speaker = null;
-        _playback = null;
-        _talk.Text = "Start talking";
     }
 
     private void Append(string line)
     {
         if (InvokeRequired)
         {
-            BeginInvoke(() => Append(line));
+            Post(() => Append(line));
             return;
         }
 
+        _lastSpeaker = null;
         _log.AppendText(line + Environment.NewLine);
     }
+
+    // Transcript deltas are partial words. Keep them on one line until the speaker changes.
+    private void AppendTranscript(string? speaker, string? delta) =>
+        Post(() =>
+        {
+            if (speaker != _lastSpeaker)
+            {
+                _lastSpeaker = speaker;
+                if (_log.TextLength > 0 && !_log.Text.EndsWith(Environment.NewLine))
+                {
+                    _log.AppendText(Environment.NewLine);
+                }
+
+                _log.AppendText(speaker == "user" ? "You: " : "AI: ");
+            }
+
+            _log.AppendText(delta);
+        });
 }
