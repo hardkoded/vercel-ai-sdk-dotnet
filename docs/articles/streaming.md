@@ -32,6 +32,11 @@ For `OutputSpec.Array`, enumerate `ElementStream()` to get each element once, as
 
 `StreamTextResult.Output` resolves to the parsed output: the object, the array of elements, the choice option, the JSON value, or the text as a JSON string for text output. An answer that does not parse fails `Output` with a `NoObjectGeneratedException` and leaves the stream and the other results alone.
 
+### Typed output
+
+Pass an `OutputSpec<TOutput>` as the second argument of `GenerateTextAsync` or `StreamTextAsync` (on `AiClient` and `Ai`) to get a typed result. It replaces `Output` of the options (upstream `output`, typed as `Output<OUTPUT>`). `GenerateTextAsync<TOutput>` returns a `GenerateTextResult<TOutput>`, a `GenerateTextResult` whose `Output` is a `TOutput?`. `StreamTextAsync<TOutput>` returns a `StreamTextResult<TOutput>`, a `StreamTextResult` whose `Output` is a `Task<TOutput?>`. `OutputSpec.Text()` and `OutputSpec.Choice(options)` give `string`, `OutputSpec.Json()` gives `JsonElement`, and `OutputSpec.Object<T>(schema)` and `OutputSpec.Array<T>(elementSchema)` give `T` and `IReadOnlyList<T>`. Property names match the JSON case-insensitively. A mismatch throws `JsonException`. Without a typed specification `Output` stays a `JsonElement?`, because the options are not generic.
+
+
 `OutputSpec.Array(elementSchema, minItems, maxItems)` asks the model for `{ "elements": [...] }`, `OutputSpec.Choice(options)` for `{ "result": option }`, and `OutputSpec.Json()` for any JSON value. They map to `Output.array`, `Output.choice`, and `Output.json`.
 
 ```csharp

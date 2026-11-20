@@ -1940,8 +1940,24 @@ public sealed class StreamAbortContext
 }
 
 /// <summary>Result of <c>generateText</c>.</summary>
-public sealed class GenerateTextResult
+public class GenerateTextResult
 {
+    // Copies a result. GenerateTextResult<TOutput> uses it to give the same result a typed output.
+    private protected GenerateTextResult(GenerateTextResult result)
+        : this(
+            result.Text,
+            result.ReasoningText,
+            result.Steps,
+            result.FinishReason,
+            result.Usage,
+            result.Output,
+            result.Sources,
+            result.ProviderMetadata
+        )
+    {
+        ResponseMessages = result.ResponseMessages;
+    }
+
     /// <summary>Creates a result.</summary>
     public GenerateTextResult(
         string text,
@@ -2096,6 +2112,34 @@ public sealed class GenerateTextResult
     /// </summary>
     public IReadOnlyList<ModelMessage> ResponseMessages { get; init; } =
         Array.Empty<ModelMessage>();
+}
+
+/// <summary>
+/// Result of <c>generateText</c> whose parsed output has the type of the <see cref="OutputSpec{TOutput}"/> of the call.
+/// Maps to <c>GenerateTextResult&lt;TOOLS, OUTPUT&gt;</c>.
+/// </summary>
+/// <typeparam name="TOutput">The type of the parsed output.</typeparam>
+public sealed class GenerateTextResult<TOutput> : GenerateTextResult
+{
+    private readonly OutputSpec<TOutput> _spec;
+
+    internal GenerateTextResult(GenerateTextResult result, OutputSpec<TOutput> spec)
+        : base(result)
+    {
+        _spec = spec;
+    }
+
+    /// <summary>
+    /// The parsed output, or <see langword="default"/> when the call generated none, as <see cref="GenerateTextResult.Output"/>.
+    /// A mismatch with <typeparamref name="TOutput"/> throws <see cref="JsonException"/>. Maps to <c>output</c>.
+    /// </summary>
+    public new TOutput? Output
+    {
+        get
+        {
+            return base.Output is { } json ? _spec.Deserialize(json) : default;
+        }
+    }
 }
 
 /// <summary>A part of the <c>streamText</c> full stream.</summary>

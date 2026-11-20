@@ -4726,7 +4726,7 @@ internal sealed class PartBuffer
 }
 
 /// <summary>Result of <c>streamText</c>. Enumerating <see cref="Stream"/> or awaiting <see cref="Text"/> consumes the same buffered events.</summary>
-public sealed class StreamTextResult
+public class StreamTextResult
 {
     private readonly PartBuffer _buffer;
 
@@ -4735,6 +4735,25 @@ public sealed class StreamTextResult
 
     // The output specification of the call. Null means text output.
     internal OutputSpec? OutputSpecification { get; init; }
+
+    // Copies a result. StreamTextResult<TOutput> uses it to give the same stream a typed output.
+    private protected StreamTextResult(StreamTextResult result)
+    {
+        _buffer = result._buffer;
+        Tools = result.Tools;
+        OutputSpecification = result.OutputSpecification;
+        Text = result.Text;
+        FinishReason = result.FinishReason;
+        Usage = result.Usage;
+        Steps = result.Steps;
+        RawFinishReason = result.RawFinishReason;
+        Files = result.Files;
+        Request = result.Request;
+        Response = result.Response;
+        ResponseMessages = result.ResponseMessages;
+        ProviderMetadata = result.ProviderMetadata;
+        Output = result.Output;
+    }
 
     internal StreamTextResult(
         PartBuffer buffer,
@@ -5079,6 +5098,31 @@ public sealed class StreamTextResult
     /// tool results the client ran. Completes when the stream finishes. Maps to <c>responseMessages</c>.
     /// </summary>
     public Task<IReadOnlyList<ModelMessage>> ResponseMessages { get; }
+}
+
+/// <summary>
+/// Result of <c>streamText</c> whose parsed output has the type of the <see cref="OutputSpec{TOutput}"/> of the call.
+/// Maps to <c>StreamTextResult&lt;TOOLS, OUTPUT&gt;</c>.
+/// </summary>
+/// <typeparam name="TOutput">The type of the parsed output.</typeparam>
+public sealed class StreamTextResult<TOutput> : StreamTextResult
+{
+    internal StreamTextResult(StreamTextResult result, OutputSpec<TOutput> spec)
+        : base(result)
+    {
+        Output = Typed(result.Output, spec);
+    }
+
+    /// <summary>
+    /// The parsed output once the stream finished, or <see langword="default"/> when none was generated. A mismatch with
+    /// <typeparamref name="TOutput"/> faults the task with <see cref="JsonException"/>. Maps to <c>output</c>.
+    /// </summary>
+    public new Task<TOutput?> Output { get; }
+
+    private static async Task<TOutput?> Typed(Task<JsonElement?> output, OutputSpec<TOutput> spec)
+    {
+        return await output.ConfigureAwait(false) is { } json ? spec.Deserialize(json) : default;
+    }
 }
 
 /// <summary>
