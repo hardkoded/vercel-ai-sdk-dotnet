@@ -167,11 +167,25 @@ public static class AmazonBedrockMessages
             {
                 FlushUser();
                 var isLastMessage = messageIndex == prompt.Count - 1;
-                var hasReasoningBlocks = assistant.Parts.Any(p => p is AssistantReasoningPart);
-                for (var partIndex = 0; partIndex < assistant.Parts.Count; partIndex++)
+                // Foreign empty text is metadata only. Remove it before determining
+                // the last part so assistant prefill trimming still applies.
+                var parts = assistant
+                    .Parts.Where(part =>
+                        part
+                            is not AssistantTextPart
+                            {
+                                Text.Length: 0,
+                                ProviderOptions: { } options
+                            }
+                        || options.ContainsKey("amazonBedrock")
+                        || options.ContainsKey("bedrock")
+                    )
+                    .ToList();
+                var hasReasoningBlocks = parts.Any(p => p is AssistantReasoningPart);
+                for (var partIndex = 0; partIndex < parts.Count; partIndex++)
                 {
-                    var part = assistant.Parts[partIndex];
-                    var isLastPart = partIndex == assistant.Parts.Count - 1;
+                    var part = parts[partIndex];
+                    var isLastPart = partIndex == parts.Count - 1;
                     if (part is not AssistantToolResultPart)
                     {
                         FlushToolResult();

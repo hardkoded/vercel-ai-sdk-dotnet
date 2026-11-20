@@ -536,8 +536,107 @@ public sealed class GoogleLanguageModel : ILanguageModel
                             }
                         }
 
-                        foreach (var generated in parsed.Content)
+                        // The parts stream in order, so a function call closes the open text or reasoning block and the text that follows it starts a new one.
+                        foreach (var item in OrderedParts(candidates[0], callContext))
                         {
+                            if (item is JsonElement functionCallPart)
+                            {
+                                if (IsCompleteFunctionCall(functionCallPart))
+                                {
+                                    if (textId != null)
+                                    {
+                                        yield return new TextEndStreamPart(textId);
+                                        textId = null;
+                                    }
+
+                                    if (reasoningId != null)
+                                    {
+                                        yield return new ReasoningEndStreamPart(reasoningId);
+                                        reasoningId = null;
+                                    }
+                                }
+
+                                foreach (
+                                    var toolPart in FunctionCallParts(
+                                        functionCallPart,
+                                        callContext,
+                                        activeCalls
+                                    )
+                                )
+                                {
+                                    if (toolPart is CloseBlocksPart)
+                                    {
+                                        // A finalized partial-argument call also separates the surrounding blocks.
+                                        if (textId != null)
+                                        {
+                                            yield return new TextEndStreamPart(textId);
+                                            textId = null;
+                                        }
+
+                                        if (reasoningId != null)
+                                        {
+                                            yield return new ReasoningEndStreamPart(reasoningId);
+                                            reasoningId = null;
+                                        }
+
+                                        continue;
+                                    }
+
+                                    clientTool |= toolPart is ToolCallStreamPart;
+                                    yield return toolPart;
+                                }
+
+                                continue;
+                            }
+
+                            if (item is EmptySignedPart signed)
+                            {
+                                if (textId != null)
+                                {
+                                    yield return new TextDeltaStreamPart(
+                                        textId,
+                                        string.Empty,
+                                        signed.Metadata
+                                    );
+                                    continue;
+                                }
+
+                                if (reasoningId != null)
+                                {
+                                    yield return new ReasoningEndStreamPart(reasoningId);
+                                    reasoningId = null;
+                                }
+
+                                // Keep the signature in position without merging later content.
+                                var signedId = (block++).ToString(CultureInfo.InvariantCulture);
+                                if (signed.Thought)
+                                {
+                                    yield return new ReasoningStartStreamPart(
+                                        signedId,
+                                        signed.Metadata
+                                    );
+                                    yield return new ReasoningDeltaStreamPart(
+                                        signedId,
+                                        string.Empty,
+                                        signed.Metadata
+                                    );
+                                    yield return new ReasoningEndStreamPart(signedId);
+                                }
+                                else
+                                {
+                                    yield return new TextStartStreamPart(signedId, signed.Metadata);
+                                    yield return new TextDeltaStreamPart(
+                                        signedId,
+                                        string.Empty,
+                                        signed.Metadata
+                                    );
+                                    yield return new TextEndStreamPart(signedId);
+                                }
+
+                                continue;
+                            }
+
+                            var generated = (GeneratedContent)item;
                             if (generated is GoogleReasoning reasoning)
                             {
                                 if (textId != null)
@@ -633,21 +732,6 @@ public sealed class GoogleLanguageModel : ILanguageModel
                                     reasoningFile.MediaType,
                                     reasoningFile.ProviderMetadata
                                 );
-                            }
-                        }
-
-                        if (
-                            candidates[0].TryGetProperty("content", out var body)
-                            && body.TryGetProperty("parts", out var parts)
-                            && parts.ValueKind == JsonValueKind.Array
-                        )
-                        {
-                            foreach (
-                                var toolPart in FunctionCallParts(parts, callContext, activeCalls)
-                            )
-                            {
-                                clientTool |= toolPart is ToolCallStreamPart;
-                                yield return toolPart;
                             }
                         }
                     }
@@ -837,22 +921,97 @@ public sealed class GoogleLanguageModel : ILanguageModel
         return warnings;
     }
 
+    // The parts of a chunk in order: a function call stays a raw part, the others are parsed to content.
+    private static List<object> OrderedParts(JsonElement candidate, GoogleParseContext context)
+    {
+        var ordered = new List<object>();
+        if (
+            !candidate.TryGetProperty("content", out var body)
+            || !body.TryGetProperty("parts", out var parts)
+            || parts.ValueKind != JsonValueKind.Array
+        )
+        {
+            return ordered;
+        }
+
+        string? codeId = null;
+        string? serverId = null;
+        foreach (var part in parts.EnumerateArray())
+        {
+            if (
+                part.TryGetProperty("text", out var textValue)
+                && textValue.ValueKind == JsonValueKind.String
+                && textValue.GetString()?.Length == 0
+            )
+            {
+                var thought =
+                    part.TryGetProperty("thought", out var thoughtValue)
+                    && thoughtValue.ValueKind == JsonValueKind.True;
+                var signature = GoogleResponse.SignatureMetadata(part, context);
+                if (signature != null && (context.JsonResponseToolName == null || thought))
+                {
+                    ordered.Add(new EmptySignedPart(thought, signature));
+                }
+
+                continue;
+            }
+
+            var content = new List<GeneratedContent>();
+            GoogleResponse.AppendPart(content, part, context, ref codeId, ref serverId);
+            ordered.AddRange(content);
+            if (
+                part.TryGetProperty("functionCall", out var call)
+                && call.ValueKind == JsonValueKind.Object
+            )
+            {
+                ordered.Add(part);
+            }
+        }
+
+        return ordered;
+    }
+
+    // A call that arrives whole, with or without arguments, as opposed to a streamed one.
+    private static bool IsCompleteFunctionCall(JsonElement part)
+    {
+        var call = part.GetProperty("functionCall");
+        if (
+            call.TryGetProperty("partialArgs", out var partial)
+            && partial.ValueKind != JsonValueKind.Null
+        )
+        {
+            return false;
+        }
+
+        var name = GoogleJson.String(call, "name");
+        if (name == null)
+        {
+            return false;
+        }
+
+        var hasArgs =
+            call.TryGetProperty("args", out var args) && args.ValueKind != JsonValueKind.Null;
+        var willContinue =
+            call.TryGetProperty("willContinue", out var cont)
+            && cont.ValueKind == JsonValueKind.True;
+        return hasArgs || !willContinue;
+    }
+
     // Gemini sends a function call whole, without arguments, or streamed: a named
     // chunk with willContinue, then partialArgs chunks, then an empty terminal chunk.
     private static IEnumerable<LanguageModelStreamPart> FunctionCallParts(
-        JsonElement parts,
+        JsonElement part,
         GoogleParseContext context,
         List<StreamingCall> active
     )
     {
-        foreach (var part in parts.EnumerateArray())
         {
             if (
                 !part.TryGetProperty("functionCall", out var call)
                 || call.ValueKind != JsonValueKind.Object
             )
             {
-                continue;
+                yield break;
             }
 
             var metadata = GoogleResponse.SignatureMetadata(part, context);
@@ -945,6 +1104,7 @@ public sealed class GoogleLanguageModel : ILanguageModel
     {
         var call = active[active.Count - 1];
         active.RemoveAt(active.Count - 1);
+        yield return new CloseBlocksPart();
         var final = call.Accumulator.Finalize();
         if (final.ClosingDelta.Length > 0)
         {
@@ -1006,6 +1166,16 @@ public sealed class GoogleLanguageModel : ILanguageModel
 
         return argument;
     }
+
+    // Ends the open text and reasoning blocks. The stream loop consumes it, so it never reaches the caller.
+    private sealed class CloseBlocksPart : LanguageModelStreamPart
+    {
+        public CloseBlocksPart()
+            : base("close-blocks") { }
+    }
+
+    // A text or reasoning part without text that carries a thought signature.
+    private sealed record EmptySignedPart(bool Thought, JsonElement? Metadata);
 
     private sealed class StreamingCall
     {

@@ -418,8 +418,7 @@ internal sealed class StreamTextEventProcessor
                         new GeneratedReasoning(block.Text.ToString(), block.ProviderMetadata)
                     );
                     break;
-                case TextRecord block
-                    when block.Text.Length > 0 || (block.Citations?.Count ?? 0) > 0:
+                case TextRecord block:
                     content.Add(
                         new GeneratedText(
                             block.Text.ToString(),

@@ -927,9 +927,18 @@ public static class AnthropicPrompt
                 continue;
             }
 
+            // Filter before calculating the last part so message cache control
+            // and assistant prefill trimming apply to content actually sent.
+            var sentParts = parts
+                .EnumerateArray()
+                .Where(part =>
+                    AnthropicJson.String(part, "type") != "text"
+                    || (AnthropicJson.String(part, "text") ?? string.Empty).Length > 0
+                )
+                .ToList();
             var index = 0;
-            var count = parts.GetArrayLength();
-            foreach (var part in parts.EnumerateArray())
+            var count = sentParts.Count;
+            foreach (var part in sentParts)
             {
                 var isLastPart = index == count - 1;
                 index++;
@@ -1388,7 +1397,13 @@ public static class AnthropicPrompt
                     }
                 }
 
-                messages.Add(new JsonObject { ["role"] = "assistant", ["content"] = parts });
+                var assistantNode = new JsonObject { ["role"] = "assistant", ["content"] = parts };
+                AnthropicJson.Set(
+                    assistantNode,
+                    "providerOptions",
+                    Options(assistant.ProviderOptions)
+                );
+                messages.Add(assistantNode);
             }
             else if (message is ToolModelMessage tool)
             {

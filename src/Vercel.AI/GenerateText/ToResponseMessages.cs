@@ -105,7 +105,13 @@ internal static class ToResponseMessages
         foreach (var part in inputContent)
         {
             // Skip empty text without provider metadata.
-            if (part is GeneratedText { Text.Length: 0, ProviderMetadata: null })
+            if (
+                part is GeneratedText
+                {
+                    Text.Length: 0,
+                    ProviderMetadata: null or { ValueKind: JsonValueKind.Null },
+                }
+            )
             {
                 continue;
             }
