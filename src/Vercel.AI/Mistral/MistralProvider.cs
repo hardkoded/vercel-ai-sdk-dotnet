@@ -10,6 +10,16 @@ using Vercel.AI.Util;
 
 namespace Vercel.AI.Mistral;
 
+/// <summary>Mistral settings. Maps to <c>MistralProviderSettings</c>.</summary>
+public class MistralOptions : OpenAICompatibleOptions
+{
+    /// <summary>
+    /// Custom WebSocket implementation. Required in runtimes whose default WebSocket does not support headers for
+    /// realtime transcription. Maps to <c>webSocket</c>.
+    /// </summary>
+    public WebSocketFactory? WebSocket { get; set; }
+}
+
 /// <summary>Mistral provider. OpenAI Chat Completions compatible at <c>https://api.mistral.ai/v1</c>.</summary>
 public sealed class MistralProvider : OpenAICompatibleProvider
 {
@@ -154,13 +164,13 @@ public static class MistralServiceCollectionExtensions
     /// <summary>Adds the provider.</summary>
     public static IServiceCollection AddMistral(
         this IServiceCollection services,
-        Action<OpenAICompatibleOptions>? configure = null
+        Action<MistralOptions>? configure = null
     )
     {
         services.AddHttpClient(MistralProvider.ProviderId);
         services.AddSingleton(sp =>
         {
-            var options = new OpenAICompatibleOptions();
+            var options = new MistralOptions();
             configure?.Invoke(options);
             return new MistralProvider(
                 sp.GetRequiredService<IHttpClientFactory>()

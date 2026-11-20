@@ -397,7 +397,7 @@ System messages become `instructions`, joined with a blank line. The sampling se
 
 ## Mistral transcription
 
-`MistralProvider.TranscriptionModel(id)` returns a `MistralTranscriptionModel` with provider id `mistral.transcription`. It implements `ITranscriptionModel` and `ITranscriptionCaller`, so it works with `Transcribe`. It posts a multipart request to `{base}/audio/transcriptions`. It does not stream yet; realtime transcription is tracked in #834.
+`MistralProvider.TranscriptionModel(id)` returns a `MistralTranscriptionModel` with provider id `mistral.transcription`. It implements `ITranscriptionModel` and `ITranscriptionCaller`, so it works with `Transcribe`. It posts a multipart request to `{base}/audio/transcriptions`. It also streams live audio; see [Mistral realtime transcription](#mistral-realtime-transcription). Mistral voice agents (provider-owned LiveKit transport) are not ported yet.
 
 ```csharp
 var result = await Transcribe.TranscribeAsync(new TranscribeRequest
@@ -415,9 +415,26 @@ Read the options from `providerOptions.mistral`. `MistralTranscriptionModelOptio
 - `timestampGranularities`: `segment` and `word`, sent as repeated `timestamp_granularities` fields. For model ids whose catalog entry has `LanguageWithTimestamps` unset (the legacy ids `voxtral-mini-2507`, `voxtral-mini-2602`, and `voxtral-mini-latest`), combining it with `language` throws `InvalidArgumentException`. Other and unknown model ids send the combination to Mistral.
 - `diarize`: identify speakers. Mistral validates the timestamp requirement.
 - `contextBias`: words, phrases, or descriptions that guide spelling. Entries must not be empty. They are sent as repeated `context_bias` fields, with no entry limit in the SDK.
-- `targetStreamingDelayMs`, `speakerReferences`, and `turnDetection` are realtime only. They are not sent and each adds an `unsupported` warning.
+- `targetStreamingDelayMs`, `speakerReferences`, and `turnDetection` are realtime only. `DoGenerateAsync` does not send them and each adds an `unsupported` warning.
 
 The result carries the text, language, segments, and duration (`prompt_audio_seconds`, else the end of the last segment). `Usage` is the raw Mistral usage. Token and prompt-audio usage is in `ProviderMetadata.mistral.usage`, and segments with a type, score, or speaker id are in `ProviderMetadata.mistral.segments`. `Response.ModelId` is the model id Mistral returns.
+
+### Mistral realtime transcription
+
+Pass `voxtral-mini-transcribe-realtime-3` or `voxtral-mini-transcribe-realtime-3-0` to `StreamTranscribe.Start`. The model opens a WebSocket to `{base}/audio/transcriptions/realtime?model={id}` (the base URL upgraded to `ws(s)`). `MistralOptions.WebSocket` (maps to `webSocket`) takes a `WebSocketFactory` for runtimes whose default `ClientWebSocket` cannot send the `Authorization` header. Custom HTTP handlers do not intercept the socket.
+
+```csharp
+var mistral = MistralProvider.Create(new MistralOptions { ApiKey = Environment.GetEnvironmentVariable("MISTRAL_API_KEY") });
+var result = StreamTranscribe.Start(new StreamTranscribeRequest
+{
+    Model = (ITranscriptionCaller)mistral.TranscriptionModel("voxtral-mini-transcribe-realtime-3"),
+    // Audio, InputAudioFormat = new AudioFormat("audio/pcm", 24000), ...
+});
+```
+
+Audio must be raw mono, signed 16-bit little-endian PCM (`audio/pcm`), as bytes or base64. Any other type, or a rate that is not a positive integer, throws `InvalidArgumentException` before connecting. The rate defaults to 16000. The model sends `session.update` after `session.created`, starts audio after `session.updated`, splits chunks into 64 KiB messages, waits while the socket buffer is full, sends `input_audio.end`, and finishes on `transcription.done`. Realtime accepts `language`, `contextBias`, `diarize`, `targetStreamingDelayMs`, `speakerReferences` and `turnDetection`. `returnLanguage`, `temperature` and `timestampGranularities` are not sent and each adds an `unsupported` warning on `stream-start`.
+
+Parts: `transcript-delta` for each text delta, `transcript-final` for each segment (with `providerMetadata.mistral.speakerId` when diarized and no timestamps invented for untimed segments), then `response-metadata` and `finish` with the text, timed segments, language, `prompt_audio_seconds` as the duration, the raw usage, and `providerMetadata.mistral.segments`. Turn events and unknown events appear as `raw` parts when `IncludeRawChunks` is set. A provider `error` event, a socket error, or a close before `transcription.done` fails the stream. Abort, cancel and every failure close the socket and cancel the audio stream.
 
 ## Mistral speech
 

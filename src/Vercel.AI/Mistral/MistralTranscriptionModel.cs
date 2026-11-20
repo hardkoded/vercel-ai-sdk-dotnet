@@ -41,7 +41,7 @@ public sealed class MistralTranscriptionModel : ITranscriptionModel, ITranscript
     public string SpecificationVersion => "v4";
 
     /// <inheritdoc />
-    public bool CanStream => false;
+    public bool CanStream => true;
 
     /// <inheritdoc />
     public async Task<TranscriptionResult> DoTranscribeAsync(
@@ -70,7 +70,17 @@ public sealed class MistralTranscriptionModel : ITranscriptionModel, ITranscript
         CancellationToken cancellationToken
     )
     {
-        return Task.FromResult<TranscriptionStreamStart?>(null);
+        call = call ?? throw new ArgumentNullException(nameof(call));
+        return Task.FromResult<TranscriptionStreamStart?>(
+            MistralTranscriptionStream.StreamMistralTranscription(
+                call,
+                ModelId,
+                _provider.Options.BaseUrl,
+                _provider.CreateHeaders(call.Headers),
+                (_provider.Options as MistralOptions)?.WebSocket,
+                _clock?.Invoke() ?? DateTime.UtcNow
+            )
+        );
     }
 
     /// <inheritdoc />
