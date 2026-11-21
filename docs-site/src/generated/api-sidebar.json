@@ -172,6 +172,10 @@
     "slug": "api/Vercel.AI.Operations"
   },
   {
+    "label": "Vercel.AI.Parallel",
+    "slug": "api/Vercel.AI.Parallel"
+  },
+  {
     "label": "Vercel.AI.Perplexity",
     "slug": "api/Vercel.AI.Perplexity"
   },
