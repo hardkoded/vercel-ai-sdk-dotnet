@@ -20,6 +20,13 @@ public sealed class ProviderHttp
     /// <summary>Provider hook that turns a failed response into the exception message. Maps to a provider's <c>failedResponseHandler</c>. Null uses the shared extraction.</summary>
     internal Func<int, string, string>? ErrorToMessage { get; set; }
 
+    /// <summary>
+    /// Test hook, called once per attempt with the caller's token, before the request is sent. HttpClient hands the message
+    /// handler a linked token it disposes when headers arrive, so a test cannot see the caller's token from the handler.
+    /// .NET-only: stands in for upstream's check of <c>init.signal</c> on each fetch call.
+    /// </summary>
+    internal Action<CancellationToken>? OnRequest { get; set; }
+
     /// <summary>Creates a provider HTTP client.</summary>
     public ProviderHttp(HttpClient httpClient, RetryPolicy? retry = null, TimeSpan? timeout = null)
     {
@@ -659,6 +666,7 @@ public sealed class ProviderHttp
                 using var request = new HttpRequestMessage(method, uri);
                 ApplyHeaders(request, headers);
                 request.Content = attempt == 0 ? content : rebuild?.Invoke();
+                OnRequest?.Invoke(cancellationToken);
                 var response = await _httpClient
                     .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token)
                     .ConfigureAwait(false);
