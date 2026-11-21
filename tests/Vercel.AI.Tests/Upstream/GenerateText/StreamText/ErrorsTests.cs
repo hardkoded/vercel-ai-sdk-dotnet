@@ -1088,11 +1088,11 @@ public sealed class ErrorsTests
             OnError = (_, _) => Task.CompletedTask,
         };
 
-    // Object.freeze has no counterpart: the stream parts of the port are immutable already. The test keeps the recovery flow upstream checks.
     [Fact]
     [UpstreamTest(
         Prefix + "should recover when the first recovered provider part is frozen",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Partial,
+        Note = "The recovery flow and its assertions are ported. Upstream freezes the first recovered part with Object.freeze, so a retry that mutates it throws. The stream parts of the port are immutable classes without a freeze, so the test cannot check that the retry leaves the part unmodified."
     )]
     public async Task Should_recover_when_the_first_recovered_provider_part_is_frozen()
     {
