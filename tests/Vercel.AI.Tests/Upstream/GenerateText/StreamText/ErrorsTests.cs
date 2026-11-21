@@ -1327,17 +1327,21 @@ public sealed class ErrorsTests
         var failedText = Assert.IsType<TextUIPart>(parts[1]);
         Assert.Equal("partial text", failedText.Text);
         Assert.Equal("done", failedText.State);
+        Assert.Null(failedText.ProviderMetadata);
         var failedReasoning = Assert.IsType<ReasoningUIPart>(parts[2]);
         Assert.Equal("failed-reasoning", failedReasoning.Id);
         Assert.Equal("partial reasoning", failedReasoning.Text);
         Assert.Equal("done", failedReasoning.State);
+        Assert.Null(failedReasoning.ProviderMetadata);
         var recoveredText = Assert.IsType<TextUIPart>(parts[3]);
         Assert.Equal("recovered text", recoveredText.Text);
         Assert.Equal("done", recoveredText.State);
+        Assert.Null(recoveredText.ProviderMetadata);
         var recoveredReasoning = Assert.IsType<ReasoningUIPart>(parts[4]);
         Assert.Equal("recovered-reasoning", recoveredReasoning.Id);
         Assert.Equal("recovered reasoning", recoveredReasoning.Text);
         Assert.Equal("done", recoveredReasoning.State);
+        Assert.Null(recoveredReasoning.ProviderMetadata);
     }
 
     [Fact]
@@ -1393,7 +1397,8 @@ public sealed class ErrorsTests
         }
 
         var result = RetryClient().StreamTextAsync(options);
-        await using var reader = result.Stream().GetAsyncEnumerator();
+        using var cancellation = new CancellationTokenSource();
+        await using var reader = result.Stream(cancellation.Token).GetAsyncEnumerator();
 
         async Task<TextStreamPart> ReadUntilAsync(string type)
         {
@@ -1402,6 +1407,15 @@ public sealed class ErrorsTests
                 var next = reader.MoveNextAsync().AsTask();
                 if (await Task.WhenAny(next, Task.Delay(5000)) != next)
                 {
+                    // End the pending read before the reader is disposed.
+                    await cancellation.CancelAsync();
+                    provider.Writer.TryComplete();
+                    try
+                    {
+                        await next;
+                    }
+                    catch (OperationCanceledException) { }
+
                     throw new TimeoutException($"Timed out waiting for {type}");
                 }
 
@@ -1416,6 +1430,7 @@ public sealed class ErrorsTests
         var start = Assert.IsType<ToolInputStartPart>(await ReadUntilAsync("tool-input-start"));
         Assert.Equal("tool-call-1", start.Id);
         Assert.Equal("tool1", start.ToolName);
+        Assert.Null(start.ProviderExecuted);
         Assert.False(start.Dynamic);
 
         await provider.Writer.WriteAsync(
