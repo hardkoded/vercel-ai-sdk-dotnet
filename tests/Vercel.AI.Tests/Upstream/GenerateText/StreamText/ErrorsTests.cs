@@ -523,9 +523,7 @@ public sealed class ErrorsTests
     }
 
     [Fact]
-    [UpstreamTest(
-        Prefix + "should exclude failed-attempt text from structured output state"
-    )]
+    [UpstreamTest(Prefix + "should exclude failed-attempt text from structured output state")]
     public async Task Should_exclude_failed_attempt_text_from_structured_output_state()
     {
         var model = new StreamTextTransformTestSupport.CallsModel(
@@ -685,9 +683,7 @@ public sealed class ErrorsTests
     }
 
     [Fact]
-    [UpstreamTest(
-        Prefix + "should use request and response metadata from the recovered attempt"
-    )]
+    [UpstreamTest(Prefix + "should use request and response metadata from the recovered attempt")]
     public async Task Should_use_request_and_response_metadata_from_the_recovered_attempt()
     {
         var model = new StreamTextTransformTestSupport.CallsModel(
@@ -1020,9 +1016,7 @@ public sealed class ErrorsTests
     }
 
     [Fact]
-    [UpstreamTest(
-        Prefix + "should discard tool calls from a failed attempt"
-    )]
+    [UpstreamTest(Prefix + "should discard tool calls from a failed attempt")]
     public async Task Should_discard_tool_calls_from_a_failed_attempt()
     {
         var executions = 0;

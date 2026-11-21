@@ -267,9 +267,7 @@ public sealed class StreamTextTransformBaseTransformationTests
     }
 
     [Fact]
-    [UpstreamTest(
-        Base + "result.toolCalls should be transformed"
-    )]
+    [UpstreamTest(Base + "result.toolCalls should be transformed")]
     public async Task Result_toolCalls_should_be_transformed()
     {
         var result = SteeringTestSupport
@@ -302,9 +300,7 @@ public sealed class StreamTextTransformBaseTransformationTests
     }
 
     [Fact]
-    [UpstreamTest(
-        Base + "result.toolResults should be transformed"
-    )]
+    [UpstreamTest(Base + "result.toolResults should be transformed")]
     public async Task Result_toolResults_should_be_transformed()
     {
         var result = SteeringTestSupport

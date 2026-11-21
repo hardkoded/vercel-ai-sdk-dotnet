@@ -4955,18 +4955,48 @@ public class StreamTextResult
             TaskContinuationOptions.OnlyOnFaulted
         );
         _ = Output.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
-        _ = FinalStep.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
+        _ = FinalStep.ContinueWith(
+            task => _ = task.Exception,
+            TaskContinuationOptions.OnlyOnFaulted
+        );
         _ = Content.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
-        _ = Warnings.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
-        _ = ReasoningText.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
-        _ = Reasoning.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
+        _ = Warnings.ContinueWith(
+            task => _ = task.Exception,
+            TaskContinuationOptions.OnlyOnFaulted
+        );
+        _ = ReasoningText.ContinueWith(
+            task => _ = task.Exception,
+            TaskContinuationOptions.OnlyOnFaulted
+        );
+        _ = Reasoning.ContinueWith(
+            task => _ = task.Exception,
+            TaskContinuationOptions.OnlyOnFaulted
+        );
         _ = Sources.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
-        _ = ToolCalls.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
-        _ = StaticToolCalls.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
-        _ = DynamicToolCalls.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
-        _ = ToolResults.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
-        _ = StaticToolResults.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
-        _ = DynamicToolResults.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
+        _ = ToolCalls.ContinueWith(
+            task => _ = task.Exception,
+            TaskContinuationOptions.OnlyOnFaulted
+        );
+        _ = StaticToolCalls.ContinueWith(
+            task => _ = task.Exception,
+            TaskContinuationOptions.OnlyOnFaulted
+        );
+        _ = DynamicToolCalls.ContinueWith(
+            task => _ = task.Exception,
+            TaskContinuationOptions.OnlyOnFaulted
+        );
+        _ = ToolResults.ContinueWith(
+            task => _ = task.Exception,
+            TaskContinuationOptions.OnlyOnFaulted
+        );
+        _ = StaticToolResults.ContinueWith(
+            task => _ = task.Exception,
+            TaskContinuationOptions.OnlyOnFaulted
+        );
+        _ = DynamicToolResults.ContinueWith(
+            task => _ = task.Exception,
+            TaskContinuationOptions.OnlyOnFaulted
+        );
     }
 
     // The results of the approvals that settled before the first step come first, as upstream's initialResponseMessages do.
