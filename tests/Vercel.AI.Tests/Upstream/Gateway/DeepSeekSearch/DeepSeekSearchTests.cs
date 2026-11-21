@@ -14,7 +14,7 @@ public sealed class DeepSeekSearchTests
 {
     private const string Prefix =
         "packages/gateway/src/tool/deepseek-search.test.ts::deepseekSearch::";
-    private const string Commit = "2099d45";
+    private const string Commit = "2099d455e449b77778c9648a754e8c27b1a74829";
 
     private static IReadOnlyList<string> ValidateOutput(string json)
     {
@@ -88,9 +88,11 @@ public sealed class DeepSeekSearchTests
         Assert.False(properties.TryGetProperty("localization", out _));
     }
 
+    public static TheoryData<string> QueryValidationCases =>
+        ["", " ", new string('x', 129), string.Concat(Enumerable.Repeat("😀", 129))];
+
     [Theory]
-    [InlineData("")]
-    [InlineData(" ")]
+    [MemberData(nameof(QueryValidationCases))]
     [UpstreamTest(
         Prefix + "leaves query validation to the gateway (%j)",
         Coverage = UpstreamCoverage.Covered,
@@ -99,22 +101,6 @@ public sealed class DeepSeekSearchTests
     public void Leaves_query_validation_to_the_gateway(string query)
     {
         Assert.Empty(ValidateInput(new JsonObject { ["query"] = query }.ToJsonString()));
-    }
-
-    [Fact]
-    [UpstreamTest(
-        Prefix + "leaves query validation to the gateway (%j)",
-        Coverage = UpstreamCoverage.Covered,
-        Commit = Commit
-    )]
-    public void Leaves_query_validation_to_the_gateway_for_over_long_queries()
-    {
-        foreach (
-            var query in new[] { new string('x', 129), string.Concat(Enumerable.Repeat("😀", 129)) }
-        )
-        {
-            Assert.Empty(ValidateInput(new JsonObject { ["query"] = query }.ToJsonString()));
-        }
     }
 
     [Fact]

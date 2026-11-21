@@ -30,7 +30,7 @@ public sealed class GatewayToolErrorTests
         "packages/gateway/src/tool/gateway-tool-error.test.ts::Gateway tool errors::%s preserves structured errors and additive fields",
         Coverage = UpstreamCoverage.Partial,
         Note = "Only deepseekFetch and deepseekSearch are ported. parallelSearch is not ported; takoSearch has its own tests.",
-        Commit = "2099d45"
+        Commit = "2099d455e449b77778c9648a754e8c27b1a74829"
     )]
     public void Preserves_structured_errors_and_additive_fields(string name)
     {
