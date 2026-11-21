@@ -32,8 +32,11 @@ public interface IAiTelemetry
 /// <summary>Core AI SDK client. Maps to the <c>ai</c> package functions.</summary>
 public interface IAiClient
 {
-    /// <summary>Generates text and runs tools. Maps to <c>generateText</c>.</summary>
-    Task<GenerateTextResult> GenerateTextAsync(
+    /// <summary>
+    /// Generates text and runs tools. Without <see cref="GenerateTextOptions.Output"/>, the output is the text, like the default
+    /// <c>Output.text()</c>. Maps to <c>generateText</c>.
+    /// </summary>
+    Task<GenerateTextResult<string>> GenerateTextAsync(
         GenerateTextOptions options,
         CancellationToken cancellationToken = default
     );
@@ -139,7 +142,7 @@ public sealed class AiClient : IAiClient
     }
 
     /// <inheritdoc />
-    public Task<GenerateTextResult> GenerateTextAsync(
+    public async Task<GenerateTextResult<string>> GenerateTextAsync(
         GenerateTextOptions options,
         CancellationToken cancellationToken = default
     )
@@ -149,12 +152,19 @@ public sealed class AiClient : IAiClient
             throw new ArgumentNullException(nameof(options));
         }
 
-        return Generation.GenerateAsync(
-            ResolveLanguage(options.Model, options.ModelId),
-            options,
-            _telemetry,
-            cancellationToken
-        );
+        // Upstream defaults output to Output.text(), so the default output is the text.
+        var textOutput = OutputSpec.Text();
+        var call = options.ShallowCopy();
+        call.ResultFactory = result => new GenerateTextResult<string>(result, textOutput);
+        var result = await Generation
+            .GenerateAsync(
+                ResolveLanguage(call.Model, call.ModelId),
+                call,
+                _telemetry,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
+        return (GenerateTextResult<string>)result;
     }
 
     private static JsonElement? ParseSchema(string schema)
@@ -442,8 +452,16 @@ public sealed class AiClient : IAiClient
 
         var call = options.ShallowCopy();
         call.Output = output;
-        var result = await GenerateTextAsync(call, cancellationToken).ConfigureAwait(false);
-        return new GenerateTextResult<TOutput>(result, output);
+        call.ResultFactory = result => new GenerateTextResult<TOutput>(result, output);
+        var result = await Generation
+            .GenerateAsync(
+                ResolveLanguage(call.Model, call.ModelId),
+                call,
+                _telemetry,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
+        return (GenerateTextResult<TOutput>)result;
     }
 
     /// <summary>
@@ -705,8 +723,9 @@ public sealed class AiClient : IAiClient
             .ConfigureAwait(false);
         var score = 0d;
         string? reason = null;
+        JsonElement? generatedOutput = ((GenerateTextResult)generated).Output;
         if (
-            generated.Output is { } output
+            generatedOutput is { } output
             && output.TryGetProperty("score", out var scoreElement)
             && scoreElement.TryGetDouble(out var parsed)
         )
@@ -715,7 +734,7 @@ public sealed class AiClient : IAiClient
         }
 
         if (
-            generated.Output is { } outputWithReason
+            generatedOutput is { } outputWithReason
             && outputWithReason.TryGetProperty("reason", out var reasonElement)
         )
         {
@@ -964,7 +983,7 @@ public static class Ai
     );
 
     /// <summary>Generates text.</summary>
-    public static Task<GenerateTextResult> GenerateTextAsync(
+    public static Task<GenerateTextResult<string>> GenerateTextAsync(
         GenerateTextOptions options,
         CancellationToken cancellationToken = default
     )

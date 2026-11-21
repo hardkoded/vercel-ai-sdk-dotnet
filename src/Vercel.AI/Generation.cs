@@ -4255,19 +4255,21 @@ internal static class Generation
                 && (last.FinishReason == FinishReason.ToolCalls || last.Text.Length == 0)
             )
             {
-                return new GenerateTextResult(
-                    last.Text,
-                    last.ReasoningText,
-                    steps,
-                    last.FinishReason,
-                    usage,
-                    null,
-                    sources,
-                    last.ProviderMetadata
-                )
-                {
-                    ResponseMessages = responseMessages.ToArray(),
-                };
+                return options.WrapResult(
+                    new GenerateTextResult(
+                        last.Text,
+                        last.ReasoningText,
+                        steps,
+                        last.FinishReason,
+                        usage,
+                        null,
+                        sources,
+                        last.ProviderMetadata
+                    )
+                    {
+                        ResponseMessages = responseMessages.ToArray(),
+                    }
+                );
             }
 
             try
@@ -4341,19 +4343,21 @@ internal static class Generation
             output = JsonSerializer.SerializeToElement(last.Text);
         }
 
-        return new GenerateTextResult(
-            last.Text,
-            last.ReasoningText,
-            steps,
-            last.FinishReason,
-            usage,
-            output,
-            sources,
-            last.ProviderMetadata
-        )
-        {
-            ResponseMessages = responseMessages.ToArray(),
-        };
+        return options.WrapResult(
+            new GenerateTextResult(
+                last.Text,
+                last.ReasoningText,
+                steps,
+                last.FinishReason,
+                usage,
+                output,
+                sources,
+                last.ProviderMetadata
+            )
+            {
+                ResponseMessages = responseMessages.ToArray(),
+            }
+        );
     }
 }
 

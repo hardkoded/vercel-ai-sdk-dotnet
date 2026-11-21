@@ -75,7 +75,7 @@ public sealed class ToolExecutionErrorsTests
         Assert.Equal("tool1", tool.ToolName);
     }
 
-    private static Task<GenerateTextResult> RunAsync()
+    private static Task<GenerateTextResult<string>> RunAsync()
     {
         var model = new TestLanguageModel
         {

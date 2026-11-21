@@ -78,7 +78,7 @@ public sealed class WhenAProviderExecutedToolEmitsToolApprovalRequestTests
         Assert.Null(request.IsAutomatic);
     }
 
-    private static Task<GenerateTextResult> RunAsync()
+    private static Task<GenerateTextResult<string>> RunAsync()
     {
         var model = new TestLanguageModel
         {
