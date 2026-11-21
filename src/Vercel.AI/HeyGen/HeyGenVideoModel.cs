@@ -24,7 +24,13 @@ public sealed class HeyGenVideoModel : IVideoModel, IVideoCaller
         "reference_to_video",
     };
     private static readonly string[] Resolutions = { "480p", "768p", "1080p", "2k" };
-    private static readonly string[] PromptEnhancements = { "turbo", "quality", "disabled" };
+    private static readonly string[] PromptEnhancements =
+    {
+        "turbo",
+        "quality",
+        "ultraquality",
+        "disabled",
+    };
     private static readonly string[] AspectRatios = { "21:9", "16:9", "4:3", "1:1", "3:4", "9:16" };
 
     // HeyGen's named size classes do not consistently equal the short edge.
@@ -338,18 +344,6 @@ public sealed class HeyGenVideoModel : IVideoModel, IVideoCaller
             );
         }
 
-        if (
-            call.Duration is { } duration
-            && (duration != Math.Floor(duration) || duration < 5 || duration > 15)
-        )
-        {
-            throw new InvalidArgumentException(
-                "duration",
-                duration,
-                "HeyGen duration must be an integer between 5 and 15 seconds."
-            );
-        }
-
         if (call.Seed is { } seed && (seed != Math.Floor(seed) || seed < 0 || seed > uint.MaxValue))
         {
             throw new InvalidArgumentException(
@@ -461,6 +455,23 @@ public sealed class HeyGenVideoModel : IVideoModel, IVideoCaller
                 : referenceCount > 0 ? "reference_to_video"
                 : "text_to_video"
             );
+        if (
+            call.Duration is { } duration
+            && (
+                double.IsInfinity(duration)
+                || double.IsNaN(duration)
+                || duration != Math.Floor(duration)
+                || duration <= 0
+            )
+        )
+        {
+            throw new InvalidArgumentException(
+                "duration",
+                duration,
+                "HeyGen duration must be a positive integer number of seconds."
+            );
+        }
+
         if (
             (mode == "image_to_video" && image == null)
             || (mode != "image_to_video" && image != null)

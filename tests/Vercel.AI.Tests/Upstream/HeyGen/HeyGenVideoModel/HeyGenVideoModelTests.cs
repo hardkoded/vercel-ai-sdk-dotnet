@@ -18,6 +18,144 @@ public sealed class HeyGenVideoModelTests
     private const string Prefix =
         "packages/heygen/src/heygen-video-model.test.ts::HeyGenVideoModel::";
 
+    [Theory]
+    [InlineData("text_to_video")]
+    [InlineData("image_to_video")]
+    [UpstreamTest(
+        Prefix + "supports 30-second %s clips at every resolution with compatible enhancement",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Supports_30_second_clips_at_every_resolution_with_compatible_enhancement(
+        string mode
+    )
+    {
+        foreach (var resolution in new[] { "480p", "768p", "1080p", "2k" })
+        {
+            foreach (var enhancement in new string?[] { null, "quality", "turbo" })
+            {
+                var server = new Server();
+                var options =
+                    "{\"mode\":\""
+                    + mode
+                    + "\",\"resolution\":\""
+                    + resolution
+                    + "\""
+                    + (enhancement == null ? "" : ",\"promptEnhancement\":\"" + enhancement + "\"")
+                    + "}";
+                await CreateModel(server.Handler)
+                    .DoStartAsync(
+                        Start(
+                            aspectRatio: "16:9",
+                            duration: 30,
+                            image: mode == "image_to_video" ? Image : null,
+                            heygen: options
+                        ),
+                        CancellationToken.None
+                    )
+                    .ConfigureAwait(false);
+                Matches(
+                    server.RequestBody(),
+                    "{\"duration\":30,\"mode\":\""
+                        + mode
+                        + "\",\"resolution\":\""
+                        + resolution
+                        + "\"}"
+                );
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData("text_to_video")]
+    [InlineData("image_to_video")]
+    [InlineData("reference_to_video")]
+    [UpstreamTest(
+        Prefix + "passes long %s requests through without imposing provider duration limits",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Passes_long_requests_through_without_imposing_provider_duration_limits(
+        string mode
+    )
+    {
+        foreach (var duration in new[] { 1, 16, 31, 60 })
+        {
+            foreach (var enhancement in new[] { "quality", "turbo", "disabled" })
+            {
+                var server = new Server();
+                await CreateModel(server.Handler)
+                    .DoStartAsync(
+                        Start(
+                            duration: duration,
+                            image: mode == "image_to_video" ? Image : null,
+                            references: mode == "reference_to_video" ? new[] { Video } : null,
+                            heygen: "{\"mode\":\""
+                                + mode
+                                + "\",\"promptEnhancement\":\""
+                                + enhancement
+                                + "\"}"
+                        ),
+                        CancellationToken.None
+                    )
+                    .ConfigureAwait(false);
+                Matches(
+                    server.RequestBody(),
+                    "{\"duration\":"
+                        + duration
+                        + ",\"mode\":\""
+                        + mode
+                        + "\",\"prompt_enhancement\":\""
+                        + enhancement
+                        + "\"}"
+                );
+            }
+        }
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "propagates a provider duration rejection without clamping or retrying",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Propagates_a_provider_duration_rejection_without_clamping_or_retrying()
+    {
+        var server = new Server
+        {
+            CreateStatus = 400,
+            CreateBody =
+                "{\"error\":{\"code\":\"invalid_parameter\",\"message\":\"Duration exceeds the limit for these settings\",\"param\":\"duration\"}}",
+        };
+        var failure = await Assert
+            .ThrowsAsync<BadRequestException>(() =>
+                CreateModel(server.Handler)
+                    .DoStartAsync(Start(duration: 31), CancellationToken.None)
+            )
+            .ConfigureAwait(false);
+        Assert.Equal(400, failure.StatusCode);
+        Assert.Equal(
+            "Duration exceeds the limit for these settings (invalid_parameter) [duration]",
+            failure.Message
+        );
+        Assert.Single(server.Calls);
+        Matches(server.RequestBody(), "{\"duration\":31}");
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "accepts the documented ultraquality enhancement and forwards it unchanged",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Accepts_the_documented_ultraquality_enhancement_and_forwards_it_unchanged()
+    {
+        var server = new Server();
+        await CreateModel(server.Handler)
+            .DoStartAsync(
+                Start(duration: 15, heygen: "{\"promptEnhancement\":\"ultraquality\"}"),
+                CancellationToken.None
+            )
+            .ConfigureAwait(false);
+        Matches(server.RequestBody(), "{\"duration\":15,\"prompt_enhancement\":\"ultraquality\"}");
+    }
+
     [Fact]
     [UpstreamTest(
         Prefix + "submits text-to-video with explicit defaults and returns an operation",
@@ -263,8 +401,9 @@ public sealed class HeyGenVideoModelTests
     [InlineData("missing prompt")]
     [InlineData("empty prompt")]
     [InlineData("long prompt")]
-    [InlineData("short duration")]
-    [InlineData("long duration")]
+    [InlineData("zero duration")]
+    [InlineData("negative duration")]
+    [InlineData("nonfinite duration")]
     [InlineData("fractional duration")]
     [InlineData("negative seed")]
     [InlineData("large seed")]
@@ -610,8 +749,9 @@ public sealed class HeyGenVideoModelTests
             "missing prompt" => Start(prompt: null),
             "empty prompt" => Start(prompt: string.Empty),
             "long prompt" => Start(prompt: new string('x', 32001)),
-            "short duration" => Start(duration: 4),
-            "long duration" => Start(duration: 16),
+            "zero duration" => Start(duration: 0),
+            "negative duration" => Start(duration: -1),
+            "nonfinite duration" => Start(duration: double.PositiveInfinity),
             "fractional duration" => Start(duration: 5.5),
             "negative seed" => Start(seed: -1),
             "large seed" => Start(seed: 4294967296),
