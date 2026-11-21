@@ -33,6 +33,8 @@ The default `StopWhen` for `GenerateTextAsync` is one step. Tools requested by t
 
 `@ai-sdk/scaledown` is `Vercel.AI.ScaleDown`. It provides the experimental ScaleDown decision and extraction models. See [ScaleDown](docs/articles/scaledown.md).
 
+`@ai-sdk/parallel` is `Vercel.AI.Parallel`. It provides the experimental Parallel web-grounded decision model. See [Parallel](docs/articles/parallel.md).
+
 ## Not ported
 
 These JavaScript packages are Node or browser products, not the model SDK:

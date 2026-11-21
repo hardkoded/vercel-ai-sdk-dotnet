@@ -142,6 +142,7 @@ public static class LogWarnings
     );
     private static bool _hasLoggedBefore;
     private static object? _logger;
+    private static Action<LogWarningsOptions>? _observer;
     private static Action<string, string, string?>? _processEmitWarning = delegate(
         string message,
         string type,
@@ -221,6 +222,28 @@ public static class LogWarnings
         }
     }
 
+    /// <summary>
+    /// Stand-in for spying on <c>logWarnings</c> in upstream tests. It receives every call to
+    /// <see cref="Log"/>, including calls with an empty warning list that <see cref="Log"/> then ignores.
+    /// </summary>
+    public static Action<LogWarningsOptions>? Observer
+    {
+        get
+        {
+            lock (Gate)
+            {
+                return _observer;
+            }
+        }
+        set
+        {
+            lock (Gate)
+            {
+                _observer = value;
+            }
+        }
+    }
+
     /// <summary>Clears the first-call note and the emitted deprecation codes so the next log emits them again.</summary>
     public static void ResetState()
     {
@@ -234,7 +257,13 @@ public static class LogWarnings
     /// <summary>Logs <paramref name="options"/> using the current logger settings.</summary>
     public static void Log(LogWarningsOptions options)
     {
-        if (options == null || options.Warnings.Count == 0)
+        if (options == null)
+        {
+            return;
+        }
+
+        Observer?.Invoke(options);
+        if (options.Warnings.Count == 0)
         {
             return;
         }

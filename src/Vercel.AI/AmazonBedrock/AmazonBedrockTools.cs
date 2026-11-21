@@ -13,26 +13,55 @@ public static class AmazonBedrockTools
 {
     /// <summary>
     /// Prepares function tools. An empty or missing list returns an empty object.
-    /// Tool choice <c>none</c> clears the tools. A named choice keeps only that tool.
+    /// Tool choice <c>none</c> clears the tools. A named choice keeps only that tool, except for
+    /// Anthropic models, which keep every function tool.
     /// </summary>
     public static JsonObject Prepare(
         string modelId,
         IReadOnlyList<LanguageModelTool>? tools,
         ToolChoice? toolChoice,
         out List<CallWarning> warnings
+    ) => Prepare(modelId, tools, toolChoice, null, null, out warnings, out _);
+
+    /// <summary>
+    /// Prepares function tools and the Anthropic <c>tool_choice</c> that goes into
+    /// <c>additionalModelRequestFields</c> (<paramref name="additionalTools"/>).
+    /// A named tool choice keeps every function tool for Anthropic models, so parallel tool use is
+    /// disabled by default to keep the response to the named tool.
+    /// <c>disableParallelToolUse: false</c> opts out.
+    /// </summary>
+    public static JsonObject Prepare(
+        string modelId,
+        IReadOnlyList<LanguageModelTool>? tools,
+        ToolChoice? toolChoice,
+        int? reasoningBudgetTokens,
+        bool? disableParallelToolUse,
+        out List<CallWarning> warnings,
+        out JsonObject? additionalTools
     )
     {
         warnings = new List<CallWarning>();
+        additionalTools = null;
         if (tools == null || tools.Count == 0 || toolChoice is { Type: "none" })
         {
             return new JsonObject();
         }
 
+        var isAnthropicModel = AmazonBedrockModelSupport.IsAnthropicModel(
+            modelId,
+            reasoningBudgetTokens
+        );
+        var disableParallelToolUseForRequest = disableParallelToolUse
+            ?? (isAnthropicModel && toolChoice is ToolChoice.NamedChoice ? true : null);
+
+        // Anthropic models that accept forced tool use guarantee the named tool is called, so
+        // they keep every function tool. Other models only receive the named tool.
         var selected = new List<LanguageModelTool>();
         foreach (var tool in tools)
         {
             if (
-                toolChoice is ToolChoice.NamedChoice named
+                !isAnthropicModel
+                && toolChoice is ToolChoice.NamedChoice named
                 && !string.Equals(tool.Name, named.ToolName, StringComparison.Ordinal)
             )
             {
@@ -106,7 +135,26 @@ public static class AmazonBedrockTools
         }
 
         var config = new JsonObject { ["tools"] = prepared };
-        if (toolChoice != null)
+        if (
+            isAnthropicModel
+            && disableParallelToolUseForRequest == true
+            && toolChoice is not { Type: "none" }
+        )
+        {
+            var anthropicChoice = toolChoice switch
+            {
+                { Type: "required" } => new JsonObject { ["type"] = "any" },
+                ToolChoice.NamedChoice named => new JsonObject
+                {
+                    ["type"] = "tool",
+                    ["name"] = named.ToolName,
+                },
+                _ => new JsonObject { ["type"] = "auto" },
+            };
+            anthropicChoice["disable_parallel_tool_use"] = true;
+            additionalTools = new JsonObject { ["tool_choice"] = anthropicChoice };
+        }
+        else if (toolChoice != null)
         {
             config["toolChoice"] = ToolChoiceObject(toolChoice);
         }

@@ -64,6 +64,8 @@ Extraction models also resolve by id: `ProviderRegistry.ExtractionModel("provide
 
 `ScaleDownProvider.ExtractionModel("extract-1")` extracts `text` fields and `list` fields of `text` items as verbatim spans, with confidence and sources. It accepts `providerOptions.scaledown.threshold` and rejects other field types with `ExtractionUnsupportedFieldTypeError`. See `docs/articles/scaledown.md`.
 
+`ParallelProvider.Default.DecisionModel("fast")` answers `boolean`, `choice`, and `score` questions against evidence from the live web (`PARALLEL_API_KEY`). The mode string is forwarded as is. `providerOptions.parallel.includeExcerpts` (`false`) omits excerpts from `providerMetadata.parallel.citations`. File input and `box` questions are rejected before the request. See `docs/articles/parallel.md`.
+
 `GatewayProvider.Create().ExtractionModel("scaledown/extract-1")` (or `ExtractRequest.ModelId = "scaledown/extract-1"`, which resolves through the Gateway unless `DecisionModels.DefaultProvider` is set) extracts through the AI Gateway. Which field types work depends on the model. An unsupported field throws `ExtractionUnsupportedFieldTypeError` after the request. Send files as bytes or base64.
 
 Both take URL files in `State` only with `Download = Download.CreateDownload(fetch: ...)`. Without it a URL file throws `DownloadError`.

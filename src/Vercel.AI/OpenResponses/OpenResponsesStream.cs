@@ -168,11 +168,19 @@ internal static class OpenResponsesResults
 /// <summary>Turns Open Responses stream events into language-model stream parts.</summary>
 internal sealed class OpenResponsesStream
 {
+    private static readonly JsonSerializerOptions s_relaxedJson = new()
+    {
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    };
+
     private readonly string _providerOptionsName;
     private readonly OpenResponsesExtensionRegistry _registry;
     private readonly Func<JsonElement, OpenResponsesErrorMetadata?>? _getResponseErrorMetadata;
     private readonly Dictionary<string, object?> _extensionState = new(StringComparer.Ordinal);
     private readonly Dictionary<string, ToolCallState> _toolCallsByItemId = new(
+        StringComparer.Ordinal
+    );
+    private readonly Dictionary<string, ToolCallState> _customToolCallsByItemId = new(
         StringComparer.Ordinal
     );
     private string? _activeReasoningId;
@@ -247,6 +255,77 @@ internal sealed class OpenResponsesStream
 
         switch (type)
         {
+            case "response.output_item.added" when itemType == "custom_tool_call":
+                var customCallId = OpenAIJson.String(item, "call_id") ?? string.Empty;
+                var customName = OpenAIJson.String(item, "name") ?? string.Empty;
+                _customToolCallsByItemId[itemId] = new ToolCallState
+                {
+                    ToolName = customName,
+                    ToolCallId = customCallId,
+                    Arguments = OpenAIJson.String(item, "input"),
+                };
+                parts.Add(new ToolInputStartStreamPart(customCallId, customName));
+                break;
+            case "response.custom_tool_call_input.delta":
+                var customDeltaId = OpenAIJson.String(chunk, "item_id") ?? string.Empty;
+                var customDelta = OpenAIJson.String(chunk, "delta") ?? string.Empty;
+                if (_customToolCallsByItemId.TryGetValue(customDeltaId, out var customDeltaState))
+                {
+                    customDeltaState.Arguments =
+                        (customDeltaState.Arguments ?? string.Empty) + customDelta;
+                }
+                else
+                {
+                    _customToolCallsByItemId[customDeltaId] = new ToolCallState
+                    {
+                        Arguments = customDelta,
+                    };
+                }
+
+                parts.Add(
+                    new ToolInputDeltaStreamPart(
+                        _customToolCallsByItemId[customDeltaId].ToolCallId ?? customDeltaId,
+                        customDelta
+                    )
+                );
+                break;
+            case "response.custom_tool_call_input.done":
+                var customDoneId = OpenAIJson.String(chunk, "item_id") ?? string.Empty;
+                var customInput = OpenAIJson.String(chunk, "input") ?? string.Empty;
+                if (_customToolCallsByItemId.TryGetValue(customDoneId, out var customDoneState))
+                {
+                    customDoneState.Arguments = customInput;
+                }
+                else
+                {
+                    _customToolCallsByItemId[customDoneId] = new ToolCallState
+                    {
+                        Arguments = customInput,
+                    };
+                }
+
+                break;
+            case "response.output_item.done" when itemType == "custom_tool_call":
+                _customToolCallsByItemId.TryGetValue(itemId, out var customCall);
+                var customDoneCallId = customCall?.ToolCallId
+                    ?? OpenAIJson.String(item, "call_id")
+                    ?? string.Empty;
+                var itemInput = OpenAIJson.String(item, "input");
+                var completeInput = !string.IsNullOrEmpty(itemInput)
+                    ? itemInput
+                    : customCall?.Arguments ?? string.Empty;
+                parts.Add(new ToolInputEndStreamPart(customDoneCallId));
+                parts.Add(
+                    new ToolCallStreamPart(
+                        customDoneCallId,
+                        customCall?.ToolName ?? OpenAIJson.String(item, "name") ?? string.Empty,
+                        JsonSerializer.Serialize(completeInput, s_relaxedJson),
+                        OpenResponsesResults.ItemMetadata(_providerOptionsName, itemId)
+                    )
+                );
+                _hasToolCalls = true;
+                _customToolCallsByItemId.Remove(itemId);
+                break;
             case "response.output_item.added" when itemType == "function_call":
                 _toolCallsByItemId[itemId] = new ToolCallState
                 {
@@ -271,11 +350,14 @@ internal sealed class OpenResponsesStream
                 break;
             case "response.output_item.done" when itemType == "function_call":
                 _toolCallsByItemId.TryGetValue(itemId, out var toolCall);
+                var itemArguments = OpenAIJson.String(item, "arguments");
                 parts.Add(
                     new ToolCallStreamPart(
                         toolCall?.ToolCallId ?? OpenAIJson.String(item, "call_id") ?? string.Empty,
                         toolCall?.ToolName ?? OpenAIJson.String(item, "name") ?? string.Empty,
-                        toolCall?.Arguments ?? OpenAIJson.String(item, "arguments") ?? string.Empty,
+                        !string.IsNullOrEmpty(itemArguments)
+                            ? itemArguments
+                            : toolCall?.Arguments ?? string.Empty,
                         OpenResponsesResults.ItemMetadata(_providerOptionsName, itemId)
                     )
                 );
