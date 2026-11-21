@@ -12,12 +12,25 @@ namespace Vercel.AI.Mistral;
 /// A managed Mistral voice agent with a provider-owned LiveKit transport. Maps to <c>MistralRealtimeModel</c>.
 /// It has no WebSocket: <see cref="BuildUri"/> and <see cref="ConnectAsync"/> are unsupported.
 /// </summary>
-public sealed class MistralRealtimeModel : IRealtimeModel
+public sealed class MistralRealtimeModel : IProviderTransportRealtimeModel
 {
-    /// <summary>Creates a model.</summary>
-    public MistralRealtimeModel(string modelId)
+    private readonly ILiveKitClient? _liveKit;
+    private readonly HttpClient? _httpClient;
+
+    /// <summary>
+    /// Creates a model. <paramref name="liveKit"/> is the host's LiveKit client, which its transports use to join
+    /// the voice room (upstream loads <c>livekit-client</c>). <paramref name="httpClient"/> calls the application's
+    /// session endpoint (upstream <c>fetch</c>).
+    /// </summary>
+    public MistralRealtimeModel(
+        string modelId,
+        ILiveKitClient? liveKit = null,
+        HttpClient? httpClient = null
+    )
     {
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
+        _liveKit = liveKit;
+        _httpClient = httpClient;
     }
 
     /// <summary>Specification version. Maps to <c>specificationVersion</c>.</summary>
@@ -40,6 +53,12 @@ public sealed class MistralRealtimeModel : IRealtimeModel
             Finalization = "transport-close",
         };
 
+    /// <summary>Creates a provider-owned LiveKit transport without opening a connection. Maps to <c>createTransport</c>.</summary>
+    public IRealtimeModelV4Transport CreateTransport(RealtimeModelV4TransportOptions options)
+    {
+        return new MistralRealtimeTransport(options, _liveKit, _httpClient);
+    }
+
     /// <inheritdoc />
     public Uri BuildUri()
     {
@@ -55,7 +74,7 @@ public sealed class MistralRealtimeModel : IRealtimeModel
     /// <summary>Normalizes a provider event. Maps to <c>parseServerEvent</c>.</summary>
     public IReadOnlyList<RealtimeModelV4ServerEvent> ParseServerEvent(JsonElement raw)
     {
-        return MistralRealtimeTransportFunctions.ParseMistralRealtimeEvent(raw);
+        return MistralRealtimeTransport.ParseMistralRealtimeEvent(raw);
     }
 
     /// <summary>Always throws: client events go through the provider transport only. Maps to <c>serializeClientEvent</c>.</summary>
