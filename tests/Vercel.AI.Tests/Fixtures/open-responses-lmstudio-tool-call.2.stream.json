@@ -4,6 +4,12 @@
     "warnings": []
   },
   {
+    "id": "resp_83a575a640aadab0a95a3e0649f43693892dc467e666dbd7",
+    "modelId": "zai-org/glm-4.7-flash",
+    "timestamp": "2026-02-03T14:59:22.000Z",
+    "type": "response-metadata"
+  },
+  {
     "id": "rs_jm2uvisepha7peu2y40spd",
     "type": "reasoning-start"
   },

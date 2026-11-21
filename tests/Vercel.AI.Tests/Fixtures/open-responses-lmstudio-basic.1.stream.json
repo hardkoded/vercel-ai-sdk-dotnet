@@ -4,6 +4,12 @@
     "warnings": []
   },
   {
+    "id": "resp_604f426346767f2cd7f98c793d9cfd27cba9ef834509019c",
+    "modelId": "gemma-7b-it",
+    "timestamp": "2026-01-20T10:50:11.000Z",
+    "type": "response-metadata"
+  },
+  {
     "id": "msg_j8xwiqp4xj0qgn3hrsoit9",
     "type": "text-start"
   },

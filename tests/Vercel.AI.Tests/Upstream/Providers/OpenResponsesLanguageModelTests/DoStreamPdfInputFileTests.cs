@@ -51,6 +51,12 @@ public sealed class DoStreamPdfInputFileTests
             """
             [
               {"type":"stream-start","warnings":[]},
+              {
+                "id":"resp_051ebd7ab60063870069d4fe8ac1348194bf06d0a4646af05f",
+                "modelId":"gpt-4.1-nano-2025-04-14",
+                "timestamp":"2026-04-07T12:54:35.000Z",
+                "type":"response-metadata"
+              },
               {"id":"ID","type":"text-start"},
               {"delta":"Dummy","id":"ID","type":"text-delta"},
               {"delta":" PDF","id":"ID","type":"text-delta"},
