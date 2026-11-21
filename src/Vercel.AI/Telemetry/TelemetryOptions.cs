@@ -21,4 +21,10 @@ public sealed class TelemetryOptions
 
     /// <summary>Identifier for this function. Used to group telemetry data by function. Maps to <c>functionId</c>.</summary>
     public string? FunctionId { get; set; }
+
+    /// <summary>
+    /// Per-call telemetry integrations that receive lifecycle events during generation. When provided, they take precedence over
+    /// the globally registered integrations for this call. Maps to <c>integrations</c>.
+    /// </summary>
+    public IReadOnlyList<ITelemetry>? Integrations { get; set; }
 }

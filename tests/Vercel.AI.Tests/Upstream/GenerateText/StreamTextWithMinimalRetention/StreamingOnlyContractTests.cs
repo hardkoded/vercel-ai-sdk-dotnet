@@ -7,12 +7,14 @@ using Vercel.AI.Gateway;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.Testing;
+using Vercel.AI.Tests.Upstream.Telemetry;
 using Vercel.AI.Util;
 using static Vercel.AI.Tests.Upstream.GenerateText.OptionsTimeoutSupport;
 
 namespace Vercel.AI.Tests.Upstream.GenerateText.StreamTextWithMinimalRetention;
 
 /// <summary>Port of <c>stream-text-with-minimal-retention.test.ts</c> &gt; <c>streaming-only contract</c>. Only the tests below are ported.</summary>
+[Collection("TelemetryRegistry")]
 public sealed class StreamingOnlyContractTests
 {
     private const string Prefix =
@@ -295,5 +297,36 @@ public sealed class StreamingOnlyContractTests
         var partials = await ToList(result.PartialOutputStream());
 
         Assert.Equal(new[] { "a", "ab" }, partials.Select(p => p.GetString()));
+    }
+
+    [Fact]
+    [UpstreamTest(Prefix + "retains content required by global telemetry")]
+    public async Task Retains_content_required_by_global_telemetry()
+    {
+        var previous = TelemetryRegistry.Integrations;
+        var ends = new System.Collections.Concurrent.ConcurrentBag<GenerateTextResult>();
+        TelemetryRegistry.Integrations =
+        [
+            new TestTelemetry
+            {
+                OnEnd = (e, _) =>
+                {
+                    ends.Add(e);
+                    return Task.CompletedTask;
+                },
+            },
+        ];
+        try
+        {
+            var text = "hello-" + Guid.NewGuid().ToString("N");
+            var result = LowMemory(TextParts(text));
+            await result.ConsumeStreamAsync();
+            // The text is unique to this call, so a concurrent test cannot satisfy the assertion.
+            Assert.Contains(ends, end => end.Text == text);
+        }
+        finally
+        {
+            TelemetryRegistry.Integrations = previous;
+        }
     }
 }

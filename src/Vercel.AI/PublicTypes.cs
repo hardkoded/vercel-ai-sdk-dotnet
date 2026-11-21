@@ -1314,6 +1314,15 @@ public sealed class PrepareStepUpdate
 /// <summary>Options for <see cref="IAiClient.GenerateTextAsync"/>. Property names follow <c>generateText</c>.</summary>
 public class GenerateTextOptions
 {
+    /// <summary>The integrations resolved once at the start of a call, so retention and every callback agree.</summary>
+    internal TelemetryDispatcher? TelemetrySnapshot { get; set; }
+
+    /// <summary>Telemetry configuration. Maps to <c>telemetry</c>.</summary>
+    public TelemetryOptions? Telemetry { get; set; }
+
+    /// <summary>Deprecated alias of <see cref="Telemetry"/>. Maps to <c>experimental_telemetry</c>.</summary>
+    public TelemetryOptions? ExperimentalTelemetry { get; set; }
+
     /// <summary>The clock for step timing in milliseconds. Tests replace it. Maps to <c>_internal.now</c>.</summary>
     internal Func<double>? NowMs { get; set; }
 

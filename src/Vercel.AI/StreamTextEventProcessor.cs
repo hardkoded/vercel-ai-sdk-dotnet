@@ -697,6 +697,11 @@ internal sealed class StreamTextEventProcessor
             }
         }
 
+        if (TelemetryDispatcher.Create(_options).OnEnd is { } telemetryOnEnd)
+        {
+            await telemetryOnEnd(result, cancellationToken).ConfigureAwait(false);
+        }
+
         target.Complete();
     }
 
