@@ -1459,7 +1459,14 @@ internal static class Generation
                         );
                 var enumerator = ExecuteToolsFromStream
                     .Execute(
-                        retry == null ? streamResult.Stream : retry.Read(attemptToken),
+                        InvokeToolCallbacksFromStream.Invoke(
+                            retry == null ? streamResult.Stream : retry.Read(attemptToken),
+                            StepOptions(options, update).Tools,
+                            stepMessages.Skip(instructionCount).ToArray(),
+                            cancellationToken,
+                            options.ToolsContext,
+                            attemptToken
+                        ),
                         StepOptions(options, update),
                         callId,
                         stepMessages,
