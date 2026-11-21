@@ -7,6 +7,8 @@ namespace Vercel.AI.Tests.OpenAICompatibleChatLanguageModelTests;
 /// <summary>Port of <c>openai-compatible-chat-language-model.test.ts</c> &gt; <c>doGenerate &gt; response format</c>.</summary>
 public sealed class DoGenerateResponseFormatTests
 {
+    private const string UpstreamCommit = "5006d83c4e72125ac13c54ccb4ac157766fc521d";
+
     [Fact]
     [UpstreamTest(
         "packages/openai-compatible/src/chat/openai-compatible-chat-language-model.test.ts::doGenerate > response format::should pass top-level max reasoning as reasoning_effort",
@@ -26,7 +28,8 @@ public sealed class DoGenerateResponseFormatTests
     [Fact]
     [UpstreamTest(
         "packages/openai-compatible/src/chat/openai-compatible-chat-language-model.test.ts::doGenerate > response format::should send reasoningEffort null as reasoning_effort null",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit
     )]
     public async Task Should_send_reasoningEffort_null_as_reasoning_effort_null()
     {
@@ -47,7 +50,8 @@ public sealed class DoGenerateResponseFormatTests
     [Fact]
     [UpstreamTest(
         "packages/openai-compatible/src/chat/openai-compatible-chat-language-model.test.ts::doGenerate > response format::should prefer providerOptions reasoningEffort null over top-level reasoning",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit
     )]
     public async Task Should_prefer_providerOptions_reasoningEffort_null_over_top_level_reasoning()
     {
@@ -68,7 +72,8 @@ public sealed class DoGenerateResponseFormatTests
     [Fact]
     [UpstreamTest(
         "packages/openai-compatible/src/chat/openai-compatible-chat-language-model.test.ts::doGenerate > response format::should omit reasoning_effort when no reasoning effort is set",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit
     )]
     public async Task Should_omit_reasoning_effort_when_no_reasoning_effort_is_set()
     {
@@ -84,7 +89,8 @@ public sealed class DoGenerateResponseFormatTests
     [Fact]
     [UpstreamTest(
         "packages/openai-compatible/src/chat/openai-compatible-chat-language-model.test.ts::doGenerate > response format::should not overwrite a raw reasoning_effort provider option",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit
     )]
     public async Task Should_not_overwrite_a_raw_reasoning_effort_provider_option()
     {
