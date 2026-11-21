@@ -175,4 +175,22 @@ public sealed class DoStartTests
             warning.Type == "unsupported" && warning.Feature == "n"
         );
     }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should warn that seed is unsupported when it is 0",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "ef2dfb5e9fb7b72287b226eba8b743f809414172"
+    )]
+    public async Task Should_warn_that_seed_is_unsupported_when_it_is_0()
+    {
+        var server = new Server();
+        var call = Start(seed: 0, providerOptions: StdOptions);
+        var result = await CreateModel(server.Handler, "kling-v2.6-t2v")
+            .DoStartAsync(call, CancellationToken.None)
+            .ConfigureAwait(false);
+        Assert.Contains(result.Warnings, warning =>
+            warning.Type == "unsupported" && warning.Feature == "seed"
+        );
+    }
 }

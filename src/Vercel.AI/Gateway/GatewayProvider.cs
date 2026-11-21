@@ -1191,7 +1191,7 @@ public sealed class GatewayImageModel : IImageModel, IImageCaller
             body["aspectRatio"] = call.AspectRatio;
         }
 
-        if (call.Seed is { } seed && seed != 0)
+        if (call.Seed is { } seed)
         {
             body["seed"] = seed;
         }
