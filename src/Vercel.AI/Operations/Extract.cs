@@ -81,6 +81,51 @@ public sealed class ExtractRequest : OperationRequest
         IReadOnlyList<DownloadRequestItem>,
         Task<IReadOnlyList<DownloadResult>>
     >? Download { get; set; }
+
+    /// <summary>Called when the extraction begins. Receives the full runtime context, headers, and provider options.</summary>
+    public Func<ExtractStartEvent, Task>? OnStart { get; set; }
+
+    /// <summary>Called when the extraction completes. Receives the full runtime context, headers, and provider options.</summary>
+    public Func<ExtractEndEvent, Task>? OnEnd { get; set; }
+
+    /// <summary>Telemetry callbacks. Request headers and provider options never reach them.</summary>
+    public ExtractTelemetry? Telemetry { get; set; }
+}
+
+/// <summary>
+/// Telemetry callbacks for <see cref="Extract.ExtractAsync"/>. Generic operation callbacks on an integration are not called.
+/// </summary>
+public sealed class ExtractTelemetry
+{
+    /// <summary><c>experimental_onExtractStart</c>.</summary>
+    public Func<ExtractStartEvent, Task>? OnExtractStart { get; set; }
+
+    /// <summary><c>experimental_onExtractionModelCallStart</c>.</summary>
+    public Func<ExtractionModelCallStartEvent, Task>? OnExtractionModelCallStart { get; set; }
+
+    /// <summary><c>experimental_onExtractionModelCallEnd</c>.</summary>
+    public Func<ExtractionModelCallEndEvent, Task>? OnExtractionModelCallEnd { get; set; }
+
+    /// <summary><c>experimental_onExtractEnd</c>.</summary>
+    public Func<ExtractEndEvent, Task>? OnExtractEnd { get; set; }
+
+    /// <summary><c>onError</c>. A download error arrives without its URL.</summary>
+    public Func<string, Exception, Task>? OnError { get; set; }
+
+    /// <summary>Keys copied into telemetry runtime context. Null yields an empty context.</summary>
+    public IReadOnlyDictionary<string, bool>? IncludeRuntimeContext { get; set; }
+
+    /// <summary>When false, telemetry events carry no state, fields, or reference date.</summary>
+    public bool? RecordInputs { get; set; }
+
+    /// <summary>When false, telemetry end events carry no answers.</summary>
+    public bool? RecordOutputs { get; set; }
+
+    /// <summary>Copied onto telemetry events.</summary>
+    public string? FunctionId { get; set; }
+
+    /// <summary>When false, telemetry callbacks are skipped.</summary>
+    public bool IsEnabled { get; set; } = true;
 }
 
 /// <summary>Extracts typed field values from one shared state. Maps to <c>experimental_extract</c>.</summary>
@@ -124,71 +169,168 @@ public static class Extract
         var token = request.CancellationToken.CanBeCanceled
             ? request.CancellationToken
             : cancellationToken;
-        OperationRetry.ResolveMaxRetries(request.MaxRetries);
+        var callId = (request.GenerateCallId ?? (() => "call-" + Guid.NewGuid().ToString("N")))();
+        var maxRetries = OperationRetry.ResolveMaxRetries(request.MaxRetries);
         var providerOptions = request.ProviderOptions ?? OperationJson.Parse("{}");
-        var preparedState = await DecisionState
-            .PrepareDecisionStateAsync(request.State!, token, request.Download)
-            .ConfigureAwait(false);
-        var headers = OperationHeaders.WithUserAgent(request.Headers, AiSdkVersion.UserAgent);
-        var result = await OperationRetry
-            .ExecuteAsync(
-                request.MaxRetries,
-                token,
-                request.AbortReason,
-                async ct =>
-                {
-                    OperationRetry.ThrowIfAborted(ct, request.AbortReason);
-                    return await model
-                        .DoExtractAsync(
-                            new ExtractionModelCall(
-                                preparedState,
-                                fields,
-                                providerOptions,
-                                headers,
-                                ct,
-                                request.ReferenceDate,
-                                request.MaxOutputTokens,
-                                request.Reasoning
-                            ),
-                            ct
-                        )
-                        .ConfigureAwait(false);
-                },
-                null
-            )
-            .ConfigureAwait(false);
+        var telemetryDispatcher = RestrictedTelemetryDispatcher.CreateRestrictedTelemetryDispatcher(
+            request.Telemetry
+        );
+        var startEvent = new ExtractStartEvent(
+            callId,
+            request.RuntimeContext ?? new Dictionary<string, object?>(),
+            model.Provider,
+            model.ModelId,
+            request.State,
+            fields,
+            request.ReferenceDate,
+            request.MaxOutputTokens,
+            request.Reasoning,
+            maxRetries,
+            request.Headers,
+            providerOptions
+        );
+        await OperationCallbacks.NotifyAsync(startEvent, request.OnStart).ConfigureAwait(false);
+        await telemetryDispatcher.OnStartAsync(startEvent).ConfigureAwait(false);
 
-        OperationRetry.ThrowIfAborted(token, request.AbortReason);
-        ValidateExtraction.ValidateExtractionAnswers(fields, preparedState, result.Answers);
-        var refused = fields.Keys.Where(id => result.Answers[id].Type == "refusal").ToArray();
-        if (refused.Length > 0)
+        try
         {
-            throw new ExtractionRefusalError(refused, model.Provider, model.ModelId);
+            var preparedState = await DecisionState
+                .PrepareDecisionStateAsync(request.State!, token, request.Download)
+                .ConfigureAwait(false);
+            var modelCallEvent = new ExtractionModelCallStartEvent(
+                callId,
+                model.Provider,
+                model.ModelId,
+                preparedState,
+                fields,
+                request.ReferenceDate
+            );
+            await telemetryDispatcher
+                .ExperimentalOnExtractionModelCallStartAsync(modelCallEvent)
+                .ConfigureAwait(false);
+            var headers = OperationHeaders.WithUserAgent(request.Headers, AiSdkVersion.UserAgent);
+            var result = await OperationRetry
+                .ExecuteAsync(
+                    request.MaxRetries,
+                    token,
+                    request.AbortReason,
+                    async ct =>
+                    {
+                        OperationRetry.ThrowIfAborted(ct, request.AbortReason);
+                        return await model
+                            .DoExtractAsync(
+                                new ExtractionModelCall(
+                                    preparedState,
+                                    fields,
+                                    providerOptions,
+                                    headers,
+                                    ct,
+                                    request.ReferenceDate,
+                                    request.MaxOutputTokens,
+                                    request.Reasoning
+                                ),
+                                ct
+                            )
+                            .ConfigureAwait(false);
+                    },
+                    null
+                )
+                .ConfigureAwait(false);
+
+            OperationRetry.ThrowIfAborted(token, request.AbortReason);
+            var answers = NormalizeAnswers(result.Answers);
+            ValidateExtraction.ValidateExtractionAnswers(fields, preparedState, answers);
+            var refused = fields.Keys.Where(id => answers[id].Type == "refusal").ToArray();
+            if (refused.Length > 0)
+            {
+                throw new ExtractionRefusalError(refused, model.Provider, model.ModelId);
+            }
+
+            await telemetryDispatcher
+                .ExperimentalOnExtractionModelCallEndAsync(
+                    new ExtractionModelCallEndEvent(
+                        modelCallEvent,
+                        answers,
+                        result.Usage,
+                        result.Warnings,
+                        result.ProviderMetadata,
+                        result.Response
+                    )
+                )
+                .ConfigureAwait(false);
+
+            WarningLog.Write(result.Warnings, model.Provider, model.ModelId);
+            var input = result.Usage?.InputTokens;
+            var output = result.Usage?.OutputTokens;
+            var usage = new OperationUsage(
+                input,
+                output,
+                input != null && output != null ? input + output : null
+            );
+            var now = request.Now?.Invoke() ?? DateTime.UtcNow;
+            var response = new ProviderResponse(
+                result.Response?.Headers,
+                result.Response?.Body,
+                result.Response?.Id,
+                result.Response?.Timestamp ?? now,
+                result.Response?.ModelId ?? model.ModelId,
+                result.Response?.ProviderMetadata
+            );
+            var extraction = new ExtractionResult(
+                answers,
+                usage,
+                result.Warnings,
+                result.ProviderMetadata,
+                response
+            );
+            var endEvent = new ExtractEndEvent(
+                startEvent,
+                extraction.Answers,
+                extraction.Usage,
+                extraction.Warnings,
+                extraction.ProviderMetadata,
+                extraction.Response
+            );
+            await OperationCallbacks.NotifyAsync(endEvent, request.OnEnd).ConfigureAwait(false);
+            await telemetryDispatcher.OnEndAsync(endEvent).ConfigureAwait(false);
+            return extraction;
+        }
+        catch (Exception error)
+        {
+            await telemetryDispatcher.OnErrorAsync(callId, error).ConfigureAwait(false);
+            throw;
+        }
+    }
+
+    // An empty text or an empty list means the state has no value. Refusals pass through unchanged.
+    private static IReadOnlyDictionary<string, ExtractionAnswer> NormalizeAnswers(
+        IReadOnlyDictionary<string, ExtractionAnswer> answers
+    )
+    {
+        var normalized = new Dictionary<string, ExtractionAnswer>(answers.Count);
+        foreach (var pair in answers)
+        {
+            var answer = pair.Value;
+            var isEmpty =
+                answer.Type != "refusal"
+                && (
+                    answer.Text?.Length == 0
+                    || answer.TextItems?.Count == 0
+                    || answer.NumberItems?.Count == 0
+                );
+            normalized[pair.Key] = isEmpty
+                ? new ExtractionAnswer(
+                    answer.Type,
+                    guessText: answer.GuessText,
+                    guessNumber: answer.GuessNumber,
+                    pNull: answer.PNull,
+                    confidence: answer.Confidence,
+                    source: answer.Source,
+                    items: answer.Type == "list" ? null : answer.Items
+                )
+                : answer;
         }
 
-        WarningLog.Write(result.Warnings, model.Provider, model.ModelId);
-        var input = result.Usage?.InputTokens;
-        var output = result.Usage?.OutputTokens;
-        var usage = new OperationUsage(
-            input,
-            output,
-            input != null && output != null ? input + output : null
-        );
-        var now = request.Now?.Invoke() ?? DateTime.UtcNow;
-        var response = new ProviderResponse(
-            result.Response?.Headers,
-            result.Response?.Body,
-            result.Response?.Id,
-            result.Response?.Timestamp ?? now,
-            result.Response?.ModelId ?? model.ModelId,
-            result.Response?.ProviderMetadata
-        );
-        return new ExtractionResult(
-            result.Answers,
-            usage,
-            result.Warnings,
-            result.ProviderMetadata,
-            response
-        );
+        return normalized;
     }
 }

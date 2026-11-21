@@ -54,6 +54,22 @@ internal static class ExtractSupport
         };
     }
 
+    internal static Dictionary<string, ExtractionAnswer> InvoiceNumberAnswer()
+    {
+        return new Dictionary<string, ExtractionAnswer>
+        {
+            ["invoiceNumber"] = new ExtractionAnswer("text", text: "INV-2041"),
+        };
+    }
+
+    internal static Dictionary<string, ExtractionField> InvoiceNumberField()
+    {
+        return new Dictionary<string, ExtractionField>
+        {
+            ["invoiceNumber"] = Fields()["invoiceNumber"],
+        };
+    }
+
     /// <summary>Maps to <c>setup</c>: a mock model whose <c>doExtract</c> resolves to <paramref name="result"/>.</summary>
     internal static ExtractionMockModel Setup(ExtractionModelResult? result = null)
     {
