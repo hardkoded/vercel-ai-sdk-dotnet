@@ -217,7 +217,7 @@ public sealed class CohereLanguageModel : ILanguageModel
 
     private JsonObject Build(LanguageModelCallOptions options, List<CallWarning> warnings)
     {
-        var documents = new JsonArray();
+        var (messages, documents) = ConvertToCohereChatPrompt.Convert(options.Prompt);
         var body = new JsonObject
         {
             ["model"] = ModelId,
@@ -243,7 +243,7 @@ public sealed class CohereLanguageModel : ILanguageModel
                     }
                 : options.JsonResponse ? new JsonObject { ["type"] = "json_object" }
                 : null,
-            ["messages"] = Messages(options.Prompt, documents),
+            ["messages"] = messages,
         };
         AddTools(body, options);
         if (documents.Count > 0)
@@ -265,132 +265,6 @@ public sealed class CohereLanguageModel : ILanguageModel
         }
 
         return body;
-    }
-
-    private static JsonArray Messages(IReadOnlyList<ModelMessage> prompt, JsonArray documents)
-    {
-        var messages = new JsonArray();
-        foreach (var message in ToolModelMessage.Flatten(prompt))
-        {
-            switch (message)
-            {
-                case SystemModelMessage system:
-                    messages.Add(
-                        new JsonObject { ["role"] = "system", ["content"] = system.Content }
-                    );
-                    break;
-                case UserModelMessage user:
-                    messages.Add(
-                        new JsonObject
-                        {
-                            ["role"] = "user",
-                            ["content"] = UserContent(user, documents),
-                        }
-                    );
-                    break;
-                case AssistantModelMessage assistant when assistant.ToolCalls.Count > 0:
-                    var toolCalls = new JsonArray();
-                    foreach (var call in assistant.ToolCalls)
-                    {
-                        toolCalls.Add(
-                            new JsonObject
-                            {
-                                ["id"] = call.ToolCallId,
-                                ["type"] = "function",
-                                ["function"] = new JsonObject
-                                {
-                                    ["name"] = call.ToolName,
-                                    ["arguments"] = call.ArgumentsJson,
-                                },
-                            }
-                        );
-                    }
-
-                    messages.Add(
-                        new JsonObject { ["role"] = "assistant", ["tool_calls"] = toolCalls }
-                    );
-                    break;
-                case AssistantModelMessage assistant:
-                    messages.Add(
-                        new JsonObject
-                        {
-                            ["role"] = "assistant",
-                            ["content"] = assistant.Text ?? string.Empty,
-                        }
-                    );
-                    break;
-                case ToolModelMessage tool:
-                    messages.Add(
-                        new JsonObject
-                        {
-                            ["role"] = "tool",
-                            ["content"] = tool.OutputJson,
-                            ["tool_call_id"] = tool.ToolCallId,
-                        }
-                    );
-                    break;
-            }
-        }
-
-        return messages;
-    }
-
-    // Images stay inline. Other files are sent as RAG documents, so a message without images is plain text.
-    private static JsonNode UserContent(UserModelMessage user, JsonArray documents)
-    {
-        var parts = new JsonArray();
-        var text = new StringBuilder();
-        var hasImage = false;
-        foreach (var part in user.Content)
-        {
-            if (part is TextContentPart textPart && textPart.Text.Length > 0)
-            {
-                parts.Add(new JsonObject { ["type"] = "text", ["text"] = textPart.Text });
-                text.Append(textPart.Text);
-            }
-            else if (
-                part is FileContentPart file
-                && MediaTypes.GetTopLevelMediaType(file.MediaType) == "image"
-            )
-            {
-                hasImage = true;
-                var url = file.Url
-                    ?? "data:"
-                        + MediaTypes.ResolveFullMediaType(file.MediaType, file.Data)
-                        + ";base64,"
-                        + Convert.ToBase64String(file.Data ?? Array.Empty<byte>());
-                parts.Add(
-                    new JsonObject
-                    {
-                        ["type"] = "image_url",
-                        ["image_url"] = new JsonObject { ["url"] = url },
-                    }
-                );
-            }
-            else if (part is FileContentPart document)
-            {
-                if (document.Url != null)
-                {
-                    throw new UnsupportedFunctionalityException(
-                        "File URL data",
-                        "URLs should be downloaded by the AI SDK and not reach this point. This indicates a configuration issue."
-                    );
-                }
-
-                var data = new JsonObject
-                {
-                    ["text"] = Encoding.UTF8.GetString(document.Data ?? Array.Empty<byte>()),
-                };
-                if (document.FileName != null)
-                {
-                    data["title"] = document.FileName;
-                }
-
-                documents.Add(new JsonObject { ["data"] = data });
-            }
-        }
-
-        return hasImage ? parts : JsonValue.Create(text.ToString())!;
     }
 
     private static void AddTools(JsonObject body, LanguageModelCallOptions options)

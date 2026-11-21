@@ -1495,8 +1495,12 @@ public static class AnthropicPrompt
     {
         try
         {
-            return JsonNode.Parse(string.IsNullOrWhiteSpace(argumentsJson) ? "{}" : argumentsJson)
-                ?? new JsonObject();
+            var parsed = JsonNode.Parse(
+                string.IsNullOrWhiteSpace(argumentsJson) ? "{}" : argumentsJson
+            );
+            return parsed is JsonObject
+                ? parsed
+                : new JsonObject { ["rawInvalidInput"] = argumentsJson };
         }
         catch (JsonException)
         {

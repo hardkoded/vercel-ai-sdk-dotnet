@@ -2,6 +2,8 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Globalization;
+using System.Numerics;
 using System.Text.Json;
 using Vercel.AI.OpenAI;
 using Vercel.AI.Operations;
@@ -528,6 +530,139 @@ public sealed class OpenAIChatMessageUpstreamTests
         OpenAIUpstream.Equal(
             result.Messages,
             "[{\"role\":\"assistant\",\"content\":null,\"tool_calls\":[{\"id\":\"quux\",\"type\":\"function\",\"function\":{\"name\":\"thwomp\",\"arguments\":\"{\\\"foo\\\":\\\"bar123\\\"}\"}}]},{\"role\":\"tool\",\"tool_call_id\":\"quux\",\"content\":\"{\\\"oof\\\":\\\"321rab\\\"}\"}]"
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "tool calls::should preserve pre-serialized string tool arguments",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "4ae6986cd8dcebdd31a41317c1cdfafd426c1e66"
+    )]
+    public void PreservesPreSerializedStringToolArguments()
+    {
+        var result = OpenAIChatMessages.Convert(
+            new[]
+            {
+                new OpenAIChatPromptMessage("assistant")
+                {
+                    ToolCalls = new[]
+                    {
+                        new GeneratedToolCall("call-1", "getWeather", "{\"city\":\"Tokyo\"}"),
+                    },
+                },
+            }
+        );
+        OpenAIUpstream.Equal(
+            result.Messages,
+            "[{\"role\":\"assistant\",\"content\":null,\"tool_calls\":[{\"type\":\"function\",\"id\":\"call-1\",\"function\":{\"name\":\"getWeather\",\"arguments\":\"{\\\"city\\\":\\\"Tokyo\\\"}\"}}]}]"
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix
+            + "tool calls::should serialize BigInt and circular structures in tool arguments without crashing",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "4ae6986cd8dcebdd31a41317c1cdfafd426c1e66",
+        Note = "The port's tool call input is JSON text, so the object graph goes through StringifyWithBigIntAndCycles before the converter."
+    )]
+    public void SerializesBigIntAndCircularStructuresInToolArguments()
+    {
+        var circularArgs = new Dictionary<string, object?>
+        {
+            ["count"] = BigInteger.Parse("9007199254740993", CultureInfo.InvariantCulture),
+        };
+        circularArgs["self"] = circularArgs;
+
+        var result = OpenAIChatMessages.Convert(
+            new[]
+            {
+                new OpenAIChatPromptMessage("assistant")
+                {
+                    ToolCalls = new[]
+                    {
+                        new GeneratedToolCall(
+                            "call-2",
+                            "computeStats",
+                            StringifyWithBigIntAndCyclesUtil.StringifyWithBigIntAndCycles(
+                                circularArgs
+                            )
+                        ),
+                    },
+                },
+            }
+        );
+        OpenAIUpstream.Equal(
+            result.Messages,
+            "[{\"role\":\"assistant\",\"content\":null,\"tool_calls\":[{\"type\":\"function\",\"id\":\"call-2\",\"function\":{\"name\":\"computeStats\",\"arguments\":\"{\\\"count\\\":\\\"9007199254740993\\\",\\\"self\\\":\\\"[Circular]\\\"}\"}}]}]"
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "preserves shared tool argument objects while replacing real cycles",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "4ae6986cd8dcebdd31a41317c1cdfafd426c1e66",
+        Note = "The port's tool call input is JSON text, so the object graph goes through StringifyWithBigIntAndCycles before the converter."
+    )]
+    public void PreservesSharedToolArgumentObjectsWhileReplacingRealCycles()
+    {
+        var shared = new Dictionary<string, object?> { ["value"] = 42 };
+        var input = new Dictionary<string, object?> { ["a"] = shared, ["b"] = shared };
+        input["self"] = input;
+
+        var result = OpenAIChatMessages.Convert(
+            new[]
+            {
+                new OpenAIChatPromptMessage("assistant")
+                {
+                    ToolCalls = new[]
+                    {
+                        new GeneratedToolCall(
+                            "call_shared",
+                            "inspect",
+                            StringifyWithBigIntAndCyclesUtil.StringifyWithBigIntAndCycles(input)
+                        ),
+                    },
+                },
+            }
+        );
+
+        Assert.Equal(
+            "{\"a\":{\"value\":42},\"b\":{\"value\":42},\"self\":\"[Circular]\"}",
+            result.Messages[0]!["tool_calls"]![0]!["function"]!["arguments"]!.GetValue<string>()
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "serializes tool results with BigInt and real cycles",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "4ae6986cd8dcebdd31a41317c1cdfafd426c1e66",
+        Note = "The port's tool output is JSON text, so the object graph goes through StringifyWithBigIntAndCycles before the converter."
+    )]
+    public void SerializesToolResultsWithBigIntAndRealCycles()
+    {
+        var value = new Dictionary<string, object?> { ["count"] = new BigInteger(42) };
+        value["self"] = value;
+
+        var result = OpenAIChatMessages.Convert(
+            new[]
+            {
+                new OpenAIChatPromptMessage("tool")
+                {
+                    ToolCallId = "call1",
+                    ToolOutput = StringifyWithBigIntAndCyclesUtil.StringifyWithBigIntAndCycles(
+                        value
+                    ),
+                },
+            }
+        );
+
+        Assert.Equal(
+            "{\"count\":\"42\",\"self\":\"[Circular]\"}",
+            result.Messages[0]!["content"]!.GetValue<string>()
         );
     }
 
