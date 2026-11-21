@@ -23,7 +23,7 @@ The end of the stream. Maps to `{ type: 'finish' }`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [ObjectStreamPart](/api/Vercel.AI.GenerateObject/ObjectStreamPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L213)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L226)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Why the model finished.
 
 **Value:** [FinishReason](/api/Vercel.AI.Provider/FinishReason/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L230)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L243)
 
 <a id="Vercel_AI_GenerateObject_ObjectStreamFinishPart_ProviderMetadata_"></a>
 <a id="Vercel_AI_GenerateObject_ObjectStreamFinishPart_ProviderMetadata"></a>
@@ -59,7 +59,7 @@ Provider-specific metadata.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L239)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L252)
 
 <a id="Vercel_AI_GenerateObject_ObjectStreamFinishPart_Response_"></a>
 <a id="Vercel_AI_GenerateObject_ObjectStreamFinishPart_Response"></a>
@@ -76,7 +76,7 @@ Response metadata.
 
 **Value:** [LanguageModelResponseMetadata](/api/Vercel.AI/LanguageModelResponseMetadata/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L236)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L249)
 
 <a id="Vercel_AI_GenerateObject_ObjectStreamFinishPart_Usage_"></a>
 <a id="Vercel_AI_GenerateObject_ObjectStreamFinishPart_Usage"></a>
@@ -93,4 +93,4 @@ Token usage.
 
 **Value:** [LanguageModelUsage](/api/Vercel.AI.Provider/LanguageModelUsage/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L233)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L246)

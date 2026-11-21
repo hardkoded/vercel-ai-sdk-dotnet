@@ -130,6 +130,19 @@ public sealed class StreamObjectOptions<T>
         Task<string?>
     >? RepairText { get; set; }
 
+    /// <summary>Deprecated alias of <see cref="RepairText"/>. Maps to <c>experimental_repairText</c>.</summary>
+    public Func<
+        GenerateObjectRepairContext,
+        CancellationToken,
+        Task<string?>
+    >? ExperimentalRepairText { get; set; }
+
+    /// <summary>Telemetry configuration. Maps to <c>telemetry</c>.</summary>
+    public TelemetryOptions? Telemetry { get; set; }
+
+    /// <summary>Deprecated alias of <see cref="Telemetry"/>. Maps to <c>experimental_telemetry</c>.</summary>
+    public TelemetryOptions? ExperimentalTelemetry { get; set; }
+
     /// <summary>Called when the streamObject operation begins, before the LLM call is made.</summary>
     public Func<GenerateObjectStartEvent, CancellationToken, Task>? OnStart { get; set; }
 
@@ -717,7 +730,7 @@ internal static class StreamObject
             }
             catch (Exception error)
             {
-                result.RejectResultPromises(error);
+                result.RejectResultPromises(GatewayErrorWrappers.WrapGatewayError(error));
                 await EmitAsync(new ObjectStreamErrorPart(error)).ConfigureAwait(false);
             }
             finally
@@ -734,7 +747,11 @@ internal static class StreamObject
             {
                 await Generation
                     .NotifyAsync(
-                        () => options.OnError(error.Error, _cancellationToken),
+                        () =>
+                            options.OnError(
+                                GatewayErrorWrappers.WrapGatewayError(error.Error),
+                                _cancellationToken
+                            ),
                         _cancellationToken
                     )
                     .ConfigureAwait(false);
@@ -748,6 +765,7 @@ internal static class StreamObject
                 ?? ProviderUtils.JsonValues.GenerateId("aiobj-");
             var jsonSchema = outputStrategy.JsonSchema;
 
+            var maxRetries = OperationRetry.ResolveMaxRetries(options.MaxRetries);
             if (options.OnStart != null)
             {
                 await Generation
@@ -760,25 +778,30 @@ internal static class StreamObject
                                     model.ModelId,
                                     options.Prompt,
                                     options.Messages
-                                ),
-                                _cancellationToken
-                            ),
-                        _cancellationToken
-                    )
-                    .ConfigureAwait(false);
-            }
-
-            if (options.OnStepStart != null)
-            {
-                await Generation
-                    .NotifyAsync(
-                        () =>
-                            options.OnStepStart(
-                                new GenerateObjectStepStartEvent(
-                                    callId,
-                                    model.Provider,
-                                    model.ModelId
-                                ),
+                                )
+                                {
+                                    OperationId = "ai.streamObject",
+                                    System = options.Instructions
+                                        ?? (
+                                            options.System != null
+                                                ? Instructions.From(options.System)
+                                                : null
+                                        ),
+                                    MaxOutputTokens = options.MaxOutputTokens,
+                                    Temperature = options.Temperature,
+                                    TopP = options.TopP,
+                                    TopK = options.TopK,
+                                    PresencePenalty = options.PresencePenalty,
+                                    FrequencyPenalty = options.FrequencyPenalty,
+                                    Seed = options.Seed,
+                                    MaxRetries = maxRetries,
+                                    Headers = options.Headers,
+                                    ProviderOptions = options.ProviderOptions,
+                                    Output = OutputName(options.Output),
+                                    Schema = jsonSchema,
+                                    SchemaName = options.SchemaName,
+                                    SchemaDescription = options.SchemaDescription,
+                                },
                                 _cancellationToken
                             ),
                         _cancellationToken
@@ -808,6 +831,24 @@ internal static class StreamObject
                 ProviderOptions = options.ProviderOptions,
                 CallId = callId,
                 NowMs = options.NowMs,
+                // Maps to onStepStart, which runs once the prompt is converted and before doStream.
+                OnStart =
+                    options.OnStepStart == null
+                        ? null
+                        : (start, token) =>
+                            options.OnStepStart(
+                                new GenerateObjectStepStartEvent(
+                                    callId,
+                                    model.Provider,
+                                    model.ModelId
+                                )
+                                {
+                                    ProviderOptions = options.ProviderOptions,
+                                    Headers = options.Headers,
+                                    PromptMessages = start.PromptMessages,
+                                },
+                                token
+                            ),
             };
 
             var now = options.NowMs ?? Generation.DefaultNowMs;
@@ -831,6 +872,15 @@ internal static class StreamObject
             }
         }
 
+        private static string OutputName(StreamObjectOutput output) =>
+            output switch
+            {
+                StreamObjectOutput.Array => "array",
+                StreamObjectOutput.Enum => "enum",
+                StreamObjectOutput.NoSchema => "no-schema",
+                _ => "object",
+            };
+
         // The model is asked for JSON with the schema of the strategy. Only the response format of the call is read.
         private OutputSpec ResponseFormat(JsonElement? jsonSchema)
         {
@@ -853,7 +903,12 @@ internal static class StreamObject
             double startTimestampMs
         )
         {
-            var request = new LanguageModelRequestMetadata { Body = call.Request?.Body };
+            var sanitized = RequestOrigin.SanitizeRequestMetadata(call.Request);
+            var request = new LanguageModelRequestMetadata
+            {
+                Body = sanitized?.Body,
+                Url = sanitized?.Url,
+            };
             result.ResolveRequest(request);
 
             IReadOnlyList<CallWarning>? warnings = null;
@@ -875,6 +930,8 @@ internal static class StreamObject
             JsonElement? latestObjectJson = null;
             JsonElement? latestObject = null;
             var isFirstDelta = true;
+            var isFirstChunk = true;
+            double? msToFirstChunk = null;
 
             LanguageModelResponseMetadata ResponseWithHeaders() =>
                 new(
@@ -892,11 +949,17 @@ internal static class StreamObject
                         .ConfigureAwait(false)
                 )
                 {
+                    if (chunk is not ModelCallStartPart && isFirstChunk)
+                    {
+                        msToFirstChunk = now() - startTimestampMs;
+                        isFirstChunk = false;
+                    }
+
                     switch (chunk)
                     {
                         case ModelCallStartPart start:
                             warnings = start.Warnings;
-                            break;
+                            continue;
 
                         case TextDeltaPart delta:
                         {
@@ -998,8 +1061,9 @@ internal static class StreamObject
                         case ErrorPart errorPart:
                             if (terminalError == null)
                             {
-                                terminalError = errorPart.Error
-                                    ?? new AiSdkException(errorPart.Message);
+                                terminalError = GatewayErrorWrappers.WrapGatewayError(
+                                    errorPart.Error ?? new AiSdkException(errorPart.Message)
+                                );
                                 error = terminalError;
                                 finishReason = FinishReason.Error;
                                 result.RejectResultPromises(terminalError);
@@ -1051,7 +1115,7 @@ internal static class StreamObject
                                     .ParseAndValidateObjectResultWithRepairAsync(
                                         accumulatedText.ToString(),
                                         outputStrategy,
-                                        options.RepairText,
+                                        options.RepairText ?? options.ExperimentalRepairText,
                                         fullResponse,
                                         usage,
                                         finishReason.Value,
@@ -1085,18 +1149,19 @@ internal static class StreamObject
             catch (Exception streamError) when (!_cancellationToken.IsCancellationRequested)
             {
                 // A raw stream error stops the stream: readers of the full stream throw it, and flush does not run.
-                result.RejectResultPromises(streamError);
+                var wrappedError = GatewayErrorWrappers.WrapGatewayError(streamError);
+                result.RejectResultPromises(wrappedError);
                 if (options.OnError != null)
                 {
                     await Generation
                         .NotifyAsync(
-                            () => options.OnError(streamError, _cancellationToken),
+                            () => options.OnError(wrappedError, _cancellationToken),
                             _cancellationToken
                         )
                         .ConfigureAwait(false);
                 }
 
-                buffer.Fail(streamError);
+                buffer.Fail(wrappedError);
                 return;
             }
 
@@ -1119,7 +1184,8 @@ internal static class StreamObject
                                         warnings ?? [],
                                         request,
                                         ResponseWithHeaders(),
-                                        providerMetadata
+                                        providerMetadata,
+                                        msToFirstChunk
                                     ),
                                     _cancellationToken
                                 ),

@@ -549,7 +549,7 @@ public sealed class KlingAIVideoModel : IVideoModel, IVideoCaller
             );
         }
 
-        if (call.Seed is { } seed && seed != 0)
+        if (call.Seed is not null)
         {
             warnings.Add(
                 OperationWarning.Unsupported(

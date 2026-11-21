@@ -4,7 +4,9 @@
 
 using System.Globalization;
 using System.Text.Json;
+using Vercel.AI.Gateway;
 using Vercel.AI.GenerateText;
+using Vercel.AI.Prompt;
 using Vercel.AI.Provider;
 
 namespace Vercel.AI.Operations;
@@ -59,8 +61,17 @@ public sealed class BatchRequest
     /// <summary>Model id.</summary>
     public string Model { get; }
 
-    /// <summary>Text prompt.</summary>
+    /// <summary>Text prompt. Cannot be combined with <see cref="Messages"/> on a text request.</summary>
     public string? Prompt { get; set; }
+
+    /// <summary>Prompt messages. File parts with URLs the batch API supports stay URLs, the rest are downloaded.</summary>
+    public IReadOnlyList<ModelMessage>? Messages { get; set; }
+
+    /// <summary>Instructions of a text request. They win over <see cref="System"/>.</summary>
+    public Instructions? Instructions { get; set; }
+
+    /// <summary>Legacy system string of a text request.</summary>
+    public string? System { get; set; }
 
     /// <summary>Image prompt.</summary>
     public ImagePrompt? ImagePrompt { get; set; }
@@ -466,8 +477,8 @@ public class BatchItemResult
     /// <summary>Response id.</summary>
     public string? ResponseId { get; set; }
 
-    /// <summary>Response timestamp.</summary>
-    public DateTime? Timestamp { get; set; }
+    /// <summary>Response timestamp as an ISO 8601 string, so the result serializes.</summary>
+    public string? Timestamp { get; set; }
 
     /// <summary>Response model id.</summary>
     public string? ResponseModelId { get; set; }
@@ -984,7 +995,8 @@ public static class Batch
                         item.Id,
                         item.Type,
                         item.Model,
-                        TextOptions(item, prepared, request.Output)
+                        await TextOptionsAsync(item, prepared, request.Output, api, token)
+                            .ConfigureAwait(false)
                     )
                 );
             }
@@ -1211,7 +1223,7 @@ public static class Batch
 
             result.Images = images;
             result.Warnings = item.Image.Warnings;
-            result.Timestamp = item.Image.Response?.Timestamp;
+            result.Timestamp = ToIsoTimestamp(item.Image.Response?.Timestamp);
             result.ResponseModelId = item.Image.Response?.ModelId;
             result.ProviderMetadata = item.Image.ProviderMetadata;
             result.ImageUsage = item.Image.Usage;
@@ -1281,7 +1293,7 @@ public static class Batch
             result.RawFinishReason = item.Text.RawFinishReason;
             result.Usage = item.Text.Usage == null ? null : BatchUsage.FromModel(item.Text.Usage);
             result.ResponseId = item.Text.ResponseId;
-            result.Timestamp = item.Text.Timestamp;
+            result.Timestamp = ToIsoTimestamp(item.Text.Timestamp);
             result.ResponseModelId = item.Text.ModelId;
             result.ProviderMetadata = item.Text.ProviderMetadata;
             if (output != null)
@@ -1292,6 +1304,11 @@ public static class Batch
 
         return result;
     }
+
+    private static string? ToIsoTimestamp(DateTime? timestamp) =>
+        timestamp
+            ?.ToUniversalTime()
+            .ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture);
 
     private static JsonElement ParseInput(string? text)
     {
@@ -1523,17 +1540,43 @@ public static class Batch
             : string.Empty;
     }
 
-    private static JsonElement TextOptions(
+    private static async Task<JsonElement> TextOptionsAsync(
         BatchRequest request,
         List<JsonElement> tools,
-        OutputSpec? output
+        OutputSpec? output,
+        IBatchApi api,
+        CancellationToken cancellationToken
     )
     {
-        var prompt = OperationJson.Parse(
-            "[{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":"
-                + JsonSerializer.Serialize(request.Prompt ?? string.Empty)
-                + "}]}]"
+        var standardized = Prompts.StandardizePrompt(
+            new StandardizePromptInput
+            {
+                System = request.System,
+                Instructions = request.Instructions,
+                Prompt =
+                    request.Messages == null ? (PromptInput)(request.Prompt ?? string.Empty) : null,
+                Messages = request.Messages,
+            }
         );
+        var messages = new List<ModelMessage>(
+            Generation.InstructionMessages(standardized.Instructions)
+        );
+        messages.AddRange(standardized.Messages);
+
+        // Maps to the supportedUrls argument of convertToLanguageModelPrompt: no custom download function.
+        var converted = await LanguageModelPrompts
+            .ConvertToLanguageModelPromptAsync(
+                messages,
+                api.SupportedUrls,
+                null,
+                cancellationToken,
+                api.Provider.Split('.')[0]
+            )
+            .ConfigureAwait(false);
+        var prompt = OperationJson
+            .Parse(V4Json.CallOptions(new LanguageModelCallOptions { Prompt = converted }))
+            .GetProperty("prompt")
+            .Clone();
         var options = new Dictionary<string, object?>
         {
             ["prompt"] = prompt,

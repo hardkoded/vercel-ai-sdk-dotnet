@@ -290,6 +290,23 @@ public sealed class ExecutedTool
     public bool? Preliminary { get; init; }
 }
 
+/// <summary>Information about the model that produced a step. Maps to the <c>model</c> object of <c>StepResult</c>.</summary>
+public sealed class StepModel
+{
+    /// <summary>Creates model information.</summary>
+    public StepModel(string provider, string modelId)
+    {
+        Provider = provider;
+        ModelId = modelId;
+    }
+
+    /// <summary>The provider of the model.</summary>
+    public string Provider { get; }
+
+    /// <summary>The ID of the model.</summary>
+    public string ModelId { get; }
+}
+
 /// <summary>One language-model step, including any tool results from that step.</summary>
 public sealed class StepResult
 {
@@ -375,6 +392,13 @@ public sealed class StepResult
 
     /// <summary>Reasoning text generated in this step.</summary>
     public string? ReasoningText { get; }
+
+    /// <summary>The reasoning parts and reasoning files generated in this step, in order. Maps to <c>reasoning</c>.</summary>
+    public IReadOnlyList<GeneratedContent> Reasoning =>
+        Content.Where(part => part is GeneratedReasoning or GeneratedReasoningFile).ToArray();
+
+    /// <summary>Information about the model that produced this step. Maps to <c>model</c>.</summary>
+    public StepModel Model => new(Provider ?? string.Empty, ModelId ?? string.Empty);
 
     /// <summary>Tool calls from this step.</summary>
     public IReadOnlyList<GeneratedToolCall> ToolCalls { get; }
@@ -746,9 +770,12 @@ public abstract class OutputSpec
     internal virtual bool IsJson => Schema != null;
 
     // Maps to parseCompleteOutput. Invalid JSON throws JsonParseException, a mismatch throws TypeValidationException.
-    internal virtual JsonElement ParseCompleteOutput(string text)
+    internal virtual JsonElement ParseCompleteOutput(string? text)
     {
-        return ProviderUtils.JsonParsing.Parse(text, JsonNode.Parse(Schema!.Value.GetRawText()));
+        return ProviderUtils.JsonParsing.Parse(
+            text ?? "undefined",
+            JsonNode.Parse(Schema!.Value.GetRawText())
+        );
     }
 
     // Maps to parsePartialOutput. Null means undefined: there is no partial output yet.
@@ -782,9 +809,10 @@ public abstract class OutputSpec
         public static readonly TextOutput Instance = new();
 
         // Maps to Output.text parseCompleteOutput: the text as is, without a schema.
-        internal override JsonElement ParseCompleteOutput(string text)
+        internal override JsonElement ParseCompleteOutput(string? text)
         {
-            return JsonSerializer.SerializeToElement(text);
+            // An undefined text stays undefined, like the upstream cast test expects.
+            return text is null ? default : JsonSerializer.SerializeToElement(text);
         }
     }
 
@@ -857,9 +885,9 @@ public abstract class OutputSpec
 
         internal override string? SchemaDescription => Description;
 
-        internal override JsonElement ParseCompleteOutput(string text)
+        internal override JsonElement ParseCompleteOutput(string? text)
         {
-            var outer = ProviderUtils.JsonParsing.Parse(text);
+            var outer = ProviderUtils.JsonParsing.Parse(text ?? "undefined");
             if (
                 outer.ValueKind != JsonValueKind.Object
                 || !outer.TryGetProperty("elements", out var elements)
@@ -1055,9 +1083,9 @@ public abstract class OutputSpec
 
         internal override string? SchemaDescription => Description;
 
-        internal override JsonElement ParseCompleteOutput(string text)
+        internal override JsonElement ParseCompleteOutput(string? text)
         {
-            var outer = ProviderUtils.JsonParsing.Parse(text);
+            var outer = ProviderUtils.JsonParsing.Parse(text ?? "undefined");
             if (
                 outer.ValueKind != JsonValueKind.Object
                 || !outer.TryGetProperty("result", out var result)
@@ -1129,9 +1157,9 @@ public abstract class OutputSpec
 
         internal override bool IsJson => true;
 
-        internal override JsonElement ParseCompleteOutput(string text)
+        internal override JsonElement ParseCompleteOutput(string? text)
         {
-            return ProviderUtils.JsonParsing.Parse(text);
+            return ProviderUtils.JsonParsing.Parse(text ?? "undefined");
         }
     }
 }
@@ -1150,7 +1178,9 @@ public abstract class OutputSpec<TOutput> : OutputSpec
     // Maps to the typed result of parseCompleteOutput. A mismatch throws JsonException.
     internal TOutput? Deserialize(JsonElement output)
     {
-        return output.Deserialize<TOutput>(s_options);
+        return output.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined
+            ? default
+            : output.Deserialize<TOutput>(s_options);
     }
 }
 
@@ -1165,7 +1195,7 @@ internal sealed class TypedOutput<TOutput>(OutputSpec inner) : OutputSpec<TOutpu
 
     internal override bool IsJson => inner.IsJson;
 
-    internal override JsonElement ParseCompleteOutput(string text)
+    internal override JsonElement ParseCompleteOutput(string? text)
     {
         return inner.ParseCompleteOutput(text);
     }
@@ -1262,6 +1292,14 @@ public sealed class PrepareStepContext
 
     /// <summary>The sandbox environment that the step is operating in. Maps to <c>experimental_sandbox</c>.</summary>
     public Vercel.AI.ProviderUtils.ISandboxSession? ExperimentalSandbox { get; init; }
+
+    /// <summary>The context of each tool, by tool name. See <see cref="GenerateTextOptions.ToolsContext"/>. Maps to <c>toolsContext</c>.</summary>
+    public IReadOnlyDictionary<string, JsonElement> ToolsContext { get; init; } =
+        StepResult.EmptyToolsContext;
+
+    /// <summary>The user-defined runtime context. See <see cref="GenerateTextOptions.RuntimeContext"/>. Maps to <c>runtimeContext</c>.</summary>
+    public IReadOnlyDictionary<string, object?> RuntimeContext { get; init; } =
+        StepResult.EmptyRuntimeContext;
 }
 
 /// <summary>Optional changes applied before a step.</summary>
@@ -1279,6 +1317,9 @@ public sealed class PrepareStepUpdate
     /// <summary>Replacement tool choice for this step.</summary>
     public ToolChoice? ToolChoice { get; set; }
 
+    /// <summary>Overrides the active tools for this step. See <see cref="GenerateTextOptions.ActiveTools"/>. Maps to <c>activeTools</c>.</summary>
+    public IReadOnlyList<string>? ActiveTools { get; set; }
+
     /// <summary>Overrides the order in which tools are sent to the provider for this step. See <see cref="GenerateTextOptions.ToolOrder"/>. Maps to <c>toolOrder</c>.</summary>
     public IReadOnlyList<string>? ToolOrder { get; set; }
 
@@ -1291,11 +1332,30 @@ public sealed class PrepareStepUpdate
     /// The sandbox environment that the step is operating in. Changing it affects tool execution in this step only. Maps to <c>experimental_sandbox</c>.
     /// </summary>
     public Vercel.AI.ProviderUtils.ISandboxSession? ExperimentalSandbox { get; set; }
+
+    /// <summary>
+    /// Replacement tools context. It affects this step and all later steps, and it is passed into tool execution. Maps to <c>toolsContext</c>.
+    /// </summary>
+    public IReadOnlyDictionary<string, JsonElement>? ToolsContext { get; set; }
+
+    /// <summary>
+    /// Replacement runtime context. It affects this step and all later steps. Maps to <c>runtimeContext</c>.
+    /// </summary>
+    public IReadOnlyDictionary<string, object?>? RuntimeContext { get; set; }
 }
 
 /// <summary>Options for <see cref="IAiClient.GenerateTextAsync"/>. Property names follow <c>generateText</c>.</summary>
 public class GenerateTextOptions
 {
+    /// <summary>The integrations resolved once at the start of a call, so retention and every callback agree.</summary>
+    internal TelemetryDispatcher? TelemetrySnapshot { get; set; }
+
+    /// <summary>Telemetry configuration. Maps to <c>telemetry</c>.</summary>
+    public TelemetryOptions? Telemetry { get; set; }
+
+    /// <summary>Deprecated alias of <see cref="Telemetry"/>. Maps to <c>experimental_telemetry</c>.</summary>
+    public TelemetryOptions? ExperimentalTelemetry { get; set; }
+
     /// <summary>The clock for step timing in milliseconds. Tests replace it. Maps to <c>_internal.now</c>.</summary>
     internal Func<double>? NowMs { get; set; }
 
@@ -1922,8 +1982,24 @@ public sealed class StreamAbortContext
 }
 
 /// <summary>Result of <c>generateText</c>.</summary>
-public sealed class GenerateTextResult
+public class GenerateTextResult
 {
+    // Copies a result. GenerateTextResult<TOutput> uses it to give the same result a typed output.
+    private protected GenerateTextResult(GenerateTextResult result)
+        : this(
+            result.Text,
+            result.ReasoningText,
+            result.Steps,
+            result.FinishReason,
+            result.Usage,
+            result.Output,
+            result.Sources,
+            result.ProviderMetadata
+        )
+    {
+        ResponseMessages = result.ResponseMessages;
+    }
+
     /// <summary>Creates a result.</summary>
     public GenerateTextResult(
         string text,
@@ -1984,6 +2060,12 @@ public sealed class GenerateTextResult
 
     /// <summary>Model id of the model that produced the final step. Maps to <c>model.modelId</c>.</summary>
     public string? ModelId => FinalStep.ModelId;
+
+    /// <summary>Information about the model that produced the final step. Maps to <c>model</c>.</summary>
+    public StepModel Model => FinalStep.Model;
+
+    /// <summary>The reasoning parts and reasoning files of the final step. Maps to <c>reasoning</c>.</summary>
+    public IReadOnlyList<GeneratedContent> Reasoning => FinalStep.Reasoning;
 
     /// <summary>Tool context from the final step. Maps to <c>toolsContext</c>.</summary>
     public IReadOnlyDictionary<string, JsonElement> ToolsContext => FinalStep.ToolsContext;
@@ -2080,6 +2162,31 @@ public sealed class GenerateTextResult
         Array.Empty<ModelMessage>();
 }
 
+/// <summary>
+/// Result of <c>generateText</c> whose parsed output has the type of the <see cref="OutputSpec{TOutput}"/> of the call.
+/// Maps to <c>GenerateTextResult&lt;TOOLS, OUTPUT&gt;</c>.
+/// </summary>
+/// <typeparam name="TOutput">The type of the parsed output.</typeparam>
+public sealed class GenerateTextResult<TOutput> : GenerateTextResult
+{
+    private readonly Lazy<TOutput?> _output;
+
+    internal GenerateTextResult(GenerateTextResult result, OutputSpec<TOutput> spec)
+        : base(result)
+    {
+        // Deserialized once, so every read gives the same instance.
+        _output = new Lazy<TOutput?>(() =>
+            base.Output is { } json ? spec.Deserialize(json) : default
+        );
+    }
+
+    /// <summary>
+    /// The parsed output, or <see langword="default"/> when the call generated none, as <see cref="GenerateTextResult.Output"/>.
+    /// A mismatch with <typeparamref name="TOutput"/> throws <see cref="JsonException"/>. Maps to <c>output</c>.
+    /// </summary>
+    public new TOutput? Output => _output.Value;
+}
+
 /// <summary>A part of the <c>streamText</c> full stream.</summary>
 public abstract class TextStreamPart
 {
@@ -2106,6 +2213,9 @@ public sealed class LanguageModelRequestMetadata
 {
     /// <summary>Request metadata with no messages and no body.</summary>
     public static LanguageModelRequestMetadata Empty { get; } = new();
+
+    /// <summary>HTTP origin used for this request, without URL credentials, paths, queries or fragments. Maps to <c>url</c>.</summary>
+    public string? Url { get; init; }
 
     /// <summary>The input messages that were sent to the model for this step.</summary>
     public IReadOnlyList<ModelMessage>? Messages { get; init; }

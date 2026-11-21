@@ -497,6 +497,21 @@ public sealed class ByteDanceParityTests
     }
 
     [Fact]
+    [UpstreamTest(
+        Video + "doStart::should pass seed when it is 0",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "ef2dfb5e9fb7b72287b226eba8b743f809414172"
+    )]
+    public async Task Video_start_passes_seed_when_it_is_0()
+    {
+        var handler = VideoHandler();
+        await VideoModel(handler)
+            .DoStartAsync(Start(seed: 0), CancellationToken.None)
+            .ConfigureAwait(false);
+        JsonAssert.Equal(Body(handler), StartBody(",\"seed\":0"));
+    }
+
+    [Fact]
     [UpstreamTest(Video + "doStart::should pass headers", Coverage = UpstreamCoverage.Covered)]
     public async Task Video_start_sends_provider_and_call_headers()
     {

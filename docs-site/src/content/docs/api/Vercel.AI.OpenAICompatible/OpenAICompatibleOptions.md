@@ -23,7 +23,7 @@ Settings for an OpenAI Chat Completions compatible provider.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-**Derived:** [AssemblyAIOptions](/api/Vercel.AI.AssemblyAI/AssemblyAIOptions/), [BasetenOptions](/api/Vercel.AI.Baseten/BasetenOptions/), [CartesiaOptions](/api/Vercel.AI.Cartesia/CartesiaOptions/), [DeepgramOptions](/api/Vercel.AI.Deepgram/DeepgramOptions/), [ElevenLabsOptions](/api/Vercel.AI.ElevenLabs/ElevenLabsOptions/), [GladiaOptions](/api/Vercel.AI.Gladia/GladiaOptions/), [HumeOptions](/api/Vercel.AI.Hume/HumeOptions/), [KlingAIOptions](/api/Vercel.AI.KlingAI/KlingAIOptions/), [OpenAIOptions](/api/Vercel.AI.OpenAI/OpenAIOptions/), [RevAIOptions](/api/Vercel.AI.RevAI/RevAIOptions/), [TencentOptions](/api/Vercel.AI.Tencent/TencentOptions/), [XaiOptions](/api/Vercel.AI.Xai/XaiOptions/)
+**Derived:** [AssemblyAIOptions](/api/Vercel.AI.AssemblyAI/AssemblyAIOptions/), [BasetenOptions](/api/Vercel.AI.Baseten/BasetenOptions/), [CartesiaOptions](/api/Vercel.AI.Cartesia/CartesiaOptions/), [DeepgramOptions](/api/Vercel.AI.Deepgram/DeepgramOptions/), [ElevenLabsOptions](/api/Vercel.AI.ElevenLabs/ElevenLabsOptions/), [GladiaOptions](/api/Vercel.AI.Gladia/GladiaOptions/), [HumeOptions](/api/Vercel.AI.Hume/HumeOptions/), [KlingAIOptions](/api/Vercel.AI.KlingAI/KlingAIOptions/), [MistralOptions](/api/Vercel.AI.Mistral/MistralOptions/), [OpenAIOptions](/api/Vercel.AI.OpenAI/OpenAIOptions/), [RevAIOptions](/api/Vercel.AI.RevAI/RevAIOptions/), [TencentOptions](/api/Vercel.AI.Tencent/TencentOptions/), [XaiOptions](/api/Vercel.AI.Xai/XaiOptions/)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L34)
 

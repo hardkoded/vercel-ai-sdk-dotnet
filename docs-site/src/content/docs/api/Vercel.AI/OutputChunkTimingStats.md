@@ -23,7 +23,7 @@ Timing statistics for the gaps between generated output chunks, in milliseconds.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2679)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2730)
 
 ## Constructors
 
@@ -51,7 +51,7 @@ Creates the statistics.
 | `p10` | [double](https://learn.microsoft.com/dotnet/api/system.double) |  |
 | `p90` | [double](https://learn.microsoft.com/dotnet/api/system.double) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2682)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2733)
 
 ## Properties
 
@@ -70,7 +70,7 @@ Average gap.
 
 **Value:** [double](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2706)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2757)
 
 <a id="Vercel_AI_OutputChunkTimingStats_Max_"></a>
 <a id="Vercel_AI_OutputChunkTimingStats_Max"></a>
@@ -87,7 +87,7 @@ Largest gap.
 
 **Value:** [double](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2703)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2754)
 
 <a id="Vercel_AI_OutputChunkTimingStats_Median_"></a>
 <a id="Vercel_AI_OutputChunkTimingStats_Median"></a>
@@ -104,7 +104,7 @@ Median gap.
 
 **Value:** [double](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2709)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2760)
 
 <a id="Vercel_AI_OutputChunkTimingStats_Min_"></a>
 <a id="Vercel_AI_OutputChunkTimingStats_Min"></a>
@@ -121,7 +121,7 @@ Smallest gap.
 
 **Value:** [double](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2700)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2751)
 
 <a id="Vercel_AI_OutputChunkTimingStats_P10_"></a>
 <a id="Vercel_AI_OutputChunkTimingStats_P10"></a>
@@ -138,7 +138,7 @@ public double P10 { get; }
 
 **Value:** [double](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2712)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2763)
 
 <a id="Vercel_AI_OutputChunkTimingStats_P90_"></a>
 <a id="Vercel_AI_OutputChunkTimingStats_P90"></a>
@@ -155,4 +155,4 @@ public double P90 { get; }
 
 **Value:** [double](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2715)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2766)

@@ -208,19 +208,12 @@ public sealed class DoGenerateTests
     }
 
     [Fact]
-    [UpstreamTest(
-        Id + "should pass headers",
-        Coverage = UpstreamCoverage.Partial,
-        Commit = Commit,
-        Note = "The port's provider always adds its user-agent header, so the exact header set is checked without user-agent. HttpClient adds content-length, which is also left out."
-    )]
+    [UpstreamTest(Id + "should pass headers", Coverage = UpstreamCoverage.Covered, Commit = Commit)]
     public async Task Should_pass_headers()
     {
         var handler = Server();
-        var model = CreateModel(
-            handler,
-            new Dictionary<string, string> { ["Custom-Provider-Header"] = "provider-header-value" },
-            apiKey: null
+        var model = CreateModel(handler, () =>
+            new Dictionary<string, string?> { ["Custom-Provider-Header"] = "provider-header-value" }
         );
 
         await model.DoGenerateAsync(
@@ -236,8 +229,7 @@ public sealed class DoGenerateTests
         var call = Assert.Single(handler.Calls);
         var actual = call
             .Headers.Where(pair =>
-                !string.Equals(pair.Key, "user-agent", StringComparison.OrdinalIgnoreCase)
-                && !string.Equals(pair.Key, "content-length", StringComparison.OrdinalIgnoreCase)
+                !string.Equals(pair.Key, "content-length", StringComparison.OrdinalIgnoreCase)
             )
             .ToDictionary(
                 pair => pair.Key.ToLowerInvariant(),

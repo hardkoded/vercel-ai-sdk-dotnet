@@ -90,6 +90,27 @@ public sealed class GatewayImageModelDoGenerateTests
 
     [Fact]
     [UpstreamTest(
+        Prefix + "should pass seed when it is 0",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "ef2dfb5e9fb7b72287b226eba8b743f809414172"
+    )]
+    public async Task Should_pass_seed_when_it_is_0()
+    {
+        var handler = GatewayImageModelSupport.PrepareJsonResponse();
+
+        await GatewayImageModelSupport.DoGenerate(
+            GatewayImageModelSupport.CreateTestModel(handler),
+            prompt: "A simple prompt",
+            seed: 0
+        );
+
+        var requestBody = GatewayImageModelSupport.Body(handler)!.AsObject();
+        Assert.True(requestBody.ContainsKey("seed"));
+        Assert.Equal(0, (int)requestBody["seed"]!);
+    }
+
+    [Fact]
+    [UpstreamTest(
         Prefix + "should return images array correctly",
         Coverage = UpstreamCoverage.Covered
     )]

@@ -55,7 +55,8 @@ public sealed class ProviderHttp
                 (int)response.StatusCode,
                 ErrorMessage((int)response.StatusCode, body),
                 body,
-                CopyHeaders(response)
+                CopyHeaders(response),
+                RequestUrl(uri)
             );
         }
 
@@ -96,7 +97,8 @@ public sealed class ProviderHttp
                     (int)response.StatusCode,
                     ErrorMessage((int)response.StatusCode, body),
                     body,
-                    CopyHeaders(response)
+                    CopyHeaders(response),
+                    RequestUrl(uri)
                 );
             }
 
@@ -139,7 +141,8 @@ public sealed class ProviderHttp
                 (int)response.StatusCode,
                 ErrorMessage((int)response.StatusCode, body),
                 body,
-                CopyHeaders(response)
+                CopyHeaders(response),
+                RequestUrl(uri)
             );
         }
 
@@ -211,7 +214,8 @@ public sealed class ProviderHttp
                 (int)response.StatusCode,
                 ErrorMessage((int)response.StatusCode, text),
                 text,
-                CopyHeaders(response)
+                CopyHeaders(response),
+                RequestUrl(uri)
             );
         }
 
@@ -246,7 +250,8 @@ public sealed class ProviderHttp
                     (int)response.StatusCode,
                     ErrorMessage((int)response.StatusCode, text),
                     text,
-                    CopyHeaders(response)
+                    CopyHeaders(response),
+                    RequestUrl(uri)
                 );
             }
 
@@ -357,7 +362,8 @@ public sealed class ProviderHttp
                     (int)response.StatusCode,
                     ErrorMessage((int)response.StatusCode, body),
                     body,
-                    CopyHeaders(response)
+                    CopyHeaders(response),
+                    RequestUrl(uri)
                 );
             }
 
@@ -465,7 +471,8 @@ public sealed class ProviderHttp
                     (int)response.StatusCode,
                     ErrorMessage((int)response.StatusCode, body),
                     body,
-                    CopyHeaders(response)
+                    CopyHeaders(response),
+                    RequestUrl(uri)
                 );
             }
 
@@ -506,6 +513,19 @@ public sealed class ProviderHttp
                 yield return value;
             }
         }
+    }
+
+    // A relative uri succeeds through the client's BaseAddress, so resolve it the way the client does instead of reading AbsoluteUri.
+    private string RequestUrl(Uri uri)
+    {
+        if (uri.IsAbsoluteUri)
+        {
+            return uri.AbsoluteUri;
+        }
+
+        return _httpClient.BaseAddress is { } baseAddress
+            ? new Uri(baseAddress, uri).AbsoluteUri
+            : uri.OriginalString;
     }
 
     /// <summary>Maps an HTTP status onto the SDK exception hierarchy.</summary>

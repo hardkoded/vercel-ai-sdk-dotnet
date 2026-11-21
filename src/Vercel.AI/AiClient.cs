@@ -157,6 +157,17 @@ public sealed class AiClient : IAiClient
         );
     }
 
+    private static JsonElement? ParseSchema(string schema)
+    {
+        if (string.IsNullOrEmpty(schema))
+        {
+            return null;
+        }
+
+        using var document = JsonDocument.Parse(schema);
+        return document.RootElement.Clone();
+    }
+
     /// <inheritdoc />
     public async Task<GenerateObjectResult<T>> GenerateObjectAsync<T>(
         GenerateObjectOptions<T> options,
@@ -181,7 +192,7 @@ public sealed class AiClient : IAiClient
         );
 
         var model = ResolveLanguage(options.Model, options.ModelId);
-        var callId = ProviderUtils.JsonValues.GenerateId("aiobj-");
+        var callId = options.GenerateId?.Invoke() ?? ProviderUtils.JsonValues.GenerateId("aiobj-");
         if (options.OnStart != null)
         {
             await NotifyCallbackAsync(
@@ -193,20 +204,32 @@ public sealed class AiClient : IAiClient
                                 model.ModelId,
                                 options.Prompt,
                                 options.Messages
-                            ),
-                            cancellationToken
-                        ),
-                    cancellationToken
-                )
-                .ConfigureAwait(false);
-        }
-
-        if (options.OnStepStart != null)
-        {
-            await NotifyCallbackAsync(
-                    () =>
-                        options.OnStepStart(
-                            new GenerateObjectStepStartEvent(callId, model.Provider, model.ModelId),
+                            )
+                            {
+                                OperationId = "ai.generateObject",
+                                System = options.Instructions
+                                    ?? (
+                                        options.System != null
+                                            ? Vercel.AI.Prompt.Instructions.From(options.System)
+                                            : null
+                                    ),
+                                MaxOutputTokens = options.MaxOutputTokens,
+                                Temperature = options.Temperature,
+                                TopP = options.TopP,
+                                TopK = options.TopK,
+                                PresencePenalty = options.PresencePenalty,
+                                FrequencyPenalty = options.FrequencyPenalty,
+                                Seed = options.Seed,
+                                MaxRetries = Vercel.AI.Operations.OperationRetry.ResolveMaxRetries(
+                                    options.MaxRetries
+                                ),
+                                Headers = options.Headers,
+                                ProviderOptions = options.ProviderOptions,
+                                Output = "object",
+                                Schema = ParseSchema(options.Schema),
+                                SchemaName = options.SchemaName,
+                                SchemaDescription = options.SchemaDescription,
+                            },
                             cancellationToken
                         ),
                     cancellationToken
@@ -262,6 +285,33 @@ public sealed class AiClient : IAiClient
                         ),
                     token
                 );
+        }
+
+        if (options.OnStepStart != null)
+        {
+            var promptMessages = await Vercel
+                .AI.Prompt.LanguageModelPrompts.ConvertToLanguageModelPromptAsync(
+                    Generation.BuildPrompt(generateOptions),
+                    model.SupportedUrls,
+                    null,
+                    cancellationToken,
+                    model.Provider.Split('.')[0]
+                )
+                .ConfigureAwait(false);
+            await NotifyCallbackAsync(
+                    () =>
+                        options.OnStepStart(
+                            new GenerateObjectStepStartEvent(callId, model.Provider, model.ModelId)
+                            {
+                                ProviderOptions = options.ProviderOptions,
+                                Headers = options.Headers,
+                                PromptMessages = promptMessages,
+                            },
+                            cancellationToken
+                        ),
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
         }
 
         var generated = await Generation
@@ -369,6 +419,57 @@ public sealed class AiClient : IAiClient
             _telemetry,
             cancellationToken
         );
+    }
+
+    /// <summary>
+    /// Generates text whose output is typed by <paramref name="output"/>. It replaces <see cref="GenerateTextOptions.Output"/>.
+    /// Maps to <c>generateText</c> with <c>output</c>.
+    /// </summary>
+    public async Task<GenerateTextResult<TOutput>> GenerateTextAsync<TOutput>(
+        GenerateTextOptions options,
+        OutputSpec<TOutput> output,
+        CancellationToken cancellationToken = default
+    )
+    {
+        if (options is null)
+        {
+            throw new ArgumentNullException(nameof(options));
+        }
+
+        if (output is null)
+        {
+            throw new ArgumentNullException(nameof(output));
+        }
+
+        var call = options.ShallowCopy();
+        call.Output = output;
+        var result = await GenerateTextAsync(call, cancellationToken).ConfigureAwait(false);
+        return new GenerateTextResult<TOutput>(result, output);
+    }
+
+    /// <summary>
+    /// Streams text whose output is typed by <paramref name="output"/>. It replaces <see cref="GenerateTextOptions.Output"/>.
+    /// Maps to <c>streamText</c> with <c>output</c>.
+    /// </summary>
+    public StreamTextResult<TOutput> StreamTextAsync<TOutput>(
+        StreamTextOptions options,
+        OutputSpec<TOutput> output,
+        CancellationToken cancellationToken = default
+    )
+    {
+        if (options is null)
+        {
+            throw new ArgumentNullException(nameof(options));
+        }
+
+        if (output is null)
+        {
+            throw new ArgumentNullException(nameof(output));
+        }
+
+        var call = (StreamTextOptions)options.ShallowCopy();
+        call.Output = output;
+        return new StreamTextResult<TOutput>(StreamTextAsync(call, cancellationToken), output);
     }
 
     /// <summary>
@@ -870,6 +971,26 @@ public static class Ai
     )
     {
         return DefaultClient.Value.GenerateTextAsync(options, cancellationToken);
+    }
+
+    /// <summary>Generates text whose output is typed by <paramref name="output"/>.</summary>
+    public static Task<GenerateTextResult<TOutput>> GenerateTextAsync<TOutput>(
+        GenerateTextOptions options,
+        OutputSpec<TOutput> output,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return DefaultClient.Value.GenerateTextAsync(options, output, cancellationToken);
+    }
+
+    /// <summary>Streams text whose output is typed by <paramref name="output"/>.</summary>
+    public static StreamTextResult<TOutput> StreamTextAsync<TOutput>(
+        StreamTextOptions options,
+        OutputSpec<TOutput> output,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return DefaultClient.Value.StreamTextAsync(options, output, cancellationToken);
     }
 
     /// <summary>Streams text.</summary>

@@ -89,8 +89,8 @@ internal static class Generation
     /// Runs <c>prepareStep</c> and applies its instructions and messages overrides, which carry forward to later steps.
     /// The prompt keeps the instructions as leading system messages, so <paramref name="instructionCount"/> marks where the messages start.
     /// </summary>
-    private static PrepareStepUpdate? PrepareStep(
-        GenerateTextOptions options,
+    private static PrepareStepUpdate? PrepareStep<TOptions>(
+        ref TOptions options,
         IReadOnlyList<StepResult> steps,
         ILanguageModel model,
         Instructions? initialInstructions,
@@ -101,6 +101,7 @@ internal static class Generation
         ref List<ModelMessage> messages,
         ref int instructionCount
     )
+        where TOptions : GenerateTextOptions
     {
         var update = options.PrepareStep?.Invoke(
             new PrepareStepContext(
@@ -116,8 +117,18 @@ internal static class Generation
             {
                 ExperimentalSteeringMessages = steeringMessages.Count > 0 ? steeringMessages : null,
                 ExperimentalSandbox = options.ExperimentalSandbox,
+                ToolsContext = options.ToolsContext ?? StepResult.EmptyToolsContext,
+                RuntimeContext = options.RuntimeContext ?? StepResult.EmptyRuntimeContext,
             }
         );
+        // The contexts from prepareStep apply to this step and all later steps:
+        if (update?.ToolsContext != null || update?.RuntimeContext != null)
+        {
+            options = (TOptions)options.ShallowCopy();
+            options.ToolsContext = update.ToolsContext ?? options.ToolsContext;
+            options.RuntimeContext = update.RuntimeContext ?? options.RuntimeContext;
+        }
+
         if (update?.Instructions != null || update?.Messages != null)
         {
             instructions = update.Instructions ?? instructions;
@@ -132,12 +143,28 @@ internal static class Generation
         return update;
     }
 
+    private static GenerateTextOptions WithActiveTools(
+        GenerateTextOptions options,
+        PrepareStepUpdate? update
+    )
+    {
+        if (update?.ActiveTools == null)
+        {
+            return options;
+        }
+
+        var stepOptions = options.ShallowCopy();
+        stepOptions.ActiveTools = update.ActiveTools;
+        return stepOptions;
+    }
+
     // Maps to `stepSandbox = prepareStepResult?.experimental_sandbox ?? sandbox`. The sandbox from prepareStep applies to tool execution in this step only.
     private static GenerateTextOptions StepOptions(
         GenerateTextOptions options,
         PrepareStepUpdate? update
     )
     {
+        options = WithActiveTools(options, update);
         if (update?.ExperimentalSandbox == null)
         {
             return options;
@@ -159,11 +186,16 @@ internal static class Generation
         int InstructionCount,
         ILanguageModel Model,
         IReadOnlyList<UserModelMessage> SteeringMessages,
-        IReadOnlyList<UserModelMessage> DeliveredSteeringMessages
+        IReadOnlyList<UserModelMessage> DeliveredSteeringMessages,
+        IReadOnlyDictionary<string, JsonElement>? ToolsContext,
+        IReadOnlyDictionary<string, object?>? RuntimeContext
     )
     {
         // The start-step part of the step was streamed by a cancelled model call.
         public bool StartStepStreamed { get; set; }
+
+        // onStepStart was notified for the step by a cancelled model call, and it is notified once per step.
+        public bool StepStartNotified { get; set; }
     }
 
     // Maps to the shouldStartNextStep of generateText and streamText. A step with no client tool calls continues
@@ -297,6 +329,8 @@ internal static class Generation
         CancellationToken callerToken
     )
     {
+        options = options.ShallowCopy();
+        options.TelemetrySnapshot = TelemetryDispatcher.Create(options);
         // With a timeout, the model and the tools get a token that also cancels when the timeout expires.
         using var timeouts = CallTimeouts.Create(options.Timeout, null, false, callerToken);
         var cancellationToken = timeouts?.Token ?? callerToken;
@@ -321,34 +355,14 @@ internal static class Generation
                 await NotifyAsync(
                         () =>
                             options.OnStart(
-                                new GenerateTextStartEvent
-                                {
-                                    CallId = callId,
-                                    Provider = model.Provider,
-                                    ModelId = model.ModelId,
-                                    Instructions = initialInstructions,
-                                    Messages = initialMessages,
-                                    Tools = options.Tools,
-                                    ToolChoice = options.ToolChoice,
-                                    ActiveTools = options.ActiveTools,
-                                    ToolOrder = options.ToolOrder,
-                                    MaxOutputTokens = options.MaxOutputTokens,
-                                    Temperature = options.Temperature,
-                                    TopP = options.TopP,
-                                    TopK = options.TopK,
-                                    PresencePenalty = options.PresencePenalty,
-                                    FrequencyPenalty = options.FrequencyPenalty,
-                                    StopSequences = options.StopSequences,
-                                    Seed = options.Seed,
-                                    Reasoning = options.Reasoning,
-                                    MaxRetries = resolvedMaxRetries,
-                                    Timeout = options.Timeout,
-                                    Headers = options.Headers,
-                                    ProviderOptions = options.ProviderOptions,
-                                    Output = options.Output,
-                                    ToolsContext = options.ToolsContext,
-                                    RuntimeContext = options.RuntimeContext,
-                                },
+                                CreateStartEvent(
+                                    options,
+                                    callId,
+                                    model,
+                                    initialInstructions,
+                                    initialMessages,
+                                    resolvedMaxRetries
+                                ),
                                 cancellationToken
                             ),
                         cancellationToken
@@ -382,6 +396,8 @@ internal static class Generation
                     timeouts?.StartStep();
                 }
 
+                // A model from prepareStep applies to one step only. Maps to `prepareStepResult?.model ?? model`.
+                current = model;
                 var takenMessages = steeringRun?.TakeMessages() ?? Array.Empty<UserModelMessage>();
                 IReadOnlyList<UserModelMessage> steeringMessages = takenMessages;
                 if (redo != null)
@@ -392,6 +408,9 @@ internal static class Generation
                     messages = [.. redo.Messages];
                     instructionCount = redo.InstructionCount;
                     current = redo.Model;
+                    options = options.ShallowCopy();
+                    options.ToolsContext = redo.ToolsContext;
+                    options.RuntimeContext = redo.RuntimeContext;
                     steeringMessages = [.. redo.SteeringMessages, .. takenMessages];
                 }
 
@@ -402,10 +421,12 @@ internal static class Generation
                     instructionCount,
                     current,
                     steeringMessages,
-                    []
+                    [],
+                    options.ToolsContext,
+                    options.RuntimeContext
                 );
                 var update = PrepareStep(
-                    options,
+                    ref options,
                     steps,
                     current,
                     initialInstructions,
@@ -435,7 +456,13 @@ internal static class Generation
                 }
 
                 // The model gets a snapshot, because the step appends its own response to `messages` afterwards.
-                var callOptions = CallOptions(options, messages.ToArray(), update?.ToolOrder);
+                // activeTools from prepareStep applies to this step only. Maps to `activeTools: prepareStepResult?.activeTools ?? activeTools`.
+                var stepActiveOptions = WithActiveTools(options, update);
+                var callOptions = CallOptions(
+                    stepActiveOptions,
+                    messages.ToArray(),
+                    update?.ToolOrder
+                );
                 callOptions.AbortSignal = timeouts?.Signal;
                 if (update?.ToolChoice != null)
                 {
@@ -456,8 +483,10 @@ internal static class Generation
                     )
                     .ConfigureAwait(false);
 
-                if (options.OnStepStart != null)
+                var stepStartNotified = redo?.StepStartNotified == true;
+                if (options.OnStepStart != null && !stepStartNotified)
                 {
+                    stepStartNotified = true;
                     await NotifyAsync(
                             () =>
                                 options.OnStepStart(
@@ -471,7 +500,7 @@ internal static class Generation
                                         Messages = messages.Skip(instructionCount).ToArray(),
                                         Tools = options.Tools,
                                         ToolChoice = update?.ToolChoice ?? options.ToolChoice,
-                                        ActiveTools = options.ActiveTools,
+                                        ActiveTools = stepActiveOptions.ActiveTools,
                                         ToolOrder = update?.ToolOrder ?? options.ToolOrder,
                                         Steps = steps.ToArray(),
                                         ProviderOptions = callOptions.ProviderOptions,
@@ -533,7 +562,11 @@ internal static class Generation
                         && timeouts?.Signal.Aborted != true
                     )
                 {
-                    redo = stepStart with { DeliveredSteeringMessages = deliveredSteeringMessages };
+                    redo = stepStart with
+                    {
+                        DeliveredSteeringMessages = deliveredSteeringMessages,
+                        StepStartNotified = stepStartNotified,
+                    };
                     continue;
                 }
                 finally
@@ -553,35 +586,45 @@ internal static class Generation
                         cancellationToken
                     )
                     .ConfigureAwait(false);
-                if (options.OnLanguageModelCallEnd != null)
+                var telemetryDispatcher = TelemetryDispatcher.Create(options);
+                if (
+                    options.OnLanguageModelCallEnd != null
+                    || telemetryDispatcher.OnLanguageModelCallEnd != null
+                )
                 {
-                    await NotifyAsync(
-                            () =>
-                                options.OnLanguageModelCallEnd(
-                                    new LanguageModelCallEndEvent(
-                                        current.Provider,
-                                        generated.ResponseModelId ?? current.ModelId,
-                                        generated.FinishReason,
-                                        generated.Usage,
-                                        generated.Content,
-                                        generated.ResponseId,
-                                        generated.ProviderMetadata,
-                                        TimeSpan.FromMilliseconds(responseTimeMs)
-                                    )
-                                    {
-                                        CallId = callId,
-                                        Request = RequestOrigin.GetRequestOrigin(
-                                            modelResponse.Request?.Url
-                                        )
-                                            is { } origin
-                                            ? new LanguageModelStreamRequest { Url = origin }
-                                            : null,
-                                    },
-                                    cancellationToken
-                                ),
-                            cancellationToken
-                        )
-                        .ConfigureAwait(false);
+                    var callEndEvent = new LanguageModelCallEndEvent(
+                        current.Provider,
+                        generated.ResponseModelId ?? current.ModelId,
+                        generated.FinishReason,
+                        generated.Usage,
+                        generated.Content,
+                        generated.ResponseId,
+                        generated.ProviderMetadata,
+                        TimeSpan.FromMilliseconds(responseTimeMs)
+                    )
+                    {
+                        CallId = callId,
+                        Request = RequestOrigin.GetRequestOrigin(modelResponse.Request?.Url)
+                            is { } origin
+                            ? new LanguageModelStreamRequest { Url = origin }
+                            : null,
+                    };
+                    if (options.OnLanguageModelCallEnd != null)
+                    {
+                        await NotifyAsync(
+                                () =>
+                                    options.OnLanguageModelCallEnd(callEndEvent, cancellationToken),
+                                cancellationToken
+                            )
+                            .ConfigureAwait(false);
+                    }
+
+                    if (telemetryDispatcher.OnLanguageModelCallEnd != null)
+                    {
+                        await telemetryDispatcher
+                            .OnLanguageModelCallEnd(callEndEvent, cancellationToken)
+                            .ConfigureAwait(false);
+                    }
                 }
 
                 EnforceToolChoice(callOptions.ToolChoice, generated, current);
@@ -682,6 +725,11 @@ internal static class Generation
                 {
                     // Errors in callbacks do not break the generation flow (upstream notify).
                 }
+            }
+
+            if (TelemetryDispatcher.Create(options).OnEnd is { } telemetryOnEnd)
+            {
+                await telemetryOnEnd(result, cancellationToken).ConfigureAwait(false);
             }
 
             if (outputError != null)
@@ -820,6 +868,8 @@ internal static class Generation
         bool singleConsumer
     )
     {
+        options = (StreamTextOptions)options.ShallowCopy();
+        options.TelemetrySnapshot = TelemetryDispatcher.Create(options);
         Vercel.AI.Operations.OperationRetry.ResolveMaxRetries(options.MaxRetries);
         var streamRetries = Vercel.AI.Operations.OperationRetry.ResolveMaxRetries(
             options.StreamRetries,
@@ -990,7 +1040,7 @@ internal static class Generation
     }
 
     // Maps to the collectContent decision of streamTextLowMemory. Tools, an output, steps, or a callback need the complete content.
-    // Per-call and global telemetry integrations also decide upstream, and they are not ported.
+    // Enabled telemetry with at least one per-call or global integration also needs the content.
     private static bool NeedsContentCollection(StreamTextOptions options)
     {
 #pragma warning disable CS0618 // the deprecated aliases collect content like their replacements
@@ -1003,7 +1053,8 @@ internal static class Generation
             || options.OnFinish != null
             || options.OnStepEnd != null
             || options.OnAbort != null
-            || options.OnLanguageModelCallEnd != null;
+            || options.OnLanguageModelCallEnd != null
+            || TelemetryDispatcher.Create(options).HasIntegrations;
 #pragma warning restore CS0618
     }
 
@@ -1144,6 +1195,27 @@ internal static class Generation
             buffer.Add(new StartPart());
             var callId = (options.GenerateCallId ?? NewCallId)();
             recorder.CallId = callId;
+            if (options.OnStart != null)
+            {
+                await NotifyAsync(
+                        () =>
+                            options.OnStart(
+                                CreateStartEvent(
+                                    options,
+                                    callId,
+                                    model,
+                                    initialInstructions,
+                                    initialMessages,
+                                    Vercel.AI.Operations.OperationRetry.ResolveMaxRetries(
+                                        options.MaxRetries
+                                    )
+                                ),
+                                cancellationToken
+                            ),
+                        cancellationToken
+                    )
+                    .ConfigureAwait(false);
+            }
             await ProcessInitialApprovalsAsync(
                     options,
                     messages,
@@ -1172,6 +1244,8 @@ internal static class Generation
                     timeouts?.StartStep();
                 }
 
+                // A model from prepareStep applies to one step only. Maps to `prepareStepResult?.model ?? model`.
+                current = model;
                 var takenMessages = steeringRun?.TakeMessages() ?? Array.Empty<UserModelMessage>();
                 IReadOnlyList<UserModelMessage> steeringMessages = takenMessages;
                 if (redo != null)
@@ -1182,6 +1256,9 @@ internal static class Generation
                     messages = [.. redo.Messages];
                     instructionCount = redo.InstructionCount;
                     current = redo.Model;
+                    options = (StreamTextOptions)options.ShallowCopy();
+                    options.ToolsContext = redo.ToolsContext;
+                    options.RuntimeContext = redo.RuntimeContext;
                     steeringMessages = [.. redo.SteeringMessages, .. takenMessages];
                 }
 
@@ -1192,10 +1269,12 @@ internal static class Generation
                     instructionCount,
                     current,
                     steeringMessages,
-                    []
+                    [],
+                    options.ToolsContext,
+                    options.RuntimeContext
                 );
                 var update = PrepareStep(
-                    options,
+                    ref options,
                     steps,
                     current,
                     initialInstructions,
@@ -1236,6 +1315,7 @@ internal static class Generation
                 var stepStartMs = now();
                 // The start-step part of a step is streamed once, even when a cancelled model call already streamed it:
                 var startStepStreamed = redo?.StartStepStreamed == true;
+                var stepStartNotified = redo?.StepStartNotified == true;
                 var stepStarted = false;
                 var stepResponseId = Vercel.AI.ProviderUtils.JsonValues.GenerateId("aitxt-");
                 var stepResponseTimestamp = DateTimeOffset.UtcNow;
@@ -1267,11 +1347,48 @@ internal static class Generation
                 streamOptions.CallId = callId;
                 streamOptions.ToolChoice = update?.ToolChoice ?? options.ToolChoice;
                 streamOptions.ToolOrder = update?.ToolOrder ?? options.ToolOrder;
+                streamOptions.ActiveTools = update?.ActiveTools ?? options.ActiveTools;
                 streamOptions.ProviderOptions = MergeProviderOptions(
                     options.ProviderOptions,
                     update?.ProviderOptions
                 );
                 streamOptions.IncludeRawChunks = options.Include?.RawChunks == true;
+                // onStepStart runs once per step with the converted prompt, even when a steering interrupt redoes the model call:
+                streamOptions.OnStart = async (_, token) =>
+                {
+                    if (stepStartNotified || options.OnStepStart == null)
+                    {
+                        return;
+                    }
+
+                    stepStartNotified = true;
+                    await NotifyAsync(
+                            () =>
+                                options.OnStepStart(
+                                    new GenerateTextStepStartEvent
+                                    {
+                                        CallId = callId,
+                                        Provider = current.Provider,
+                                        ModelId = current.ModelId,
+                                        StepNumber = steps.Count,
+                                        Instructions = instructions,
+                                        Messages = stepMessages.Skip(instructionCount).ToArray(),
+                                        Tools = options.Tools,
+                                        ToolChoice = streamOptions.ToolChoice,
+                                        ActiveTools = options.ActiveTools,
+                                        ToolOrder = streamOptions.ToolOrder,
+                                        Steps = steps.ToArray(),
+                                        ProviderOptions = streamOptions.ProviderOptions,
+                                        Output = options.Output,
+                                        ToolsContext = options.ToolsContext,
+                                        RuntimeContext = options.RuntimeContext,
+                                    },
+                                    token
+                                ),
+                            token
+                        )
+                        .ConfigureAwait(false);
+                };
                 using var interrupt =
                     steeringRun == null
                         ? null
@@ -1307,6 +1424,7 @@ internal static class Generation
                     {
                         DeliveredSteeringMessages = stepDeliveredMessages,
                         StartStepStreamed = startStepStreamed || stepStarted,
+                        StepStartNotified = stepStartNotified,
                     };
                     continue;
                 }
@@ -1841,6 +1959,7 @@ internal static class Generation
                     {
                         DeliveredSteeringMessages = stepDeliveredMessages,
                         StartStepStreamed = startStepStreamed || stepStarted,
+                        StepStartNotified = stepStartNotified,
                     };
                     continue;
                 }
@@ -3817,6 +3936,43 @@ internal static class Generation
     private static string NewCallId() => "call-" + Guid.NewGuid().ToString("N");
 
     // Upstream's `notify` ignores an error a callback throws, so a faulty listener cannot break generation.
+    private static GenerateTextStartEvent CreateStartEvent(
+        GenerateTextOptions options,
+        string callId,
+        ILanguageModel model,
+        Instructions? initialInstructions,
+        IReadOnlyList<ModelMessage> initialMessages,
+        int resolvedMaxRetries
+    ) =>
+        new GenerateTextStartEvent
+        {
+            CallId = callId,
+            Provider = model.Provider,
+            ModelId = model.ModelId,
+            Instructions = initialInstructions,
+            Messages = initialMessages,
+            Tools = options.Tools,
+            ToolChoice = options.ToolChoice,
+            ActiveTools = options.ActiveTools,
+            ToolOrder = options.ToolOrder,
+            MaxOutputTokens = options.MaxOutputTokens,
+            Temperature = options.Temperature,
+            TopP = options.TopP,
+            TopK = options.TopK,
+            PresencePenalty = options.PresencePenalty,
+            FrequencyPenalty = options.FrequencyPenalty,
+            StopSequences = options.StopSequences,
+            Seed = options.Seed,
+            Reasoning = options.Reasoning,
+            MaxRetries = resolvedMaxRetries,
+            Timeout = options.Timeout,
+            Headers = options.Headers,
+            ProviderOptions = options.ProviderOptions,
+            Output = options.Output,
+            ToolsContext = options.ToolsContext,
+            RuntimeContext = options.RuntimeContext,
+        };
+
     internal static async Task NotifyAsync(Func<Task> callback, CancellationToken cancellationToken)
     {
         try
@@ -4726,7 +4882,7 @@ internal sealed class PartBuffer
 }
 
 /// <summary>Result of <c>streamText</c>. Enumerating <see cref="Stream"/> or awaiting <see cref="Text"/> consumes the same buffered events.</summary>
-public sealed class StreamTextResult
+public class StreamTextResult
 {
     private readonly PartBuffer _buffer;
 
@@ -4735,6 +4891,25 @@ public sealed class StreamTextResult
 
     // The output specification of the call. Null means text output.
     internal OutputSpec? OutputSpecification { get; init; }
+
+    // Copies a result. StreamTextResult<TOutput> uses it to give the same stream a typed output.
+    private protected StreamTextResult(StreamTextResult result)
+    {
+        _buffer = result._buffer;
+        Tools = result.Tools;
+        OutputSpecification = result.OutputSpecification;
+        Text = result.Text;
+        FinishReason = result.FinishReason;
+        Usage = result.Usage;
+        Steps = result.Steps;
+        RawFinishReason = result.RawFinishReason;
+        Files = result.Files;
+        Request = result.Request;
+        Response = result.Response;
+        ResponseMessages = result.ResponseMessages;
+        ProviderMetadata = result.ProviderMetadata;
+        Output = result.Output;
+    }
 
     internal StreamTextResult(
         PartBuffer buffer,
@@ -5079,6 +5254,34 @@ public sealed class StreamTextResult
     /// tool results the client ran. Completes when the stream finishes. Maps to <c>responseMessages</c>.
     /// </summary>
     public Task<IReadOnlyList<ModelMessage>> ResponseMessages { get; }
+}
+
+/// <summary>
+/// Result of <c>streamText</c> whose parsed output has the type of the <see cref="OutputSpec{TOutput}"/> of the call.
+/// Maps to <c>StreamTextResult&lt;TOOLS, OUTPUT&gt;</c>.
+/// </summary>
+/// <typeparam name="TOutput">The type of the parsed output.</typeparam>
+public sealed class StreamTextResult<TOutput> : StreamTextResult
+{
+    internal StreamTextResult(StreamTextResult result, OutputSpec<TOutput> spec)
+        : base(result)
+    {
+        Output = Typed(result.Output, spec);
+
+        // As the base class does for its tasks: a caller that never awaits Output leaves no unobserved exception.
+        _ = Output.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
+    }
+
+    /// <summary>
+    /// The parsed output once the stream finished, or <see langword="default"/> when none was generated. A mismatch with
+    /// <typeparamref name="TOutput"/> faults the task with <see cref="JsonException"/>. Maps to <c>output</c>.
+    /// </summary>
+    public new Task<TOutput?> Output { get; }
+
+    private static async Task<TOutput?> Typed(Task<JsonElement?> output, OutputSpec<TOutput> spec)
+    {
+        return await output.ConfigureAwait(false) is { } json ? spec.Deserialize(json) : default;
+    }
 }
 
 /// <summary>
