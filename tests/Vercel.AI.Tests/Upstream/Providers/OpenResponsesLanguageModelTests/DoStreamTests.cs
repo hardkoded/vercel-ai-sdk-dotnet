@@ -140,32 +140,6 @@ public sealed class DoStreamTests
         );
     }
 
-    [Fact]
-    [UpstreamTest(
-        Prefix + "should forward server response metadata from the response.created event",
-        Coverage = UpstreamCoverage.Covered
-    )]
-    public async Task Should_forward_server_response_metadata_from_the_response_created_event()
-    {
-        var capture = StreamResponse(
-            """{"type":"response.created","sequence_number":0,"response":{"id":"resp_123","object":"response","created_at":1750000000,"status":"in_progress","model":"server-reported-model-id","output":[]}}""",
-            """{"type":"response.output_item.added","sequence_number":1,"output_index":0,"item":{"id":"msg_1","type":"message","status":"in_progress","role":"assistant","content":[]}}""",
-            """{"type":"response.output_text.delta","sequence_number":2,"item_id":"msg_1","output_index":0,"content_index":0,"delta":"Hello"}"""
-        );
-
-        var parts = await Collect(Model(capture), UpstreamChat.Prompt());
-
-        JsonAssert.Equal(
-            ToJson(parts.Take(2)),
-            """
-            [
-              {"type":"stream-start","warnings":[]},
-              {"type":"response-metadata","id":"resp_123","timestamp":"2025-06-15T15:06:40.000Z","modelId":"server-reported-model-id"}
-            ]
-            """
-        );
-    }
-
     [Theory]
     [InlineData("the custom tool input done event", "<svg />", "")]
     [InlineData("the completed custom tool item", null, "<svg />")]

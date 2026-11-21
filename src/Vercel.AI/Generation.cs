@@ -143,6 +143,28 @@ internal static class Generation
         return update;
     }
 
+    // Call settings from prepareStep apply to this step only. Maps to `maxOutputTokens: prepareStepResult?.maxOutputTokens ?? maxOutputTokens` and the other call settings.
+    private static void ApplyCallSettings(
+        LanguageModelCallOptions callOptions,
+        PrepareStepUpdate? update
+    )
+    {
+        if (update == null)
+        {
+            return;
+        }
+
+        callOptions.MaxOutputTokens = update.MaxOutputTokens ?? callOptions.MaxOutputTokens;
+        callOptions.Temperature = update.Temperature ?? callOptions.Temperature;
+        callOptions.TopP = update.TopP ?? callOptions.TopP;
+        callOptions.TopK = update.TopK ?? callOptions.TopK;
+        callOptions.PresencePenalty = update.PresencePenalty ?? callOptions.PresencePenalty;
+        callOptions.FrequencyPenalty = update.FrequencyPenalty ?? callOptions.FrequencyPenalty;
+        callOptions.StopSequences = update.StopSequences ?? callOptions.StopSequences;
+        callOptions.Seed = update.Seed ?? callOptions.Seed;
+        callOptions.Reasoning = update.Reasoning ?? callOptions.Reasoning;
+    }
+
     private static GenerateTextOptions WithActiveTools(
         GenerateTextOptions options,
         PrepareStepUpdate? update
@@ -330,6 +352,7 @@ internal static class Generation
     )
     {
         options = options.ShallowCopy();
+        options.Headers = WithUserAgentHeader(options.Headers);
         options.TelemetrySnapshot = TelemetryDispatcher.Create(options);
         // With a timeout, the model and the tools get a token that also cancels when the timeout expires.
         using var timeouts = CallTimeouts.Create(options.Timeout, null, false, callerToken);
@@ -464,6 +487,7 @@ internal static class Generation
                     update?.ToolOrder
                 );
                 callOptions.AbortSignal = timeouts?.Signal;
+                ApplyCallSettings(callOptions, update);
                 if (update?.ToolChoice != null)
                 {
                     callOptions.ToolChoice = update.ToolChoice;
@@ -532,6 +556,27 @@ internal static class Generation
                                     },
                                     cancellationToken
                                 ),
+                            cancellationToken
+                        )
+                        .ConfigureAwait(false);
+                }
+
+                if (
+                    TelemetryDispatcher.Create(options).OnLanguageModelCallStart is
+                    { } telemetryCallStart
+                )
+                {
+                    await telemetryCallStart(
+                            new LanguageModelCallStartEvent
+                            {
+                                CallId = callId,
+                                Provider = current.Provider,
+                                ModelId = current.ModelId,
+                                Instructions = instructions,
+                                Messages = messages.Skip(instructionCount).ToArray(),
+                                Tools = callOptions.Tools,
+                                CallOptions = callOptions,
+                            },
                             cancellationToken
                         )
                         .ConfigureAwait(false);
@@ -1325,6 +1370,16 @@ internal static class Generation
                 streamOptions.ToolChoice = update?.ToolChoice ?? options.ToolChoice;
                 streamOptions.ToolOrder = update?.ToolOrder ?? options.ToolOrder;
                 streamOptions.ActiveTools = update?.ActiveTools ?? options.ActiveTools;
+                streamOptions.MaxOutputTokens = update?.MaxOutputTokens ?? options.MaxOutputTokens;
+                streamOptions.Temperature = update?.Temperature ?? options.Temperature;
+                streamOptions.TopP = update?.TopP ?? options.TopP;
+                streamOptions.TopK = update?.TopK ?? options.TopK;
+                streamOptions.PresencePenalty = update?.PresencePenalty ?? options.PresencePenalty;
+                streamOptions.FrequencyPenalty = update?.FrequencyPenalty
+                    ?? options.FrequencyPenalty;
+                streamOptions.StopSequences = update?.StopSequences ?? options.StopSequences;
+                streamOptions.Seed = update?.Seed ?? options.Seed;
+                streamOptions.Reasoning = update?.Reasoning ?? options.Reasoning;
                 streamOptions.ProviderOptions = MergeProviderOptions(
                     options.ProviderOptions,
                     update?.ProviderOptions
@@ -3909,6 +3964,19 @@ internal static class Generation
         return parts;
     }
 
+    // Maps to `withUserAgentSuffix(headers, `ai/${VERSION}`)`.
+    private static IReadOnlyDictionary<string, string?> WithUserAgentHeader(
+        IReadOnlyDictionary<string, string?>? headers
+    ) =>
+        Vercel
+            .AI.Operations.OperationHeaders.WithUserAgent(
+                headers
+                    ?.Where(pair => pair.Value != null)
+                    .ToDictionary(pair => pair.Key, pair => pair.Value!),
+                Vercel.AI.Operations.AiSdkVersion.UserAgent
+            )
+            .ToDictionary(pair => pair.Key, pair => (string?)pair.Value);
+
     // Stands for the call id that upstream generates once for each generateText or streamText call.
     private static string NewCallId() => "call-" + Guid.NewGuid().ToString("N");
 
@@ -3946,8 +4014,8 @@ internal static class Generation
             Headers = options.Headers,
             ProviderOptions = options.ProviderOptions,
             Output = options.Output,
-            ToolsContext = options.ToolsContext,
-            RuntimeContext = options.RuntimeContext,
+            ToolsContext = options.ToolsContext ?? StepResult.EmptyToolsContext,
+            RuntimeContext = options.RuntimeContext ?? StepResult.EmptyRuntimeContext,
         };
 
     internal static async Task NotifyAsync(Func<Task> callback, CancellationToken cancellationToken)
@@ -4881,6 +4949,18 @@ public class StreamTextResult
         Steps = result.Steps;
         RawFinishReason = result.RawFinishReason;
         Files = result.Files;
+        FinalStep = result.FinalStep;
+        Content = result.Content;
+        Warnings = result.Warnings;
+        ReasoningText = result.ReasoningText;
+        Reasoning = result.Reasoning;
+        Sources = result.Sources;
+        ToolCalls = result.ToolCalls;
+        StaticToolCalls = result.StaticToolCalls;
+        DynamicToolCalls = result.DynamicToolCalls;
+        ToolResults = result.ToolResults;
+        StaticToolResults = result.StaticToolResults;
+        DynamicToolResults = result.DynamicToolResults;
         Request = result.Request;
         Response = result.Response;
         ResponseMessages = result.ResponseMessages;
@@ -4904,7 +4984,19 @@ public class StreamTextResult
         Usage = usage;
         Steps = steps;
         RawFinishReason = FromFinalStep(steps, step => step.RawFinishReason);
-        Files = FromFinalStep(steps, step => step.Files);
+        Files = FromAllSteps(steps, step => step.Files);
+        FinalStep = FromFinalStep(steps, step => step);
+        Content = FromAllSteps(steps, step => step.Content);
+        Warnings = FromAllSteps(steps, step => step.Warnings);
+        ReasoningText = FromFinalStep(steps, step => step.ReasoningText);
+        Reasoning = FromFinalStep(steps, step => step.Reasoning);
+        Sources = FromAllSteps(steps, step => step.Sources);
+        ToolCalls = FromAllSteps(steps, step => step.ToolCalls);
+        StaticToolCalls = FromAllSteps(steps, step => step.StaticToolCalls);
+        DynamicToolCalls = FromAllSteps(steps, step => step.DynamicToolCalls);
+        ToolResults = FromAllSteps(steps, step => step.ToolResults);
+        StaticToolResults = FromAllSteps(steps, step => step.StaticToolResults);
+        DynamicToolResults = FromAllSteps(steps, step => step.DynamicToolResults);
         Request = FromFinalStep(steps, step => step.Request);
         Response = FromFinalStep(steps, step => step.Response);
         ResponseMessages = AllResponseMessages(initialResponseMessages, steps);
@@ -4931,6 +5023,48 @@ public class StreamTextResult
             TaskContinuationOptions.OnlyOnFaulted
         );
         _ = Output.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
+        _ = FinalStep.ContinueWith(
+            task => _ = task.Exception,
+            TaskContinuationOptions.OnlyOnFaulted
+        );
+        _ = Content.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
+        _ = Warnings.ContinueWith(
+            task => _ = task.Exception,
+            TaskContinuationOptions.OnlyOnFaulted
+        );
+        _ = ReasoningText.ContinueWith(
+            task => _ = task.Exception,
+            TaskContinuationOptions.OnlyOnFaulted
+        );
+        _ = Reasoning.ContinueWith(
+            task => _ = task.Exception,
+            TaskContinuationOptions.OnlyOnFaulted
+        );
+        _ = Sources.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
+        _ = ToolCalls.ContinueWith(
+            task => _ = task.Exception,
+            TaskContinuationOptions.OnlyOnFaulted
+        );
+        _ = StaticToolCalls.ContinueWith(
+            task => _ = task.Exception,
+            TaskContinuationOptions.OnlyOnFaulted
+        );
+        _ = DynamicToolCalls.ContinueWith(
+            task => _ = task.Exception,
+            TaskContinuationOptions.OnlyOnFaulted
+        );
+        _ = ToolResults.ContinueWith(
+            task => _ = task.Exception,
+            TaskContinuationOptions.OnlyOnFaulted
+        );
+        _ = StaticToolResults.ContinueWith(
+            task => _ = task.Exception,
+            TaskContinuationOptions.OnlyOnFaulted
+        );
+        _ = DynamicToolResults.ContinueWith(
+            task => _ = task.Exception,
+            TaskContinuationOptions.OnlyOnFaulted
+        );
     }
 
     // The results of the approvals that settled before the first step come first, as upstream's initialResponseMessages do.
@@ -4952,6 +5086,15 @@ public class StreamTextResult
         // Steps carries the failure, so a failed stream throws its error here.
         await steps.ConfigureAwait(false);
         return await output.ConfigureAwait(false);
+    }
+
+    private static async Task<IReadOnlyList<T>> FromAllSteps<T>(
+        Task<IReadOnlyList<StepResult>> steps,
+        Func<StepResult, IEnumerable<T>> select
+    )
+    {
+        var completed = await steps.ConfigureAwait(false);
+        return completed.SelectMany(select).ToArray();
     }
 
     private static async Task<T> FromFinalStep<T>(
@@ -5213,8 +5356,44 @@ public class StreamTextResult
     /// <summary>Completed steps. Completes when the stream finishes.</summary>
     public Task<IReadOnlyList<StepResult>> Steps { get; }
 
-    /// <summary>Files generated in the last step. Completes when the stream finishes. Maps to <c>files</c>.</summary>
+    /// <summary>Files generated in every step. Completes when the stream finishes. Maps to <c>files</c>.</summary>
     public Task<IReadOnlyList<GeneratedFile>> Files { get; }
+
+    /// <summary>The last completed step. Completes when the stream finishes. Maps to <c>finalStep</c>.</summary>
+    public Task<StepResult> FinalStep { get; }
+
+    /// <summary>Content from every step. See <see cref="StepResult.Content"/>. Completes when the stream finishes. Maps to <c>content</c>.</summary>
+    public Task<IReadOnlyList<GeneratedContent>> Content { get; }
+
+    /// <summary>Warnings from every step. Completes when the stream finishes. Maps to <c>warnings</c>.</summary>
+    public Task<IReadOnlyList<CallWarning>> Warnings { get; }
+
+    /// <summary>Reasoning text of the last step. Completes when the stream finishes. Maps to <c>reasoningText</c>.</summary>
+    public Task<string?> ReasoningText { get; }
+
+    /// <summary>The reasoning parts and reasoning files of the last step. Completes when the stream finishes. Maps to <c>reasoning</c>.</summary>
+    public Task<IReadOnlyList<GeneratedContent>> Reasoning { get; }
+
+    /// <summary>Sources from every step. Completes when the stream finishes. Maps to <c>sources</c>.</summary>
+    public Task<IReadOnlyList<GeneratedSource>> Sources { get; }
+
+    /// <summary>Tool calls from every step. Completes when the stream finishes. Maps to <c>toolCalls</c>.</summary>
+    public Task<IReadOnlyList<GeneratedToolCall>> ToolCalls { get; }
+
+    /// <summary>Static tool calls from every step. Completes when the stream finishes. Maps to <c>staticToolCalls</c>.</summary>
+    public Task<IReadOnlyList<GeneratedToolCall>> StaticToolCalls { get; }
+
+    /// <summary>Dynamic tool calls from every step. Completes when the stream finishes. Maps to <c>dynamicToolCalls</c>.</summary>
+    public Task<IReadOnlyList<GeneratedToolCall>> DynamicToolCalls { get; }
+
+    /// <summary>Tool results from every step. Completes when the stream finishes. Maps to <c>toolResults</c>.</summary>
+    public Task<IReadOnlyList<ExecutedTool>> ToolResults { get; }
+
+    /// <summary>Static tool results from every step. Completes when the stream finishes. Maps to <c>staticToolResults</c>.</summary>
+    public Task<IReadOnlyList<ExecutedTool>> StaticToolResults { get; }
+
+    /// <summary>Dynamic tool results from every step. Completes when the stream finishes. Maps to <c>dynamicToolResults</c>.</summary>
+    public Task<IReadOnlyList<ExecutedTool>> DynamicToolResults { get; }
 
     /// <summary>
     /// Additional request information of the last step. <see cref="LanguageModelRequestMetadata.Body"/> and

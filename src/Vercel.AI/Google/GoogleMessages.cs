@@ -892,7 +892,7 @@ public static class GoogleMessages
                 var function = new JsonObject
                 {
                     ["name"] = call.ToolName,
-                    ["args"] = ParseArgs(call.ArgumentsJson),
+                    ["args"] = ParseToolCallInput(call.ArgumentsJson),
                 };
                 if (includeIds && !string.IsNullOrEmpty(call.ToolCallId))
                 {
@@ -1200,6 +1200,19 @@ public static class GoogleMessages
         catch (JsonException)
         {
             return JsonValue.Create(output)!;
+        }
+    }
+
+    // Valid JSON text becomes the args value. Malformed text is kept as the string, as it was given.
+    private static JsonNode? ParseToolCallInput(string input)
+    {
+        try
+        {
+            return JsonNode.Parse(input);
+        }
+        catch (JsonException)
+        {
+            return JsonValue.Create(input);
         }
     }
 

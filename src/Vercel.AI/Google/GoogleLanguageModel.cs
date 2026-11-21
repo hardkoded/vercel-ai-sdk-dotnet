@@ -839,13 +839,15 @@ public sealed class GoogleLanguageModel : ILanguageModel
             && codeElement.TryGetInt32(out var number)
                 ? number
                 : null;
-        var retryable = code is 408 or 409 or 429 or >= 500;
+        var status = GoogleJson.String(error, "status");
+        var statusCode = code ?? GoogleError.MapGoogleErrorStatusToHttpStatusCode(status);
+        var retryable = statusCode is 408 or 409 or 429 or >= 500;
         return new ProviderStreamError(
             GoogleJson.String(error, "message") ?? string.Empty,
             error.Clone(),
-            GoogleJson.String(error, "status"),
+            status,
             code,
-            code,
+            statusCode,
             retryable
         );
     }

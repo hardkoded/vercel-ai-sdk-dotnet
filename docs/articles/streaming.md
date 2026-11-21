@@ -321,6 +321,10 @@ Steering messages are not part of `ResponseMessages`. Each `StepResult` lists th
 
 A provider opens the HTTP response when `DoStreamAsync` returns, so HTTP errors surface from that call. `LanguageModelStreamResult` implements `IAsyncDisposable` and `IDisposable`. Dispose it to release the response when you drop a result without enumerating it. Disposing is safe to repeat, and it does nothing after the stream ends. `StreamTextAsync` and the agent dispose the result for you.
 
+## Result tasks
+
+`StreamTextResult` exposes the completed call as tasks that finish when the stream finishes, as upstream's `DefaultStreamTextResult` getters do. They come from the recorded steps. `FinalStep` is the last step (maps to `finalStep`). `Content`, `Warnings`, `Sources`, `Files`, `ToolCalls`, `StaticToolCalls`, `DynamicToolCalls`, `ToolResults`, `StaticToolResults`, and `DynamicToolResults` join the values of every step. `Text`, `ReasoningText`, `Reasoning`, `RawFinishReason`, `ProviderMetadata`, `Request`, and `Response` come from the last step. Awaiting any of them throws the failure of the stream. `StreamTextSingleConsumerResult` has none of the content tasks, as upstream's `StreamTextSingleConsumerResult` has none.
+
 ## Transforming the stream
 
 `StreamTextOptions.ExperimentalTransform` takes a list of `StreamTextTransform` functions (maps to `experimental_transform`). Each receives `StreamTextTransformOptions` with the `Tools` of the call (empty when none) and `StopStream`, and returns a function from the stream of `TextStreamPart` to a new stream. The transforms run in order, and they must keep the stream structure intact. After a transform calls `StopStream`, no further part from the model reaches the transforms, so the stream ends once they flush.

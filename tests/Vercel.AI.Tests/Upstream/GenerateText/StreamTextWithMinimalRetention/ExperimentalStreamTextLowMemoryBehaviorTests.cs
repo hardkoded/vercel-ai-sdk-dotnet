@@ -231,10 +231,7 @@ public sealed class ExperimentalStreamTextLowMemoryBehaviorTests
 
     [Theory]
     [MemberData(nameof(Facades))]
-    [UpstreamTest(
-        Prefix + "delivers complete lifecycle callback content in order",
-        Note = "The port has no onStart callback on streamText, so the start event is not part of the order."
-    )]
+    [UpstreamTest(Prefix + "delivers complete lifecycle callback content in order")]
     public async Task Delivers_complete_lifecycle_callback_content_in_order(string name)
     {
         var events = new List<string>();
@@ -244,6 +241,11 @@ public sealed class ExperimentalStreamTextLowMemoryBehaviorTests
             {
                 Model = ModelWithSteps(StreamingOnlyContractTests.TextParts()),
                 Prompt = "test",
+                OnStart = (_, _) =>
+                {
+                    events.Add("start");
+                    return Task.CompletedTask;
+                },
                 OnLanguageModelCallStart = (_, _) =>
                 {
                     events.Add("model-start");
@@ -273,7 +275,7 @@ public sealed class ExperimentalStreamTextLowMemoryBehaviorTests
         );
 
         Assert.Equal(new[] { "hello" }, await ToList(result.TextStream()));
-        Assert.Equal(new[] { "model-start", "model-end", "step-end", "end" }, events);
+        Assert.Equal(new[] { "start", "model-start", "model-end", "step-end", "end" }, events);
     }
 
     [Theory]

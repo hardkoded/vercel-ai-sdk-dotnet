@@ -255,21 +255,6 @@ internal sealed class OpenResponsesStream
 
         switch (type)
         {
-            case "response.created":
-                var created = OpenAIJson.Child(chunk, "response");
-                parts.Add(
-                    new ResponseMetadataStreamPart(
-                        OpenAIJson.String(created, "id"),
-                        OpenAIJson.String(created, "model"),
-                        created is { } createdResponse
-                        && createdResponse.TryGetProperty("created_at", out var createdAt)
-                        && createdAt.ValueKind == JsonValueKind.Number
-                        && createdAt.TryGetInt64(out var seconds)
-                            ? DateTimeOffset.FromUnixTimeMilliseconds(seconds * 1000)
-                            : null
-                    )
-                );
-                break;
             case "response.output_item.added" when itemType == "custom_tool_call":
                 var customCallId = OpenAIJson.String(item, "call_id") ?? string.Empty;
                 var customName = OpenAIJson.String(item, "name") ?? string.Empty;
@@ -409,6 +394,21 @@ internal sealed class OpenResponsesStream
                     _activeReasoningId = null;
                 }
 
+                break;
+            case "response.created":
+                var created = OpenAIJson.Child(chunk, "response");
+                if (created is not { } createdResponse)
+                {
+                    break;
+                }
+
+                parts.Add(
+                    new ResponseMetadataStreamPart(
+                        OpenAIJson.String(createdResponse, "id"),
+                        OpenAIJson.String(createdResponse, "model"),
+                        OpenAIJson.UnixSeconds(OpenAIJson.Unix(createdResponse, "created_at"))
+                    )
+                );
                 break;
             case "response.output_item.added" when itemType == "message":
                 parts.Add(new TextStartStreamPart(itemId));

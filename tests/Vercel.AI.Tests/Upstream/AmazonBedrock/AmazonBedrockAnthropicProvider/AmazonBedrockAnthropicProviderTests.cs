@@ -410,6 +410,40 @@ public sealed class AmazonBedrockAnthropicProviderTests : BedrockEndpointEnviron
         Assert.False(model.CreateInnerProvider().SupportsStrictTools);
     }
 
+    [Theory]
+    [InlineData("anthropic.claude-opus-5")]
+    [InlineData("us.anthropic.claude-opus-5")]
+    [InlineData("eu.anthropic.claude-opus-5")]
+    [InlineData("anthropic.claude-sonnet-5")]
+    [InlineData("us.anthropic.claude-sonnet-5")]
+    [InlineData("eu.anthropic.claude-sonnet-5")]
+    [InlineData("global.anthropic.claude-sonnet-5-5")]
+    [InlineData("global.anthropic.claude-haiku-5-5")]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/anthropic/amazon-bedrock-anthropic-provider.test.ts::amazon-bedrock-anthropic-provider::should enable native structured output and strict tools for %s",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "2cd0a97424762b59d9979b1bf2f55060bf443fb2"
+    )]
+    public void Should_enable_native_structured_output_and_strict_tools_for(string modelId)
+    {
+        var provider = BedrockProvider.Create(
+            new AmazonBedrockAnthropicOptions
+            {
+                Region = "us-east-1",
+                AccessKeyId = "test-key",
+                SecretAccessKey = "test-secret",
+            }
+        );
+        var model = Assert.IsType<AmazonBedrockAnthropicLanguageModel>(
+            provider.LanguageModel(modelId)
+        );
+
+        Assert.Equal(modelId, model.ModelId);
+        var inner = model.CreateInnerProvider();
+        Assert.True(inner.SupportsNativeStructuredOutput);
+        Assert.True(inner.SupportsStrictTools);
+    }
+
     [Fact]
     [UpstreamTest(
         "packages/amazon-bedrock/src/anthropic/amazon-bedrock-anthropic-provider.test.ts::amazon-bedrock-anthropic-provider::should map old tool versions to Bedrock-supported versions",

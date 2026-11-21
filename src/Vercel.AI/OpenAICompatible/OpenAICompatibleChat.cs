@@ -13,6 +13,11 @@ namespace Vercel.AI.OpenAICompatible;
 /// <summary>Shared OpenAI-compatible chat request and response helpers.</summary>
 public static class OpenAICompatibleChat
 {
+    private static readonly JsonSerializerOptions s_compactOptions = new()
+    {
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    };
+
     /// <summary>Provider id for a model kind, such as <c>groq.chat</c>.</summary>
     public static string Qualify(string? providerName, string kind)
     {
@@ -689,6 +694,23 @@ public static class OpenAICompatibleChat
         return null;
     }
 
+    /// <summary>
+    /// Returns the tool call arguments as JSON text: valid JSON is kept as it is and any other text is sent as a JSON string.
+    /// Maps to <c>serializeToolCallArguments</c>.
+    /// </summary>
+    internal static string SerializeToolCallArguments(string input)
+    {
+        try
+        {
+            SecureJson.Parse(input);
+            return input;
+        }
+        catch (JsonException)
+        {
+            return JsonSerializer.Serialize(input, s_compactOptions);
+        }
+    }
+
     private static JsonObject MapAssistant(AssistantModelMessage assistant, string metadataKey)
     {
         var text = assistant.Text ?? string.Empty;
@@ -706,7 +728,9 @@ public static class OpenAICompatibleChat
                     ["function"] = new JsonObject
                     {
                         ["name"] = call.ToolName,
-                        ["arguments"] = call.ArgumentsJson ?? string.Empty,
+                        ["arguments"] = SerializeToolCallArguments(
+                            call.ArgumentsJson ?? string.Empty
+                        ),
                     },
                 };
                 var signature = ReadThoughtSignature(call.ProviderMetadata, metadataKey);

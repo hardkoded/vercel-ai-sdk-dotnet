@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.OpenResponses;
@@ -97,16 +98,12 @@ internal static class OpenResponsesLanguageModelSupport
                 json["warnings"] = warnings;
                 break;
             case ResponseMetadataStreamPart metadata:
-                Set(json, "id", metadata.Id);
-                Set(
-                    json,
-                    "timestamp",
-                    metadata.Timestamp?.UtcDateTime.ToString(
-                        "yyyy-MM-dd'T'HH:mm:ss.fff'Z'",
-                        System.Globalization.CultureInfo.InvariantCulture
-                    )
+                json["id"] = metadata.Id;
+                json["modelId"] = metadata.ModelId;
+                json["timestamp"] = metadata.Timestamp?.UtcDateTime.ToString(
+                    "yyyy-MM-dd'T'HH:mm:ss.fff'Z'",
+                    CultureInfo.InvariantCulture
                 );
-                Set(json, "modelId", metadata.ModelId);
                 break;
             case TextStartStreamPart text:
                 Add(json, text.Id, null, text.ProviderMetadata);
