@@ -2350,6 +2350,8 @@ var result = await GenerateImage.GenerateImageAsync(new GenerateImageRequest
 });
 ```
 
+To build the model without a provider, pass an `XaiImageModelConfig` (provider id, base URL, a `Headers` function, and an `HttpClient`) to the `XaiImageModel` constructor. Like upstream, the model adds no headers of its own: it sends the config headers and the call headers.
+
 The catalog decides `MaxImagesPerCall` (3), `SupportsFileInputs`, and `SupportsMaskInputs`. For `grok-imagine-image`, `grok-imagine-image-pro`, and `grok-imagine-image-2.0` they are `true` and `false`. For another model id both are `null`. xAI does not support `Size`, so use `AspectRatio` (`1:1`, `16:9`, `9:16`, `4:3`, `3:4`, `3:2`, `2:3`, `2:1`, `1:2`, `19.5:9`, `9:19.5`, `20:9`, `9:20`, and `auto`). `Size`, `Seed`, and a mask each add an `unsupported` warning. A response with `respect_moderation: false` throws an `AiSdkException`, because xAI replaced the image with a placeholder.
 
 Pass xAI controls under the `xai` key of `ProviderOptions`. An invalid value throws `InvalidArgumentException` before any request.

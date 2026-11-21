@@ -12,18 +12,52 @@ using ProviderGeneratedImage = Vercel.AI.Provider.GeneratedImage;
 
 namespace Vercel.AI.Xai;
 
+/// <summary>Settings of <see cref="XaiImageModel"/>. Maps to <c>XaiImageModelConfig</c>.</summary>
+public sealed class XaiImageModelConfig
+{
+    /// <summary>Creates a config. <paramref name="headers"/> maps <c>headers</c>: the model adds no headers of its own.</summary>
+    public XaiImageModelConfig(
+        string provider,
+        string baseUrl,
+        Func<IReadOnlyDictionary<string, string?>> headers,
+        HttpClient httpClient
+    )
+    {
+        Provider = provider ?? throw new ArgumentNullException(nameof(provider));
+        BaseUrl = baseUrl ?? throw new ArgumentNullException(nameof(baseUrl));
+        Headers = headers ?? throw new ArgumentNullException(nameof(headers));
+        HttpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+    }
+
+    /// <summary>Provider id, for example <c>xai.image</c>.</summary>
+    public string Provider { get; }
+
+    /// <summary>API base URL.</summary>
+    public string BaseUrl { get; }
+
+    /// <summary>Resolves the request headers, including the credential.</summary>
+    public Func<IReadOnlyDictionary<string, string?>> Headers { get; }
+
+    /// <summary>Maps <c>fetch</c>: the HTTP client for API calls.</summary>
+    public HttpClient HttpClient { get; }
+
+    /// <summary>HTTP client that downloads URL-only images. Defaults to a client that does not follow redirects.</summary>
+    public HttpClient? DownloadHttpClient { get; set; }
+
+    /// <summary>Sets the response timestamp and defaults to UTC now. Maps to <c>_internal.currentDate</c>.</summary>
+    public Func<DateTime>? CurrentDate { get; set; }
+}
+
 /// <summary>xAI image model, over <c>/images/generations</c> and <c>/images/edits</c>. Maps to <c>XaiImageModel</c>.</summary>
 public sealed class XaiImageModel : IImageModel, IImageCaller
 {
-    private readonly XaiProvider _provider;
-    private readonly Func<DateTime>? _clock;
+    private readonly XaiImageModelConfig _config;
 
-    /// <summary>Creates a model. <paramref name="clock"/> sets the response timestamp and defaults to UTC now. Maps to <c>_internal.currentDate</c>.</summary>
-    public XaiImageModel(XaiProvider provider, string modelId, Func<DateTime>? clock = null)
+    /// <summary>Creates a model.</summary>
+    public XaiImageModel(string modelId, XaiImageModelConfig config)
     {
-        _provider = provider ?? throw new ArgumentNullException(nameof(provider));
+        _config = config ?? throw new ArgumentNullException(nameof(config));
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
-        _clock = clock;
         MaxImagesPerCall = XaiModelCatalog
             .GetXaiImageModelEntry(modelId)
             .Capabilities.MaxImagesPerCall;
@@ -33,7 +67,7 @@ public sealed class XaiImageModel : IImageModel, IImageCaller
     public string SpecificationVersion => "v4";
 
     /// <inheritdoc cref="IImageModel.Provider" />
-    public string Provider => "xai.image";
+    public string Provider => _config.Provider;
 
     /// <inheritdoc cref="IImageModel.ModelId" />
     public string ModelId { get; }
@@ -174,15 +208,13 @@ public sealed class XaiImageModel : IImageModel, IImageCaller
             body["images"] = new JsonArray(imageUrls.Select(ImageUrl).ToArray<JsonNode?>());
         }
 
-        var timestamp = _clock?.Invoke() ?? DateTime.UtcNow;
-        var headers = _provider.CreateHeaders(
-            call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value)
-        );
+        var timestamp = _config.CurrentDate?.Invoke() ?? DateTime.UtcNow;
+        var headers = ProviderExchange.Merge(_config.Headers(), call.Headers);
         var response = await ProviderExchange
             .SendAsync(
-                _provider.SharedHttpClient,
+                _config.HttpClient,
                 HttpMethod.Post,
-                ApiKeys.Combine(_provider.Options.BaseUrl, endpoint),
+                ApiKeys.Combine(_config.BaseUrl, endpoint),
                 ProviderExchange.Json(body.ToJsonString()),
                 headers,
                 cancellationToken,
@@ -307,13 +339,13 @@ public sealed class XaiImageModel : IImageModel, IImageCaller
         // The URL is a generated-image URL from the provider response; validate it.
         var image = await ProviderExchange
             .GetResponseUrlAsync(
-                _provider.SharedHttpClient,
+                _config.HttpClient,
                 url,
-                _provider.Options.BaseUrl,
+                _config.BaseUrl,
                 DownloadUrls.ValidateDownloadUrl,
                 null,
                 cancellationToken,
-                ProviderExchange.DownloadClient(_provider.Options),
+                ProviderExchange.DownloadClient(_config.DownloadHttpClient),
                 ProviderExchange.UserAgentOnly(headers)
             )
             .ConfigureAwait(false);
