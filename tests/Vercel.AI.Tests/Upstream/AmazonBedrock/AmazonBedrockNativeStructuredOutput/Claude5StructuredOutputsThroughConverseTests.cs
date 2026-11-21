@@ -45,7 +45,6 @@ public sealed class Claude5StructuredOutputsThroughConverseTests
             { "doStream", "required", null, "lookup,unused,json" },
         };
 
-
     public static TheoryData<string, string> FallbackSchemas =>
         new()
         {
@@ -166,8 +165,13 @@ public sealed class Claude5StructuredOutputsThroughConverseTests
 
     private static string ManyOptionalProperties()
     {
-        var properties = string.Join(",", Enumerable.Range(0, 11).Select(i => $"\"f{i}\":{{\"type\":\"string\"}}"));
-        return "{\"type\":\"object\",\"properties\":{" + properties + "},\"additionalProperties\":false}";
+        var properties = string.Join(
+            ",",
+            Enumerable.Range(0, 11).Select(i => $"\"f{i}\":{{\"type\":\"string\"}}")
+        );
+        return "{\"type\":\"object\",\"properties\":{"
+            + properties
+            + "},\"additionalProperties\":false}";
     }
 
     private static JsonElement Json(string json)

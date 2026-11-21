@@ -85,9 +85,23 @@ public sealed class PrepareToolsTests
         using var looseSchema = JsonDocument.Parse("{\"type\":\"object\",\"properties\":{}}");
         var tools = new[]
         {
-            new LanguageModelTool("strictTool", "A strict tool", strictSchema.RootElement.Clone(), true),
-            new LanguageModelTool("nonStrictTool", "A non-strict tool", looseSchema.RootElement.Clone(), false),
-            new LanguageModelTool("defaultTool", "A tool without strict setting", looseSchema.RootElement.Clone()),
+            new LanguageModelTool(
+                "strictTool",
+                "A strict tool",
+                strictSchema.RootElement.Clone(),
+                true
+            ),
+            new LanguageModelTool(
+                "nonStrictTool",
+                "A non-strict tool",
+                looseSchema.RootElement.Clone(),
+                false
+            ),
+            new LanguageModelTool(
+                "defaultTool",
+                "A tool without strict setting",
+                looseSchema.RootElement.Clone()
+            ),
         };
 
         var config = AmazonBedrockTools.Prepare(
@@ -100,6 +114,8 @@ public sealed class PrepareToolsTests
         var specs = config["tools"]!.AsArray();
         Assert.True(specs[0]!["toolSpec"]!["strict"]!.GetValue<bool>());
         Assert.False(specs[1]!["toolSpec"]!["strict"]!.GetValue<bool>());
-        Assert.False(((System.Text.Json.Nodes.JsonObject)specs[2]!["toolSpec"]!).ContainsKey("strict"));
+        Assert.False(
+            ((System.Text.Json.Nodes.JsonObject)specs[2]!["toolSpec"]!).ContainsKey("strict")
+        );
     }
 }
