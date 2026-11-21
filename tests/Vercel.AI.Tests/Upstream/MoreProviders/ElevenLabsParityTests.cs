@@ -343,7 +343,8 @@ public sealed class ElevenLabsParityTests
     [UpstreamTest(
         Transcription
             + " > transcription::should send source_url instead of a file when sourceUrl is set",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "8b2fa5ba00078d0f11c40de92d561e734db8d22c"
     )]
     public async Task Transcription_sends_source_url_instead_of_a_file_when_sourceUrl_is_set()
     {
@@ -380,7 +381,8 @@ public sealed class ElevenLabsParityTests
     [Fact]
     [UpstreamTest(
         Transcription + " > transcription::should warn that audio is ignored when sourceUrl is set",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "8b2fa5ba00078d0f11c40de92d561e734db8d22c"
     )]
     public async Task Transcription_warns_that_audio_is_ignored_when_sourceUrl_is_set()
     {
