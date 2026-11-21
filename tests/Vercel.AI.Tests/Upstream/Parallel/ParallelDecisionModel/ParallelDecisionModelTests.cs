@@ -19,7 +19,7 @@ namespace Vercel.AI.Tests.Upstream.Parallel.ParallelDecisionModel;
 public sealed class ParallelDecisionModelTests
 {
     private const string Prefix = "packages/parallel/src/parallel-decision-model.test.ts::";
-    private const string UpstreamCommit = "6a648d4";
+    private const string UpstreamCommit = "6a648d45fffeadc101797685fb76e8b0c19e639a";
 
     [Fact]
     [UpstreamTest(

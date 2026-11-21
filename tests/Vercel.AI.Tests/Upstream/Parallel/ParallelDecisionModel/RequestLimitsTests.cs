@@ -65,7 +65,7 @@ public sealed class RequestLimitsTests
     [UpstreamTest(
         UpstreamId + "rejects invalid questions before I/O: %j",
         Coverage = UpstreamCoverage.Covered,
-        Commit = "6a648d4"
+        Commit = "6a648d45fffeadc101797685fb76e8b0c19e639a"
     )]
     public async Task Rejects_invalid_questions_before_IO(
         Dictionary<string, DecisionQuestion> questions
