@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Reflection;
+using System.Text.Json;
+using Vercel.AI.Gateway;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using BatchApi = Vercel.AI.Operations.Batch;
@@ -19,6 +21,34 @@ public sealed class BatchTypesTests
     private const string Prefix = "packages/ai/src/batch/batch-types.test-d.ts::";
 
     private sealed record TextOutput(string Text);
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "exposes typed Gateway async-job metadata",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
+    )]
+    public void Exposes_typed_Gateway_async_job_metadata()
+    {
+        Assert.Equal(typeof(string), PropertyType<GatewayAsyncJobMetadata>("WebhookSigningSecret"));
+        Assert.Equal(
+            typeof(GatewayAsyncJobMetadata),
+            PropertyType<GatewayProviderMetadata>("AsyncJob")
+        );
+
+        var providerMetadata = JsonDocument
+            .Parse(
+                "{\"gateway\":{\"asyncJob\":{\"jobId\":\"job_123\",\"status\":\"queued\",\"webhookSigningSecret\":\"whsec_123\"},\"extra\":1}}"
+            )
+            .RootElement;
+        var gateway = GatewayProviderMetadata.From(providerMetadata);
+
+        Assert.Equal("job_123", gateway!.AsyncJob!.JobId);
+        Assert.Equal("queued", gateway.AsyncJob.Status);
+        Assert.Equal("whsec_123", gateway.AsyncJob.WebhookSigningSecret);
+        Assert.True(gateway.AdditionalProperties.ContainsKey("extra"));
+        Assert.Null(GatewayProviderMetadata.From(JsonDocument.Parse("{}").RootElement));
+    }
 
     [Fact]
     [UpstreamTest(
