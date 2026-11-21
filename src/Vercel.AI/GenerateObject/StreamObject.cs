@@ -765,6 +765,7 @@ internal static class StreamObject
                 ?? ProviderUtils.JsonValues.GenerateId("aiobj-");
             var jsonSchema = outputStrategy.JsonSchema;
 
+            var maxRetries = OperationRetry.ResolveMaxRetries(options.MaxRetries);
             if (options.OnStart != null)
             {
                 await Generation
@@ -777,25 +778,30 @@ internal static class StreamObject
                                     model.ModelId,
                                     options.Prompt,
                                     options.Messages
-                                ),
-                                _cancellationToken
-                            ),
-                        _cancellationToken
-                    )
-                    .ConfigureAwait(false);
-            }
-
-            if (options.OnStepStart != null)
-            {
-                await Generation
-                    .NotifyAsync(
-                        () =>
-                            options.OnStepStart(
-                                new GenerateObjectStepStartEvent(
-                                    callId,
-                                    model.Provider,
-                                    model.ModelId
-                                ),
+                                )
+                                {
+                                    OperationId = "ai.streamObject",
+                                    System = options.Instructions
+                                        ?? (
+                                            options.System != null
+                                                ? Instructions.From(options.System)
+                                                : null
+                                        ),
+                                    MaxOutputTokens = options.MaxOutputTokens,
+                                    Temperature = options.Temperature,
+                                    TopP = options.TopP,
+                                    TopK = options.TopK,
+                                    PresencePenalty = options.PresencePenalty,
+                                    FrequencyPenalty = options.FrequencyPenalty,
+                                    Seed = options.Seed,
+                                    MaxRetries = maxRetries,
+                                    Headers = options.Headers,
+                                    ProviderOptions = options.ProviderOptions,
+                                    Output = OutputName(options.Output),
+                                    Schema = jsonSchema,
+                                    SchemaName = options.SchemaName,
+                                    SchemaDescription = options.SchemaDescription,
+                                },
                                 _cancellationToken
                             ),
                         _cancellationToken
@@ -825,6 +831,24 @@ internal static class StreamObject
                 ProviderOptions = options.ProviderOptions,
                 CallId = callId,
                 NowMs = options.NowMs,
+                // Maps to onStepStart, which runs once the prompt is converted and before doStream.
+                OnStart =
+                    options.OnStepStart == null
+                        ? null
+                        : (start, token) =>
+                            options.OnStepStart(
+                                new GenerateObjectStepStartEvent(
+                                    callId,
+                                    model.Provider,
+                                    model.ModelId
+                                )
+                                {
+                                    ProviderOptions = options.ProviderOptions,
+                                    Headers = options.Headers,
+                                    PromptMessages = start.PromptMessages,
+                                },
+                                token
+                            ),
             };
 
             var now = options.NowMs ?? Generation.DefaultNowMs;
@@ -847,6 +871,15 @@ internal static class StreamObject
                 await call.Disposal.DisposeAsync().ConfigureAwait(false);
             }
         }
+
+        private static string OutputName(StreamObjectOutput output) =>
+            output switch
+            {
+                StreamObjectOutput.Array => "array",
+                StreamObjectOutput.Enum => "enum",
+                StreamObjectOutput.NoSchema => "no-schema",
+                _ => "object",
+            };
 
         // The model is asked for JSON with the schema of the strategy. Only the response format of the call is read.
         private OutputSpec ResponseFormat(JsonElement? jsonSchema)

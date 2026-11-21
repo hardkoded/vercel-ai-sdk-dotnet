@@ -137,6 +137,9 @@ public sealed class GenerateObjectOptions<T>
 
     /// <summary>Called after the object is parsed and validated.</summary>
     public Func<GenerateObjectEndEvent<T>, CancellationToken, Task>? OnFinish { get; set; }
+
+    /// <summary>Generates the id of the call. Tests replace it. Maps to <c>_internal.generateId</c>.</summary>
+    internal Func<string>? GenerateId { get; set; }
 }
 
 /// <summary>Input passed to <see cref="GenerateObjectOptions{T}.RepairText"/>.</summary>
@@ -196,6 +199,54 @@ public sealed class GenerateObjectStartEvent : GenerateObjectEvent
 
     /// <summary>The prompt messages, when supplied.</summary>
     public IReadOnlyList<ModelMessage>? Messages { get; }
+
+    /// <summary>Identifies the operation type, <c>ai.generateObject</c> or <c>ai.streamObject</c>. Maps to <c>operationId</c>.</summary>
+    public string OperationId { get; init; } = "ai.generateObject";
+
+    /// <summary>The system message(s) provided to the model. Maps to <c>system</c>.</summary>
+    public Instructions? System { get; init; }
+
+    /// <summary>Maximum number of tokens to generate. Maps to <c>maxOutputTokens</c>.</summary>
+    public int? MaxOutputTokens { get; init; }
+
+    /// <summary>Sampling temperature. Maps to <c>temperature</c>.</summary>
+    public double? Temperature { get; init; }
+
+    /// <summary>Top-p sampling parameter. Maps to <c>topP</c>.</summary>
+    public double? TopP { get; init; }
+
+    /// <summary>Top-k sampling parameter. Maps to <c>topK</c>.</summary>
+    public int? TopK { get; init; }
+
+    /// <summary>Presence penalty. Maps to <c>presencePenalty</c>.</summary>
+    public double? PresencePenalty { get; init; }
+
+    /// <summary>Frequency penalty. Maps to <c>frequencyPenalty</c>.</summary>
+    public double? FrequencyPenalty { get; init; }
+
+    /// <summary>Random seed. Maps to <c>seed</c>.</summary>
+    public int? Seed { get; init; }
+
+    /// <summary>Maximum number of retries for failed requests. Maps to <c>maxRetries</c>.</summary>
+    public int MaxRetries { get; init; }
+
+    /// <summary>Additional HTTP headers sent with the request. Maps to <c>headers</c>.</summary>
+    public IReadOnlyDictionary<string, string?>? Headers { get; init; }
+
+    /// <summary>Additional provider-specific options. Maps to <c>providerOptions</c>.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; init; }
+
+    /// <summary>The output strategy type: <c>object</c>, <c>array</c>, <c>enum</c> or <c>no-schema</c>. Maps to <c>output</c>.</summary>
+    public string Output { get; init; } = "object";
+
+    /// <summary>The JSON Schema used for object generation, if any. Maps to <c>schema</c>.</summary>
+    public JsonElement? Schema { get; init; }
+
+    /// <summary>Optional name of the schema. Maps to <c>schemaName</c>.</summary>
+    public string? SchemaName { get; init; }
+
+    /// <summary>Optional description of the schema. Maps to <c>schemaDescription</c>.</summary>
+    public string? SchemaDescription { get; init; }
 }
 
 /// <summary>Event sent immediately before the generate-object model call.</summary>
@@ -206,6 +257,15 @@ public sealed class GenerateObjectStepStartEvent : GenerateObjectEvent
 
     /// <summary>The only step number made by generateObject.</summary>
     public int StepNumber => 0;
+
+    /// <summary>Additional provider-specific options. Maps to <c>providerOptions</c>.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; init; }
+
+    /// <summary>Additional HTTP headers sent with the request. Maps to <c>headers</c>.</summary>
+    public IReadOnlyDictionary<string, string?>? Headers { get; init; }
+
+    /// <summary>The prompt messages in provider format. Maps to <c>promptMessages</c>.</summary>
+    public IReadOnlyList<ModelMessage>? PromptMessages { get; init; }
 }
 
 /// <summary>The raw result of the one model step made by <c>generateObject</c>.</summary>

@@ -157,6 +157,17 @@ public sealed class AiClient : IAiClient
         );
     }
 
+    private static JsonElement? ParseSchema(string schema)
+    {
+        if (string.IsNullOrEmpty(schema))
+        {
+            return null;
+        }
+
+        using var document = JsonDocument.Parse(schema);
+        return document.RootElement.Clone();
+    }
+
     /// <inheritdoc />
     public async Task<GenerateObjectResult<T>> GenerateObjectAsync<T>(
         GenerateObjectOptions<T> options,
@@ -181,7 +192,7 @@ public sealed class AiClient : IAiClient
         );
 
         var model = ResolveLanguage(options.Model, options.ModelId);
-        var callId = ProviderUtils.JsonValues.GenerateId("aiobj-");
+        var callId = options.GenerateId?.Invoke() ?? ProviderUtils.JsonValues.GenerateId("aiobj-");
         if (options.OnStart != null)
         {
             await NotifyCallbackAsync(
@@ -193,20 +204,32 @@ public sealed class AiClient : IAiClient
                                 model.ModelId,
                                 options.Prompt,
                                 options.Messages
-                            ),
-                            cancellationToken
-                        ),
-                    cancellationToken
-                )
-                .ConfigureAwait(false);
-        }
-
-        if (options.OnStepStart != null)
-        {
-            await NotifyCallbackAsync(
-                    () =>
-                        options.OnStepStart(
-                            new GenerateObjectStepStartEvent(callId, model.Provider, model.ModelId),
+                            )
+                            {
+                                OperationId = "ai.generateObject",
+                                System = options.Instructions
+                                    ?? (
+                                        options.System != null
+                                            ? Vercel.AI.Prompt.Instructions.From(options.System)
+                                            : null
+                                    ),
+                                MaxOutputTokens = options.MaxOutputTokens,
+                                Temperature = options.Temperature,
+                                TopP = options.TopP,
+                                TopK = options.TopK,
+                                PresencePenalty = options.PresencePenalty,
+                                FrequencyPenalty = options.FrequencyPenalty,
+                                Seed = options.Seed,
+                                MaxRetries = Vercel.AI.Operations.OperationRetry.ResolveMaxRetries(
+                                    options.MaxRetries
+                                ),
+                                Headers = options.Headers,
+                                ProviderOptions = options.ProviderOptions,
+                                Output = "object",
+                                Schema = ParseSchema(options.Schema),
+                                SchemaName = options.SchemaName,
+                                SchemaDescription = options.SchemaDescription,
+                            },
                             cancellationToken
                         ),
                     cancellationToken
@@ -262,6 +285,33 @@ public sealed class AiClient : IAiClient
                         ),
                     token
                 );
+        }
+
+        if (options.OnStepStart != null)
+        {
+            var promptMessages = await Vercel
+                .AI.Prompt.LanguageModelPrompts.ConvertToLanguageModelPromptAsync(
+                    Generation.BuildPrompt(generateOptions),
+                    model.SupportedUrls,
+                    null,
+                    cancellationToken,
+                    model.Provider.Split('.')[0]
+                )
+                .ConfigureAwait(false);
+            await NotifyCallbackAsync(
+                    () =>
+                        options.OnStepStart(
+                            new GenerateObjectStepStartEvent(callId, model.Provider, model.ModelId)
+                            {
+                                ProviderOptions = options.ProviderOptions,
+                                Headers = options.Headers,
+                                PromptMessages = promptMessages,
+                            },
+                            cancellationToken
+                        ),
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
         }
 
         var generated = await Generation
