@@ -76,6 +76,11 @@ public sealed class GroqProvider : OpenAICompatibleProvider
         }
         options.SupportsStructuredOutputs = true;
         options.UsesJsonResponseToolWithTools = true;
+        options.TransformChatRequest = (_, call, body, _) =>
+        {
+            body["messages"] = ConvertToGroqChatMessages.Convert(call.Prompt);
+            return body;
+        };
         options.TransformRequestBody = OpenAICompatibleTransforms.Groq;
         return options;
     }
