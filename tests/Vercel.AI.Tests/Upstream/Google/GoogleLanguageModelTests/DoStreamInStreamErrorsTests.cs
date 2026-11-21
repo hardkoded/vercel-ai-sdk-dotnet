@@ -12,18 +12,27 @@ namespace Vercel.AI.Tests.GoogleLanguageModelTests;
 public sealed class DoStreamInStreamErrorsTests
 {
     [Theory]
-    [InlineData(false, 503, "UNAVAILABLE", true)]
-    [InlineData(true, 503, "UNAVAILABLE", true)]
-    [InlineData(false, 400, "INVALID_ARGUMENT", false)]
-    [InlineData(false, null, "UNKNOWN", false)]
+    [InlineData(false, 503, "UNAVAILABLE", null, true)]
+    [InlineData(true, 503, "UNAVAILABLE", null, true)]
+    [InlineData(false, 400, "INVALID_ARGUMENT", null, false)]
+    [InlineData(false, null, "CANCELLED", 499, false)]
+    [InlineData(false, null, "ABORTED", 409, true)]
+    [InlineData(false, null, "UNAVAILABLE", 503, true)]
+    [InlineData(true, null, "RESOURCE_EXHAUSTED", 429, true)]
+    [InlineData(false, null, "DEADLINE_EXCEEDED", 504, true)]
+    [InlineData(false, null, "PERMISSION_DENIED", 403, false)]
+    [InlineData(false, null, "UNKNOWN", 500, true)]
+    [InlineData(false, null, "FUTURE_STATUS", null, false)]
+    [InlineData(false, 400, "UNAVAILABLE", null, false)]
     [UpstreamTest(
-        "packages/google/src/google-language-model.test.ts::doStream > in-stream errors::should surface $status and finish with error (partial text: $partialText)",
+        "packages/google/src/google-language-model.test.ts::doStream > in-stream errors::should surface $status with code $code and finish with error (partial text: $partialText)",
         Coverage = UpstreamCoverage.Covered
     )]
     public async Task Should_surface_status_and_finish_with_error_partial_text(
         bool partialText,
         int? code,
         string status,
+        int? statusCode,
         bool isRetryable
     )
     {
@@ -71,7 +80,7 @@ public sealed class DoStreamInStreamErrorsTests
         Assert.Equal("Provider error", providerError.Message);
         Assert.Equal(status, providerError.Type);
         Assert.Equal(code, providerError.Code);
-        Assert.Equal(code, providerError.StatusCode);
+        Assert.Equal(code ?? statusCode, providerError.StatusCode);
         Assert.Equal(isRetryable, providerError.IsRetryable);
         GoogleUpstream.JsonEqual((JsonElement)providerError.Data!, error);
 
