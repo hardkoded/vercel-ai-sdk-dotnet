@@ -422,6 +422,57 @@ public sealed class AiClient : IAiClient
     }
 
     /// <summary>
+    /// Generates text whose output is typed by <paramref name="output"/>. It replaces <see cref="GenerateTextOptions.Output"/>.
+    /// Maps to <c>generateText</c> with <c>output</c>.
+    /// </summary>
+    public async Task<GenerateTextResult<TOutput>> GenerateTextAsync<TOutput>(
+        GenerateTextOptions options,
+        OutputSpec<TOutput> output,
+        CancellationToken cancellationToken = default
+    )
+    {
+        if (options is null)
+        {
+            throw new ArgumentNullException(nameof(options));
+        }
+
+        if (output is null)
+        {
+            throw new ArgumentNullException(nameof(output));
+        }
+
+        var call = options.ShallowCopy();
+        call.Output = output;
+        var result = await GenerateTextAsync(call, cancellationToken).ConfigureAwait(false);
+        return new GenerateTextResult<TOutput>(result, output);
+    }
+
+    /// <summary>
+    /// Streams text whose output is typed by <paramref name="output"/>. It replaces <see cref="GenerateTextOptions.Output"/>.
+    /// Maps to <c>streamText</c> with <c>output</c>.
+    /// </summary>
+    public StreamTextResult<TOutput> StreamTextAsync<TOutput>(
+        StreamTextOptions options,
+        OutputSpec<TOutput> output,
+        CancellationToken cancellationToken = default
+    )
+    {
+        if (options is null)
+        {
+            throw new ArgumentNullException(nameof(options));
+        }
+
+        if (output is null)
+        {
+            throw new ArgumentNullException(nameof(output));
+        }
+
+        var call = (StreamTextOptions)options.ShallowCopy();
+        call.Output = output;
+        return new StreamTextResult<TOutput>(StreamTextAsync(call, cancellationToken), output);
+    }
+
+    /// <summary>
     /// Streams text with a single consumer, without replay or final content members. It accepts the same options as
     /// <see cref="StreamTextAsync"/>. Maps to <c>streamTextLowMemory</c>.
     /// </summary>
@@ -920,6 +971,26 @@ public static class Ai
     )
     {
         return DefaultClient.Value.GenerateTextAsync(options, cancellationToken);
+    }
+
+    /// <summary>Generates text whose output is typed by <paramref name="output"/>.</summary>
+    public static Task<GenerateTextResult<TOutput>> GenerateTextAsync<TOutput>(
+        GenerateTextOptions options,
+        OutputSpec<TOutput> output,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return DefaultClient.Value.GenerateTextAsync(options, output, cancellationToken);
+    }
+
+    /// <summary>Streams text whose output is typed by <paramref name="output"/>.</summary>
+    public static StreamTextResult<TOutput> StreamTextAsync<TOutput>(
+        StreamTextOptions options,
+        OutputSpec<TOutput> output,
+        CancellationToken cancellationToken = default
+    )
+    {
+        return DefaultClient.Value.StreamTextAsync(options, output, cancellationToken);
     }
 
     /// <summary>Streams text.</summary>

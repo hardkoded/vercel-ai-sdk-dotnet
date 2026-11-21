@@ -746,9 +746,12 @@ public abstract class OutputSpec
     internal virtual bool IsJson => Schema != null;
 
     // Maps to parseCompleteOutput. Invalid JSON throws JsonParseException, a mismatch throws TypeValidationException.
-    internal virtual JsonElement ParseCompleteOutput(string text)
+    internal virtual JsonElement ParseCompleteOutput(string? text)
     {
-        return ProviderUtils.JsonParsing.Parse(text, JsonNode.Parse(Schema!.Value.GetRawText()));
+        return ProviderUtils.JsonParsing.Parse(
+            text ?? "undefined",
+            JsonNode.Parse(Schema!.Value.GetRawText())
+        );
     }
 
     // Maps to parsePartialOutput. Null means undefined: there is no partial output yet.
@@ -782,9 +785,10 @@ public abstract class OutputSpec
         public static readonly TextOutput Instance = new();
 
         // Maps to Output.text parseCompleteOutput: the text as is, without a schema.
-        internal override JsonElement ParseCompleteOutput(string text)
+        internal override JsonElement ParseCompleteOutput(string? text)
         {
-            return JsonSerializer.SerializeToElement(text);
+            // An undefined text stays undefined, like the upstream cast test expects.
+            return text is null ? default : JsonSerializer.SerializeToElement(text);
         }
     }
 
@@ -857,9 +861,9 @@ public abstract class OutputSpec
 
         internal override string? SchemaDescription => Description;
 
-        internal override JsonElement ParseCompleteOutput(string text)
+        internal override JsonElement ParseCompleteOutput(string? text)
         {
-            var outer = ProviderUtils.JsonParsing.Parse(text);
+            var outer = ProviderUtils.JsonParsing.Parse(text ?? "undefined");
             if (
                 outer.ValueKind != JsonValueKind.Object
                 || !outer.TryGetProperty("elements", out var elements)
@@ -1055,9 +1059,9 @@ public abstract class OutputSpec
 
         internal override string? SchemaDescription => Description;
 
-        internal override JsonElement ParseCompleteOutput(string text)
+        internal override JsonElement ParseCompleteOutput(string? text)
         {
-            var outer = ProviderUtils.JsonParsing.Parse(text);
+            var outer = ProviderUtils.JsonParsing.Parse(text ?? "undefined");
             if (
                 outer.ValueKind != JsonValueKind.Object
                 || !outer.TryGetProperty("result", out var result)
@@ -1129,9 +1133,9 @@ public abstract class OutputSpec
 
         internal override bool IsJson => true;
 
-        internal override JsonElement ParseCompleteOutput(string text)
+        internal override JsonElement ParseCompleteOutput(string? text)
         {
-            return ProviderUtils.JsonParsing.Parse(text);
+            return ProviderUtils.JsonParsing.Parse(text ?? "undefined");
         }
     }
 }
@@ -1150,7 +1154,9 @@ public abstract class OutputSpec<TOutput> : OutputSpec
     // Maps to the typed result of parseCompleteOutput. A mismatch throws JsonException.
     internal TOutput? Deserialize(JsonElement output)
     {
-        return output.Deserialize<TOutput>(s_options);
+        return output.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined
+            ? default
+            : output.Deserialize<TOutput>(s_options);
     }
 }
 
@@ -1165,7 +1171,7 @@ internal sealed class TypedOutput<TOutput>(OutputSpec inner) : OutputSpec<TOutpu
 
     internal override bool IsJson => inner.IsJson;
 
-    internal override JsonElement ParseCompleteOutput(string text)
+    internal override JsonElement ParseCompleteOutput(string? text)
     {
         return inner.ParseCompleteOutput(text);
     }
@@ -1287,6 +1293,9 @@ public sealed class PrepareStepUpdate
     /// <summary>Replacement tool choice for this step.</summary>
     public ToolChoice? ToolChoice { get; set; }
 
+    /// <summary>Overrides the active tools for this step. See <see cref="GenerateTextOptions.ActiveTools"/>. Maps to <c>activeTools</c>.</summary>
+    public IReadOnlyList<string>? ActiveTools { get; set; }
+
     /// <summary>Overrides the order in which tools are sent to the provider for this step. See <see cref="GenerateTextOptions.ToolOrder"/>. Maps to <c>toolOrder</c>.</summary>
     public IReadOnlyList<string>? ToolOrder { get; set; }
 
@@ -1314,6 +1323,15 @@ public sealed class PrepareStepUpdate
 /// <summary>Options for <see cref="IAiClient.GenerateTextAsync"/>. Property names follow <c>generateText</c>.</summary>
 public class GenerateTextOptions
 {
+    /// <summary>The integrations resolved once at the start of a call, so retention and every callback agree.</summary>
+    internal TelemetryDispatcher? TelemetrySnapshot { get; set; }
+
+    /// <summary>Telemetry configuration. Maps to <c>telemetry</c>.</summary>
+    public TelemetryOptions? Telemetry { get; set; }
+
+    /// <summary>Deprecated alias of <see cref="Telemetry"/>. Maps to <c>experimental_telemetry</c>.</summary>
+    public TelemetryOptions? ExperimentalTelemetry { get; set; }
+
     /// <summary>The clock for step timing in milliseconds. Tests replace it. Maps to <c>_internal.now</c>.</summary>
     internal Func<double>? NowMs { get; set; }
 
@@ -1940,8 +1958,24 @@ public sealed class StreamAbortContext
 }
 
 /// <summary>Result of <c>generateText</c>.</summary>
-public sealed class GenerateTextResult
+public class GenerateTextResult
 {
+    // Copies a result. GenerateTextResult<TOutput> uses it to give the same result a typed output.
+    private protected GenerateTextResult(GenerateTextResult result)
+        : this(
+            result.Text,
+            result.ReasoningText,
+            result.Steps,
+            result.FinishReason,
+            result.Usage,
+            result.Output,
+            result.Sources,
+            result.ProviderMetadata
+        )
+    {
+        ResponseMessages = result.ResponseMessages;
+    }
+
     /// <summary>Creates a result.</summary>
     public GenerateTextResult(
         string text,
@@ -2096,6 +2130,31 @@ public sealed class GenerateTextResult
     /// </summary>
     public IReadOnlyList<ModelMessage> ResponseMessages { get; init; } =
         Array.Empty<ModelMessage>();
+}
+
+/// <summary>
+/// Result of <c>generateText</c> whose parsed output has the type of the <see cref="OutputSpec{TOutput}"/> of the call.
+/// Maps to <c>GenerateTextResult&lt;TOOLS, OUTPUT&gt;</c>.
+/// </summary>
+/// <typeparam name="TOutput">The type of the parsed output.</typeparam>
+public sealed class GenerateTextResult<TOutput> : GenerateTextResult
+{
+    private readonly Lazy<TOutput?> _output;
+
+    internal GenerateTextResult(GenerateTextResult result, OutputSpec<TOutput> spec)
+        : base(result)
+    {
+        // Deserialized once, so every read gives the same instance.
+        _output = new Lazy<TOutput?>(() =>
+            base.Output is { } json ? spec.Deserialize(json) : default
+        );
+    }
+
+    /// <summary>
+    /// The parsed output, or <see langword="default"/> when the call generated none, as <see cref="GenerateTextResult.Output"/>.
+    /// A mismatch with <typeparamref name="TOutput"/> throws <see cref="JsonException"/>. Maps to <c>output</c>.
+    /// </summary>
+    public new TOutput? Output => _output.Value;
 }
 
 /// <summary>A part of the <c>streamText</c> full stream.</summary>

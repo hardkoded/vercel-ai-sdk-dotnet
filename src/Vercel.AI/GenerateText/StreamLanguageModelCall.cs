@@ -849,35 +849,45 @@ internal static class LanguageModelCallStreaming
             };
 
             var content = BuildContent();
-            if (options.OnLanguageModelCallEnd != null)
+            var telemetryDispatcher = TelemetryDispatcher.Create(options);
+            if (
+                options.OnLanguageModelCallEnd != null
+                || telemetryDispatcher.OnLanguageModelCallEnd != null
+            )
             {
-                await Generation
-                    .NotifyAsync(
-                        () =>
-                            options.OnLanguageModelCallEnd(
-                                new LanguageModelCallEndEvent(
-                                    model.Provider,
-                                    _responseModelId,
-                                    chunk.FinishReason,
-                                    usage,
-                                    content,
-                                    _responseId,
-                                    chunk.ProviderMetadata,
-                                    TimeSpan.FromMilliseconds(responseTimeMs)
-                                )
-                                {
-                                    CallId = callId,
-                                    Request = RequestOrigin.GetRequestOrigin(request?.Url)
-                                        is { } origin
-                                        ? new LanguageModelStreamRequest { Url = origin }
-                                        : null,
-                                    Performance = performance,
-                                },
-                                cancellationToken
-                            ),
-                        cancellationToken
-                    )
-                    .ConfigureAwait(false);
+                var callEndEvent = new LanguageModelCallEndEvent(
+                    model.Provider,
+                    _responseModelId,
+                    chunk.FinishReason,
+                    usage,
+                    content,
+                    _responseId,
+                    chunk.ProviderMetadata,
+                    TimeSpan.FromMilliseconds(responseTimeMs)
+                )
+                {
+                    CallId = callId,
+                    Request = RequestOrigin.GetRequestOrigin(request?.Url) is { } origin
+                        ? new LanguageModelStreamRequest { Url = origin }
+                        : null,
+                    Performance = performance,
+                };
+                if (options.OnLanguageModelCallEnd != null)
+                {
+                    await Generation
+                        .NotifyAsync(
+                            () => options.OnLanguageModelCallEnd(callEndEvent, cancellationToken),
+                            cancellationToken
+                        )
+                        .ConfigureAwait(false);
+                }
+
+                if (telemetryDispatcher.OnLanguageModelCallEnd != null)
+                {
+                    await telemetryDispatcher
+                        .OnLanguageModelCallEnd(callEndEvent, cancellationToken)
+                        .ConfigureAwait(false);
+                }
             }
 
             var toolChoiceViolation = Generation.ToolChoiceViolation(

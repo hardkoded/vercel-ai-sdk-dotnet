@@ -114,13 +114,24 @@ public sealed class XaiProvider : OpenAICompatibleProvider, Operations.IBatchPro
     /// <summary>Creates an image model. The provider id is <c>xai.image</c>.</summary>
     public override IImageModel ImageModel(string modelId)
     {
-        return new XaiImageModel(this, modelId);
+        return Image(modelId);
     }
 
     /// <summary>Creates an image model. Same as <see cref="ImageModel(string)"/>.</summary>
     public XaiImageModel Image(string modelId)
     {
-        return new XaiImageModel(this, modelId);
+        return new XaiImageModel(
+            modelId,
+            new XaiImageModelConfig(
+                "xai.image",
+                Options.BaseUrl,
+                () => CreateHeaders(),
+                _httpClient
+            )
+            {
+                DownloadHttpClient = Options.DownloadHttpClient,
+            }
+        );
     }
 
     /// <summary>Creates the xAI text-to-speech model. xAI has one speech model, so the model id is empty. The provider id is <c>xai.speech</c>.</summary>

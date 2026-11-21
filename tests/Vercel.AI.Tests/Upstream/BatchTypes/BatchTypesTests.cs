@@ -155,14 +155,13 @@ public sealed class BatchTypesTests
     [Fact]
     [UpstreamTest(
         Prefix + "uses serializable response timestamps",
-        Coverage = UpstreamCoverage.Partial,
+        Coverage = UpstreamCoverage.Covered,
         Commit = Commit
     )]
     public void Uses_serializable_response_timestamps()
     {
-        // Upstream types the timestamp as string. The C# result uses DateTime?, which serializes to ISO 8601.
-        Assert.Equal(typeof(DateTime?), PropertyType<BatchTextGeneration>("Timestamp"));
-        Assert.Equal(typeof(DateTime?), PropertyType<BatchItemResult>("Timestamp"));
+        // Like upstream, the result timestamp is a string (ISO 8601), so the result serializes.
+        Assert.Equal(typeof(string), PropertyType<BatchItemResult>("Timestamp"));
     }
 
     [Fact]

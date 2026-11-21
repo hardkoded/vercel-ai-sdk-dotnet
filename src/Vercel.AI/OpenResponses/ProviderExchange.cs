@@ -336,6 +336,12 @@ internal static class ProviderExchange
         return options.DownloadHttpClient ?? NoRedirectClient.Value;
     }
 
+    /// <summary>Returns <paramref name="configured"/>, or a client that does not follow redirects.</summary>
+    public static HttpClient DownloadClient(HttpClient? configured)
+    {
+        return configured ?? NoRedirectClient.Value;
+    }
+
     private static bool IsRedirect(System.Net.HttpStatusCode status)
     {
         var code = (int)status;

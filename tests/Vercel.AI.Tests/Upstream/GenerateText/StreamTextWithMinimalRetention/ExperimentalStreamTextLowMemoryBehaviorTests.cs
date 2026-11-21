@@ -7,6 +7,7 @@ using System.Text.Json.Nodes;
 using Vercel.AI.AspNetCore;
 using Vercel.AI.Gateway;
 using Vercel.AI.Provider;
+using Vercel.AI.Tests.Upstream.Telemetry;
 using Vercel.AI.Util;
 using static Vercel.AI.Tests.Upstream.GenerateText.OptionsTimeoutSupport;
 
@@ -273,6 +274,47 @@ public sealed class ExperimentalStreamTextLowMemoryBehaviorTests
 
         Assert.Equal(new[] { "hello" }, await ToList(result.TextStream()));
         Assert.Equal(new[] { "model-start", "model-end", "step-end", "end" }, events);
+    }
+
+    [Theory]
+    [MemberData(nameof(Facades))]
+    [UpstreamTest(Prefix + "preserves per-call telemetry completion events and their content")]
+    public async Task Preserves_per_call_telemetry_completion_events_and_their_content(string name)
+    {
+        GenerateTextResult? end = null;
+        LanguageModelCallEndEvent? callEnd = null;
+        var result = Generate(
+            name,
+            new StreamTextOptions
+            {
+                Model = ModelWithSteps(StreamingOnlyContractTests.TextParts()),
+                Prompt = "test",
+                Telemetry = new TelemetryOptions
+                {
+                    Integrations =
+                    [
+                        new TestTelemetry
+                        {
+                            OnEnd = (e, _) =>
+                            {
+                                end = e;
+                                return Task.CompletedTask;
+                            },
+                            OnLanguageModelCallEnd = (e, _) =>
+                            {
+                                callEnd = e;
+                                return Task.CompletedTask;
+                            },
+                        },
+                    ],
+                },
+            }
+        );
+
+        await result.ConsumeStreamOf(CancellationToken.None);
+
+        Assert.Equal("hello", end?.Text);
+        Assert.Contains(callEnd!.Content, content => content is GeneratedText { Text: "hello" });
     }
 
     [Theory]
