@@ -545,7 +545,8 @@ public sealed class StreamTextTransformBaseTransformationTests
     [Fact]
     [UpstreamTest(
         Base + "it should send transformed chunks to onChunk",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Partial,
+        Note = "The model sends a response-metadata part (id-0, epoch) instead of upstream's mockId and frozen system time, because streamText ignores GenerateId and has no clock hook for the response timestamp (#1567). Tool-call input is compared as JSON."
     )]
     public async Task It_should_send_transformed_chunks_to_onChunk()
     {
