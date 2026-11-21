@@ -89,12 +89,10 @@ public sealed class CreateJsonResponseHandlerWithExperimentalBinaryFieldsTests
         Func<object?, object?>? validate = null,
         string[]? binaryFields = null
     ) =>
-        ResponseHandlers.CreateJsonResponseHandler(validate ?? ImagesAndNote, binaryFields ?? BinaryFields)(
-            response,
-            "test-url",
-            new { },
-            default
-        );
+        ResponseHandlers.CreateJsonResponseHandler(
+            validate ?? ImagesAndNote,
+            binaryFields ?? BinaryFields
+        )(response, "test-url", new { }, default);
 
     // The schema of upstream: images is an array of strings or bytes, note is an optional string.
     private static object? ImagesAndNote(object? value)
@@ -193,9 +191,7 @@ public sealed class CreateJsonResponseHandlerWithExperimentalBinaryFieldsTests
     {
         var body = "{\"images\":[\"" + Convert.ToBase64String(BytesOf(300_000)) + "\"],";
 
-        var error = await Assert.ThrowsAsync<ApiException>(() =>
-            Handle(Response(body, 16 * 1024))
-        );
+        var error = await Assert.ThrowsAsync<ApiException>(() => Handle(Response(body, 16 * 1024)));
 
         Assert.Equal("Invalid JSON response", error.Message);
         var cause = Assert.IsType<JsonParseException>(error.InnerException);
@@ -216,18 +212,13 @@ public sealed class CreateJsonResponseHandlerWithExperimentalBinaryFieldsTests
     {
         var body = Body([Convert.ToBase64String(BytesOf(100_000))]);
 
-        var error = await Assert.ThrowsAsync<ApiException>(() =>
-            Handle(
-                Response(body),
-                value =>
-                {
-                    var map = (Dictionary<string, object?>)value!;
-                    return ((List<object?>)map["images"]!).All(image => image is string)
-                        ? value
-                        : throw new FormatException("images must be strings");
-                }
-            )
-        );
+        var error = await Assert.ThrowsAsync<ApiException>(() => Handle(Response(body), value =>
+            {
+                var map = (Dictionary<string, object?>)value!;
+                return ((List<object?>)map["images"]!).All(image => image is string)
+                    ? value
+                    : throw new FormatException("images must be strings");
+            }));
 
         Assert.IsType<TypeValidationException>(error.InnerException);
     }
