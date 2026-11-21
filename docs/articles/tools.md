@@ -352,7 +352,7 @@ The model calls the tool with `{ url: string, offset?: number }` and receives on
 
 Errors are returned so the model can recover, for example by trying another URL. The model receives documents as text with the URL, title, and content type, followed by the content (`Tool.ToModelOutput`). Cancelling the `CancellationToken` aborts the request.
 
-The tool runs with `Tool.ExecuteWithOptions`, which receives the `ToolExecutionOptions` of the call: its `ToolCallId`, the `Messages` of the step, and the `AbortSignal`. `Tool.ToModelOutput` converts the JSON output of a tool into the result sent to the model.
+The tool runs with `Tool.ExecuteWithOptions`, which receives the `ToolExecutionOptions` of the call: its `ToolCallId`, the `Messages` of the step (the instructions are not part of them), and the `AbortSignal`. `Tool.ToModelOutput` converts the JSON output of a tool into the result sent to the model.
 
 ### Content handling
 

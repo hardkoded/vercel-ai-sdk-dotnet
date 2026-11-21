@@ -2777,7 +2777,7 @@ internal static class Generation
                                 options.Tools,
                                 options.ToolsContext,
                                 toolCallsCallId,
-                                stepInputMessages,
+                                stepInputMessages.Skip(instructionCount).ToArray(),
                                 cancellationToken,
                                 timing.Now,
                                 options.Timeout,
@@ -4095,7 +4095,8 @@ internal static class Generation
             );
         }
 
-        return OrderTools(tools, toolOrder);
+        // Upstream filters the active tools first, then prepareTools returns undefined for an empty set.
+        return tools.Count == 0 ? null : OrderTools(tools, toolOrder);
     }
 
     // Tools named in toolOrder come first, in that order. The rest follow, sorted by name. Maps to orderToolEntries.
