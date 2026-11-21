@@ -1081,9 +1081,23 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
             ModelId,
             tools,
             toolChoice,
-            out var toolWarnings
+            reasoningConfig?.BudgetTokens,
+            ReadBool(
+                ReadProviderOptions(options.ProviderOptions, "anthropic"),
+                "disableParallelToolUse"
+            ),
+            out var toolWarnings,
+            out var additionalTools
         );
         warnings.AddRange(toolWarnings);
+        if (additionalTools != null)
+        {
+            additional ??= new JsonObject();
+            foreach (var (key, value) in additionalTools)
+            {
+                additional[key] = value?.DeepClone();
+            }
+        }
 
         var thinkingType = reasoningConfig?.Type;
         var thinkingBudget = thinkingType == "enabled" ? reasoningConfig?.BudgetTokens : null;
@@ -1572,6 +1586,20 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
         )
         {
             return value;
+        }
+
+        return null;
+    }
+
+    private static bool? ReadBool(JsonElement? element, string name)
+    {
+        if (
+            element is { } value
+            && value.TryGetProperty(name, out var property)
+            && property.ValueKind is JsonValueKind.True or JsonValueKind.False
+        )
+        {
+            return property.GetBoolean();
         }
 
         return null;
