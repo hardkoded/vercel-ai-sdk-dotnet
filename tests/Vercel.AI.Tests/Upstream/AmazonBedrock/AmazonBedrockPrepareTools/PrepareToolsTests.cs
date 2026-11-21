@@ -71,4 +71,35 @@ public sealed class PrepareToolsTests
         Assert.True(config["tools"]![0]!["toolSpec"]!["strict"]!.GetValue<bool>());
         Assert.Empty(warnings);
     }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/amazon-bedrock-prepare-tools.test.ts::prepareTools > strict mode for function tools::should pass through strict mode for multiple tools with different strict settings",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void Should_pass_through_strict_mode_for_multiple_tools_with_different_strict_settings()
+    {
+        using var strictSchema = JsonDocument.Parse(
+            "{\"type\":\"object\",\"properties\":{},\"additionalProperties\":false}"
+        );
+        using var looseSchema = JsonDocument.Parse("{\"type\":\"object\",\"properties\":{}}");
+        var tools = new[]
+        {
+            new LanguageModelTool("strictTool", "A strict tool", strictSchema.RootElement.Clone(), true),
+            new LanguageModelTool("nonStrictTool", "A non-strict tool", looseSchema.RootElement.Clone(), false),
+            new LanguageModelTool("defaultTool", "A tool without strict setting", looseSchema.RootElement.Clone()),
+        };
+
+        var config = AmazonBedrockTools.Prepare(
+            "anthropic.claude-sonnet-4-5-20250929-v1:0",
+            tools,
+            null,
+            out _
+        );
+
+        var specs = config["tools"]!.AsArray();
+        Assert.True(specs[0]!["toolSpec"]!["strict"]!.GetValue<bool>());
+        Assert.False(specs[1]!["toolSpec"]!["strict"]!.GetValue<bool>());
+        Assert.False(((System.Text.Json.Nodes.JsonObject)specs[2]!["toolSpec"]!).ContainsKey("strict"));
+    }
 }
