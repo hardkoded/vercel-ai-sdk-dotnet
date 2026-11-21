@@ -19,6 +19,8 @@ Set `LogWarnings.Logger` back to `null` to use the default logger.
 
 ## Language model warnings
 
+`generateText`, `streamText`, `generateObject`, and `streamObject` log the warnings of each step with the provider and model id of that step. A step without warnings still reaches `LogWarnings.Log` with an empty list, which logs nothing. `LogWarnings.Observer` receives every call to `LogWarnings.Log`, including those with an empty list. Use it in tests, where upstream spies on `logWarnings`.
+
 A language model call returns its warnings in `LanguageModelGenerateResult.Warnings` as `CallWarning` values. `Type` is the category, such as `unsupported` or `compatibility`. For those two types, `Feature` names the setting or feature, for example `temperature`, and `Message` holds the details. `Feature` is `null` when a provider does not set it yet.
 
 ## UI message stream warnings
