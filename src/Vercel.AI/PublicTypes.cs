@@ -1154,7 +1154,9 @@ public abstract class OutputSpec<TOutput> : OutputSpec
     // Maps to the typed result of parseCompleteOutput. A mismatch throws JsonException.
     internal TOutput? Deserialize(JsonElement output)
     {
-        return output.Deserialize<TOutput>(s_options);
+        return output.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined
+            ? default
+            : output.Deserialize<TOutput>(s_options);
     }
 }
 
@@ -1956,8 +1958,24 @@ public sealed class StreamAbortContext
 }
 
 /// <summary>Result of <c>generateText</c>.</summary>
-public sealed class GenerateTextResult
+public class GenerateTextResult
 {
+    // Copies a result. GenerateTextResult<TOutput> uses it to give the same result a typed output.
+    private protected GenerateTextResult(GenerateTextResult result)
+        : this(
+            result.Text,
+            result.ReasoningText,
+            result.Steps,
+            result.FinishReason,
+            result.Usage,
+            result.Output,
+            result.Sources,
+            result.ProviderMetadata
+        )
+    {
+        ResponseMessages = result.ResponseMessages;
+    }
+
     /// <summary>Creates a result.</summary>
     public GenerateTextResult(
         string text,
@@ -2112,6 +2130,31 @@ public sealed class GenerateTextResult
     /// </summary>
     public IReadOnlyList<ModelMessage> ResponseMessages { get; init; } =
         Array.Empty<ModelMessage>();
+}
+
+/// <summary>
+/// Result of <c>generateText</c> whose parsed output has the type of the <see cref="OutputSpec{TOutput}"/> of the call.
+/// Maps to <c>GenerateTextResult&lt;TOOLS, OUTPUT&gt;</c>.
+/// </summary>
+/// <typeparam name="TOutput">The type of the parsed output.</typeparam>
+public sealed class GenerateTextResult<TOutput> : GenerateTextResult
+{
+    private readonly Lazy<TOutput?> _output;
+
+    internal GenerateTextResult(GenerateTextResult result, OutputSpec<TOutput> spec)
+        : base(result)
+    {
+        // Deserialized once, so every read gives the same instance.
+        _output = new Lazy<TOutput?>(() =>
+            base.Output is { } json ? spec.Deserialize(json) : default
+        );
+    }
+
+    /// <summary>
+    /// The parsed output, or <see langword="default"/> when the call generated none, as <see cref="GenerateTextResult.Output"/>.
+    /// A mismatch with <typeparamref name="TOutput"/> throws <see cref="JsonException"/>. Maps to <c>output</c>.
+    /// </summary>
+    public new TOutput? Output => _output.Value;
 }
 
 /// <summary>A part of the <c>streamText</c> full stream.</summary>
