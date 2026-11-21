@@ -227,7 +227,8 @@ public sealed class DoGenerateReasoningEffortTests
     [InlineData("mistral-large-4-0", "max", "high")]
     [UpstreamTest(
         LowMediumHighPrefix + "should map reasoning %s to reasoning_effort %s",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d55f3cfc456d1b7bc7db3a4b70fbf602ddc8647d"
     )]
     public async Task Should_map_reasoning_to_reasoning_effort(
         string modelId,
@@ -249,7 +250,8 @@ public sealed class DoGenerateReasoningEffortTests
     [InlineData("mistral-large-4-0")]
     [UpstreamTest(
         LowMediumHighPrefix + "preserves native medium reasoning effort without warnings",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d55f3cfc456d1b7bc7db3a4b70fbf602ddc8647d"
     )]
     public async Task Preserves_native_medium_reasoning_effort_without_warnings(string modelId)
     {
@@ -268,7 +270,8 @@ public sealed class DoGenerateReasoningEffortTests
     [InlineData("mistral-large-4-0")]
     [UpstreamTest(
         LowMediumHighPrefix + "should map reasoning none to reasoning_effort low with a warning",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d55f3cfc456d1b7bc7db3a4b70fbf602ddc8647d"
     )]
     public async Task Should_map_reasoning_none_to_reasoning_effort_low_with_a_warning(
         string modelId
