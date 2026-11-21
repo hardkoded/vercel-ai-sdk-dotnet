@@ -96,6 +96,18 @@ internal static class OpenResponsesLanguageModelSupport
 
                 json["warnings"] = warnings;
                 break;
+            case ResponseMetadataStreamPart metadata:
+                Set(json, "id", metadata.Id);
+                Set(
+                    json,
+                    "timestamp",
+                    metadata.Timestamp?.UtcDateTime.ToString(
+                        "yyyy-MM-dd'T'HH:mm:ss.fff'Z'",
+                        System.Globalization.CultureInfo.InvariantCulture
+                    )
+                );
+                Set(json, "modelId", metadata.ModelId);
+                break;
             case TextStartStreamPart text:
                 Add(json, text.Id, null, text.ProviderMetadata);
                 break;

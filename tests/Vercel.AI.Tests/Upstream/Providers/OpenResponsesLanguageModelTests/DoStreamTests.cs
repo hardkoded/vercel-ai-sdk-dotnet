@@ -142,6 +142,94 @@ public sealed class DoStreamTests
 
     [Fact]
     [UpstreamTest(
+        Prefix + "should forward server response metadata from the response.created event",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_forward_server_response_metadata_from_the_response_created_event()
+    {
+        var capture = StreamResponse(
+            """{"type":"response.created","sequence_number":0,"response":{"id":"resp_123","object":"response","created_at":1750000000,"status":"in_progress","model":"server-reported-model-id","output":[]}}""",
+            """{"type":"response.output_item.added","sequence_number":1,"output_index":0,"item":{"id":"msg_1","type":"message","status":"in_progress","role":"assistant","content":[]}}""",
+            """{"type":"response.output_text.delta","sequence_number":2,"item_id":"msg_1","output_index":0,"content_index":0,"delta":"Hello"}"""
+        );
+
+        var parts = await Collect(Model(capture), UpstreamChat.Prompt());
+
+        JsonAssert.Equal(
+            ToJson(parts.Take(2)),
+            """
+            [
+              {"type":"stream-start","warnings":[]},
+              {"type":"response-metadata","id":"resp_123","timestamp":"2025-06-15T15:06:40.000Z","modelId":"server-reported-model-id"}
+            ]
+            """
+        );
+    }
+
+    [Theory]
+    [InlineData("the custom tool input done event", "<svg />", "")]
+    [InlineData("the completed custom tool item", null, "<svg />")]
+    [UpstreamTest(
+        Prefix + "should use complete custom tool input from $source when deltas are omitted",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_use_complete_custom_tool_input_from_source_when_deltas_are_omitted(
+        string source,
+        string? doneInput,
+        string completedItemInput
+    )
+    {
+        Assert.NotEmpty(source);
+        var events = new List<string>
+        {
+            """{"type":"response.output_item.added","sequence_number":0,"output_index":0,"item":{"id":"ct_1","type":"custom_tool_call","status":"in_progress","call_id":"call_1","name":"write_svg","input":""}}""",
+        };
+        if (doneInput != null)
+        {
+            events.Add(
+                $$"""{"type":"response.custom_tool_call_input.done","sequence_number":1,"item_id":"ct_1","output_index":0,"input":"{{doneInput}}"}"""
+            );
+        }
+
+        events.Add(
+            $$$"""{"type":"response.output_item.done","sequence_number":2,"output_index":0,"item":{"id":"ct_1","type":"custom_tool_call","status":"completed","call_id":"call_1","name":"write_svg","input":"{{{completedItemInput}}}"}}"""
+        );
+
+        var parts = await Collect(Model(StreamResponse(events.ToArray())), UpstreamChat.Prompt());
+
+        Assert.Empty(parts.OfType<ToolInputDeltaStreamPart>());
+        var toolCall = Assert.Single(parts.OfType<ToolCallStreamPart>());
+        Assert.Equal("call_1", toolCall.ToolCallId);
+        Assert.Equal("write_svg", toolCall.ToolName);
+        JsonAssert.Equal(
+            ToJson([toolCall]),
+            """[{"type":"tool-call","toolCallId":"call_1","toolName":"write_svg","input":"\"<svg />\"","providerMetadata":{"lmstudio":{"itemId":"ct_1"}}}]"""
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix
+            + "should use complete function arguments from the completed item when argument events are omitted",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_use_complete_function_arguments_from_the_completed_item_when_argument_events_are_omitted()
+    {
+        var capture = StreamResponse(
+            """{"type":"response.output_item.added","sequence_number":0,"output_index":0,"item":{"id":"fc_1","type":"function_call","status":"in_progress","call_id":"call_1","name":"write_svg","arguments":""}}""",
+            """{"type":"response.output_item.done","sequence_number":1,"output_index":0,"item":{"id":"fc_1","type":"function_call","status":"completed","call_id":"call_1","name":"write_svg","arguments":"{\"path\":\"icon.svg\"}"}}"""
+        );
+
+        var parts = await Collect(Model(capture), UpstreamChat.Prompt());
+
+        JsonAssert.Equal(
+            ToJson(parts.OfType<ToolCallStreamPart>()),
+            """[{"type":"tool-call","toolCallId":"call_1","toolName":"write_svg","input":"{\"path\":\"icon.svg\"}","providerMetadata":{"lmstudio":{"itemId":"fc_1"}}}]"""
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
         Prefix + "should decode registered extension events and completed items",
         Coverage = UpstreamCoverage.Covered
     )]
