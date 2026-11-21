@@ -38,7 +38,8 @@ public sealed class NamedToolChoiceTests
     [InlineData("anthropic.claude-3-haiku-20240307-v1:0")]
     [UpstreamTest(
         "packages/amazon-bedrock/src/amazon-bedrock-prepare-tools.test.ts::prepareTools > tool choice > named tool choice::should send every function tool and disable parallel tool use on %s",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "62a4dcd641895b3aca4698015c0378b2bd558c4e"
     )]
     public void Should_send_every_function_tool_and_disable_parallel_tool_use_on(string modelId)
     {
@@ -64,7 +65,8 @@ public sealed class NamedToolChoiceTests
     [Fact]
     [UpstreamTest(
         "packages/amazon-bedrock/src/amazon-bedrock-prepare-tools.test.ts::prepareTools > tool choice > named tool choice::should send every function tool for a declared Anthropic application inference profile",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "62a4dcd641895b3aca4698015c0378b2bd558c4e"
     )]
     public void Should_send_every_function_tool_for_a_declared_Anthropic_application_inference_profile()
     {
@@ -91,7 +93,8 @@ public sealed class NamedToolChoiceTests
     [Fact]
     [UpstreamTest(
         "packages/amazon-bedrock/src/amazon-bedrock-prepare-tools.test.ts::prepareTools > tool choice > named tool choice::should allow parallel tool calls when disableParallelToolUse is false",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "62a4dcd641895b3aca4698015c0378b2bd558c4e"
     )]
     public void Should_allow_parallel_tool_calls_when_disableParallelToolUse_is_false()
     {
@@ -113,7 +116,8 @@ public sealed class NamedToolChoiceTests
     [Fact]
     [UpstreamTest(
         "packages/amazon-bedrock/src/amazon-bedrock-prepare-tools.test.ts::prepareTools > tool choice > named tool choice::should send every function tool when parallel tool use is disabled",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "62a4dcd641895b3aca4698015c0378b2bd558c4e"
     )]
     public void Should_send_every_function_tool_when_parallel_tool_use_is_disabled()
     {
@@ -143,7 +147,8 @@ public sealed class NamedToolChoiceTests
     [InlineData(CustomProfile)]
     [UpstreamTest(
         "packages/amazon-bedrock/src/amazon-bedrock-prepare-tools.test.ts::prepareTools > tool choice > named tool choice::should only send the named function tool on %s",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "62a4dcd641895b3aca4698015c0378b2bd558c4e"
     )]
     public void Should_only_send_the_named_function_tool_on(string modelId)
     {
