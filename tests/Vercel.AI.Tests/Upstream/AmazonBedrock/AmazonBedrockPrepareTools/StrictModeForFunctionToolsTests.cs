@@ -8,7 +8,7 @@ using Vercel.AI.Provider;
 
 namespace Vercel.AI.Tests.Upstream.AmazonBedrock.AmazonBedrockPrepareTools;
 
-public sealed class PrepareToolsTests
+public sealed class StrictModeForFunctionToolsTests
 {
     [Theory]
     [InlineData("us.anthropic.claude-opus-6-v1:0")]

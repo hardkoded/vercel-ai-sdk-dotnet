@@ -437,6 +437,7 @@ public sealed class AmazonBedrockAnthropicProviderTests : BedrockEndpointEnviron
             provider.LanguageModel(modelId)
         );
 
+        Assert.Equal(modelId, model.ModelId);
         var inner = model.CreateInnerProvider();
         Assert.True(inner.SupportsNativeStructuredOutput);
         Assert.True(inner.SupportsStrictTools);
