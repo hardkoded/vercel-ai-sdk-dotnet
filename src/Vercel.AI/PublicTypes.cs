@@ -1443,6 +1443,12 @@ public class GenerateTextOptions
     /// <summary>Generates the id of the call. Maps to <c>_internal.generateCallId</c>.</summary>
     internal Func<string>? GenerateCallId { get; set; }
 
+    /// <summary>Gives the result of the call its typed output. The call stays the same, so callbacks get the same instance.</summary>
+    internal Func<GenerateTextResult, GenerateTextResult>? ResultFactory { get; set; }
+
+    internal GenerateTextResult WrapResult(GenerateTextResult result) =>
+        ResultFactory is null ? result : ResultFactory(result);
+
     /// <summary>A shallow copy of these options, so a caller can change one property without changing the original.</summary>
     internal GenerateTextOptions ShallowCopy() => (GenerateTextOptions)MemberwiseClone();
 

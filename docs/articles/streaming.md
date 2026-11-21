@@ -30,6 +30,8 @@ For `OutputSpec.Array`, enumerate `ElementStream()` to get each element once, as
 
 `GenerateTextResult.Output` is the text as a JSON string when no JSON output is set (no `Output`, or `OutputSpec.Text()`), for a stop response or a non-empty response that is not a tool call. It is null otherwise. Maps to `output ?? text()`.
 
+`AiClient.GenerateTextAsync(options)` returns `GenerateTextResult<string>`, so `result.Output` is a `string?` with the text when no `Output` is set, like upstream's default `Output.text()`. With `Output` set on the options, read the parsed output through the typed overload `GenerateTextAsync(options, OutputSpec<TOutput>)`, or through `GenerateTextResult.Output` after casting the result to the base type.
+
 `StreamTextResult.Output` resolves to the parsed output: the object, the array of elements, the choice option, the JSON value, or the text as a JSON string for text output. An answer that does not parse fails `Output` with a `NoObjectGeneratedException` and leaves the stream and the other results alone.
 
 `OutputSpec.Array(elementSchema, minItems, maxItems)` asks the model for `{ "elements": [...] }`, `OutputSpec.Choice(options)` for `{ "result": option }`, and `OutputSpec.Json()` for any JSON value. They map to `Output.array`, `Output.choice`, and `Output.json`.

@@ -1139,7 +1139,7 @@ public sealed class GenerateTextBehaviorTests
         return parts;
     }
 
-    private static Task<GenerateTextResult> TwoStepAsync(
+    private static Task<GenerateTextResult<string>> TwoStepAsync(
         IReadOnlyList<CallWarning>? warnings0 = null,
         IReadOnlyList<CallWarning>? warnings1 = null,
         Func<GenerateTextResult, CancellationToken, Task>? onFinish = null,
@@ -1215,7 +1215,7 @@ public sealed class GenerateTextBehaviorTests
             );
     }
 
-    private static Task<GenerateTextResult> ToolLoopAsync(
+    private static Task<GenerateTextResult<string>> ToolLoopAsync(
         Func<GenerateTextResult, CancellationToken, Task>? onFinish = null
     )
     {

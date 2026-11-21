@@ -19,7 +19,7 @@ public sealed class TextOutputTests
     {
         var result = await Generate(new TestLanguageModel { OnGenerate = _ => HelloWorld() });
 
-        Assert.Equal("Hello, world!", result.Output!.Value.GetString());
+        Assert.Equal("Hello, world!", result.Output);
     }
 
     [Fact]
@@ -40,7 +40,7 @@ public sealed class TextOutputTests
         Assert.Null(call.Tools);
     }
 
-    private static Task<GenerateTextResult> Generate(TestLanguageModel model)
+    private static Task<GenerateTextResult<string>> Generate(TestLanguageModel model)
     {
         return new AiClient(
             Vercel.AI.Gateway.GatewayProvider.Create(

@@ -50,7 +50,10 @@ public sealed class ObjectOutputTests
                 }
             );
 
-        Assert.Equal("test-value", result.Output!.Value.GetProperty("value").GetString());
+        Assert.Equal(
+            "test-value",
+            ((GenerateTextResult)result).Output!.Value.GetProperty("value").GetString()
+        );
     }
 
     [Fact]
@@ -106,7 +109,10 @@ public sealed class ObjectOutputTests
                 }
             );
 
-        Assert.Equal("test-value", result.Output!.Value.GetProperty("value").GetString());
+        Assert.Equal(
+            "test-value",
+            ((GenerateTextResult)result).Output!.Value.GetProperty("value").GetString()
+        );
     }
 
     [Fact]

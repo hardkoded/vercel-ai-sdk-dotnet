@@ -14,6 +14,32 @@ namespace Vercel.AI.Tests.Upstream.GenerateTextTypes;
 // generate-text.test-d.ts > generateText types > output
 public sealed class OutputTests
 {
+    // generate-text.test-d.ts > generateText types > output > should infer text output type (default)
+    [Fact]
+    public async Task Should_infer_text_output_type_default()
+    {
+        var result = await new AiClient(
+            GatewayProvider.Create(new GatewayOptions { ApiKey = "test" })
+        ).GenerateTextAsync(
+            new GenerateTextOptions
+            {
+                Model = new TestLanguageModel
+                {
+                    OnGenerate = _ => new LanguageModelGenerateResult(
+                        new GeneratedContent[] { new GeneratedText("Hello, world!") },
+                        FinishReason.Stop,
+                        new LanguageModelUsage(3, 10, 13)
+                    ),
+                },
+                Prompt = "Hello, world!",
+            }
+        );
+
+        string? output = result.Output;
+
+        Assert.Equal("Hello, world!", output);
+    }
+
     // generate-text.test-d.ts > generateText types > output > should infer text output type
     [Fact]
     public async Task Should_infer_text_output_type()

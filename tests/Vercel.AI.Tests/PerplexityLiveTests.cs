@@ -98,8 +98,14 @@ public sealed class PerplexityLiveTests
                 }
             );
 
-        Assert.Equal("Paris", result.Output!.Value.GetProperty("city").GetString());
-        Assert.Equal("France", result.Output.Value.GetProperty("country").GetString());
+        Assert.Equal(
+            "Paris",
+            ((GenerateTextResult)result).Output!.Value.GetProperty("city").GetString()
+        );
+        Assert.Equal(
+            "France",
+            ((GenerateTextResult)result).Output.Value.GetProperty("country").GetString()
+        );
     }
 
     [SkippableFact]
