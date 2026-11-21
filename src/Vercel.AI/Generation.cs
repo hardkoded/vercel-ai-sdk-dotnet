@@ -2721,7 +2721,9 @@ internal static class Generation
                 : await ResolveStepApprovalsAsync(
                         options,
                         toolCalls,
-                        stepInputMessages.Skip(instructionCount).ToArray()
+                        stepInputMessages.Skip(instructionCount).ToArray(),
+                        stepInputMessages,
+                        cancellationToken
                     )
                     .ConfigureAwait(false);
 
@@ -3866,6 +3868,68 @@ internal static class Generation
             );
     }
 
+    // Notifies the tool that its call is available, with the validated tool context, before the approval is resolved.
+    // A call that is invalid or has no known tool is ignored.
+    private static async Task InvokeToolInputCallbacksAsync(
+        GenerateTextOptions options,
+        GeneratedToolCall call,
+        IReadOnlyList<ModelMessage> messages,
+        CancellationToken cancellationToken
+    )
+    {
+        if (call.Invalid)
+        {
+            return;
+        }
+
+        var tool = FindTool(options, call.ToolName);
+        if (tool == null || (tool.OnInputStart == null && tool.OnInputAvailable == null))
+        {
+            return;
+        }
+
+        JsonElement? context = null;
+        if (
+            options.ToolsContext != null
+            && options.ToolsContext.TryGetValue(call.ToolName, out var rawContext)
+        )
+        {
+            context = rawContext;
+        }
+
+        context = ToolContexts.ValidateToolContext(call.ToolName, context, tool.ContextSchema);
+
+        if (tool.OnInputStart != null)
+        {
+            await tool.OnInputStart(
+                    new ToolExecutionOptions(call.ToolCallId, messages, cancellationToken)
+                    {
+                        Context = context,
+                    }
+                )
+                .ConfigureAwait(false);
+        }
+
+        if (tool.OnInputAvailable != null)
+        {
+            using var arguments = JsonDocument.Parse(
+                string.IsNullOrWhiteSpace(call.ArgumentsJson) ? "{}" : call.ArgumentsJson
+            );
+            await tool.OnInputAvailable(
+                    new ToolInputAvailableOptions(
+                        call.ToolCallId,
+                        messages,
+                        cancellationToken,
+                        arguments.RootElement.Clone()
+                    )
+                    {
+                        Context = context,
+                    }
+                )
+                .ConfigureAwait(false);
+        }
+    }
+
     // Resolves the approval of each valid call to a known tool. A call that does not need approval does not use an approval id.
     private static async Task<(
         List<GeneratedToolApprovalRequest> Requests,
@@ -3874,7 +3938,9 @@ internal static class Generation
     )> ResolveStepApprovalsAsync(
         GenerateTextOptions options,
         IReadOnlyList<GeneratedToolCall> toolCalls,
-        IReadOnlyList<ModelMessage> messages
+        IReadOnlyList<ModelMessage> messages,
+        IReadOnlyList<ModelMessage> stepInputMessages,
+        CancellationToken cancellationToken
     )
     {
         var requests = new List<GeneratedToolApprovalRequest>();
@@ -3882,6 +3948,8 @@ internal static class Generation
         var blocked = new HashSet<string>(StringComparer.Ordinal);
         foreach (var call in toolCalls)
         {
+            await InvokeToolInputCallbacksAsync(options, call, stepInputMessages, cancellationToken)
+                .ConfigureAwait(false);
             var approval = await ExecuteToolsFromStream
                 .ResolveToolCallApprovalAsync(options, call, messages)
                 .ConfigureAwait(false);
