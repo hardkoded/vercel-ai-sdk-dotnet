@@ -283,6 +283,11 @@ internal static class LanguageModelCallStreaming
                 .ConfigureAwait(false);
         }
 
+        if (TelemetryDispatcher.Create(options).OnLanguageModelCallStart is { } telemetryCallStart)
+        {
+            await telemetryCallStart(startEvent, cancellationToken).ConfigureAwait(false);
+        }
+
         var now = options.NowMs ?? Generation.DefaultNowMs;
         var callStartTimestampMs = now();
         Task<LanguageModelStreamResult> Execute() =>

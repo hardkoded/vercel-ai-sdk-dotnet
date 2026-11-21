@@ -5,6 +5,7 @@
 using Vercel.AI.Prompt;
 using Vercel.AI.Provider;
 using Vercel.AI.Testing;
+using Vercel.AI.Tests.Upstream.Telemetry;
 using static Vercel.AI.Tests.Upstream.GenerateText.ResultToolCallsTests;
 using static Vercel.AI.Tests.Upstream.GenerateText.ToolExecutionCallbackSupport;
 
@@ -194,5 +195,109 @@ public sealed class OptionsOnStepStartTests
 
         Assert.Equal("test", events[0].ModelId);
         Assert.Equal("alternate-model-id", events[1].ModelId);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should apply prepareStep model call settings only to the current step",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_apply_prepareStep_model_call_settings_only_to_the_current_step()
+    {
+        var modelCallOptions = new List<LanguageModelCallOptions>();
+        var modelCallStartEvents = new List<LanguageModelCallStartEvent>();
+        var telemetryModelCallStartEvents = new List<LanguageModelCallStartEvent>();
+        var responseCount = 0;
+
+        await ToolExecutionCallbackSupport
+            .Client()
+            .GenerateTextAsync(
+                new GenerateTextOptions
+                {
+                    Model = new TestLanguageModel
+                    {
+                        OnGenerate = options =>
+                        {
+                            modelCallOptions.Add(options);
+                            return responseCount++ < 2
+                                ? ToolCallResponse("{ \"value\": \"test\" }")
+                                : TestLanguageModel.Text("Final answer.");
+                        },
+                    },
+                    Tools = new[] { Tool1() },
+                    Prompt = "test-input",
+                    StopWhen = StopWhen.IsStepCount(3),
+                    MaxOutputTokens = 100,
+                    Temperature = 1,
+                    TopP = 0.9,
+                    TopK = 40,
+                    PresencePenalty = 0.4,
+                    FrequencyPenalty = 0.3,
+                    StopSequences = ["outer"],
+                    Seed = 123,
+                    Reasoning = "high",
+                    PrepareStep = context =>
+                        context.StepNumber == 1
+                            ? new PrepareStepUpdate
+                            {
+                                MaxOutputTokens = 50,
+                                Temperature = 0,
+                                TopP = 0.5,
+                                TopK = 10,
+                                PresencePenalty = 0,
+                                FrequencyPenalty = -0.2,
+                                StopSequences = [],
+                                Seed = 0,
+                                Reasoning = "provider-default",
+                            }
+                            : context.StepNumber == 2
+                                ? new PrepareStepUpdate { Temperature = null }
+                                : null,
+                    OnLanguageModelCallStart = (@event, _) =>
+                    {
+                        modelCallStartEvents.Add(@event);
+                        return Task.CompletedTask;
+                    },
+                    Telemetry = new TelemetryOptions
+                    {
+                        IsEnabled = true,
+                        Integrations =
+                        [
+                            new TestTelemetry
+                            {
+                                OnLanguageModelCallStart = (@event, _) =>
+                                {
+                                    telemetryModelCallStartEvents.Add(@event);
+                                    return Task.CompletedTask;
+                                },
+                            },
+                        ],
+                    },
+                }
+            );
+
+        static object?[] Settings(LanguageModelCallOptions options) =>
+        [
+            options.MaxOutputTokens,
+            options.Temperature,
+            options.TopP,
+            options.TopK,
+            options.PresencePenalty,
+            options.FrequencyPenalty,
+            string.Join(",", options.StopSequences ?? []),
+            options.Seed,
+            options.Reasoning,
+        ];
+
+        object?[] outerSettings = [100, 1.0, 0.9, 40, 0.4, 0.3, "outer", 123, "high"];
+        object?[] stepSettings = [50, 0.0, 0.5, 10, 0.0, -0.2, "", 0, "provider-default"];
+        object?[][] expected = [outerSettings, stepSettings, outerSettings];
+
+        Assert.Equal(expected, modelCallOptions.Select(Settings));
+        Assert.Equal(expected, modelCallStartEvents.Select(e => Settings(e.CallOptions)));
+        Assert.Equal(
+            expected,
+            telemetryModelCallStartEvents.Select(e => Settings(e.CallOptions))
+        );
     }
 }

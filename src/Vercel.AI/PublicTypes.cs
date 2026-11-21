@@ -1296,6 +1296,33 @@ public sealed class PrepareStepUpdate
     /// <summary>Overrides the active tools for this step. See <see cref="GenerateTextOptions.ActiveTools"/>. Maps to <c>activeTools</c>.</summary>
     public IReadOnlyList<string>? ActiveTools { get; set; }
 
+    /// <summary>Overrides the maximum output tokens for this step. Maps to <c>maxOutputTokens</c>.</summary>
+    public int? MaxOutputTokens { get; set; }
+
+    /// <summary>Overrides the temperature for this step. Maps to <c>temperature</c>.</summary>
+    public double? Temperature { get; set; }
+
+    /// <summary>Overrides top-p for this step. Maps to <c>topP</c>.</summary>
+    public double? TopP { get; set; }
+
+    /// <summary>Overrides top-k for this step. Maps to <c>topK</c>.</summary>
+    public int? TopK { get; set; }
+
+    /// <summary>Overrides the presence penalty for this step. Maps to <c>presencePenalty</c>.</summary>
+    public double? PresencePenalty { get; set; }
+
+    /// <summary>Overrides the frequency penalty for this step. Maps to <c>frequencyPenalty</c>.</summary>
+    public double? FrequencyPenalty { get; set; }
+
+    /// <summary>Overrides the stop sequences for this step. An empty list clears them. Maps to <c>stopSequences</c>.</summary>
+    public IReadOnlyList<string>? StopSequences { get; set; }
+
+    /// <summary>Overrides the seed for this step. Maps to <c>seed</c>.</summary>
+    public int? Seed { get; set; }
+
+    /// <summary>Overrides the reasoning effort for this step. Maps to <c>reasoning</c>.</summary>
+    public string? Reasoning { get; set; }
+
     /// <summary>Overrides the order in which tools are sent to the provider for this step. See <see cref="GenerateTextOptions.ToolOrder"/>. Maps to <c>toolOrder</c>.</summary>
     public IReadOnlyList<string>? ToolOrder { get; set; }
 

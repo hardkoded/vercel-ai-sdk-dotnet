@@ -143,6 +143,28 @@ internal static class Generation
         return update;
     }
 
+    // Call settings from prepareStep apply to this step only. Maps to `maxOutputTokens: prepareStepResult?.maxOutputTokens ?? maxOutputTokens` and the other call settings.
+    private static void ApplyCallSettings(
+        LanguageModelCallOptions callOptions,
+        PrepareStepUpdate? update
+    )
+    {
+        if (update == null)
+        {
+            return;
+        }
+
+        callOptions.MaxOutputTokens = update.MaxOutputTokens ?? callOptions.MaxOutputTokens;
+        callOptions.Temperature = update.Temperature ?? callOptions.Temperature;
+        callOptions.TopP = update.TopP ?? callOptions.TopP;
+        callOptions.TopK = update.TopK ?? callOptions.TopK;
+        callOptions.PresencePenalty = update.PresencePenalty ?? callOptions.PresencePenalty;
+        callOptions.FrequencyPenalty = update.FrequencyPenalty ?? callOptions.FrequencyPenalty;
+        callOptions.StopSequences = update.StopSequences ?? callOptions.StopSequences;
+        callOptions.Seed = update.Seed ?? callOptions.Seed;
+        callOptions.Reasoning = update.Reasoning ?? callOptions.Reasoning;
+    }
+
     private static GenerateTextOptions WithActiveTools(
         GenerateTextOptions options,
         PrepareStepUpdate? update
@@ -330,6 +352,7 @@ internal static class Generation
     )
     {
         options = options.ShallowCopy();
+        options.Headers = WithUserAgentHeader(options.Headers);
         options.TelemetrySnapshot = TelemetryDispatcher.Create(options);
         // With a timeout, the model and the tools get a token that also cancels when the timeout expires.
         using var timeouts = CallTimeouts.Create(options.Timeout, null, false, callerToken);
@@ -464,6 +487,7 @@ internal static class Generation
                     update?.ToolOrder
                 );
                 callOptions.AbortSignal = timeouts?.Signal;
+                ApplyCallSettings(callOptions, update);
                 if (update?.ToolChoice != null)
                 {
                     callOptions.ToolChoice = update.ToolChoice;
@@ -532,6 +556,24 @@ internal static class Generation
                                     },
                                     cancellationToken
                                 ),
+                            cancellationToken
+                        )
+                        .ConfigureAwait(false);
+                }
+
+                if (TelemetryDispatcher.Create(options).OnLanguageModelCallStart is { } telemetryCallStart)
+                {
+                    await telemetryCallStart(
+                            new LanguageModelCallStartEvent
+                            {
+                                CallId = callId,
+                                Provider = current.Provider,
+                                ModelId = current.ModelId,
+                                Instructions = instructions,
+                                Messages = messages.Skip(instructionCount).ToArray(),
+                                Tools = callOptions.Tools,
+                                CallOptions = callOptions,
+                            },
                             cancellationToken
                         )
                         .ConfigureAwait(false);
@@ -1325,6 +1367,16 @@ internal static class Generation
                 streamOptions.ToolChoice = update?.ToolChoice ?? options.ToolChoice;
                 streamOptions.ToolOrder = update?.ToolOrder ?? options.ToolOrder;
                 streamOptions.ActiveTools = update?.ActiveTools ?? options.ActiveTools;
+                streamOptions.MaxOutputTokens = update?.MaxOutputTokens ?? options.MaxOutputTokens;
+                streamOptions.Temperature = update?.Temperature ?? options.Temperature;
+                streamOptions.TopP = update?.TopP ?? options.TopP;
+                streamOptions.TopK = update?.TopK ?? options.TopK;
+                streamOptions.PresencePenalty = update?.PresencePenalty ?? options.PresencePenalty;
+                streamOptions.FrequencyPenalty =
+                    update?.FrequencyPenalty ?? options.FrequencyPenalty;
+                streamOptions.StopSequences = update?.StopSequences ?? options.StopSequences;
+                streamOptions.Seed = update?.Seed ?? options.Seed;
+                streamOptions.Reasoning = update?.Reasoning ?? options.Reasoning;
                 streamOptions.ProviderOptions = MergeProviderOptions(
                     options.ProviderOptions,
                     update?.ProviderOptions
@@ -3909,6 +3961,19 @@ internal static class Generation
         return parts;
     }
 
+    // Maps to `withUserAgentSuffix(headers, `ai/${VERSION}`)`.
+    private static IReadOnlyDictionary<string, string?> WithUserAgentHeader(
+        IReadOnlyDictionary<string, string?>? headers
+    ) =>
+        Vercel
+            .AI.Operations.OperationHeaders.WithUserAgent(
+                headers
+                    ?.Where(pair => pair.Value != null)
+                    .ToDictionary(pair => pair.Key, pair => pair.Value!),
+                Vercel.AI.Operations.AiSdkVersion.UserAgent
+            )
+            .ToDictionary(pair => pair.Key, pair => (string?)pair.Value);
+
     // Stands for the call id that upstream generates once for each generateText or streamText call.
     private static string NewCallId() => "call-" + Guid.NewGuid().ToString("N");
 
@@ -3946,8 +4011,8 @@ internal static class Generation
             Headers = options.Headers,
             ProviderOptions = options.ProviderOptions,
             Output = options.Output,
-            ToolsContext = options.ToolsContext,
-            RuntimeContext = options.RuntimeContext,
+            ToolsContext = options.ToolsContext ?? StepResult.EmptyToolsContext,
+            RuntimeContext = options.RuntimeContext ?? StepResult.EmptyRuntimeContext,
         };
 
     internal static async Task NotifyAsync(Func<Task> callback, CancellationToken cancellationToken)
