@@ -290,6 +290,23 @@ public sealed class ExecutedTool
     public bool? Preliminary { get; init; }
 }
 
+/// <summary>Information about the model that produced a step. Maps to the <c>model</c> object of <c>StepResult</c>.</summary>
+public sealed class StepModel
+{
+    /// <summary>Creates model information.</summary>
+    public StepModel(string provider, string modelId)
+    {
+        Provider = provider;
+        ModelId = modelId;
+    }
+
+    /// <summary>The provider of the model.</summary>
+    public string Provider { get; }
+
+    /// <summary>The ID of the model.</summary>
+    public string ModelId { get; }
+}
+
 /// <summary>One language-model step, including any tool results from that step.</summary>
 public sealed class StepResult
 {
@@ -375,6 +392,13 @@ public sealed class StepResult
 
     /// <summary>Reasoning text generated in this step.</summary>
     public string? ReasoningText { get; }
+
+    /// <summary>The reasoning parts and reasoning files generated in this step, in order. Maps to <c>reasoning</c>.</summary>
+    public IReadOnlyList<GeneratedContent> Reasoning =>
+        Content.Where(part => part is GeneratedReasoning or GeneratedReasoningFile).ToArray();
+
+    /// <summary>Information about the model that produced this step. Maps to <c>model</c>.</summary>
+    public StepModel Model => new(Provider ?? string.Empty, ModelId ?? string.Empty);
 
     /// <summary>Tool calls from this step.</summary>
     public IReadOnlyList<GeneratedToolCall> ToolCalls { get; }
@@ -2036,6 +2060,12 @@ public class GenerateTextResult
 
     /// <summary>Model id of the model that produced the final step. Maps to <c>model.modelId</c>.</summary>
     public string? ModelId => FinalStep.ModelId;
+
+    /// <summary>Information about the model that produced the final step. Maps to <c>model</c>.</summary>
+    public StepModel Model => FinalStep.Model;
+
+    /// <summary>The reasoning parts and reasoning files of the final step. Maps to <c>reasoning</c>.</summary>
+    public IReadOnlyList<GeneratedContent> Reasoning => FinalStep.Reasoning;
 
     /// <summary>Tool context from the final step. Maps to <c>toolsContext</c>.</summary>
     public IReadOnlyDictionary<string, JsonElement> ToolsContext => FinalStep.ToolsContext;

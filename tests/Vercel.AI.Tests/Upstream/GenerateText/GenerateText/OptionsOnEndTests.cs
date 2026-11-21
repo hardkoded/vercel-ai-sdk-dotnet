@@ -86,6 +86,9 @@ public sealed class OptionsOnEndTests
         Assert.Equal("stop", result.RawFinishReason);
         Assert.Equal("Hello, World!", result.Text);
         Assert.Null(result.ReasoningText);
+        Assert.Empty(result.Reasoning);
+        Assert.Equal("test", result.Model.Provider);
+        Assert.Equal("mock-model-id", result.Model.ModelId);
         Assert.Empty(result.Files);
         Assert.Empty(result.Sources);
         Assert.Empty(result.Warnings);
