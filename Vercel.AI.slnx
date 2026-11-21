@@ -10,6 +10,7 @@
         <Project Path="examples/ExtractAnthropicBasic/ExtractAnthropicBasic.csproj" />
         <Project Path="examples/ExtractGoogleBasic/ExtractGoogleBasic.csproj" />
         <Project Path="examples/GoogleSpeechLanguage/GoogleSpeechLanguage.csproj" />
+        <Project Path="examples/GptLiveWinForms/GptLiveWinForms.csproj" />
         <Project Path="examples/ExtractMockBasic/ExtractMockBasic.csproj" />
         <Project Path="examples/ExtractOpenAIBasic/ExtractOpenAIBasic.csproj" />
         <Project Path="examples/ExtractGatewayBasic/ExtractGatewayBasic.csproj" />
@@ -27,6 +28,7 @@
         <Project Path="examples/GatewayToolTakoSearchVariableCost/GatewayToolTakoSearchVariableCost.csproj" />
         <Project Path="examples/GenerateStructuredData/GenerateStructuredData.csproj" />
         <Project Path="examples/GenerateImageAzureMai27Transparent/GenerateImageAzureMai27Transparent.csproj" />
+        <Project Path="examples/GenerateImageGatewayStreamingDecoding/GenerateImageGatewayStreamingDecoding.csproj" />
         <Project Path="examples/GenerateVertexAnthropicOutputObjectNative/GenerateVertexAnthropicOutputObjectNative.csproj" />
         <Project Path="examples/StreamVertexAnthropicOutputObjectNative/StreamVertexAnthropicOutputObjectNative.csproj" />
         <Project Path="examples/GenerateText/GenerateText.csproj" />
@@ -54,6 +56,7 @@
         <Project Path="examples/GenerateVideoXaiUploadUrl/GenerateVideoXaiUploadUrl.csproj" />
         <Project Path="examples/GenerateVideoXaiWebhookOptions/GenerateVideoXaiWebhookOptions.csproj" />
         <Project Path="examples/McpImageContent/McpImageContent.csproj" />
+        <Project Path="examples/OpenResponsesBareExtension/OpenResponsesBareExtension.csproj" />
         <Project Path="examples/Providers/Providers.csproj" />
         <Project Path="examples/StreamText/StreamText.csproj" />
         <Project Path="examples/StreamTextCerebrasServiceTier/StreamTextCerebrasServiceTier.csproj" />

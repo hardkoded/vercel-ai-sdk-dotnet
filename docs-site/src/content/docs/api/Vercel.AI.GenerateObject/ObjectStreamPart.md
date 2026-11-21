@@ -25,7 +25,7 @@ A part of the full stream of a `streamObject` call. Maps to `ObjectStreamPart`.
 
 **Derived:** [ObjectStreamErrorPart](/api/Vercel.AI.GenerateObject/ObjectStreamErrorPart/), [ObjectStreamFinishPart](/api/Vercel.AI.GenerateObject/ObjectStreamFinishPart/), [ObjectStreamObjectPart](/api/Vercel.AI.GenerateObject/ObjectStreamObjectPart/), [ObjectStreamTextDeltaPart](/api/Vercel.AI.GenerateObject/ObjectStreamTextDeltaPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L162)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L175)
 
 ## Properties
 
@@ -44,4 +44,4 @@ Part type: `object`, `text-delta`, `error`, or `finish`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L170)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/StreamObject.cs#L183)

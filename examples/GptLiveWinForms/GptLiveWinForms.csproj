@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <Description>WinForms button for full-duplex voice with GPT-Live 1.1 through AI Gateway.</Description>
+        <OutputType>WinExe</OutputType>
+        <TargetFrameworks>net10.0-windows</TargetFrameworks>
+        <UseWindowsForms>true</UseWindowsForms>
+        <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Include="NAudio" Version="2.2.1" />
+    </ItemGroup>
+</Project>

@@ -78,6 +78,23 @@ Receives the names of the function tools that declare an output schema.
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Responses/OpenAIResponsesPrepareTools.cs#L48)
 
+<a id="Vercel_AI_OpenAI_PrepareResponsesToolsOptions_ProviderOptionsName_"></a>
+<a id="Vercel_AI_OpenAI_PrepareResponsesToolsOptions_ProviderOptionsName"></a>
+
+### ProviderOptionsName
+
+
+```csharp
+public string ProviderOptionsName { get; init; }
+```
+
+
+Provider options name of the model, such as `azure`. Tool options under it win over `openai`. Default `openai`.
+
+**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Responses/OpenAIResponsesPrepareTools.cs#L54)
+
 <a id="Vercel_AI_OpenAI_PrepareResponsesToolsOptions_SupportsAsyncToolCalling_"></a>
 <a id="Vercel_AI_OpenAI_PrepareResponsesToolsOptions_SupportsAsyncToolCalling"></a>
 

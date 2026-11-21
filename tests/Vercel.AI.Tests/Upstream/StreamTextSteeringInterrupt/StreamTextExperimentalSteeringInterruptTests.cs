@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Diagnostics;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.AspNetCore;
 using Vercel.AI.GenerateText;
@@ -646,14 +647,13 @@ public sealed class StreamTextExperimentalSteeringInterruptTests
     [UpstreamTest(
         Prefix
             + "should run prepareStep for the redo with the instructions and contexts that the step started with",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "PrepareStepContext has no RuntimeContext or ToolsContext, so only the instructions are checked.",
+        Coverage = UpstreamCoverage.Covered,
         Commit = Commit
     )]
-    public async Task Should_run_prepareStep_for_the_redo_with_the_instructions_that_the_step_started_with()
+    public async Task Should_run_prepareStep_for_the_redo_with_the_instructions_and_contexts_that_the_step_started_with()
     {
         var steering = CreateSteering();
-        var prepareStepInstructions = new List<string?>();
+        var prepareStepInputs = new List<(string? Instructions, string Runtime, string Tools)>();
         var model = CreateModel(
             (options, token) => Hanging(options, token),
             () => _ = Interrupt(steering),
@@ -666,22 +666,42 @@ public sealed class StreamTextExperimentalSteeringInterruptTests
                 Model = model,
                 Instructions = Instructions.From("Answer briefly."),
                 Prompt = PromptText,
+                Tools = [UnitWeather()],
+                RuntimeContext = new Dictionary<string, object?> { ["prepareStepCalls"] = 0 },
+                ToolsContext = UnitContext("fahrenheit"),
                 ExperimentalSteering = steering,
                 PrepareStep = context =>
                 {
-                    prepareStepInstructions.Add(context.Instructions?.Text);
+                    prepareStepInputs.Add(
+                        (
+                            context.Instructions?.Text,
+                            JsonSerializer.Serialize(context.RuntimeContext),
+                            JsonSerializer.Serialize(context.ToolsContext)
+                        )
+                    );
                     return new PrepareStepUpdate
                     {
                         Instructions = Instructions.From(
                             context.Instructions?.Text + " Use Celsius."
                         ),
+                        RuntimeContext = new Dictionary<string, object?>
+                        {
+                            ["prepareStepCalls"] =
+                                (int)context.RuntimeContext["prepareStepCalls"]! + 1,
+                        },
+                        ToolsContext = UnitContext("celsius"),
                     };
                 },
             }
         );
         await result.ConsumeStreamAsync();
 
-        Assert.Equal(["Answer briefly.", "Answer briefly."], prepareStepInstructions);
+        var stepStartState = (
+            "Answer briefly.",
+            "{\"prepareStepCalls\":0}",
+            "{\"weather\":{\"unit\":\"fahrenheit\"}}"
+        );
+        Assert.Equal([stepStartState, stepStartState], prepareStepInputs);
         var system = Assert.IsType<SystemModelMessage>(model.DoStreamCalls[1].Prompt[0]);
         Assert.Equal("Answer briefly. Use Celsius.", system.Content);
     }

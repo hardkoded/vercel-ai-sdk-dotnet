@@ -23,7 +23,7 @@ A tool call needs approval before it runs. Maps to the `tool-approval-request` s
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [TextStreamPart](/api/Vercel.AI/TextStreamPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2339)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2390)
 
 ## Constructors
 
@@ -46,7 +46,7 @@ Creates a tool-approval-request part.
 | --- | --- | --- |
 | `request` | [GeneratedToolApprovalRequest](/api/Vercel.AI.Provider/GeneratedToolApprovalRequest/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2342)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2393)
 
 ## Properties
 
@@ -65,7 +65,7 @@ Approval id the response must carry.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2354)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2405)
 
 <a id="Vercel_AI_ToolApprovalRequestPart_IsAutomatic_"></a>
 <a id="Vercel_AI_ToolApprovalRequestPart_IsAutomatic"></a>
@@ -82,7 +82,7 @@ True when the request was approved or denied automatically, so nobody needs to a
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2363)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2414)
 
 <a id="Vercel_AI_ToolApprovalRequestPart_Reason_"></a>
 <a id="Vercel_AI_ToolApprovalRequestPart_Reason"></a>
@@ -99,7 +99,7 @@ Why the tool call needs approval.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2360)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2411)
 
 <a id="Vercel_AI_ToolApprovalRequestPart_Signature_"></a>
 <a id="Vercel_AI_ToolApprovalRequestPart_Signature"></a>
@@ -116,7 +116,7 @@ HMAC-SHA256 signature that binds the request to its tool call.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2366)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2417)
 
 <a id="Vercel_AI_ToolApprovalRequestPart_ToolCall_"></a>
 <a id="Vercel_AI_ToolApprovalRequestPart_ToolCall"></a>
@@ -133,4 +133,4 @@ The tool call that needs approval.
 
 **Value:** [GeneratedToolCall](/api/Vercel.AI.Provider/GeneratedToolCall/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2357)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2408)

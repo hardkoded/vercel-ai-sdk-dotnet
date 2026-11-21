@@ -18,6 +18,7 @@ Public types in the `Vercel.AI.ProviderUtils` namespace.
 | [ApiKeys](/api/Vercel.AI.ProviderUtils/ApiKeys/) | Resolves an API key from an explicit value or an environment variable. |
 | [BatchResultDownloads](/api/Vercel.AI.ProviderUtils/BatchResultDownloads/) | Settings for downloading JSON Lines batch results. |
 | [BatchResultsApiBase](/api/Vercel.AI.ProviderUtils/BatchResultsApiBase/) | Batch API that downloads results. Start, status, cancel, and list throw unless a provider overrides them. |
+| [BinaryFieldPaths](/api/Vercel.AI.ProviderUtils/BinaryFieldPaths/) | The compiled paths, a trie that is walked while scanning. The edges of a node are the bytes of an object key (a key ends with its closing quote), the items of an array, and "a path ends here". |
 | [ByteEncoding](/api/Vercel.AI.ProviderUtils/ByteEncoding/) | Base64 conversions for inline file bytes. |
 | [ConnectToWebSocket](/api/Vercel.AI.ProviderUtils/ConnectToWebSocket/) | Opens a WebSocket for a provider model, owning the transport-generic layer: factory resolution, header hygiene, abort wiring, and message decoding. Maps to connectToWebSocket. |
 | [ConnectToWebSocketOptions](/api/Vercel.AI.ProviderUtils/ConnectToWebSocketOptions/) | Options for Connect(ConnectToWebSocketOptions). |
@@ -31,6 +32,8 @@ Public types in the `Vercel.AI.ProviderUtils` namespace.
 | [FileDataConversions](/api/Vercel.AI.ProviderUtils/FileDataConversions/) | Converts file payloads to the forms providers send. |
 | [HostnameParts](/api/Vercel.AI.ProviderUtils/HostnameParts/) | Checks a value before it is concatenated into a generated host. |
 | [IdGenerator](/api/Vercel.AI.ProviderUtils/IdGenerator/) | Random id generator. The id is not cryptographically secure. A prefix is joined with separator. The separator must not appear in the alphabet. |
+| [JsonBinaryFieldScanner](/api/Vercel.AI.ProviderUtils/JsonBinaryFieldScanner/) | Streaming extraction of large base64 strings from a JSON response body. A JSON response that carries an image or a file is mostly one very long base64 string. The scanner reads the body chunk by chunk: strings at the configured paths are decoded to bytes while they stream in, and the text that is handed to the JSON parser (the "skeleton") holds a short placeholder in their place. A string is extracted only if it is canonical standard-alphabet base64 (length divisible by 4, = only as the final padding, zero trailing bits, no escape sequences or whitespace). Everything else stays a string. Maps to json-binary-field-scanner.ts. |
+| [JsonBinaryFieldScanResult](/api/Vercel.AI.ProviderUtils/JsonBinaryFieldScanResult/) | The body with extracted strings replaced by placeholders, and the extracted bytes. |
 | [JsonInstructions](/api/Vercel.AI.ProviderUtils/JsonInstructions/) | Appends a JSON schema instruction to a prompt or to the first system message. |
 | [JsonParseException](/api/Vercel.AI.ProviderUtils/JsonParseException/) | JSON text could not be parsed. |
 | [JsonParseResult](/api/Vercel.AI.ProviderUtils/JsonParseResult/) | Success or failure of a JSON parse, including the raw value when parsing succeeded. |

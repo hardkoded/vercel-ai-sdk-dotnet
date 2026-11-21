@@ -18,9 +18,6 @@ namespace Vercel.AI.Tests.E2e.OpenAI.AdditionalTools;
 [Trait("Category", "RealModel")]
 public sealed class AdditionalToolsAgentTests
 {
-    private const string DiscoveredTool =
-        "{\"type\":\"function\",\"name\":\"linear__list_issues\",\"description\":\"List Linear issues.\",\"parameters\":{\"type\":\"object\",\"properties\":{},\"additionalProperties\":false}}";
-
     private const string Instructions =
         "To list issues, first call connection_search if no search result exists in the conversation. "
         + "Then call linear__list_issues and summarize its result. "
@@ -43,9 +40,10 @@ public sealed class AdditionalToolsAgentTests
         );
         // Omission only affects serialization (this replaces the original activeTools: ['connection_search']); it
         // does not restrict which registered tools a user may run.
-        listIssues.ProviderOptions = JsonDocument
-            .Parse("{\"openai\":{\"omitFromRequestTools\":true}}")
-            .RootElement.Clone();
+        listIssues.ProviderOptions = new OpenAIToolOptions
+        {
+            OmitFromRequestTools = true,
+        }.ToProviderOptions();
         var tools = new[]
         {
             Tool.Function(
@@ -128,9 +126,22 @@ public sealed class AdditionalToolsAgentTests
             return message;
         }
 
-        var providerMetadata = JsonDocument
-            .Parse("{\"openai\":{\"additionalTools\":[" + DiscoveredTool + "]}}")
-            .RootElement.Clone();
+        var providerMetadata = new OpenAIResponsesToolResultOptions
+        {
+            AdditionalTools =
+            [
+                new OpenAIResponsesFunctionToolDefinition
+                {
+                    Name = "linear__list_issues",
+                    Description = "List Linear issues.",
+                    Parameters = JsonDocument
+                        .Parse(
+                            "{\"type\":\"object\",\"properties\":{},\"additionalProperties\":false}"
+                        )
+                        .RootElement.Clone(),
+                },
+            ],
+        }.ToProviderMetadata();
         return new ToolModelMessage(
             tool.ToolCallId,
             tool.ToolName,

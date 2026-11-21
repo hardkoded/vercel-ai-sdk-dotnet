@@ -646,12 +646,14 @@ public static class JsonStreams
         public JsonBody(
             JsonElement value,
             JsonElement rawValue,
-            IReadOnlyDictionary<string, string> headers
+            IReadOnlyDictionary<string, string> headers,
+            IReadOnlyDictionary<string, byte[]>? binaries = null
         )
         {
             Value = value;
             RawValue = rawValue;
             Headers = headers;
+            Binaries = binaries ?? new Dictionary<string, byte[]>();
         }
 
         /// <summary>Value after the schema projection.</summary>
@@ -662,16 +664,31 @@ public static class JsonStreams
 
         /// <summary>Response headers.</summary>
         public IReadOnlyDictionary<string, string> Headers { get; }
+
+        /// <summary>
+        /// The bytes extracted at the paths of <c>experimentalBinaryFields</c>, by the placeholder string that stands in for them in
+        /// <see cref="Value"/> and <see cref="RawValue"/>. Empty when no path was given or nothing was extracted.
+        /// </summary>
+        public IReadOnlyDictionary<string, byte[]> Binaries { get; }
     }
 
     /// <summary>
     /// Reads a JSON response. Unknown object properties are removed when the schema says so.
     /// A body above <see cref="Util.Download.DefaultMaxBytes"/> throws a <see cref="Util.DownloadError"/> before it is read.
+    /// <paramref name="experimentalBinaryFields"/> are the paths of string fields that carry large base64 data, such as <c>images[*]</c>
+    /// or <c>content[*].data.data</c>. A path is a sequence of plain object keys joined by <c>.</c>, with <c>[*]</c> for every element of an array.
+    /// By default the whole body is buffered, decoded to text, parsed, and the base64 string is decoded again later.
+    /// With paths the body is read as a stream and canonical base64 strings of at least 64 KiB at those paths are decoded to bytes while
+    /// they arrive. <see cref="JsonBody.Value"/> and <see cref="JsonBody.RawValue"/> hold a short placeholder string such as
+    /// <c>[binary data: 2097152 bytes; ref ...]</c> in their place, and <see cref="JsonBody.Binaries"/> maps the placeholder to the bytes.
+    /// Other strings, and strings at other paths, are parsed as usual. Maps to <c>createJsonResponseHandler</c>.
     /// </summary>
+    /// <exception cref="Util.InvalidArgumentError">A path in <paramref name="experimentalBinaryFields"/> is not valid.</exception>
     public static async Task<JsonBody> ReadJsonAsync(
         HttpResponseMessage response,
         JsonNode? schema,
-        CancellationToken cancellationToken = default
+        CancellationToken cancellationToken = default,
+        IReadOnlyList<string>? experimentalBinaryFields = null
     )
     {
         if (response is null)
@@ -679,11 +696,35 @@ public static class JsonStreams
             throw new ArgumentNullException(nameof(response));
         }
 
+        var binaryFieldPaths = experimentalBinaryFields is { Count: > 0 }
+            ? JsonBinaryFieldScanner.CompileBinaryFieldPaths(experimentalBinaryFields)
+            : null;
         var url = response.RequestMessage?.RequestUri?.ToString() ?? string.Empty;
-        var bytes = await ResponseBodies
-            .ReadResponseWithSizeLimitAsync(response, url, cancellationToken: cancellationToken)
-            .ConfigureAwait(false);
-        var text = ResponseEncoding(response).GetString(bytes).TrimStart('\uFEFF');
+        string text;
+        IReadOnlyDictionary<string, byte[]>? binaries = null;
+        if (binaryFieldPaths is null)
+        {
+            var bytes = await ResponseBodies
+                .ReadResponseWithSizeLimitAsync(response, url, cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
+            text = ResponseEncoding(response).GetString(bytes).TrimStart('\uFEFF');
+        }
+        else
+        {
+            var scanner = new JsonBinaryFieldScanner(binaryFieldPaths);
+            await ResponseBodies
+                .ReadResponseWithSizeLimitAsync(
+                    response,
+                    url,
+                    cancellationToken: cancellationToken,
+                    onChunk: scanner.Push
+                )
+                .ConfigureAwait(false);
+            var scanned = scanner.Finish();
+            text = scanned.Text.TrimStart('\uFEFF');
+            binaries = scanned.Binaries;
+        }
+
         var parsed = JsonParsing.SafeParse(text, schema);
         if (!parsed.Success || parsed.Value is null || parsed.RawValue is null)
         {
@@ -694,7 +735,8 @@ public static class JsonStreams
         return new JsonBody(
             parsed.Value.Value,
             parsed.RawValue.Value,
-            ExtractResponseHeaders(response)
+            ExtractResponseHeaders(response),
+            binaries
         );
     }
 
