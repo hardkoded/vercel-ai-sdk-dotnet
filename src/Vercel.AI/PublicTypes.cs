@@ -1287,6 +1287,9 @@ public sealed class PrepareStepUpdate
     /// <summary>Replacement tool choice for this step.</summary>
     public ToolChoice? ToolChoice { get; set; }
 
+    /// <summary>Overrides the active tools for this step. See <see cref="GenerateTextOptions.ActiveTools"/>. Maps to <c>activeTools</c>.</summary>
+    public IReadOnlyList<string>? ActiveTools { get; set; }
+
     /// <summary>Overrides the order in which tools are sent to the provider for this step. See <see cref="GenerateTextOptions.ToolOrder"/>. Maps to <c>toolOrder</c>.</summary>
     public IReadOnlyList<string>? ToolOrder { get; set; }
 
