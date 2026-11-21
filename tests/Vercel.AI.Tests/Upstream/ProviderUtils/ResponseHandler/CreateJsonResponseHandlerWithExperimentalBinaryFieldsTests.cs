@@ -6,6 +6,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 using Vercel.AI.Util;
 
@@ -13,8 +14,9 @@ namespace Vercel.AI.Tests.Upstream.ProviderUtils.ResponseHandler;
 
 /// <summary>
 /// Port of <c>response-handler.test.ts</c> &gt; <c>createJsonResponseHandler with experimental_binaryFields</c>.
-/// <c>JsonStreams.ReadJsonAsync</c> takes <c>experimentalBinaryFields</c>. A JSON element cannot hold bytes, so
-/// <c>value</c> and <c>rawValue</c> hold the placeholder and <c>Binaries</c> maps it to the decoded bytes.
+/// <c>ResponseHandlers.CreateJsonResponseHandler</c> takes a validator and <c>experimentalBinaryFields</c>, and validates the value
+/// with the decoded bytes in place. <c>JsonStreams.ReadJsonAsync</c> takes the same option and returns <c>Binaries</c> beside a
+/// <c>JsonElement</c>, which cannot hold bytes.
 /// </summary>
 public sealed class CreateJsonResponseHandlerWithExperimentalBinaryFieldsTests
 {
@@ -82,26 +84,234 @@ public sealed class CreateJsonResponseHandlerWithExperimentalBinaryFieldsTests
 
     private static string Placeholder(JsonElement value) => value.GetString()!;
 
+    private static Task<JsonResponseHandlerResult<object?>> Handle(
+        HttpResponseMessage response,
+        Func<object?, object?>? validate = null,
+        string[]? binaryFields = null
+    ) =>
+        ResponseHandlers.CreateJsonResponseHandler(validate ?? ImagesAndNote, binaryFields ?? BinaryFields)(
+            response,
+            "test-url",
+            new { },
+            default
+        );
+
+    // The schema of upstream: images is an array of strings or bytes, note is an optional string.
+    private static object? ImagesAndNote(object? value)
+    {
+        var map = (Dictionary<string, object?>)value!;
+        foreach (var image in (List<object?>)map["images"]!)
+        {
+            if (image is not (string or byte[]))
+            {
+                throw new FormatException("images must hold strings or bytes");
+            }
+        }
+
+        if (map.TryGetValue("note", out var note) && note is not string)
+        {
+            throw new FormatException("note must be a string");
+        }
+
+        return value;
+    }
+
+    private static string PlaceholderPattern(int length) =>
+        @"\[binary data: " + length + @" bytes; ref \d+-\d+\]";
+
     [Fact]
     [UpstreamTest(
         Prefix + "should return decoded bytes as value and a placeholder in rawValue",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "A JsonElement cannot hold bytes: Value holds the placeholder and Binaries the decoded bytes.",
+        Coverage = UpstreamCoverage.Covered,
         Commit = Commit
     )]
-    public async Task Value_and_RawValue_hold_a_placeholder_and_Binaries_the_decoded_bytes()
+    public async Task Should_return_decoded_bytes_as_value_and_a_placeholder_in_rawValue()
     {
         var bytes = BytesOf(70_001);
         var body = Body([Convert.ToBase64String(bytes)], "hello");
 
-        var result = await Run(Response(body));
+        var result = await Handle(Response(body));
 
-        var placeholder = Placeholder(result.RawValue.GetProperty("images")[0]);
-        Assert.Matches(@"^\[binary data: 70001 bytes; ref \d+-\d+\]\z", placeholder);
-        Assert.Equal(bytes, result.Binaries[placeholder]);
-        Assert.Equal(placeholder, Placeholder(result.Value.GetProperty("images")[0]));
+        var value = (Dictionary<string, object?>)result.Value!;
+        Assert.Equal(bytes, Assert.IsType<byte[]>(Assert.Single((List<object?>)value["images"]!)));
+        Assert.Equal("hello", value["note"]);
+        Assert.Matches(
+            "^" + PlaceholderPattern(70_001) + "\\z",
+            Placeholder(result.RawValue.GetProperty("images")[0])
+        );
         Assert.Equal("hello", result.RawValue.GetProperty("note").GetString());
-        Assert.Equal("hello", result.Value.GetProperty("note").GetString());
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should reject an invalid path when the handler is created",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
+    )]
+    public void Should_reject_an_invalid_path_when_the_handler_is_created()
+    {
+        Assert.Throws<InvalidArgumentError>(() =>
+            ResponseHandlers.CreateJsonResponseHandler<object?>(null, ["images[0]"])
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix
+            + "should throw an APICallError with a TypeValidationError cause when the schema does not match",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
+    )]
+    public async Task Should_throw_an_APICallError_with_a_TypeValidationError_cause_when_the_schema_does_not_match()
+    {
+        var body = "{\"images\":[\"" + Convert.ToBase64String(BytesOf(500_000)) + "\"],\"note\":5}";
+
+        var error = await Assert.ThrowsAsync<ApiException>(() => Handle(Response(body)));
+
+        Assert.Equal("Invalid JSON response", error.Message);
+        Assert.Equal(200, error.StatusCode);
+        var cause = Assert.IsType<TypeValidationException>(error.InnerException);
+        Assert.Matches(
+            "^\\{\"images\":\\[\"" + PlaceholderPattern(500_000) + "\"\\],\"note\":5\\}\\z",
+            cause.Value!.Value.GetRawText()
+        );
+        // Neither the error nor the response body carry the megabytes.
+        Assert.True(cause.Message.Length < 500);
+        Assert.Matches(
+            "^\\{\"images\":\\[\"" + PlaceholderPattern(500_000) + "\"\\],\"note\":5\\}\\z",
+            error.ResponseBody
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should throw an APICallError with a JSONParseError cause for invalid JSON",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
+    )]
+    public async Task Should_throw_an_APICallError_with_a_JSONParseError_cause_for_invalid_JSON()
+    {
+        var body = "{\"images\":[\"" + Convert.ToBase64String(BytesOf(300_000)) + "\"],";
+
+        var error = await Assert.ThrowsAsync<ApiException>(() =>
+            Handle(Response(body, 16 * 1024))
+        );
+
+        Assert.Equal("Invalid JSON response", error.Message);
+        var cause = Assert.IsType<JsonParseException>(error.InnerException);
+        Assert.Equal(error.ResponseBody, cause.Text);
+        Assert.Matches(
+            "^\\{\"images\":\\[\"" + PlaceholderPattern(300_000) + "\"\\],\\z",
+            error.ResponseBody
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should let the schema reject bytes it does not describe",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
+    )]
+    public async Task Should_let_the_schema_reject_bytes_it_does_not_describe()
+    {
+        var body = Body([Convert.ToBase64String(BytesOf(100_000))]);
+
+        var error = await Assert.ThrowsAsync<ApiException>(() =>
+            Handle(
+                Response(body),
+                value =>
+                {
+                    var map = (Dictionary<string, object?>)value!;
+                    return ((List<object?>)map["images"]!).All(image => image is string)
+                        ? value
+                        : throw new FormatException("images must be strings");
+                }
+            )
+        );
+
+        Assert.IsType<TypeValidationException>(error.InnerException);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should report a validator that throws with the placeholder, never with the bytes",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
+    )]
+    public async Task Should_report_a_validator_that_throws_with_the_placeholder_never_with_the_bytes()
+    {
+        var body = Body([Convert.ToBase64String(BytesOf(100_000))]);
+        var failure = new InvalidOperationException("validator crashed");
+
+        var error = await Assert.ThrowsAsync<ApiException>(() =>
+            Handle(Response(body), _ => throw failure)
+        );
+
+        var cause = Assert.IsType<TypeValidationException>(error.InnerException);
+        Assert.Same(failure, cause.InnerException);
+        Assert.Matches(
+            "^\\{\"images\":\\[\"" + PlaceholderPattern(100_000) + "\"\\]\\}\\z",
+            cause.Value!.Value.GetRawText()
+        );
+        Assert.True(cause.Message.Length < 1000);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should return arrays that serialize like any other Uint8Array",
+        Coverage = UpstreamCoverage.Covered,
+        Note = "A byte[] is returned as it is, so it serializes like any other byte[].",
+        Commit = Commit
+    )]
+    public async Task Should_return_arrays_that_serialize_like_any_other_byte_array()
+    {
+        var bytes = BytesOf(100_000);
+
+        var result = await Handle(Response(Body([Convert.ToBase64String(bytes)])));
+
+        var map = (Dictionary<string, object?>)result.Value!;
+        var image = Assert.IsType<byte[]>(Assert.Single((List<object?>)map["images"]!));
+        Assert.Equal(JsonSerializer.Serialize(bytes.ToArray()), JsonSerializer.Serialize(image));
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should return the bytes for a schema without a validate function",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
+    )]
+    public async Task Should_return_the_bytes_for_a_schema_without_a_validate_function()
+    {
+        var bytes = BytesOf(100_000);
+
+        var result = await ResponseHandlers.CreateJsonResponseHandler<object?>(null, BinaryFields)(
+            Response(Body([Convert.ToBase64String(bytes)])),
+            "test-url",
+            new { },
+            default
+        );
+
+        var map = (Dictionary<string, object?>)result.Value!;
+        Assert.Equal(bytes, Assert.Single((List<object?>)map["images"]!));
+        Assert.Matches(
+            "^" + PlaceholderPattern(100_000) + "\\z",
+            Placeholder(result.RawValue.GetProperty("images")[0])
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should reject a response without a body like the default handler does",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
+    )]
+    public async Task Should_reject_a_response_without_a_body_like_the_default_handler_does()
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = null };
+
+        var error = await Assert.ThrowsAsync<ApiException>(() => Handle(response));
+
+        Assert.Equal("Invalid JSON response", error.Message);
     }
 
     [Fact]
@@ -232,45 +442,6 @@ public sealed class CreateJsonResponseHandlerWithExperimentalBinaryFieldsTests
         Assert.Equal(base64, result.Value.GetProperty("images")[0].GetString());
         Assert.Equal(base64, result.RawValue.GetProperty("images")[0].GetString());
         Assert.Empty(result.Binaries);
-    }
-
-    [Fact]
-    [UpstreamTest(
-        Prefix + "should reject an invalid path when the handler is created",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "ReadJsonAsync has no separate creation step: the path is rejected when the call starts, before the body is read.",
-        Commit = Commit
-    )]
-    public async Task An_invalid_path_is_rejected_before_the_body_is_read()
-    {
-        var (response, content) = OversizedResponseContent.Create();
-
-        await Assert.ThrowsAsync<InvalidArgumentError>(() => Run(response, ["images[0]"]));
-
-        Assert.False(content.BodyRead);
-    }
-
-    [Fact]
-    [UpstreamTest(
-        Prefix + "should throw an APICallError with a JSONParseError cause for invalid JSON",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Upstream wraps the error in an APICallError; ReadJsonAsync throws the JsonParseException.",
-        Commit = Commit
-    )]
-    public async Task Invalid_JSON_throws_a_JsonParseException_with_placeholders_in_its_text()
-    {
-        var base64 = Convert.ToBase64String(BytesOf(300_000));
-        var body = "{\"images\":[\"" + base64 + "\"],";
-
-        var error = await Assert.ThrowsAsync<JsonParseException>(() =>
-            Run(Response(body, 16 * 1024))
-        );
-
-        Assert.Matches(
-            @"^\{""images"":\[""\[binary data: 300000 bytes; ref \d+-\d+\]""\],\z",
-            error.Text
-        );
-        Assert.True(error.Message.Length < 1000);
     }
 
     [Fact]

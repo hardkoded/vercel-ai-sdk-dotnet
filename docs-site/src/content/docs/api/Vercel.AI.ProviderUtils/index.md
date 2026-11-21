@@ -38,6 +38,7 @@ Public types in the `Vercel.AI.ProviderUtils` namespace.
 | [JsonParseException](/api/Vercel.AI.ProviderUtils/JsonParseException/) | JSON text could not be parsed. |
 | [JsonParseResult](/api/Vercel.AI.ProviderUtils/JsonParseResult/) | Success or failure of a JSON parse, including the raw value when parsing succeeded. |
 | [JsonParsing](/api/Vercel.AI.ProviderUtils/JsonParsing/) | Parses JSON text, optionally checking it against a JSON Schema document. |
+| [JsonResponseHandlerResult&lt;T&gt;](/api/Vercel.AI.ProviderUtils/JsonResponseHandlerResult-1/) | A handled JSON value, the parsed body before validation, and the response headers. |
 | [JsonResponseTools](/api/Vercel.AI.ProviderUtils/JsonResponseTools/) | Helpers for providers that cannot combine tools with native structured output. They add an internal function tool whose arguments are the structured output, then turn that tool call back into text. |
 | [JsonSchemas](/api/Vercel.AI.ProviderUtils/JsonSchemas/) | Builds JSON Schema documents from explicit shapes. This is not a Zod converter. |
 | [JsonSchemaValidator](/api/Vercel.AI.ProviderUtils/JsonSchemaValidator/) | Applies a JSON Schema document. Unknown object properties are dropped. |
@@ -129,4 +130,5 @@ Public types in the `Vercel.AI.ProviderUtils` namespace.
 
 | Type | Summary |
 | --- | --- |
+| [JsonResponseHandler&lt;T&gt;](/api/Vercel.AI.ProviderUtils/JsonResponseHandler-1/) | Handles a JSON response. Maps to the ResponseHandler that createJsonResponseHandler returns. |
 | [WebSocketFactory](/api/Vercel.AI.ProviderUtils/WebSocketFactory/) | Creates a socket. Maps to WebSocketConstructor. |
