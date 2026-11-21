@@ -97,8 +97,9 @@ public sealed class MistralRealtimeFactory
         }
         catch (Exception error) when (error is JsonException or FormatException)
         {
+            // The body can hold a participant token, so it stays out of the exception.
             throw new InvalidResponseDataException(
-                response.Body,
+                "{}",
                 "Invalid Mistral realtime session response: expected id, participant_token and server_url."
             );
         }

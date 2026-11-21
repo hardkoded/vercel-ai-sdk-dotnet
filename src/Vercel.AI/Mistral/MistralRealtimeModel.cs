@@ -49,7 +49,7 @@ public sealed class MistralRealtimeModel : IRealtimeModel
     /// <inheritdoc />
     public Task<IRealtimeSession> ConnectAsync(CancellationToken cancellationToken)
     {
-        throw Unsupported("a WebSocket connection");
+        return Task.FromException<IRealtimeSession>(Unsupported("a WebSocket connection"));
     }
 
     /// <summary>Normalizes a provider event. Maps to <c>parseServerEvent</c>.</summary>

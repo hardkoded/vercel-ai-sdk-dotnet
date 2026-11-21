@@ -270,7 +270,10 @@ public sealed class MistralRealtimeModelOptions
                     function["description"] = tool.Description;
                 }
 
-                function["parameters"] = JsonNode.Parse(tool.Parameters.GetRawText());
+                function["parameters"] =
+                    tool.Parameters.ValueKind == JsonValueKind.Undefined
+                        ? new JsonObject()
+                        : JsonNode.Parse(tool.Parameters.GetRawText());
                 tools.Add(new JsonObject { ["type"] = "function", ["function"] = function });
             }
 
