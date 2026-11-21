@@ -4949,6 +4949,18 @@ public class StreamTextResult
         Steps = result.Steps;
         RawFinishReason = result.RawFinishReason;
         Files = result.Files;
+        FinalStep = result.FinalStep;
+        Content = result.Content;
+        Warnings = result.Warnings;
+        ReasoningText = result.ReasoningText;
+        Reasoning = result.Reasoning;
+        Sources = result.Sources;
+        ToolCalls = result.ToolCalls;
+        StaticToolCalls = result.StaticToolCalls;
+        DynamicToolCalls = result.DynamicToolCalls;
+        ToolResults = result.ToolResults;
+        StaticToolResults = result.StaticToolResults;
+        DynamicToolResults = result.DynamicToolResults;
         Request = result.Request;
         Response = result.Response;
         ResponseMessages = result.ResponseMessages;
@@ -4972,7 +4984,19 @@ public class StreamTextResult
         Usage = usage;
         Steps = steps;
         RawFinishReason = FromFinalStep(steps, step => step.RawFinishReason);
-        Files = FromFinalStep(steps, step => step.Files);
+        Files = FromAllSteps(steps, step => step.Files);
+        FinalStep = FromFinalStep(steps, step => step);
+        Content = FromAllSteps(steps, step => step.Content);
+        Warnings = FromAllSteps(steps, step => step.Warnings);
+        ReasoningText = FromFinalStep(steps, step => step.ReasoningText);
+        Reasoning = FromFinalStep(steps, step => step.Reasoning);
+        Sources = FromAllSteps(steps, step => step.Sources);
+        ToolCalls = FromAllSteps(steps, step => step.ToolCalls);
+        StaticToolCalls = FromAllSteps(steps, step => step.StaticToolCalls);
+        DynamicToolCalls = FromAllSteps(steps, step => step.DynamicToolCalls);
+        ToolResults = FromAllSteps(steps, step => step.ToolResults);
+        StaticToolResults = FromAllSteps(steps, step => step.StaticToolResults);
+        DynamicToolResults = FromAllSteps(steps, step => step.DynamicToolResults);
         Request = FromFinalStep(steps, step => step.Request);
         Response = FromFinalStep(steps, step => step.Response);
         ResponseMessages = AllResponseMessages(initialResponseMessages, steps);
@@ -4999,6 +5023,48 @@ public class StreamTextResult
             TaskContinuationOptions.OnlyOnFaulted
         );
         _ = Output.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
+        _ = FinalStep.ContinueWith(
+            task => _ = task.Exception,
+            TaskContinuationOptions.OnlyOnFaulted
+        );
+        _ = Content.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
+        _ = Warnings.ContinueWith(
+            task => _ = task.Exception,
+            TaskContinuationOptions.OnlyOnFaulted
+        );
+        _ = ReasoningText.ContinueWith(
+            task => _ = task.Exception,
+            TaskContinuationOptions.OnlyOnFaulted
+        );
+        _ = Reasoning.ContinueWith(
+            task => _ = task.Exception,
+            TaskContinuationOptions.OnlyOnFaulted
+        );
+        _ = Sources.ContinueWith(task => _ = task.Exception, TaskContinuationOptions.OnlyOnFaulted);
+        _ = ToolCalls.ContinueWith(
+            task => _ = task.Exception,
+            TaskContinuationOptions.OnlyOnFaulted
+        );
+        _ = StaticToolCalls.ContinueWith(
+            task => _ = task.Exception,
+            TaskContinuationOptions.OnlyOnFaulted
+        );
+        _ = DynamicToolCalls.ContinueWith(
+            task => _ = task.Exception,
+            TaskContinuationOptions.OnlyOnFaulted
+        );
+        _ = ToolResults.ContinueWith(
+            task => _ = task.Exception,
+            TaskContinuationOptions.OnlyOnFaulted
+        );
+        _ = StaticToolResults.ContinueWith(
+            task => _ = task.Exception,
+            TaskContinuationOptions.OnlyOnFaulted
+        );
+        _ = DynamicToolResults.ContinueWith(
+            task => _ = task.Exception,
+            TaskContinuationOptions.OnlyOnFaulted
+        );
     }
 
     // The results of the approvals that settled before the first step come first, as upstream's initialResponseMessages do.
@@ -5020,6 +5086,15 @@ public class StreamTextResult
         // Steps carries the failure, so a failed stream throws its error here.
         await steps.ConfigureAwait(false);
         return await output.ConfigureAwait(false);
+    }
+
+    private static async Task<IReadOnlyList<T>> FromAllSteps<T>(
+        Task<IReadOnlyList<StepResult>> steps,
+        Func<StepResult, IEnumerable<T>> select
+    )
+    {
+        var completed = await steps.ConfigureAwait(false);
+        return completed.SelectMany(select).ToArray();
     }
 
     private static async Task<T> FromFinalStep<T>(
@@ -5281,8 +5356,44 @@ public class StreamTextResult
     /// <summary>Completed steps. Completes when the stream finishes.</summary>
     public Task<IReadOnlyList<StepResult>> Steps { get; }
 
-    /// <summary>Files generated in the last step. Completes when the stream finishes. Maps to <c>files</c>.</summary>
+    /// <summary>Files generated in every step. Completes when the stream finishes. Maps to <c>files</c>.</summary>
     public Task<IReadOnlyList<GeneratedFile>> Files { get; }
+
+    /// <summary>The last completed step. Completes when the stream finishes. Maps to <c>finalStep</c>.</summary>
+    public Task<StepResult> FinalStep { get; }
+
+    /// <summary>Content from every step. See <see cref="StepResult.Content"/>. Completes when the stream finishes. Maps to <c>content</c>.</summary>
+    public Task<IReadOnlyList<GeneratedContent>> Content { get; }
+
+    /// <summary>Warnings from every step. Completes when the stream finishes. Maps to <c>warnings</c>.</summary>
+    public Task<IReadOnlyList<CallWarning>> Warnings { get; }
+
+    /// <summary>Reasoning text of the last step. Completes when the stream finishes. Maps to <c>reasoningText</c>.</summary>
+    public Task<string?> ReasoningText { get; }
+
+    /// <summary>The reasoning parts and reasoning files of the last step. Completes when the stream finishes. Maps to <c>reasoning</c>.</summary>
+    public Task<IReadOnlyList<GeneratedContent>> Reasoning { get; }
+
+    /// <summary>Sources from every step. Completes when the stream finishes. Maps to <c>sources</c>.</summary>
+    public Task<IReadOnlyList<GeneratedSource>> Sources { get; }
+
+    /// <summary>Tool calls from every step. Completes when the stream finishes. Maps to <c>toolCalls</c>.</summary>
+    public Task<IReadOnlyList<GeneratedToolCall>> ToolCalls { get; }
+
+    /// <summary>Static tool calls from every step. Completes when the stream finishes. Maps to <c>staticToolCalls</c>.</summary>
+    public Task<IReadOnlyList<GeneratedToolCall>> StaticToolCalls { get; }
+
+    /// <summary>Dynamic tool calls from every step. Completes when the stream finishes. Maps to <c>dynamicToolCalls</c>.</summary>
+    public Task<IReadOnlyList<GeneratedToolCall>> DynamicToolCalls { get; }
+
+    /// <summary>Tool results from every step. Completes when the stream finishes. Maps to <c>toolResults</c>.</summary>
+    public Task<IReadOnlyList<ExecutedTool>> ToolResults { get; }
+
+    /// <summary>Static tool results from every step. Completes when the stream finishes. Maps to <c>staticToolResults</c>.</summary>
+    public Task<IReadOnlyList<ExecutedTool>> StaticToolResults { get; }
+
+    /// <summary>Dynamic tool results from every step. Completes when the stream finishes. Maps to <c>dynamicToolResults</c>.</summary>
+    public Task<IReadOnlyList<ExecutedTool>> DynamicToolResults { get; }
 
     /// <summary>
     /// Additional request information of the last step. <see cref="LanguageModelRequestMetadata.Body"/> and
