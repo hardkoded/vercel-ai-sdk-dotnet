@@ -250,9 +250,8 @@ public sealed class OptionsOnStepStartTests
                                 Seed = 0,
                                 Reasoning = "provider-default",
                             }
-                            : context.StepNumber == 2
-                                ? new PrepareStepUpdate { Temperature = null }
-                                : null,
+                        : context.StepNumber == 2 ? new PrepareStepUpdate { Temperature = null }
+                        : null,
                     OnLanguageModelCallStart = (@event, _) =>
                     {
                         modelCallStartEvents.Add(@event);
@@ -277,17 +276,17 @@ public sealed class OptionsOnStepStartTests
             );
 
         static object?[] Settings(LanguageModelCallOptions options) =>
-        [
-            options.MaxOutputTokens,
-            options.Temperature,
-            options.TopP,
-            options.TopK,
-            options.PresencePenalty,
-            options.FrequencyPenalty,
-            string.Join(",", options.StopSequences ?? []),
-            options.Seed,
-            options.Reasoning,
-        ];
+            [
+                options.MaxOutputTokens,
+                options.Temperature,
+                options.TopP,
+                options.TopK,
+                options.PresencePenalty,
+                options.FrequencyPenalty,
+                string.Join(",", options.StopSequences ?? []),
+                options.Seed,
+                options.Reasoning,
+            ];
 
         object?[] outerSettings = [100, 1.0, 0.9, 40, 0.4, 0.3, "outer", 123, "high"];
         object?[] stepSettings = [50, 0.0, 0.5, 10, 0.0, -0.2, "", 0, "provider-default"];
@@ -295,9 +294,6 @@ public sealed class OptionsOnStepStartTests
 
         Assert.Equal(expected, modelCallOptions.Select(Settings));
         Assert.Equal(expected, modelCallStartEvents.Select(e => Settings(e.CallOptions)));
-        Assert.Equal(
-            expected,
-            telemetryModelCallStartEvents.Select(e => Settings(e.CallOptions))
-        );
+        Assert.Equal(expected, telemetryModelCallStartEvents.Select(e => Settings(e.CallOptions)));
     }
 }

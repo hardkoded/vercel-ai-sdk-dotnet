@@ -561,7 +561,10 @@ internal static class Generation
                         .ConfigureAwait(false);
                 }
 
-                if (TelemetryDispatcher.Create(options).OnLanguageModelCallStart is { } telemetryCallStart)
+                if (
+                    TelemetryDispatcher.Create(options).OnLanguageModelCallStart is
+                    { } telemetryCallStart
+                )
                 {
                     await telemetryCallStart(
                             new LanguageModelCallStartEvent
@@ -1372,8 +1375,8 @@ internal static class Generation
                 streamOptions.TopP = update?.TopP ?? options.TopP;
                 streamOptions.TopK = update?.TopK ?? options.TopK;
                 streamOptions.PresencePenalty = update?.PresencePenalty ?? options.PresencePenalty;
-                streamOptions.FrequencyPenalty =
-                    update?.FrequencyPenalty ?? options.FrequencyPenalty;
+                streamOptions.FrequencyPenalty = update?.FrequencyPenalty
+                    ?? options.FrequencyPenalty;
                 streamOptions.StopSequences = update?.StopSequences ?? options.StopSequences;
                 streamOptions.Seed = update?.Seed ?? options.Seed;
                 streamOptions.Reasoning = update?.Reasoning ?? options.Reasoning;
