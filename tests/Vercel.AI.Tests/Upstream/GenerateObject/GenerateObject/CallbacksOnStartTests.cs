@@ -64,7 +64,9 @@ public sealed class CallbacksOnStartTests
         Assert.NotNull(startEvent);
         Assert.Equal("test-call-id", startEvent.CallId);
         Assert.Null(startEvent.FrequencyPenalty);
-        var userAgent = Assert.Single(Assert.IsAssignableFrom<IReadOnlyDictionary<string, string?>>(startEvent.Headers));
+        var userAgent = Assert.Single(
+            Assert.IsAssignableFrom<IReadOnlyDictionary<string, string?>>(startEvent.Headers)
+        );
         Assert.Equal("user-agent", userAgent.Key);
         Assert.Equal(AiSdkVersion.UserAgent, userAgent.Value);
         Assert.Equal(100, startEvent.MaxOutputTokens);
