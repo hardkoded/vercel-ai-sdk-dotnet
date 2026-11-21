@@ -23,7 +23,8 @@ public sealed class HeyGenVideoModelTests
     [InlineData("image_to_video")]
     [UpstreamTest(
         Prefix + "supports 30-second %s clips at every resolution with compatible enhancement",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "6f41ccc1f8ef8ab6ae283c7d0eda6de5d95d4bcb"
     )]
     public async Task Supports_30_second_clips_at_every_resolution_with_compatible_enhancement(
         string mode
@@ -71,7 +72,8 @@ public sealed class HeyGenVideoModelTests
     [InlineData("reference_to_video")]
     [UpstreamTest(
         Prefix + "passes long %s requests through without imposing provider duration limits",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "6f41ccc1f8ef8ab6ae283c7d0eda6de5d95d4bcb"
     )]
     public async Task Passes_long_requests_through_without_imposing_provider_duration_limits(
         string mode
@@ -114,7 +116,8 @@ public sealed class HeyGenVideoModelTests
     [Fact]
     [UpstreamTest(
         Prefix + "propagates a provider duration rejection without clamping or retrying",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "6f41ccc1f8ef8ab6ae283c7d0eda6de5d95d4bcb"
     )]
     public async Task Propagates_a_provider_duration_rejection_without_clamping_or_retrying()
     {
@@ -142,7 +145,8 @@ public sealed class HeyGenVideoModelTests
     [Fact]
     [UpstreamTest(
         Prefix + "accepts the documented ultraquality enhancement and forwards it unchanged",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "6f41ccc1f8ef8ab6ae283c7d0eda6de5d95d4bcb"
     )]
     public async Task Accepts_the_documented_ultraquality_enhancement_and_forwards_it_unchanged()
     {
