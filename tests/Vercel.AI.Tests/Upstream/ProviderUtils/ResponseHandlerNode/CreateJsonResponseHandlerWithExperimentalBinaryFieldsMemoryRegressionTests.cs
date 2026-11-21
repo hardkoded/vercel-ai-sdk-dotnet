@@ -24,6 +24,8 @@ public sealed class CreateJsonResponseHandlerWithExperimentalBinaryFieldsMemoryR
     private const string Prefix =
         "packages/provider-utils/src/response-handler.node.test.ts::createJsonResponseHandler with experimental_binaryFields memory regression::";
 
+    private const string Commit = "89aff561654b229271a3995bea3d0ff1042fecd2";
+
     private const int ImageMiB = 24;
     private const int ImageCount = 2;
     private const int ImageBytes = ImageMiB * 1024 * 1024;
@@ -72,7 +74,8 @@ public sealed class CreateJsonResponseHandlerWithExperimentalBinaryFieldsMemoryR
     [Fact]
     [UpstreamTest(
         Prefix + "decodes 2 x 24 MiB images within a 48 MiB heap",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
     )]
     public async Task Decodes_2_x_24_MiB_images_within_a_48_MiB_heap()
     {
@@ -114,7 +117,8 @@ public sealed class CreateJsonResponseHandlerWithExperimentalBinaryFieldsMemoryR
     [UpstreamTest(
         Prefix
             + "reports a Standard Schema validator that rejects a 24 MiB image within a 48 MiB heap",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
     )]
     public async Task Reports_a_Standard_Schema_validator_that_rejects_a_24_MiB_image_within_a_48_MiB_heap()
     {
@@ -151,7 +155,8 @@ public sealed class CreateJsonResponseHandlerWithExperimentalBinaryFieldsMemoryR
     [Fact]
     [UpstreamTest(
         Prefix + "preserves many empty and short matched strings within a 48 MiB heap",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
     )]
     public async Task Preserves_many_empty_and_short_matched_strings_within_a_48_MiB_heap()
     {
