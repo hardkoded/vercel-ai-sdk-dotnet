@@ -131,14 +131,16 @@ internal static class ParallelDecisionApi
         }
 
         var usage = Property(root, "usage", JsonValueKind.Object);
-        var inputTokens = Property(usage, "input_tokens", JsonValueKind.Number);
-        if (!inputTokens.TryGetInt32(out var input) || input < 0)
+        // z.number().int().nonnegative(): judge the numeric value, not its JSON spelling (4212.0, 4.212e3).
+        var input = Integer(Property(usage, "input_tokens", JsonValueKind.Number));
+        if (input < 0)
         {
             throw new FormatException("Invalid input_tokens.");
         }
 
-        var outputTokens = Property(usage, "output_tokens", JsonValueKind.Number);
-        if (!outputTokens.TryGetInt32(out var output) || output != 0)
+        // z.literal(0)
+        var output = Integer(Property(usage, "output_tokens", JsonValueKind.Number));
+        if (output != 0)
         {
             throw new FormatException("Invalid output_tokens.");
         }
@@ -162,6 +164,17 @@ internal static class ParallelDecisionApi
         }
 
         return value;
+    }
+
+    private static int Integer(JsonElement value)
+    {
+        var number = value.GetDouble();
+        if (number != Math.Floor(number) || number < int.MinValue || number > int.MaxValue)
+        {
+            throw new FormatException("Expected an integer.");
+        }
+
+        return (int)number;
     }
 
     // z.number().min(0).max(1)

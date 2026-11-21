@@ -25,7 +25,7 @@ var provider = ParallelProvider.Create(new ParallelProviderSettings { ApiKey = "
 ```csharp
 var result = await Decide.DecideAsync(new DecideRequest
 {
-    Model = ParallelProvider.Default.DecisionModel("fast"),
+    Model = provider.DecisionModel("fast"), // or ParallelProvider.Default when PARALLEL_API_KEY is set
     State = DecisionState.FromJson(
         JsonDocument.Parse("""{"company":"Parallel","website":"https://parallel.ai"}""").RootElement),
     Questions = new Dictionary<string, DecisionQuestion>

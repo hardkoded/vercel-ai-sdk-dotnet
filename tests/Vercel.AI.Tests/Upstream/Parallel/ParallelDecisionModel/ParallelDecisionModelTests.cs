@@ -118,6 +118,14 @@ public sealed class ParallelDecisionModelTests
         Assert.Equal(fixture["decision_id"]!.GetValue<string>(), result.Response!.Id);
         Assert.Equal("fast", result.Response.ModelId);
         JsonAssert.Equal(result.Response.Body!.Value, Fixture);
+
+        // The usage schema judges the numeric value, not its JSON spelling.
+        var spelled = FixtureNode();
+        spelled["usage"] = JsonNode.Parse("""{"input_tokens":4212.0,"output_tokens":0e0}""");
+        var equivalent = await CreateModel(new ParallelServer(spelled.ToJsonString()))
+            .DoDecideAsync(Call(), CancellationToken.None);
+        Assert.Equal(4212, equivalent.Usage!.InputTokens);
+        Assert.Equal(0, equivalent.Usage.OutputTokens);
     }
 
     [Fact]
@@ -293,7 +301,7 @@ public sealed class ParallelDecisionModelTests
     [Fact]
     [UpstreamTest(
         Prefix + "passes abort signals through unchanged",
-        Coverage = UpstreamCoverage.Covered,
+        Coverage = UpstreamCoverage.Partial,
         Commit = UpstreamCommit,
         Note = "HttpClient hands the handler a linked token, never the caller's own instance, so identity is asserted as propagation: canceling the caller's token cancels the token the handler received."
     )]
@@ -433,6 +441,22 @@ public sealed class ParallelDecisionModelTests
         );
         await restored.DoDecideAsync(Call(), CancellationToken.None);
         Assert.Equal("test-key", Assert.Single(server.Calls).Headers["x-api-key"]);
+
+        // A config persisted as JSON comes back with JsonElement values.
+        var persisted = JsonSerializer.Deserialize<Dictionary<string, object?>>(
+            JsonSerializer.Serialize(serialized.Config)
+        )!;
+        var fromJson = new ParallelServer();
+        await DecisionParallelModel
+            .Deserialize(
+                new SerializedModelOptions(serialized.ModelId, persisted),
+                new HttpClient(fromJson, disposeHandler: false)
+            )
+            .DoDecideAsync(Call(), CancellationToken.None);
+        var jsonCall = Assert.Single(fromJson.Calls);
+        Assert.Equal(Url, jsonCall.Url);
+        Assert.Equal("test-key", jsonCall.Headers["x-api-key"]);
+        Assert.Equal("custom", jsonCall.Headers["x-provider"]);
     }
 
     [Fact]

@@ -112,25 +112,22 @@ public sealed class DecisionParallelModel : IDecisionCaller
         var config = new ParallelDecisionModelConfig { HttpClient = httpClient };
         if (
             options.Config.TryGetValue("provider", out var provider)
-            && provider is string providerId
+            && AsString(provider) is { } providerId
         )
         {
             config.Provider = providerId;
         }
 
-        if (options.Config.TryGetValue("baseURL", out var baseUrl) && baseUrl is string url)
+        if (options.Config.TryGetValue("baseURL", out var baseUrl) && AsString(baseUrl) is { } url)
         {
             config.BaseUrl = url;
         }
 
         if (
             options.Config.TryGetValue("headers", out var headers)
-            && headers is IDictionary<string, object?> values
+            && AsStringMap(headers) is { } copy
         )
         {
-            var copy = values
-                .Where(pair => pair.Value is string)
-                .ToDictionary(pair => pair.Key, pair => (string)pair.Value!);
             config.Headers = () => copy;
         }
 
@@ -319,6 +316,45 @@ public sealed class DecisionParallelModel : IDecisionCaller
         }
 
         return values.Count == 1 ? values[0] : new JsonArray(values.ToArray());
+    }
+
+    // A config restored through System.Text.Json holds JsonElement values instead of strings and dictionaries.
+    private static string? AsString(object? value) =>
+        value switch
+        {
+            string text => text,
+            JsonElement { ValueKind: JsonValueKind.String } element => element.GetString(),
+            _ => null,
+        };
+
+    private static Dictionary<string, string>? AsStringMap(object? value)
+    {
+        var map = new Dictionary<string, string>();
+        switch (value)
+        {
+            case IDictionary<string, object?> values:
+                foreach (var pair in values)
+                {
+                    if (AsString(pair.Value) is { } text)
+                    {
+                        map[pair.Key] = text;
+                    }
+                }
+
+                return map;
+            case JsonElement { ValueKind: JsonValueKind.Object } element:
+                foreach (var pair in element.EnumerateObject())
+                {
+                    if (pair.Value.ValueKind == JsonValueKind.String)
+                    {
+                        map[pair.Name] = pair.Value.GetString()!;
+                    }
+                }
+
+                return map;
+            default:
+                return null;
+        }
     }
 
     // Maps to the request validation at the top of doDecide.
