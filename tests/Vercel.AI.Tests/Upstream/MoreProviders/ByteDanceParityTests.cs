@@ -430,6 +430,7 @@ public sealed class ByteDanceParityTests
     [Theory]
     [InlineData("", null, null, null, null)]
     [InlineData(",\"seed\":42", null, null, null, 42)]
+    [InlineData(",\"seed\":0", null, null, null, 0)]
     [InlineData(",\"ratio\":\"16:9\"", "16:9", null, null, null)]
     [InlineData(",\"ratio\":\"adaptive\"", "adaptive", null, null, null)]
     [InlineData(",\"duration\":5", null, null, 5.0, null)]
@@ -444,6 +445,11 @@ public sealed class ByteDanceParityTests
     [UpstreamTest(
         Video + "doStart::should pass seed when provided",
         Coverage = UpstreamCoverage.Covered
+    )]
+    [UpstreamTest(
+        Video + "doStart::should pass seed when it is 0",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "ef2dfb5e9fb7b72287b226eba8b743f809414172"
     )]
     [UpstreamTest(
         Video + "doStart::should pass aspect ratio when provided",
