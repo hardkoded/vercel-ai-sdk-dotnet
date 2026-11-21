@@ -95,7 +95,8 @@ public sealed class RedirectsTests
     [Fact]
     [UpstreamTest(
         Prefix + "returns an error for an invalid redirect location",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "dffe4053c15709577329518044b1ec1d4c6bb0fe"
     )]
     public async Task ReturnsAnErrorForAnInvalidRedirectLocation()
     {
