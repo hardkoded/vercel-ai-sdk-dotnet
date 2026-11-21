@@ -21,6 +21,34 @@ public sealed class AnthropicComputerToolsetMemberConfig
 public static class AnthropicTools
 {
     /// <summary>
+    /// Input schema of the provider-defined tool <paramref name="id"/>, or null for an unknown id. Maps to finding the
+    /// factory of <c>anthropicTools</c> with that id and reading its <c>inputSchema</c>.
+    /// </summary>
+    internal static JsonElement? InputSchemaFor(string id)
+    {
+        switch (id)
+        {
+            case "anthropic.bash_20241022":
+            case "anthropic.bash_20250124":
+                return JsonSerializer.SerializeToElement(
+                    new JsonObject
+                    {
+                        ["type"] = "object",
+                        ["properties"] = new JsonObject
+                        {
+                            ["command"] = new JsonObject { ["type"] = "string" },
+                            ["restart"] = new JsonObject { ["type"] = "boolean" },
+                        },
+                        ["required"] = new JsonArray("command"),
+                        ["additionalProperties"] = false,
+                    }
+                );
+            default:
+                return null;
+        }
+    }
+
+    /// <summary>
     /// Member tools of the computer toolset. Each member is returned by the API as its own <c>tool_use</c> block;
     /// the AI SDK exposes it as the <c>action</c> of a single computer tool call. Maps to <c>computerToolset_20260801Members</c>.
     /// </summary>

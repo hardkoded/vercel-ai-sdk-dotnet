@@ -190,6 +190,12 @@ public sealed class AmazonBedrockProvider : ProviderBase
     public override ILanguageModel LanguageModel(string modelId) =>
         new AmazonBedrockLanguageModel(this, modelId);
 
+    /// <summary>Creates a language model with <paramref name="settings"/>.</summary>
+    public AmazonBedrockLanguageModel LanguageModel(
+        string modelId,
+        AmazonBedrockChatModelSettings? settings
+    ) => new AmazonBedrockLanguageModel(this, modelId, settings);
+
     /// <inheritdoc />
     public override IRerankingModel RerankingModel(string modelId) =>
         new AmazonBedrockRerankingModel(this, modelId);
@@ -222,12 +228,18 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
     private const string JsonToolName = "json";
 
     private readonly AmazonBedrockProvider _provider;
+    private readonly AmazonBedrockChatModelFamily? _modelFamily;
 
     /// <summary>Creates a model.</summary>
-    public AmazonBedrockLanguageModel(AmazonBedrockProvider provider, string modelId)
+    public AmazonBedrockLanguageModel(
+        AmazonBedrockProvider provider,
+        string modelId,
+        AmazonBedrockChatModelSettings? settings = null
+    )
     {
         _provider = provider;
         ModelId = modelId;
+        _modelFamily = settings?.ModelFamily;
     }
 
     /// <inheritdoc />
@@ -895,7 +907,8 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
         var capabilities = AnthropicModelCapabilities.Get(ModelId);
         var isAnthropicModel = AmazonBedrockModelSupport.IsAnthropicModel(
             ModelId,
-            reasoningConfig?.BudgetTokens
+            reasoningConfig?.BudgetTokens,
+            _modelFamily
         );
         var temperature = options.Temperature;
         var topP = options.TopP;
@@ -1017,7 +1030,11 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
             && schema.ValueKind != JsonValueKind.Undefined;
         var supportsNative =
             AmazonBedrockModelSupport.SupportsNativeStructuredOutput(ModelId)
-            && (capabilities.SupportsStructuredOutput || isThinkingEnabled);
+            && (
+                capabilities.SupportsStructuredOutput
+                || isThinkingEnabled
+                || _modelFamily == AmazonBedrockChatModelFamily.Anthropic
+            );
         var useNativeStructuredOutput =
             isAnthropicModel
             && hasSchema
@@ -1081,15 +1098,26 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
             ModelId,
             tools,
             toolChoice,
+            _modelFamily,
             reasoningConfig?.BudgetTokens,
             ReadBool(
                 ReadProviderOptions(options.ProviderOptions, "anthropic"),
                 "disableParallelToolUse"
             ),
+            capabilities.RejectsForcedToolUse,
             out var toolWarnings,
-            out var additionalTools
+            out var additionalTools,
+            out var betas
         );
         warnings.AddRange(toolWarnings);
+        if (betas.Count > 0)
+        {
+            additional ??= new JsonObject();
+            additional["anthropic_beta"] = new JsonArray(
+                betas.Select(beta => (JsonNode?)JsonValue.Create(beta)).ToArray()
+            );
+        }
+
         if (additionalTools != null)
         {
             additional ??= new JsonObject();

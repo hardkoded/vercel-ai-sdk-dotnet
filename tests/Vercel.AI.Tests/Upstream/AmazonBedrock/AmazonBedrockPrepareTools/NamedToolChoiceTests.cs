@@ -139,6 +139,41 @@ public sealed class NamedToolChoiceTests
         Assert.Null(config["toolChoice"]);
     }
 
+    [Fact]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/amazon-bedrock-prepare-tools.test.ts::prepareTools > tool choice > named tool choice::should send provider tools and every function tool with the named tool choice",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "62a4dcd641895b3aca4698015c0378b2bd558c4e"
+    )]
+    public void Should_send_provider_tools_and_every_function_tool_with_the_named_tool_choice()
+    {
+        var bash = LanguageModelTool.ProviderDefined(
+            "anthropic.bash_20250124",
+            "bash",
+            JsonDocument.Parse("{}").RootElement.Clone()
+        );
+        var config = AmazonBedrockTools.Prepare(
+            AnthropicModel,
+            [.. Tools(), bash],
+            ToolChoice.Tool("getWeather"),
+            null,
+            null,
+            null,
+            false,
+            out _,
+            out var additionalTools,
+            out _
+        );
+
+        Assert.Equal(["bash", "getWeather", "getTime"], Names(config));
+        // Upstream mocks the Anthropic preparer and asserts its arguments (named tool choice, parallel tool
+        // use disabled). The port runs the real preparer, so it asserts the `tool_choice` that results.
+        Assert.Equal(
+            "{\"tool_choice\":{\"type\":\"tool\",\"name\":\"getWeather\",\"disable_parallel_tool_use\":true}}",
+            additionalTools!.ToJsonString()
+        );
+    }
+
     [Theory]
     [InlineData("openai.gpt-oss-20b-1:0")]
     [InlineData("us.amazon.nova-pro-v1:0")]

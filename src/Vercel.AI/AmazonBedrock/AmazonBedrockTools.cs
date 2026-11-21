@@ -4,6 +4,7 @@
 
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Vercel.AI.Anthropic;
 using Vercel.AI.Provider;
 
 namespace Vercel.AI.AmazonBedrock;
@@ -38,47 +39,221 @@ public static class AmazonBedrockTools
         bool? disableParallelToolUse,
         out List<CallWarning> warnings,
         out JsonObject? additionalTools
+    ) =>
+        Prepare(
+            modelId,
+            tools,
+            toolChoice,
+            null,
+            reasoningBudgetTokens,
+            disableParallelToolUse,
+            false,
+            out warnings,
+            out additionalTools,
+            out _
+        );
+
+    /// <summary>
+    /// Prepares function and provider tools. Maps to <c>prepareTools</c>.
+    /// <paramref name="rejectsForcedToolUse"/> makes an Anthropic model that rejects forced tool use fall back
+    /// from <c>required</c> or a named choice to <c>auto</c>, with a warning. A named choice then sends only the named tool.
+    /// <paramref name="betas"/> are the Anthropic beta headers the provider tools need.
+    /// </summary>
+    public static JsonObject Prepare(
+        string modelId,
+        IReadOnlyList<LanguageModelTool>? tools,
+        ToolChoice? toolChoice,
+        AmazonBedrockChatModelFamily? modelFamily,
+        int? reasoningBudgetTokens,
+        bool? disableParallelToolUse,
+        bool rejectsForcedToolUse,
+        out List<CallWarning> warnings,
+        out JsonObject? additionalTools,
+        out IReadOnlyCollection<string> betas
     )
     {
-        warnings = new List<CallWarning>();
+        var toolWarnings = new List<CallWarning>();
+        var betaSet = new List<string>();
+        warnings = toolWarnings;
         additionalTools = null;
-        if (tools == null || tools.Count == 0 || toolChoice is { Type: "none" })
+        betas = betaSet;
+        if (tools == null || tools.Count == 0)
+        {
+            return new JsonObject();
+        }
+
+        // Filter out Anthropic web tools that Amazon Bedrock does not support.
+        var supportedTools = new List<LanguageModelTool>();
+        foreach (var tool in tools)
+        {
+            if (
+                tool.ProviderToolId
+                is "anthropic.web_search_20250305"
+                    or "anthropic.web_search_20260318"
+                    or "anthropic.web_fetch_20260318"
+            )
+            {
+                var toolType = tool.ProviderToolId.Substring("anthropic.".Length);
+                toolWarnings.Add(
+                    new CallWarning(
+                        "unsupported",
+                        toolType + " tool",
+                        "The " + toolType + " tool is not supported on Amazon Bedrock."
+                    )
+                );
+                continue;
+            }
+
+            supportedTools.Add(tool);
+        }
+
+        if (supportedTools.Count == 0)
         {
             return new JsonObject();
         }
 
         var isAnthropicModel = AmazonBedrockModelSupport.IsAnthropicModel(
             modelId,
-            reasoningBudgetTokens
+            reasoningBudgetTokens,
+            modelFamily
         );
+        var providerTools = supportedTools.Where(tool => tool.IsProviderDefined).ToList();
+        var functionTools = supportedTools.Where(tool => !tool.IsProviderDefined).ToList();
+        var namedChoice = toolChoice as ToolChoice.NamedChoice;
+        var rejectsForcedToolChoice =
+            isAnthropicModel
+            && rejectsForcedToolUse
+            && toolChoice is { Type: "required" or "tool" };
+        var providerToolsForRequest =
+            rejectsForcedToolChoice && namedChoice != null
+                ? providerTools
+                    .Where(tool =>
+                        string.Equals(tool.Name, namedChoice.ToolName, StringComparison.Ordinal)
+                    )
+                    .ToList()
+                : providerTools;
+        // A named tool choice keeps every function tool for these models (see below), so parallel tool use
+        // is disabled by default to keep the response to the named tool. `disableParallelToolUse: false` opts out.
         var disableParallelToolUseForRequest = disableParallelToolUse
-            ?? (isAnthropicModel && toolChoice is ToolChoice.NamedChoice ? true : null);
+            ?? (isAnthropicModel && namedChoice != null && !rejectsForcedToolChoice ? true : null);
 
-        // Anthropic models that accept forced tool use guarantee the named tool is called, so
-        // they keep every function tool. Other models only receive the named tool.
-        var selected = new List<LanguageModelTool>();
-        foreach (var tool in tools)
+        var prepared = new JsonArray();
+        var usingAnthropicTools = isAnthropicModel && providerToolsForRequest.Count > 0;
+
+        // Handle Anthropic provider-defined tools for Anthropic models on Bedrock.
+        if (usingAnthropicTools)
         {
-            if (
-                !isAnthropicModel
-                && toolChoice is ToolChoice.NamedChoice named
-                && !string.Equals(tool.Name, named.ToolName, StringComparison.Ordinal)
-            )
+            var anthropicPrepared = AnthropicToolPreparer.Prepare(
+                providerTools.Select(ToAnthropicTool).ToList(),
+                toolChoice?.Type,
+                namedChoice?.ToolName,
+                disableParallelToolUseForRequest,
+                supportsStructuredOutput: false,
+                supportsStrictTools: false,
+                rejectsForcedToolUse: rejectsForcedToolUse
+            );
+            foreach (var warning in anthropicPrepared.Warnings)
             {
-                continue;
+                toolWarnings.Add(
+                    warning.Details != null || warning.Feature != null
+                        ? new CallWarning(
+                            warning.Type,
+                            warning.Feature ?? string.Empty,
+                            warning.Details
+                        )
+                        : new CallWarning(warning.Type, warning.Message ?? string.Empty)
+                );
             }
 
-            selected.Add(tool);
+            foreach (var beta in anthropicPrepared.Betas)
+            {
+                if (!betaSet.Contains(beta))
+                {
+                    betaSet.Add(beta);
+                }
+            }
+
+            // For Anthropic tools on Bedrock, only the 'tool_choice' goes into additional fields.
+            // The tool definitions themselves are sent in the standard 'toolConfig'.
+            if (anthropicPrepared.ToolChoice != null)
+            {
+                additionalTools = new JsonObject
+                {
+                    ["tool_choice"] = anthropicPrepared.ToolChoice.DeepClone(),
+                };
+            }
+
+            // Create a standard Bedrock tool representation for validation purposes.
+            foreach (var tool in providerToolsForRequest)
+            {
+                if (AnthropicTools.InputSchemaFor(tool.ProviderToolId!) is { } inputSchema)
+                {
+                    prepared.Add(
+                        new JsonObject
+                        {
+                            ["toolSpec"] = new JsonObject
+                            {
+                                ["name"] = tool.Name,
+                                ["inputSchema"] = new JsonObject
+                                {
+                                    ["json"] = JsonNode.Parse(inputSchema.GetRawText()),
+                                },
+                            },
+                        }
+                    );
+                }
+                else
+                {
+                    toolWarnings.Add(
+                        new CallWarning("unsupported", "tool " + tool.ProviderToolId, null)
+                    );
+                }
+            }
+        }
+        else
+        {
+            // Report unsupported provider-defined tools for non-anthropic models.
+            foreach (var tool in providerToolsForRequest)
+            {
+                toolWarnings.Add(
+                    new CallWarning("unsupported", "tool " + tool.ProviderToolId, null)
+                );
+            }
         }
 
-        if (selected.Count == 0)
+        var preparedToolChoice = toolChoice;
+        if (!usingAnthropicTools && rejectsForcedToolChoice)
         {
-            return new JsonObject();
+            toolWarnings.Add(
+                new CallWarning(
+                    "unsupported",
+                    "toolChoice",
+                    namedChoice != null
+                        ? "toolChoice 'tool' is not supported by this model because it rejects forced tool use. "
+                            + "Only the '"
+                            + namedChoice.ToolName
+                            + "' tool is sent with 'auto' tool choice. "
+                            + "Instruct the model to use the tool in the prompt and verify that a tool call was made."
+                        : "toolChoice 'required' is not supported by this model because it rejects forced tool use. "
+                            + "Using 'auto' instead. Instruct the model to use a tool in the prompt and verify that a tool call was made."
+                )
+            );
+            preparedToolChoice = ToolChoice.Auto;
         }
+
+        // Anthropic models that accept forced tool use guarantee the named tool is called, so
+        // they keep every function tool. Other models only receive the named tool so they cannot call a different one.
+        var filteredFunctionTools =
+            namedChoice != null && (!isAnthropicModel || rejectsForcedToolChoice)
+                ? functionTools
+                    .Where(tool =>
+                        string.Equals(tool.Name, namedChoice.ToolName, StringComparison.Ordinal)
+                    )
+                    .ToList()
+                : functionTools;
 
         var supportsStrict = AmazonBedrockModelSupport.SupportsStrictTools(modelId);
-        var prepared = new JsonArray();
-        foreach (var tool in selected)
+        foreach (var tool in filteredFunctionTools)
         {
             var includeStrict = false;
             if (tool.Strict != null)
@@ -87,7 +262,7 @@ public static class AmazonBedrockTools
                 {
                     if (tool.Strict.Value)
                     {
-                        warnings.Add(
+                        toolWarnings.Add(
                             new CallWarning(
                                 "unsupported",
                                 "strict",
@@ -100,7 +275,7 @@ public static class AmazonBedrockTools
                 }
                 else if (tool.Strict.Value && !IsStrictSchemaCompatible(tool.InputSchema))
                 {
-                    warnings.Add(
+                    toolWarnings.Add(
                         new CallWarning(
                             "unsupported",
                             "strict",
@@ -134,14 +309,15 @@ public static class AmazonBedrockTools
             prepared.Add(new JsonObject { ["toolSpec"] = spec });
         }
 
-        var config = new JsonObject { ["tools"] = prepared };
         if (
             isAnthropicModel
+            && !usingAnthropicTools
             && disableParallelToolUseForRequest == true
-            && toolChoice is not { Type: "none" }
+            && prepared.Count > 0
+            && preparedToolChoice is not { Type: "none" }
         )
         {
-            var anthropicChoice = toolChoice switch
+            var anthropicChoice = preparedToolChoice switch
             {
                 { Type: "required" } => new JsonObject { ["type"] = "any" },
                 ToolChoice.NamedChoice named => new JsonObject
@@ -154,13 +330,48 @@ public static class AmazonBedrockTools
             anthropicChoice["disable_parallel_tool_use"] = true;
             additionalTools = new JsonObject { ["tool_choice"] = anthropicChoice };
         }
-        else if (toolChoice != null)
+
+        // Handle toolChoice for standard Bedrock tools, but NOT for Anthropic provider-defined tools.
+        JsonObject? bedrockToolChoice = null;
+        if (
+            !usingAnthropicTools
+            && additionalTools?["tool_choice"] == null
+            && prepared.Count > 0
+            && preparedToolChoice != null
+        )
         {
-            config["toolChoice"] = ToolChoiceObject(toolChoice);
+            if (preparedToolChoice.Type == "none")
+            {
+                prepared.Clear();
+            }
+            else
+            {
+                bedrockToolChoice = ToolChoiceObject(preparedToolChoice);
+            }
+        }
+
+        if (prepared.Count == 0)
+        {
+            return new JsonObject();
+        }
+
+        var config = new JsonObject { ["tools"] = prepared };
+        if (bedrockToolChoice != null)
+        {
+            config["toolChoice"] = bedrockToolChoice;
         }
 
         return config;
     }
+
+    private static AnthropicToolDefinition ToAnthropicTool(LanguageModelTool tool) =>
+        new()
+        {
+            Type = "provider",
+            Name = tool.Name,
+            Id = tool.ProviderToolId,
+            Args = tool.Args,
+        };
 
     private static JsonObject ToolChoiceObject(ToolChoice toolChoice)
     {
