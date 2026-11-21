@@ -421,7 +421,8 @@ public sealed class AmazonBedrockAnthropicProviderTests : BedrockEndpointEnviron
     [InlineData("global.anthropic.claude-haiku-5-5")]
     [UpstreamTest(
         "packages/amazon-bedrock/src/anthropic/amazon-bedrock-anthropic-provider.test.ts::amazon-bedrock-anthropic-provider::should enable native structured output and strict tools for %s",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "2cd0a97424762b59d9979b1bf2f55060bf443fb2"
     )]
     public void Should_enable_native_structured_output_and_strict_tools_for(string modelId)
     {

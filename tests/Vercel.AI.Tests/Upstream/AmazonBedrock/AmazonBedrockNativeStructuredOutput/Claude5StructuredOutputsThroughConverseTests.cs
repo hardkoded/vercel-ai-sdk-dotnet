@@ -24,7 +24,8 @@ public sealed class Claude5StructuredOutputsThroughConverseTests
     [InlineData("anthropic.claude-haiku-5-5")]
     [UpstreamTest(
         Prefix + "uses native output alongside user tools for %s in auto mode",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "2cd0a97424762b59d9979b1bf2f55060bf443fb2"
     )]
     public async Task Uses_native_output_alongside_user_tools_in_auto_mode(string modelId)
     {

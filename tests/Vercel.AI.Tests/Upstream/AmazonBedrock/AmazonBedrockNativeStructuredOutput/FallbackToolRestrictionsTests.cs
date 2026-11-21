@@ -34,7 +34,8 @@ public sealed class FallbackToolRestrictionsTests
     [MemberData(nameof(ToolChoices))]
     [UpstreamTest(
         RestrictionsPrefix + "preserves caller tool choice %j",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "2cd0a97424762b59d9979b1bf2f55060bf443fb2"
     )]
     public async Task Preserves_caller_tool_choice(
         string method,

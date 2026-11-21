@@ -29,7 +29,8 @@ public sealed class FallbackForTests
     [MemberData(nameof(FallbackSchemas))]
     [UpstreamTest(
         FallbackPrefix + "preserves the JSON tool on models that accept forced tool use",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "2cd0a97424762b59d9979b1bf2f55060bf443fb2"
     )]
     public async Task Preserves_the_JSON_tool_on_models_that_accept_forced_tool_use(
         string name,
@@ -51,7 +52,8 @@ public sealed class FallbackForTests
     [MemberData(nameof(FallbackSchemas))]
     [UpstreamTest(
         FallbackPrefix + "preserves JSON instructions on models that reject forced tool use",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "2cd0a97424762b59d9979b1bf2f55060bf443fb2"
     )]
     public async Task Preserves_JSON_instructions_on_models_that_reject_forced_tool_use(
         string name,
