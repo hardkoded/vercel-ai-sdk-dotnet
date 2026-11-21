@@ -2062,6 +2062,16 @@ var profileArn = "arn:aws:bedrock:us-east-1:123456789012:application-inference-p
 var model = provider.EmbeddingModel(profileArn, new AmazonBedrockEmbeddingModelSettings { ModelFamily = AmazonBedrockEmbeddingModelFamily.Cohere });
 ```
 
+For an Anthropic application inference profile, prefer `AmazonBedrockAnthropicProvider`. It uses `InvokeModel`, which accepts application inference profile ARNs, and identifies the model as Anthropic. To use the Converse API instead (for example, when IAM permits Converse but not InvokeModel), declare the family. The declaration enables the Anthropic-specific features of `AmazonBedrockProvider`, including native structured output, Anthropic provider tools, and the Anthropic `tool_choice` fields:
+
+```csharp
+var model = provider.LanguageModel(profileArn, new AmazonBedrockChatModelSettings { ModelFamily = AmazonBedrockChatModelFamily.Anthropic });
+```
+
+For an underlying model that does not reliably support native structured output, set `structuredOutputMode` to `"jsonTool"`.
+
+On Anthropic models, `AmazonBedrockProvider` sends Anthropic provider tools (such as `anthropic.bash_20250124`) in the Converse `toolConfig`, and adds the betas they need to `anthropic_beta`. The `web_search_20250305`, `web_search_20260318`, and `web_fetch_20260318` tools are not supported on Bedrock and produce an `unsupported` warning. Provider tools on other models also produce an `unsupported` warning. For models that reject forced tool use (such as Claude Opus 5.5 and Sonnet 5.5), a `required` or named tool choice falls back to `auto` with a warning. A named choice then sends only the named tool.
+
 `AmazonBedrockOptions.Headers` are sent with every embedding and reranking request. `AmazonBedrockEmbeddingModel.Headers` are sent with the next call and override provider headers with the same name. Both are signed with the request.
 
 `EmbeddingResult.Response` holds the raw headers and body of the call, and `EmbeddingResult.Warnings` its warnings. To send per-call headers, `dimensions`, or a `user` to an OpenAI-compatible embedding model, pass an `EmbeddingCallOptions` to `OpenAICompatibleEmbeddingModel.DoEmbedAsync`. The model keeps no per-call state, so concurrent calls do not see each other.

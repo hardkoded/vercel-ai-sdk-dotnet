@@ -70,16 +70,17 @@ public sealed class NamedToolChoiceTests
     )]
     public void Should_send_every_function_tool_for_a_declared_Anthropic_application_inference_profile()
     {
-        // The port infers an Anthropic profile from the reasoning budget, as upstream's
-        // detectAnthropicModel does; it has no `modelFamily` setting.
         var config = AmazonBedrockTools.Prepare(
             CustomProfile,
             Tools(),
             ToolChoice.Tool("getWeather"),
-            1024,
+            AmazonBedrockChatModelFamily.Anthropic,
             null,
+            null,
+            false,
             out _,
-            out var additionalTools
+            out var additionalTools,
+            out _
         );
 
         Assert.Equal(["getWeather", "getTime"], Names(config));
@@ -137,6 +138,38 @@ public sealed class NamedToolChoiceTests
             additionalTools!.ToJsonString()
         );
         Assert.Null(config["toolChoice"]);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/amazon-bedrock-prepare-tools.test.ts::prepareTools > tool choice > named tool choice::should send provider tools and every function tool with the named tool choice",
+        Coverage = UpstreamCoverage.Partial,
+        Commit = "f35668be8bd5fffafb1461f34c5d4b1ca9a43beb"
+    )]
+    public void Should_send_provider_tools_and_every_function_tool_with_the_named_tool_choice()
+    {
+        // Upstream mocks `prepareAnthropicTools` and asserts its arguments. The port asserts the
+        // request that the real preparer produces from them.
+        var bash = LanguageModelTool.ProviderDefined(
+            "anthropic.bash_20250124",
+            "bash",
+            JsonDocument.Parse("{}").RootElement.Clone()
+        );
+        var config = AmazonBedrockTools.Prepare(
+            AnthropicModel,
+            [Tool("getWeather", "Get weather"), Tool("getTime", "Get time"), bash],
+            ToolChoice.Tool("getWeather"),
+            null,
+            null,
+            out _,
+            out var additionalTools
+        );
+
+        Assert.Equal(["bash", "getWeather", "getTime"], Names(config));
+        Assert.Equal(
+            "{\"tool_choice\":{\"type\":\"tool\",\"name\":\"getWeather\",\"disable_parallel_tool_use\":true}}",
+            additionalTools!.ToJsonString()
+        );
     }
 
     [Theory]

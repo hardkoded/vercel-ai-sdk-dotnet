@@ -63,9 +63,14 @@ internal static class AmazonBedrockModelSupport
 
     private static (bool Strict, bool Native) NoStrictToolsOrNativeOutput => (false, false);
 
-    public static bool IsAnthropicModel(string modelId, int? reasoningBudgetTokens)
+    public static bool IsAnthropicModel(
+        string modelId,
+        AmazonBedrockChatModelFamily? modelFamily,
+        int? reasoningBudgetTokens
+    )
     {
-        return modelId.IndexOf("anthropic", StringComparison.Ordinal) >= 0
+        return modelFamily == AmazonBedrockChatModelFamily.Anthropic
+            || modelId.IndexOf("anthropic", StringComparison.Ordinal) >= 0
             || (
                 modelId.IndexOf(":application-inference-profile/", StringComparison.Ordinal) >= 0
                 && reasoningBudgetTokens != null
