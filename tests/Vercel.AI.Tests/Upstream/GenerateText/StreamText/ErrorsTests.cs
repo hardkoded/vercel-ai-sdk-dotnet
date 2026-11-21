@@ -1088,6 +1088,39 @@ public sealed class ErrorsTests
             OnError = (_, _) => Task.CompletedTask,
         };
 
+    // Object.freeze has no counterpart: the stream parts of the port are immutable already. The test keeps the recovery flow upstream checks.
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should recover when the first recovered provider part is frozen",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_recover_when_the_first_recovered_provider_part_is_frozen()
+    {
+        var recoveredTextStart = new TextStartStreamPart("recovered-text");
+        var model = new StreamTextTransformTestSupport.CallsModel(
+            (call, _) =>
+                new StreamTextTransformTestSupport.CallScript(
+                    call == 0
+                        ? [ProviderError()]
+                        :
+                        [
+                            recoveredTextStart,
+                            new TextDeltaStreamPart("recovered-text", "recovered"),
+                            new TextEndStreamPart("recovered-text"),
+                            StreamTextTransformTestSupport.Finish(),
+                        ]
+                )
+        );
+
+        var result = RetryClient().StreamTextAsync(RecoveringOptions(model));
+
+        await result.ConsumeStreamAsync();
+
+        Assert.Equal(2, model.CallCount);
+        Assert.Equal("recovered", await result.Text);
+        Assert.Equal(FinishReason.Stop, await result.FinishReason);
+    }
+
     [Fact]
     [UpstreamTest(
         Prefix + "should execute a repeated tool call id only from the recovered attempt",
