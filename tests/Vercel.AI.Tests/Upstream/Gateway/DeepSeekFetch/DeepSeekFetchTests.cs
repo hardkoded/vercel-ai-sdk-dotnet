@@ -14,7 +14,7 @@ public sealed class DeepSeekFetchTests
 {
     private const string Prefix =
         "packages/gateway/src/tool/deepseek-fetch.test.ts::deepseekFetch::";
-    private const string Commit = "2099d45";
+    private const string Commit = "2099d455e449b77778c9648a754e8c27b1a74829";
 
     private static IReadOnlyList<string> ValidateOutput(string json)
     {
