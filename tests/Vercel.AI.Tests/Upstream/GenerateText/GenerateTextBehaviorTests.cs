@@ -336,8 +336,7 @@ public sealed class GenerateTextBehaviorTests
     [MemberData(nameof(NoneToolChoiceCases))]
     [UpstreamTest(
         "packages/ai/src/generate-text/generate-text.test.ts::generateText > tool choice enforcement::should reject tool calls with none ($toolChoice, $stepToolChoice, $finishReason)",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The port has no onInputStart and onInputAvailable tool callbacks, so they are not asserted."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Should_reject_tool_calls_with_none(
         ToolChoice toolChoice,
@@ -346,6 +345,7 @@ public sealed class GenerateTextBehaviorTests
     )
     {
         var executed = false;
+        var inputCallbacks = 0;
         var callEnds = 0;
         var model = new TestLanguageModel
         {
@@ -365,11 +365,30 @@ public sealed class GenerateTextBehaviorTests
                         Prompt = "test-input",
                         Tools = new[]
                         {
-                            Tool.Function("tool1", null, "{\"type\":\"object\"}", (_, _) =>
+                            new Func<Tool>(() =>
                             {
-                                executed = true;
-                                return Task.FromResult("tool-result");
-                            }),
+                                var tool = Tool.Function(
+                                    "tool1",
+                                    null,
+                                    "{\"type\":\"object\"}",
+                                    (_, _) =>
+                                    {
+                                        executed = true;
+                                        return Task.FromResult("tool-result");
+                                    }
+                                );
+                                tool.OnInputStart = _ =>
+                                {
+                                    inputCallbacks++;
+                                    return Task.CompletedTask;
+                                };
+                                tool.OnInputAvailable = _ =>
+                                {
+                                    inputCallbacks++;
+                                    return Task.CompletedTask;
+                                };
+                                return tool;
+                            })(),
                         },
                         ToolChoice = toolChoice,
                         PrepareStep =
@@ -395,6 +414,7 @@ public sealed class GenerateTextBehaviorTests
         Assert.Equal("test", error.ModelId);
         Assert.IsType<GeneratedToolCall>(Assert.Single(error.Content));
         Assert.False(executed);
+        Assert.Equal(0, inputCallbacks);
         Assert.Equal(1, callEnds);
     }
 
@@ -1139,7 +1159,7 @@ public sealed class GenerateTextBehaviorTests
         return parts;
     }
 
-    private static Task<GenerateTextResult> TwoStepAsync(
+    private static Task<GenerateTextResult<string>> TwoStepAsync(
         IReadOnlyList<CallWarning>? warnings0 = null,
         IReadOnlyList<CallWarning>? warnings1 = null,
         Func<GenerateTextResult, CancellationToken, Task>? onFinish = null,
@@ -1215,7 +1235,7 @@ public sealed class GenerateTextBehaviorTests
             );
     }
 
-    private static Task<GenerateTextResult> ToolLoopAsync(
+    private static Task<GenerateTextResult<string>> ToolLoopAsync(
         Func<GenerateTextResult, CancellationToken, Task>? onFinish = null
     )
     {

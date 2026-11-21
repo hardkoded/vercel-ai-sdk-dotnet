@@ -78,6 +78,24 @@ API origin. Requests are posted to `{BaseUrl}/responses`.
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesProvider.cs#L20)
 
+<a id="Vercel_AI_OpenResponses_OpenResponsesOptions_CustomToolId_"></a>
+<a id="Vercel_AI_OpenResponses_OpenResponsesOptions_CustomToolId"></a>
+
+### CustomToolId
+
+
+```csharp
+public string CustomToolId { get; set; }
+```
+
+
+Provider-tool ID used for caller-executed Open Responses custom tools, shaped `<provider>.<tool>`.
+Maps to `customToolId`.
+
+**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesProvider.cs#L41)
+
 <a id="Vercel_AI_OpenResponses_OpenResponsesOptions_Extensions_"></a>
 <a id="Vercel_AI_OpenResponses_OpenResponsesOptions_Extensions"></a>
 
@@ -93,7 +111,7 @@ Codecs for Open Responses extension tools, items, and streaming events. Experime
 
 **Value:** [IReadOnlyList&lt;OpenResponsesExtension&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesProvider.cs#L47)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesProvider.cs#L53)
 
 <a id="Vercel_AI_OpenResponses_OpenResponsesOptions_GetResponseErrorMetadata_"></a>
 <a id="Vercel_AI_OpenResponses_OpenResponsesOptions_GetResponseErrorMetadata"></a>
@@ -111,7 +129,7 @@ Applies to both generation and streaming errors. Maps to `getResponseErrorMetada
 
 **Value:** [Func&lt;JsonElement, OpenResponsesErrorMetadata&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesProvider.cs#L44)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesProvider.cs#L50)
 
 <a id="Vercel_AI_OpenResponses_OpenResponsesOptions_Headers_"></a>
 <a id="Vercel_AI_OpenResponses_OpenResponsesOptions_Headers"></a>
@@ -128,7 +146,7 @@ Extra headers sent with every request.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesProvider.cs#L38)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesProvider.cs#L44)
 
 <a id="Vercel_AI_OpenResponses_OpenResponsesOptions_Name_"></a>
 <a id="Vercel_AI_OpenResponses_OpenResponsesOptions_Name"></a>

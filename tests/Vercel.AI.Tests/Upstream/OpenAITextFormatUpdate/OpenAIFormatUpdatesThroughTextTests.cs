@@ -186,7 +186,7 @@ public sealed class OpenAIFormatUpdatesThroughTextTests
                 result.Response,
                 result.ResponseMessages,
                 result.Text,
-                result.Output,
+                ((GenerateTextResult)result).Output,
                 result.ProviderMetadata
             );
         }

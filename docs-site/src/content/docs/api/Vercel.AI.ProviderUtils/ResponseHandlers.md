@@ -26,7 +26,7 @@ and `createStatusCodeErrorResponseHandler`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ResponseHandlers.cs#L36)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ResponseHandlers.cs#L69)
 
 ## Methods
 
@@ -61,7 +61,7 @@ Reads the body as bytes. Maps to `createBinaryResponseHandler`.
 | [ApiException](/api/Vercel.AI.Provider/ApiException/) | The response has no body. |
 | [DownloadError](/api/Vercel.AI.Util/DownloadError/) | The body is larger than [DefaultMaxBytes](/api/Vercel.AI.Util/Download/#Vercel_AI_Util_Download_DefaultMaxBytes). |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ResponseHandlers.cs#L41)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ResponseHandlers.cs#L167)
 
 <a id="Vercel_AI_ProviderUtils_ResponseHandlers_CreateBinaryStreamResponseAsync_"></a>
 <a id="Vercel_AI_ProviderUtils_ResponseHandlers_CreateBinaryStreamResponseAsync_System_Net_Http_HttpResponseMessage_"></a>
@@ -90,7 +90,7 @@ Passes the body through as a stream. Maps to `createBinaryStreamResponseHandler`
 | --- | --- |
 | [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception) | The response has no body. |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ResponseHandlers.cs#L72)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ResponseHandlers.cs#L198)
 
 <a id="Vercel_AI_ProviderUtils_ResponseHandlers_CreateEventSourceResponseAsync_"></a>
 <a id="Vercel_AI_ProviderUtils_ResponseHandlers_CreateEventSourceResponseAsync_System_Net_Http_HttpResponseMessage_System_String_System_Object_System_Text_Json_Nodes_JsonNode_System_Threading_CancellationToken_"></a>
@@ -125,7 +125,7 @@ Maps to `createEventSourceResponseHandler`.
 | --- | --- |
 | [InvalidOperationException](https://learn.microsoft.com/dotnet/api/system.invalidoperationexception) | The response has no body. |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ResponseHandlers.cs#L99)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ResponseHandlers.cs#L225)
 
 <a id="Vercel_AI_ProviderUtils_ResponseHandlers_CreateJsonErrorResponseAsync_"></a>
 <a id="Vercel_AI_ProviderUtils_ResponseHandlers_CreateJsonErrorResponseAsync_System_Net_Http_HttpResponseMessage_System_String_System_Object_System_Text_Json_Nodes_JsonNode_System_Func_System_Text_Json_JsonElement_System_String__System_Threading_CancellationToken_"></a>
@@ -161,7 +161,50 @@ Maps to `createJsonErrorResponseHandler`.
 | --- | --- |
 | [DownloadError](/api/Vercel.AI.Util/DownloadError/) | The body is larger than [DefaultMaxBytes](/api/Vercel.AI.Util/Download/#Vercel_AI_Util_Download_DefaultMaxBytes). |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ResponseHandlers.cs#L141)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ResponseHandlers.cs#L267)
+
+<a id="Vercel_AI_ProviderUtils_ResponseHandlers_CreateJsonResponseHandler_"></a>
+<a id="Vercel_AI_ProviderUtils_ResponseHandlers_CreateJsonResponseHandler__1_System_Func_System_Object___0__System_Collections_Generic_IReadOnlyList_System_String__"></a>
+
+### `CreateJsonResponseHandler<T>(Func<object?, T>?, IReadOnlyList<string>?)`
+
+
+```csharp
+public static JsonResponseHandler<T> CreateJsonResponseHandler<T>(Func<object?, T>? validate = null, IReadOnlyList<string>? experimentalBinaryFields = null)
+```
+
+
+Creates a handler that parses a JSON body and validates it with &lt;code class="paramref"&gt;validate&lt;/code&gt;. Maps to `createJsonResponseHandler`.
+&lt;code class="paramref"&gt;validate&lt;/code&gt; receives the parsed body as [bool](https://learn.microsoft.com/dotnet/api/system.boolean), [double](https://learn.microsoft.com/dotnet/api/system.double), [string](https://learn.microsoft.com/dotnet/api/system.string),
+`List%601` of objects, `Dictionary%602` of objects, or `null`. With
+&lt;code class="paramref"&gt;experimentalBinaryFields&lt;/code&gt; it also holds the decoded [byte](https://learn.microsoft.com/dotnet/api/system.byte) arrays in place of their placeholders.
+A &lt;code class="paramref"&gt;validate&lt;/code&gt; of `null` returns that value as it is. When the validation fails, the error holds the placeholders, never the bytes.
+See `String%7d)` for the paths.
+A body that is not valid JSON, or a validation that fails, throws an [ApiException](/api/Vercel.AI.Provider/ApiException/) with the message
+`Invalid JSON response`, whose cause is a [JsonParseException](/api/Vercel.AI.ProviderUtils/JsonParseException/) or a [TypeValidationException](/api/Vercel.AI.ProviderUtils/TypeValidationException/).
+
+**Type parameters**
+
+| Name | Description |
+| --- | --- |
+| `T` |  |
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `validate` | [Func&lt;object, T&gt;](https://learn.microsoft.com/dotnet/api/system.func-2) |  |
+| `experimentalBinaryFields` | [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
+
+**Returns:** `JsonResponseHandler&lt;T&gt;`
+
+**Exceptions**
+
+| Type | Condition |
+| --- | --- |
+| [InvalidArgumentError](/api/Vercel.AI.Util/InvalidArgumentError/) | A path in &lt;code class="paramref"&gt;experimentalBinaryFields&lt;/code&gt; is not valid. |
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ResponseHandlers.cs#L82)
 
 <a id="Vercel_AI_ProviderUtils_ResponseHandlers_CreateStatusCodeErrorResponseAsync_"></a>
 <a id="Vercel_AI_ProviderUtils_ResponseHandlers_CreateStatusCodeErrorResponseAsync_System_Net_Http_HttpResponseMessage_System_String_System_Object_System_Threading_CancellationToken_"></a>
@@ -194,4 +237,4 @@ Maps to `createStatusCodeErrorResponseHandler`.
 | --- | --- |
 | [DownloadError](/api/Vercel.AI.Util/DownloadError/) | The body is larger than [DefaultMaxBytes](/api/Vercel.AI.Util/Download/#Vercel_AI_Util_Download_DefaultMaxBytes). |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ResponseHandlers.cs#L191)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ResponseHandlers.cs#L317)

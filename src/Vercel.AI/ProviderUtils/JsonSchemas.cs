@@ -740,7 +740,7 @@ public static class JsonStreams
         );
     }
 
-    private static Encoding ResponseEncoding(HttpResponseMessage response)
+    internal static Encoding ResponseEncoding(HttpResponseMessage response)
     {
         var charset = response.Content?.Headers.ContentType?.CharSet?.Trim('"', '\'', ' ');
         if (!string.IsNullOrEmpty(charset))

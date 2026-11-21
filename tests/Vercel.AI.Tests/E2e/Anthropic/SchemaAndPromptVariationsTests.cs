@@ -34,8 +34,15 @@ public sealed class SchemaAndPromptVariationsTests
                 }
             );
 
-        Assert.False(string.IsNullOrEmpty(result.Output!.Value.GetProperty("title").GetString()));
-        Assert.True(result.Output.Value.GetProperty("summary").GetString()!.Length > 50);
+        Assert.False(
+            string.IsNullOrEmpty(
+                ((GenerateTextResult)result).Output!.Value.GetProperty("title").GetString()
+            )
+        );
+        Assert.True(
+            ((GenerateTextResult)result).Output.Value.GetProperty("summary").GetString()!.Length
+                > 50
+        );
     }
 
     [SkippableTheory]
@@ -72,11 +79,16 @@ public sealed class SchemaAndPromptVariationsTests
             );
 
         Assert.True(
-            result.Output!.Value.GetProperty("recipe").GetProperty("steps").GetArrayLength() > 3
+            ((GenerateTextResult)result)
+                .Output!.Value.GetProperty("recipe")
+                .GetProperty("steps")
+                .GetArrayLength() > 3
         );
         Assert.True(
-            result.Output.Value.GetProperty("recipe").GetProperty("ingredients").GetArrayLength()
-                > 3
+            ((GenerateTextResult)result)
+                .Output.Value.GetProperty("recipe")
+                .GetProperty("ingredients")
+                .GetArrayLength() > 3
         );
     }
 
@@ -113,7 +125,7 @@ public sealed class SchemaAndPromptVariationsTests
                 }
             );
 
-        var output = result.Output!.Value;
+        var output = ((GenerateTextResult)result).Output!.Value;
         Assert.True(output.GetProperty("features").GetArrayLength() >= 3);
         Assert.True(output.GetProperty("marketingPlan").GetProperty("budget").GetDouble() > 0);
         Assert.True(output.GetProperty("price").GetDouble() > 0);

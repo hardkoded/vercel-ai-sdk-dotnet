@@ -23,7 +23,7 @@ The model started streaming tool input.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [TextStreamPart](/api/Vercel.AI/TextStreamPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2517)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2669)
 
 ## Constructors
 
@@ -52,7 +52,7 @@ Creates a tool-input-start part.
 | `inputEncoding` | `ToolInputEncoding?` |  |
 | `title` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2520)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2672)
 
 ## Properties
 
@@ -71,7 +71,7 @@ True for a tool the caller did not declare, or a dynamic tool.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2556)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2708)
 
 <a id="Vercel_AI_ToolInputStartPart_Id_"></a>
 <a id="Vercel_AI_ToolInputStartPart_Id"></a>
@@ -88,7 +88,7 @@ Tool call id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2544)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2696)
 
 <a id="Vercel_AI_ToolInputStartPart_InputEncoding_"></a>
 <a id="Vercel_AI_ToolInputStartPart_InputEncoding"></a>
@@ -105,7 +105,7 @@ Encoding of the input deltas. Defaults to JSON when &lt;a href="https://learn.mi
 
 **Value:** `ToolInputEncoding?`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2562)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2714)
 
 <a id="Vercel_AI_ToolInputStartPart_ProviderExecuted_"></a>
 <a id="Vercel_AI_ToolInputStartPart_ProviderExecuted"></a>
@@ -122,7 +122,7 @@ True when the provider executes the tool.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2553)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2705)
 
 <a id="Vercel_AI_ToolInputStartPart_ProviderMetadata_"></a>
 <a id="Vercel_AI_ToolInputStartPart_ProviderMetadata"></a>
@@ -139,7 +139,7 @@ Provider metadata for this tool input.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2550)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2702)
 
 <a id="Vercel_AI_ToolInputStartPart_Title_"></a>
 <a id="Vercel_AI_ToolInputStartPart_Title"></a>
@@ -156,7 +156,7 @@ Display title of the tool. Maps to `title`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2541)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2693)
 
 <a id="Vercel_AI_ToolInputStartPart_ToolMetadata_"></a>
 <a id="Vercel_AI_ToolInputStartPart_ToolMetadata"></a>
@@ -173,7 +173,7 @@ Metadata of the tool, apart from provider metadata. Maps to the part's `toolMeta
 
 **Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2559)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2711)
 
 <a id="Vercel_AI_ToolInputStartPart_ToolName_"></a>
 <a id="Vercel_AI_ToolInputStartPart_ToolName"></a>
@@ -190,4 +190,4 @@ Tool name.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2547)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2699)

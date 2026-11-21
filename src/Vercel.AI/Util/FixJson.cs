@@ -131,7 +131,6 @@ public static class FixJson
                     }
                     else
                     {
-                        lastValidIndex = i;
                         ProcessValueStart(
                             ch,
                             i,

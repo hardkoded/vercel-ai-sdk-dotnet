@@ -90,6 +90,12 @@ public static class AnthropicResponse
         if (root.TryGetProperty("content", out var parts) && parts.ValueKind == JsonValueKind.Array)
         {
             var hasWebSearchResults = HasWebSearchResults(parts);
+            // The JSON response tool call becomes the text, so other text is dropped,
+            // unless the model never called the tool and answered in text instead.
+            var fallbackText = context.UsesJsonResponseTool
+                ? GetJsonResponseToolFallbackText(parts, StopReason(root))
+                : null;
+            var position = 0;
             foreach (var part in parts.EnumerateArray())
             {
                 MapPart(
@@ -99,8 +105,10 @@ public static class AnthropicResponse
                     mcpNames,
                     idFactory,
                     hasWebSearchResults,
+                    fallbackText == null || fallbackText.Contains(position),
                     ref jsonTool
                 );
+                position++;
             }
         }
 
@@ -130,6 +138,54 @@ public static class AnthropicResponse
         );
     }
 
+    private static string? StopReason(JsonElement root)
+    {
+        return
+            root.TryGetProperty("stop_reason", out var stop)
+            && stop.ValueKind == JsonValueKind.String
+            ? stop.GetString()
+            : null;
+    }
+
+    /// <summary>
+    /// Positions of the text parts to return when the JSON response tool is in use: the text after
+    /// the last tool call or result, and only if the tool was never called.
+    /// </summary>
+    private static HashSet<int> GetJsonResponseToolFallbackText(
+        JsonElement parts,
+        string? stopReason
+    )
+    {
+        var text = new HashSet<int>();
+        if (stopReason == "pause_turn" || stopReason == "tool_use")
+        {
+            return text;
+        }
+
+        var position = 0;
+        foreach (var part in parts.EnumerateArray())
+        {
+            var type = AnthropicJson.String(part, "type");
+            if (type == "tool_use" && AnthropicJson.String(part, "name") == "json")
+            {
+                return [];
+            }
+
+            if (type == "text")
+            {
+                text.Add(position);
+            }
+            else if (type != "thinking" && type != "redacted_thinking")
+            {
+                text.Clear();
+            }
+
+            position++;
+        }
+
+        return text;
+    }
+
     private static bool HasWebSearchResults(JsonElement parts)
     {
         foreach (var part in parts.EnumerateArray())
@@ -155,6 +211,7 @@ public static class AnthropicResponse
         Dictionary<string, string> mcpNames,
         Func<string> generateId,
         bool hasWebSearchResults,
+        bool includeText,
         ref bool jsonTool
     )
     {
@@ -162,7 +219,7 @@ public static class AnthropicResponse
         switch (type)
         {
             case "text":
-                if (!context.UsesJsonResponseTool)
+                if (includeText)
                 {
                     MapText(part, content, generateId, hasWebSearchResults);
                 }

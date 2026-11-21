@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <Description>Answers a boolean question with a web-grounded Parallel decision model.</Description>
+    </PropertyGroup>
+</Project>

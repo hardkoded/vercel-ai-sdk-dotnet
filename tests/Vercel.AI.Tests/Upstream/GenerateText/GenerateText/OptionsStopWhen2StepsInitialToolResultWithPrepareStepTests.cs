@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
 using Vercel.AI.Gateway;
 using Vercel.AI.Provider;
 using Vercel.AI.Testing;
@@ -30,11 +31,189 @@ public sealed class OptionsStopWhen2StepsInitialToolResultWithPrepareStepTests
         public List<PrepareStepCall> PrepareStepCalls { get; } = [];
     }
 
+    private static Tool CreateTool1()
+    {
+        var tool = Tool.Function(
+            "tool1",
+            null,
+            "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}},\"required\":[\"value\"]}",
+            null
+        );
+        tool.ExecuteWithOptions = (input, options) =>
+        {
+            Assert.Equal("""{"value":"value"}""", input.GetRawText().Replace(" ", ""));
+            var message = Assert.IsType<UserModelMessage>(Assert.Single(options.Messages));
+            Assert.Equal(
+                "new input from prepareStep",
+                Assert.IsType<TextContentPart>(Assert.Single(message.Content)).Text
+            );
+            return Task.FromResult("result1");
+        };
+        return tool;
+    }
+
+    private static void AssertToolCallMessage(ModelMessage message)
+    {
+        var assistant = Assert.IsType<AssistantModelMessage>(message);
+        var part = Assert.IsType<AssistantToolCallPart>(Assert.Single(assistant.Parts));
+        Assert.Equal("call-1", part.ToolCall.ToolCallId);
+        Assert.Equal("tool1", part.ToolCall.ToolName);
+        Assert.Equal("""{"value":"value"}""", part.ToolCall.ArgumentsJson.Replace(" ", ""));
+        Assert.False(part.ToolCall.ProviderExecuted);
+        Assert.Null(part.ProviderOptions);
+        Assert.Null(assistant.ProviderOptions);
+    }
+
+    private static void AssertToolResultMessage(ModelMessage message)
+    {
+        var tool = Assert.IsType<ToolModelMessage>(message);
+        var result = Assert.Single(tool.Results);
+        Assert.Equal("call-1", result.ToolCallId);
+        Assert.Equal("tool1", result.ToolName);
+        Assert.Equal("text", result.OutputType);
+        Assert.Equal("result1", result.OutputJson);
+    }
+
+    private static void AssertTextAssistantMessage(ModelMessage message)
+    {
+        var assistant = Assert.IsType<AssistantModelMessage>(message);
+        var part = Assert.IsType<AssistantTextPart>(Assert.Single(assistant.Parts));
+        Assert.Equal("Hello, world!", part.Text);
+        Assert.Null(part.ProviderOptions);
+    }
+
+    private static void AssertStepPerformance(StepPerformance performance, bool withTool)
+    {
+        Assert.Equal(0, performance.EffectiveOutputTokensPerSecond);
+        Assert.Equal(0, performance.EffectiveTotalTokensPerSecond);
+        Assert.Null(performance.InputTokensPerSecond);
+        Assert.Null(performance.OutputTokensPerSecond);
+        Assert.Equal(0, performance.ResponseTimeMs);
+        Assert.Equal(0, performance.StepTimeMs);
+        Assert.Null(performance.TimeToFirstOutputMs);
+        if (withTool)
+        {
+            var execution = Assert.Single(performance.ToolExecutionMs);
+            Assert.Equal("call-1", execution.Key);
+            Assert.Equal(0, execution.Value);
+        }
+        else
+        {
+            Assert.Empty(performance.ToolExecutionMs);
+        }
+    }
+
+    private static void AssertUsage(LanguageModelUsage usage, int input, int output)
+    {
+        Assert.Equal(input, usage.InputTokens);
+        Assert.Null(usage.CacheReadTokens);
+        Assert.Null(usage.CacheWriteTokens);
+        Assert.Equal(input, usage.NoCacheInputTokens);
+        Assert.Equal(output, usage.OutputTokens);
+        Assert.Null(usage.ReasoningTokens);
+        Assert.Equal(output, usage.TextTokens);
+        Assert.Null(usage.Raw);
+        Assert.Equal(input + output, usage.TotalTokens);
+    }
+
+    private static void AssertStep0(StepResult step)
+    {
+        Assert.Equal("test-telemetry-call-id", step.CallId);
+        Assert.Equal(2, step.Content.Count);
+        var call = Assert.IsType<GeneratedToolCall>(step.Content[0]);
+        Assert.Equal("call-1", call.ToolCallId);
+        Assert.Equal("tool1", call.ToolName);
+        Assert.Equal("""{"value":"value"}""", call.ArgumentsJson.Replace(" ", ""));
+        Assert.False(call.ProviderExecuted);
+        Assert.Null(call.ProviderMetadata);
+        var toolResult = Assert.IsType<GeneratedToolResult>(step.Content[1]);
+        Assert.Equal("call-1", toolResult.ToolCallId);
+        Assert.Equal("tool1", toolResult.ToolName);
+        Assert.Equal("result1", toolResult.ResultJson);
+        Assert.False(toolResult.Dynamic);
+        var executed = Assert.Single(step.ToolResults);
+        Assert.Equal("""{"value":"value"}""", executed.InputJson!.Replace(" ", ""));
+        Assert.Equal(FinishReason.ToolCalls, step.FinishReason);
+        Assert.Equal("mock-model-id", step.Model.ModelId);
+        Assert.Equal("test", step.Model.Provider);
+        AssertStepPerformance(step.Performance, withTool: true);
+        Assert.Null(step.ProviderMetadata);
+        Assert.Null(step.RawFinishReason);
+        Assert.Null(step.Request.Body);
+        Assert.Null(step.Request.Messages);
+        Assert.Null(step.Response.Body);
+        Assert.Empty(step.Response.Headers!); // upstream: undefined; the port keeps an empty map
+        Assert.Equal("test-id-1-from-model", step.Response.Id);
+        Assert.Equal(2, step.Response.Messages.Count);
+        AssertToolCallMessage(step.Response.Messages[0]);
+        AssertToolResultMessage(step.Response.Messages[1]);
+        Assert.Equal("test-response-model-id", step.Response.ModelId);
+        Assert.Equal(DateTimeOffset.FromUnixTimeMilliseconds(0), step.Response.Timestamp);
+        Assert.Equal("state2", Assert.Single(step.RuntimeContext).Value);
+        Assert.Equal(0, step.StepNumber);
+        Assert.Empty(step.ToolsContext);
+        AssertUsage(step.Usage, 10, 5);
+        Assert.Empty(step.Warnings);
+    }
+
+    private static void AssertStep1(StepResult step)
+    {
+        Assert.Equal("test-telemetry-call-id", step.CallId);
+        Assert.Equal(
+            "Hello, world!",
+            Assert.IsType<GeneratedText>(Assert.Single(step.Content)).Text
+        );
+        Assert.Equal(FinishReason.Stop, step.FinishReason);
+        Assert.Equal("mock-model-id", step.Model.ModelId);
+        Assert.Equal("test", step.Model.Provider);
+        AssertStepPerformance(step.Performance, withTool: false);
+        Assert.Null(step.ProviderMetadata);
+        Assert.Equal("stop", step.RawFinishReason);
+        Assert.Null(step.Request.Body);
+        Assert.Null(step.Request.Messages);
+        Assert.Null(step.Response.Body);
+        var header = Assert.Single(step.Response.Headers!);
+        Assert.Equal("custom-response-header", header.Key);
+        Assert.Equal("response-header-value", header.Value);
+        Assert.Equal("test-id-2-from-model", step.Response.Id);
+        AssertTextAssistantMessage(Assert.Single(step.Response.Messages));
+        Assert.Equal("test-response-model-id", step.Response.ModelId);
+        Assert.Equal(DateTimeOffset.FromUnixTimeMilliseconds(10000), step.Response.Timestamp);
+        Assert.Equal("state3", Assert.Single(step.RuntimeContext).Value);
+        Assert.Equal(1, step.StepNumber);
+        Assert.Empty(step.ToolsContext);
+        AssertUsage(step.Usage, 3, 10);
+        Assert.Empty(step.Warnings);
+    }
+
+    private static void AssertUserMessage(ModelMessage message, string text)
+    {
+        var user = Assert.IsType<UserModelMessage>(message);
+        Assert.Equal(text, Assert.IsType<TextContentPart>(Assert.Single(user.Content)).Text);
+        Assert.Null(user.ProviderOptions);
+    }
+
+    private static void AssertToolDefinition(LanguageModelTool tool)
+    {
+        Assert.Equal("tool1", tool.Name);
+        Assert.Null(tool.Description);
+        var schema = tool.InputSchema;
+        Assert.Equal("object", schema.GetProperty("type").GetString());
+        Assert.Equal(
+            "string",
+            schema.GetProperty("properties").GetProperty("value").GetProperty("type").GetString()
+        );
+        Assert.Equal(
+            "value",
+            Assert.Single(schema.GetProperty("required").EnumerateArray()).GetString()
+        );
+    }
+
     private static async Task<Run> RunAsync()
     {
         var run = new Run();
         var responseCount = 0;
-        var trueModel = new TestLanguageModel("test-response-model-id");
+        var trueModel = new TestLanguageModel("mock-model-id");
         trueModel.OnGenerate = options =>
         {
             run.DoGenerateCalls.Add(options);
@@ -44,7 +223,7 @@ public sealed class OptionsStopWhen2StepsInitialToolResultWithPrepareStepTests
                     return new LanguageModelGenerateResult(
                         [new GeneratedToolCall("call-1", "tool1", "{ \"value\": \"value\" }")],
                         FinishReason.ToolCalls,
-                        new LanguageModelUsage(10, 5, 15),
+                        new LanguageModelUsage(10, 5, 15, noCacheInputTokens: 10, textTokens: 5),
                         null,
                         responseId: "test-id-1-from-model",
                         responseModelId: "test-response-model-id",
@@ -54,7 +233,7 @@ public sealed class OptionsStopWhen2StepsInitialToolResultWithPrepareStepTests
                     return new LanguageModelGenerateResult(
                         [new GeneratedText("Hello, world!")],
                         FinishReason.Stop,
-                        new LanguageModelUsage(3, 10, 13),
+                        new LanguageModelUsage(3, 10, 13, noCacheInputTokens: 3, textTokens: 10),
                         "stop",
                         responseId: "test-id-2-from-model",
                         responseModelId: "test-response-model-id",
@@ -76,15 +255,7 @@ public sealed class OptionsStopWhen2StepsInitialToolResultWithPrepareStepTests
             new GenerateTextOptions
             {
                 Model = new TestLanguageModel("mock-model-id"),
-                Tools =
-                [
-                    Tool.Function(
-                        "tool1",
-                        null,
-                        "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}},\"required\":[\"value\"]}",
-                        (_, _) => Task.FromResult("result1")
-                    ),
-                ],
+                Tools = [CreateTool1()],
                 RuntimeContext = new Dictionary<string, object?> { ["context"] = "state1" },
                 Prompt = "test-input",
                 GenerateCallId = () => "test-telemetry-call-id",
@@ -101,7 +272,7 @@ public sealed class OptionsStopWhen2StepsInitialToolResultWithPrepareStepTests
                         new PrepareStepCall(
                             context.Model!.ModelId,
                             context.StepNumber,
-                            context.Steps.ToArray(),
+                            context.Steps,
                             context.Messages,
                             context.RuntimeContext
                         )
@@ -149,7 +320,7 @@ public sealed class OptionsStopWhen2StepsInitialToolResultWithPrepareStepTests
     [Fact]
     [UpstreamTest(
         Prefix + "should contain all prepareStep calls",
-        Coverage = UpstreamCoverage.Partial
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Should_contain_all_prepareStep_calls()
     {
@@ -158,32 +329,30 @@ public sealed class OptionsStopWhen2StepsInitialToolResultWithPrepareStepTests
         Assert.Equal(2, calls.Count);
 
         Assert.All(calls, call => Assert.Equal("mock-model-id", call.ModelId));
+
         Assert.Equal(0, calls[0].StepNumber);
-        Assert.Empty(calls[0].Steps);
-        var first = Assert.IsType<UserModelMessage>(Assert.Single(calls[0].Messages));
-        Assert.Equal(
-            "test-input",
-            Assert.IsType<TextContentPart>(Assert.Single(first.Content)).Text
-        );
-        Assert.Equal("state1", calls[0].RuntimeContext["context"]);
+        AssertUserMessage(Assert.Single(calls[0].Messages), "test-input");
+        Assert.Equal("state1", Assert.Single(calls[0].RuntimeContext).Value);
+        // Upstream records the live steps array, so both calls see both finished steps.
+        Assert.Equal(2, calls[0].Steps.Count);
+        AssertStep0(calls[0].Steps[0]);
+        AssertStep1(calls[0].Steps[1]);
 
         Assert.Equal(1, calls[1].StepNumber);
-        Assert.Equal("state2", calls[1].RuntimeContext["context"]);
-        var step = Assert.Single(calls[1].Steps);
-        Assert.Equal("test-telemetry-call-id", step.CallId);
-        Assert.Equal("test-id-1-from-model", step.Response.Id);
-        Assert.Equal("state2", step.RuntimeContext["context"]);
-        Assert.Equal(FinishReason.ToolCalls, step.FinishReason);
         Assert.Equal(3, calls[1].Messages.Count);
-        Assert.Equal("user", calls[1].Messages[0].Role);
-        Assert.Equal("assistant", calls[1].Messages[1].Role);
-        Assert.Equal("tool", calls[1].Messages[2].Role);
+        AssertUserMessage(calls[1].Messages[0], "new input from prepareStep");
+        AssertToolCallMessage(calls[1].Messages[1]);
+        AssertToolResultMessage(calls[1].Messages[2]);
+        Assert.Equal("state2", Assert.Single(calls[1].RuntimeContext).Value);
+        Assert.Equal(2, calls[1].Steps.Count);
+        AssertStep0(calls[1].Steps[0]);
+        AssertStep1(calls[1].Steps[1]);
     }
 
     [Fact]
     [UpstreamTest(
         Prefix + "doGenerate should be called with the correct arguments",
-        Coverage = UpstreamCoverage.Partial
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task DoGenerate_should_be_called_with_the_correct_arguments()
     {
@@ -191,19 +360,26 @@ public sealed class OptionsStopWhen2StepsInitialToolResultWithPrepareStepTests
         var calls = run.DoGenerateCalls;
         Assert.Equal(2, calls.Count);
 
-        Assert.Equal("tool1", Assert.Single(calls[0].Tools!).Name);
-        Assert.Equal("tool", calls[0].ToolChoice!.Type);
-        Assert.Equal("system", calls[0].Prompt[0].Role);
-        Assert.Equal("system-message-0", ((SystemModelMessage)calls[0].Prompt[0]).Content);
-        Assert.Equal("user", calls[0].Prompt[1].Role);
         Assert.Equal(2, calls[0].Prompt.Count);
-
-        Assert.True(calls[1].Tools is null || calls[1].Tools!.Count == 0);
-        Assert.Equal("system-message-1", ((SystemModelMessage)calls[1].Prompt[0]).Content);
         Assert.Equal(
-            new[] { "system", "user", "assistant", "tool" },
-            calls[1].Prompt.Select(message => message.Role).ToArray()
+            "system-message-0",
+            Assert.IsType<SystemModelMessage>(calls[0].Prompt[0]).Content
         );
+        AssertUserMessage(calls[0].Prompt[1], "new input from prepareStep");
+        var choice = Assert.IsType<ToolChoice.NamedChoice>(calls[0].ToolChoice);
+        Assert.Equal("tool1", choice.ToolName);
+        AssertToolDefinition(Assert.Single(calls[0].Tools!));
+
+        Assert.Equal(4, calls[1].Prompt.Count);
+        Assert.Equal(
+            "system-message-1",
+            Assert.IsType<SystemModelMessage>(calls[1].Prompt[0]).Content
+        );
+        AssertUserMessage(calls[1].Prompt[1], "new input from prepareStep");
+        AssertToolCallMessage(calls[1].Prompt[2]);
+        AssertToolResultMessage(calls[1].Prompt[3]);
+        Assert.Equal("auto", calls[1].ToolChoice!.Type);
+        Assert.True(calls[1].Tools is null);
     }
 
     [Fact]
@@ -267,16 +443,16 @@ public sealed class OptionsStopWhen2StepsInitialToolResultWithPrepareStepTests
     [Fact]
     [UpstreamTest(
         Prefix + "result.responseMessages should contain response messages from all steps",
-        Coverage = UpstreamCoverage.Partial
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Result_responseMessages_should_contain_response_messages_from_all_steps()
     {
         var run = await RunAsync();
         var messages = run.Result.ResponseMessages;
-        Assert.Equal(
-            new[] { "assistant", "tool", "assistant" },
-            messages.Select(message => message.Role).ToArray()
-        );
+        Assert.Equal(3, messages.Count);
+        AssertToolCallMessage(messages[0]);
+        AssertToolResultMessage(messages[1]);
+        AssertTextAssistantMessage(messages[2]);
     }
 
     [Fact]
@@ -321,37 +497,28 @@ public sealed class OptionsStopWhen2StepsInitialToolResultWithPrepareStepTests
     [Fact]
     [UpstreamTest(
         Prefix + "result.steps should contain all steps",
-        Coverage = UpstreamCoverage.Partial
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Result_steps_should_contain_all_steps()
     {
         var run = await RunAsync();
         var steps = run.Result.Steps;
         Assert.Equal(2, steps.Count);
-        Assert.All(steps, step => Assert.Equal("test-telemetry-call-id", step.CallId));
-        Assert.Equal(
-            new[] { "test-id-1-from-model", "test-id-2-from-model" },
-            steps.Select(step => step.Response.Id).ToArray()
-        );
-        Assert.Equal(new[] { 0, 1 }, steps.Select(step => step.StepNumber).ToArray());
-        Assert.Equal("state2", steps[0].RuntimeContext["context"]);
-        Assert.Equal("state3", steps[1].RuntimeContext["context"]);
-        Assert.Equal("response-header-value", steps[1].Response.Headers!["custom-response-header"]);
+        AssertStep0(steps[0]);
+        AssertStep1(steps[1]);
     }
 
     [Fact]
     [UpstreamTest(
         Prefix + "onStepFinish should be called for each step",
-        Coverage = UpstreamCoverage.Partial
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task OnStepFinish_should_be_called_for_each_step()
     {
         var run = await RunAsync();
-        Assert.Equal(
-            run.Result.Steps.Select(step => step.Response.Id).ToArray(),
-            run.OnStepFinishResults.Select(step => step.Response.Id).ToArray()
-        );
         Assert.Equal(2, run.OnStepFinishResults.Count);
+        AssertStep0(run.OnStepFinishResults[0]);
+        AssertStep1(run.OnStepFinishResults[1]);
     }
 
     [Fact]

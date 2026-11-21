@@ -623,8 +623,7 @@ public sealed class GoogleBatchTests
     [Fact]
     [UpstreamTest(
         "packages/google/src/google-batch.test.ts::GoogleBatch::uses a resumable file upload when the creation body reaches 20 MB",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Asserts the abort signal reached the final HTTP call only; HttpClient disposes the token of each earlier call before the test can cancel it."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Uses_a_resumable_file_upload_when_the_creation_body_reaches_20_MB()
     {
@@ -652,12 +651,13 @@ public sealed class GoogleBatchTests
         var emptyBodyBytes = Encoding.UTF8.GetByteCount(InlineBody(""));
         var prompt = new string('a', 20_000_000 - emptyBodyBytes);
         Assert.Equal(20_000_000, Encoding.UTF8.GetByteCount(InlineBody(prompt)));
-        var batch = CreateBatch(handler, options =>
-            options.Headers["Provider-Header"] = "provider"
-        );
-
+        var options = new GoogleOptions { ApiKey = "test-api-key", GenerateId = () => "test-id" };
+        options.Headers["Provider-Header"] = "provider";
+        var provider = GoogleProvider.Create(options, handler);
         using var abort = new CancellationTokenSource();
-        handler.ObserveAbort(abort, 3);
+        var signals = new List<CancellationToken>();
+        provider.Http.OnRequest = signals.Add;
+        var batch = provider.ExperimentalBatch()!;
         var result = await batch.DoStartAsync(
             StartCall(
                 [Request("small-request", "small"), Request("large-request", prompt)],
@@ -703,7 +703,8 @@ public sealed class GoogleBatchTests
         Assert.Contains("\n{\"key\":\"large-request\",\"request\":", uploadText);
         Assert.EndsWith("\n", uploadText);
         Assert.Equal(3, handler.Calls.Count);
-        Assert.True(handler.Calls[^1].SawCancellation);
+        Assert.Equal(3, signals.Count);
+        Assert.All(signals, signal => Assert.Equal(abort.Token, signal));
 
         static JsonObject InlinedRequest(string id, string text) =>
             new()

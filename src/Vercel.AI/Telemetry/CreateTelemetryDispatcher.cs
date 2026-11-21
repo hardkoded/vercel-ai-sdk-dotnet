@@ -58,10 +58,45 @@ internal sealed class TelemetryDispatcher
         return new TelemetryDispatcher
         {
             HasIntegrations = integrations.Count > 0,
-            OnEnd = Merge(integrations.Select(i => i.OnEnd)),
+            OnEnd = Filter<GenerateTextResult>(Merge(integrations.Select(i => i.OnEnd)), result =>
+                FilterResult(result, telemetry)
+            ),
             OnLanguageModelCallStart = Merge(integrations.Select(i => i.OnLanguageModelCallStart)),
             OnLanguageModelCallEnd = Merge(integrations.Select(i => i.OnLanguageModelCallEnd)),
         };
+    }
+
+    // Integrations see only the runtime and tool context properties the call includes. Maps to the filterContext step of augmentEvent.
+    private static GenerateTextResult FilterResult(
+        GenerateTextResult result,
+        TelemetryOptions? telemetry
+    )
+    {
+        var steps = result
+            .Steps.Select(step =>
+                step.WithContexts(
+                    FilterIncludedContextHelper.FilterIncludedContext(
+                        step.RuntimeContext,
+                        telemetry?.IncludeRuntimeContext
+                    ),
+                    FilterIncludedContextHelper.FilterToolsContext(
+                        step.ToolsContext,
+                        telemetry?.IncludeToolsContext
+                    )
+                )
+            )
+            .ToList();
+        return result.WithSteps(steps);
+    }
+
+    private static Func<TEvent, CancellationToken, Task>? Filter<TEvent>(
+        Func<TEvent, CancellationToken, Task>? callback,
+        Func<TEvent, TEvent> filter
+    )
+    {
+        return callback == null
+            ? null
+            : (e, cancellationToken) => callback(filter(e), cancellationToken);
     }
 
     private static Func<TEvent, CancellationToken, Task>? Merge<TEvent>(

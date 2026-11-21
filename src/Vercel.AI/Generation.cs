@@ -696,6 +696,14 @@ internal static class Generation
                     await onStepEnd(step, cancellationToken).ConfigureAwait(false);
                 }
 
+                LogWarnings.Log(
+                    new LogWarningsOptions(
+                        (generated.Warnings ?? []).Select(ToModelWarning).ToArray(),
+                        current.Provider,
+                        current.ModelId
+                    )
+                );
+
                 TrackPendingDeferredToolCalls(step, options.Tools, pendingDeferredToolCalls);
                 if (
                     !ShouldStartNextStep(
@@ -820,6 +828,21 @@ internal static class Generation
         return options.OnStepEnd ?? options.OnStepFinish;
 #pragma warning restore CS0618
     }
+
+    internal static ModelWarning ToModelWarning(CallWarning warning) =>
+        warning.Type switch
+        {
+            "unsupported" => new UnsupportedWarning(
+                warning.Feature ?? warning.Message,
+                warning.Feature == null ? null : warning.Message
+            ),
+            "compatibility" => new CompatibilityWarning(
+                warning.Feature ?? warning.Message,
+                warning.Feature == null ? null : warning.Message
+            ),
+            "deprecated" => new DeprecatedWarning(warning.Setting ?? string.Empty, warning.Message),
+            _ => new OtherWarning(warning.Message),
+        };
 
     // generateText does not stream, so a firstChunkMs or chunkMs timeout has no effect.
     private static void WarnUnsupportedTimeouts(GenerateTextOptions options, ILanguageModel model)
@@ -1514,7 +1537,14 @@ internal static class Generation
                         );
                 var enumerator = ExecuteToolsFromStream
                     .Execute(
-                        retry == null ? streamResult.Stream : retry.Read(attemptToken),
+                        InvokeToolCallbacksFromStream.Invoke(
+                            retry == null ? streamResult.Stream : retry.Read(attemptToken),
+                            StepOptions(options, update).Tools,
+                            stepMessages.Skip(instructionCount).ToArray(),
+                            cancellationToken,
+                            options.ToolsContext,
+                            attemptToken
+                        ),
                         StepOptions(options, update),
                         callId,
                         stepMessages,
@@ -2691,7 +2721,9 @@ internal static class Generation
                 : await ResolveStepApprovalsAsync(
                         options,
                         toolCalls,
-                        stepInputMessages.Skip(instructionCount).ToArray()
+                        stepInputMessages.Skip(instructionCount).ToArray(),
+                        stepInputMessages,
+                        cancellationToken
                     )
                     .ConfigureAwait(false);
 
@@ -2747,7 +2779,7 @@ internal static class Generation
                                 options.Tools,
                                 options.ToolsContext,
                                 toolCallsCallId,
-                                stepInputMessages,
+                                stepInputMessages.Skip(instructionCount).ToArray(),
                                 cancellationToken,
                                 timing.Now,
                                 options.Timeout,
@@ -3836,6 +3868,68 @@ internal static class Generation
             );
     }
 
+    // Notifies the tool that its call is available, with the validated tool context, before the approval is resolved.
+    // A call that is invalid or has no known tool is ignored.
+    private static async Task InvokeToolInputCallbacksAsync(
+        GenerateTextOptions options,
+        GeneratedToolCall call,
+        IReadOnlyList<ModelMessage> messages,
+        CancellationToken cancellationToken
+    )
+    {
+        if (call.Invalid)
+        {
+            return;
+        }
+
+        var tool = FindTool(options, call.ToolName);
+        if (tool == null || (tool.OnInputStart == null && tool.OnInputAvailable == null))
+        {
+            return;
+        }
+
+        JsonElement? context = null;
+        if (
+            options.ToolsContext != null
+            && options.ToolsContext.TryGetValue(call.ToolName, out var rawContext)
+        )
+        {
+            context = rawContext;
+        }
+
+        context = ToolContexts.ValidateToolContext(call.ToolName, context, tool.ContextSchema);
+
+        if (tool.OnInputStart != null)
+        {
+            await tool.OnInputStart(
+                    new ToolExecutionOptions(call.ToolCallId, messages, cancellationToken)
+                    {
+                        Context = context,
+                    }
+                )
+                .ConfigureAwait(false);
+        }
+
+        if (tool.OnInputAvailable != null)
+        {
+            using var arguments = JsonDocument.Parse(
+                string.IsNullOrWhiteSpace(call.ArgumentsJson) ? "{}" : call.ArgumentsJson
+            );
+            await tool.OnInputAvailable(
+                    new ToolInputAvailableOptions(
+                        call.ToolCallId,
+                        messages,
+                        cancellationToken,
+                        arguments.RootElement.Clone()
+                    )
+                    {
+                        Context = context,
+                    }
+                )
+                .ConfigureAwait(false);
+        }
+    }
+
     // Resolves the approval of each valid call to a known tool. A call that does not need approval does not use an approval id.
     private static async Task<(
         List<GeneratedToolApprovalRequest> Requests,
@@ -3844,7 +3938,9 @@ internal static class Generation
     )> ResolveStepApprovalsAsync(
         GenerateTextOptions options,
         IReadOnlyList<GeneratedToolCall> toolCalls,
-        IReadOnlyList<ModelMessage> messages
+        IReadOnlyList<ModelMessage> messages,
+        IReadOnlyList<ModelMessage> stepInputMessages,
+        CancellationToken cancellationToken
     )
     {
         var requests = new List<GeneratedToolApprovalRequest>();
@@ -3852,6 +3948,8 @@ internal static class Generation
         var blocked = new HashSet<string>(StringComparer.Ordinal);
         foreach (var call in toolCalls)
         {
+            await InvokeToolInputCallbacksAsync(options, call, stepInputMessages, cancellationToken)
+                .ConfigureAwait(false);
             var approval = await ExecuteToolsFromStream
                 .ResolveToolCallApprovalAsync(options, call, messages)
                 .ConfigureAwait(false);
@@ -3965,7 +4063,7 @@ internal static class Generation
     }
 
     // Maps to `withUserAgentSuffix(headers, `ai/${VERSION}`)`.
-    private static IReadOnlyDictionary<string, string?> WithUserAgentHeader(
+    internal static IReadOnlyDictionary<string, string?> WithUserAgentHeader(
         IReadOnlyDictionary<string, string?>? headers
     ) =>
         Vercel
@@ -4065,7 +4163,8 @@ internal static class Generation
             );
         }
 
-        return OrderTools(tools, toolOrder);
+        // Upstream filters the active tools first, then prepareTools returns undefined for an empty set.
+        return tools.Count == 0 ? null : OrderTools(tools, toolOrder);
     }
 
     // Tools named in toolOrder come first, in that order. The rest follow, sorted by name. Maps to orderToolEntries.
@@ -4225,19 +4324,21 @@ internal static class Generation
                 && (last.FinishReason == FinishReason.ToolCalls || last.Text.Length == 0)
             )
             {
-                return new GenerateTextResult(
-                    last.Text,
-                    last.ReasoningText,
-                    steps,
-                    last.FinishReason,
-                    usage,
-                    null,
-                    sources,
-                    last.ProviderMetadata
-                )
-                {
-                    ResponseMessages = responseMessages.ToArray(),
-                };
+                return options.WrapResult(
+                    new GenerateTextResult(
+                        last.Text,
+                        last.ReasoningText,
+                        steps,
+                        last.FinishReason,
+                        usage,
+                        null,
+                        sources,
+                        last.ProviderMetadata
+                    )
+                    {
+                        ResponseMessages = responseMessages.ToArray(),
+                    }
+                );
             }
 
             try
@@ -4311,19 +4412,21 @@ internal static class Generation
             output = JsonSerializer.SerializeToElement(last.Text);
         }
 
-        return new GenerateTextResult(
-            last.Text,
-            last.ReasoningText,
-            steps,
-            last.FinishReason,
-            usage,
-            output,
-            sources,
-            last.ProviderMetadata
-        )
-        {
-            ResponseMessages = responseMessages.ToArray(),
-        };
+        return options.WrapResult(
+            new GenerateTextResult(
+                last.Text,
+                last.ReasoningText,
+                steps,
+                last.FinishReason,
+                usage,
+                output,
+                sources,
+                last.ProviderMetadata
+            )
+            {
+                ResponseMessages = responseMessages.ToArray(),
+            }
+        );
     }
 }
 

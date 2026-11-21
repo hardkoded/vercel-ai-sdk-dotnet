@@ -114,6 +114,40 @@ A model id resolved through [DefaultProvider](/api/Vercel.AI.Operations/Decision
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Extract.cs#L52)
 
+<a id="Vercel_AI_Operations_ExtractRequest_OnEnd_"></a>
+<a id="Vercel_AI_Operations_ExtractRequest_OnEnd"></a>
+
+### OnEnd
+
+
+```csharp
+public Func<ExtractEndEvent, Task>? OnEnd { get; set; }
+```
+
+
+Called when the extraction completes. Receives the full runtime context, headers, and provider options.
+
+**Value:** [Func&lt;ExtractEndEvent, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Extract.cs#L89)
+
+<a id="Vercel_AI_Operations_ExtractRequest_OnStart_"></a>
+<a id="Vercel_AI_Operations_ExtractRequest_OnStart"></a>
+
+### OnStart
+
+
+```csharp
+public Func<ExtractStartEvent, Task>? OnStart { get; set; }
+```
+
+
+Called when the extraction begins. Receives the full runtime context, headers, and provider options.
+
+**Value:** [Func&lt;ExtractStartEvent, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Extract.cs#L86)
+
 <a id="Vercel_AI_Operations_ExtractRequest_Reasoning_"></a>
 <a id="Vercel_AI_Operations_ExtractRequest_Reasoning"></a>
 
@@ -166,3 +200,20 @@ Wrap it in an object or in a [DecisionJsonPart](/api/Vercel.AI.Operations/Decisi
 **Value:** [DecisionState](/api/Vercel.AI.Operations/DecisionState/)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Extract.cs#L58)
+
+<a id="Vercel_AI_Operations_ExtractRequest_Telemetry_"></a>
+<a id="Vercel_AI_Operations_ExtractRequest_Telemetry"></a>
+
+### Telemetry
+
+
+```csharp
+public ExtractTelemetry? Telemetry { get; set; }
+```
+
+
+Telemetry callbacks. Request headers and provider options never reach them.
+
+**Value:** [ExtractTelemetry](/api/Vercel.AI.Operations/ExtractTelemetry/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Extract.cs#L92)

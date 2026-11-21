@@ -23,7 +23,7 @@ public sealed class OpenAIResponsesSystemMessageOptions
     /// Replaces the response format at this position in history (a <c>text</c> or <c>json_schema</c> format).
     /// Requires empty system message content.
     /// </summary>
-    public JsonElement? TextFormatUpdate { get; set; }
+    public OpenAIResponsesTextFormat? TextFormatUpdate { get; set; }
 
     /// <summary>Tool definitions to load at this position in history. Requires empty system message content.</summary>
     public IReadOnlyList<OpenAIResponsesAdditionalTool>? AdditionalTools { get; set; }
@@ -44,7 +44,7 @@ public sealed class OpenAIResponsesSystemMessageOptions
 
         if (TextFormatUpdate is { } textFormat)
         {
-            json["textFormatUpdate"] = JsonNode.Parse(textFormat.GetRawText());
+            json["textFormatUpdate"] = textFormat.ToJson();
         }
 
         if (AdditionalTools != null)
