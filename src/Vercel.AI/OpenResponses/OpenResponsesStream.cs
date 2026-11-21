@@ -313,6 +313,21 @@ internal sealed class OpenResponsesStream
                 }
 
                 break;
+            case "response.created":
+                var created = OpenAIJson.Child(chunk, "response");
+                if (created is not { } createdResponse)
+                {
+                    break;
+                }
+
+                parts.Add(
+                    new ResponseMetadataStreamPart(
+                        OpenAIJson.String(createdResponse, "id"),
+                        OpenAIJson.String(createdResponse, "model"),
+                        OpenAIJson.UnixSeconds(OpenAIJson.Unix(createdResponse, "created_at"))
+                    )
+                );
+                break;
             case "response.output_item.added" when itemType == "message":
                 parts.Add(new TextStartStreamPart(itemId));
                 break;
