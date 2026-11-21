@@ -33,6 +33,40 @@ Options for `CancellationToken)`. Maps to `generateObject`.
 
 ## Properties
 
+<a id="Vercel_AI_GenerateObject_GenerateObjectOptions_1_ExperimentalRepairText_"></a>
+<a id="Vercel_AI_GenerateObject_GenerateObjectOptions_1_ExperimentalRepairText"></a>
+
+### ExperimentalRepairText
+
+
+```csharp
+public Func<GenerateObjectRepairContext, CancellationToken, Task<string?>>? ExperimentalRepairText { get; set; }
+```
+
+
+Deprecated alias of `RepairText`. Maps to `experimental_repairText`.
+
+**Value:** [Func&lt;GenerateObjectRepairContext, CancellationToken, Task&lt;string&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L130)
+
+<a id="Vercel_AI_GenerateObject_GenerateObjectOptions_1_ExperimentalTelemetry_"></a>
+<a id="Vercel_AI_GenerateObject_GenerateObjectOptions_1_ExperimentalTelemetry"></a>
+
+### ExperimentalTelemetry
+
+
+```csharp
+public TelemetryOptions? ExperimentalTelemetry { get; set; }
+```
+
+
+Deprecated alias of `Telemetry`. Maps to `experimental_telemetry`.
+
+**Value:** [TelemetryOptions](/api/Vercel.AI/TelemetryOptions/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L140)
+
 <a id="Vercel_AI_GenerateObject_GenerateObjectOptions_1_FrequencyPenalty_"></a>
 <a id="Vercel_AI_GenerateObject_GenerateObjectOptions_1_FrequencyPenalty"></a>
 
@@ -184,7 +218,7 @@ Called after the object is parsed and validated.
 
 **Value:** [Func&lt;GenerateObjectEndEvent&lt;T&gt;, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L139)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L152)
 
 <a id="Vercel_AI_GenerateObject_GenerateObjectOptions_1_OnStart_"></a>
 <a id="Vercel_AI_GenerateObject_GenerateObjectOptions_1_OnStart"></a>
@@ -201,7 +235,7 @@ Called before generation begins.
 
 **Value:** [Func&lt;GenerateObjectStartEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L130)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L143)
 
 <a id="Vercel_AI_GenerateObject_GenerateObjectOptions_1_OnStepEnd_"></a>
 <a id="Vercel_AI_GenerateObject_GenerateObjectOptions_1_OnStepEnd"></a>
@@ -218,7 +252,7 @@ Called with the raw model result before the selected text is parsed.
 
 **Value:** [Func&lt;GenerateObjectStepEndEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L136)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L149)
 
 <a id="Vercel_AI_GenerateObject_GenerateObjectOptions_1_OnStepStart_"></a>
 <a id="Vercel_AI_GenerateObject_GenerateObjectOptions_1_OnStepStart"></a>
@@ -235,7 +269,7 @@ Called immediately before the model call.
 
 **Value:** [Func&lt;GenerateObjectStepStartEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L133)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L146)
 
 <a id="Vercel_AI_GenerateObject_GenerateObjectOptions_1_PresencePenalty_"></a>
 <a id="Vercel_AI_GenerateObject_GenerateObjectOptions_1_PresencePenalty"></a>
@@ -423,6 +457,23 @@ System prompt. `Instructions` wins when both are set.
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L63)
+
+<a id="Vercel_AI_GenerateObject_GenerateObjectOptions_1_Telemetry_"></a>
+<a id="Vercel_AI_GenerateObject_GenerateObjectOptions_1_Telemetry"></a>
+
+### Telemetry
+
+
+```csharp
+public TelemetryOptions? Telemetry { get; set; }
+```
+
+
+Telemetry configuration. Maps to `telemetry`.
+
+**Value:** [TelemetryOptions](/api/Vercel.AI/TelemetryOptions/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L137)
 
 <a id="Vercel_AI_GenerateObject_GenerateObjectOptions_1_Temperature_"></a>
 <a id="Vercel_AI_GenerateObject_GenerateObjectOptions_1_Temperature"></a>

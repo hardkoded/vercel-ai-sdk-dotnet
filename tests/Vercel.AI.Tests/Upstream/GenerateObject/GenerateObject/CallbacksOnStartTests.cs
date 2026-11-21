@@ -87,4 +87,31 @@ public sealed class CallbacksOnStartTests
         Assert.Null(startEvent.TopK);
         Assert.Null(startEvent.TopP);
     }
+
+    [Fact]
+    [UpstreamTest(
+        Id + "should accept deprecated experimental_telemetry as an alias for telemetry",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_accept_deprecated_experimental_telemetry_as_an_alias_for_telemetry()
+    {
+        GenerateObjectStartEvent? startEvent = null;
+        var options = ObjectOptions(new GenerateObjectTestModel());
+        options.ExperimentalTelemetry = new TelemetryOptions
+        {
+            IsEnabled = true,
+            FunctionId = "deprecated-fn",
+        };
+        options.OnStart = (e, _) =>
+        {
+            startEvent = e;
+            return Task.CompletedTask;
+        };
+
+        await Client().GenerateObjectAsync(options);
+
+        Assert.NotNull(startEvent);
+        Assert.Null(typeof(GenerateObjectStartEvent).GetProperty("IsEnabled"));
+        Assert.Null(typeof(GenerateObjectStartEvent).GetProperty("FunctionId"));
+    }
 }

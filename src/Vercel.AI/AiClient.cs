@@ -262,11 +262,10 @@ public sealed class AiClient : IAiClient
             Timeout = options.Timeout,
             Headers = options.Headers,
             ProviderOptions = options.ProviderOptions,
-            RepairOutput =
-                options.RepairText == null
-                    ? null
-                    : (text, error, token) =>
-                        options.RepairText(new GenerateObjectRepairContext(text, error), token),
+            RepairOutput = (options.RepairText ?? options.ExperimentalRepairText) is { } repairText
+                ? (text, error, token) =>
+                    repairText(new GenerateObjectRepairContext(text, error), token)
+                : null,
             GenerateObjectMode = true,
         };
         if (options.OnStepEnd != null)
