@@ -410,6 +410,55 @@ public sealed class JsonBinaryFieldScanner
         }
     }
 
+    /// <summary>
+    /// Returns <paramref name="error"/>, or a copy of it when its message, or the message of a cause, holds the base64 of one of the
+    /// <paramref name="binaries"/>: a validator that stringifies the value it was given prints the bytes, and a <see cref="byte"/> array
+    /// has no <c>toJSON</c> hook to print the placeholder instead. The copy keeps the type name and the stack trace, and each base64
+    /// text becomes its placeholder. Stands in for <c>maskBinariesInJson</c>.
+    /// </summary>
+    public static Exception RedactBinaryFields(
+        Exception error,
+        IReadOnlyDictionary<string, byte[]> binaries
+    )
+    {
+        if (error is null)
+        {
+            throw new ArgumentNullException(nameof(error));
+        }
+
+        if (binaries is null)
+        {
+            throw new ArgumentNullException(nameof(binaries));
+        }
+
+        if (binaries.Count == 0)
+        {
+            return error;
+        }
+
+        var inner = error.InnerException is null
+            ? null
+            : RedactBinaryFields(error.InnerException, binaries);
+        var message = error.Message;
+        foreach (var entry in binaries)
+        {
+            // The base64 text is at least a third longer than the bytes: a shorter message cannot hold it.
+            if (message.Length < entry.Value.Length)
+            {
+                continue;
+            }
+
+            message = message.Replace(Convert.ToBase64String(entry.Value), entry.Key);
+        }
+
+        if (ReferenceEquals(inner, error.InnerException) && message == error.Message)
+        {
+            return error;
+        }
+
+        return new RedactedException(error.GetType().Name, message, error.StackTrace, inner);
+    }
+
     private static byte[] CreateSextet()
     {
         var table = new byte[256];
@@ -575,5 +624,17 @@ public sealed class JsonBinaryFieldScanner
 
         // The node of the value that is read next.
         public BinaryFieldPaths? Next { get; set; }
+    }
+
+    private sealed class RedactedException(
+        string typeName,
+        string message,
+        string? stackTrace,
+        Exception? inner
+    ) : Exception(message, inner)
+    {
+        public override string? StackTrace => stackTrace;
+
+        public override string ToString() => typeName + ": " + Message;
     }
 }
