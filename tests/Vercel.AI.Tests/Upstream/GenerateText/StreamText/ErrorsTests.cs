@@ -524,9 +524,7 @@ public sealed class ErrorsTests
 
     [Fact]
     [UpstreamTest(
-        Prefix + "should exclude failed-attempt text from structured output state",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "StreamTextResult has no FinalStep property, so it asserts the last step of Steps."
+        Prefix + "should exclude failed-attempt text from structured output state"
     )]
     public async Task Should_exclude_failed_attempt_text_from_structured_output_state()
     {
@@ -559,14 +557,12 @@ public sealed class ErrorsTests
         await result.ConsumeStreamAsync();
 
         Assert.Equal("ok", (await result.Output)!.Value.GetProperty("x").GetString());
-        Assert.Equal("{\"x\":\"ok\"}", (await result.Steps).Last().Text);
+        Assert.Equal("{\"x\":\"ok\"}", (await result.FinalStep).Text);
     }
 
     [Fact]
     [UpstreamTest(
-        Prefix + "should preserve attempt isolation when a transform reconstructs recovered parts",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "StreamTextResult has no FinalStep property, so it asserts the last step of Steps."
+        Prefix + "should preserve attempt isolation when a transform reconstructs recovered parts"
     )]
     public async Task Should_preserve_attempt_isolation_when_a_transform_reconstructs_recovered_parts()
     {
@@ -624,7 +620,7 @@ public sealed class ErrorsTests
 
         Assert.Equal(["{\"x\":", "{\"x\":\"ok\"}"], await TextOf(result));
         Assert.Equal("ok", (await result.Output)!.Value.GetProperty("x").GetString());
-        var finalStep = (await result.Steps).Last();
+        var finalStep = await result.FinalStep;
         Assert.Equal("{\"x\":\"ok\"}", finalStep.Text);
         Assert.Equal("request-2", finalStep.Request.Body!.Value.GetString());
         Assert.Equal("recovered-id", finalStep.Response.Id);
@@ -690,9 +686,7 @@ public sealed class ErrorsTests
 
     [Fact]
     [UpstreamTest(
-        Prefix + "should use request and response metadata from the recovered attempt",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "StreamTextResult has no FinalStep property, so it asserts the last step of Steps."
+        Prefix + "should use request and response metadata from the recovered attempt"
     )]
     public async Task Should_use_request_and_response_metadata_from_the_recovered_attempt()
     {
@@ -742,7 +736,7 @@ public sealed class ErrorsTests
 
         await result.ConsumeStreamAsync();
 
-        var finalStep = (await result.Steps).Last();
+        var finalStep = await result.FinalStep;
         Assert.Equal("request-2", finalStep.Request.Body!.Value.GetString());
         Assert.Equal("recovered-id", finalStep.Response.Id);
         Assert.Equal("recovered-model", finalStep.Response.ModelId);
@@ -1027,9 +1021,7 @@ public sealed class ErrorsTests
 
     [Fact]
     [UpstreamTest(
-        Prefix + "should discard tool calls from a failed attempt",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "StreamTextResult has no FinalStep property, so it asserts the last step of Steps."
+        Prefix + "should discard tool calls from a failed attempt"
     )]
     public async Task Should_discard_tool_calls_from_a_failed_attempt()
     {
@@ -1075,7 +1067,7 @@ public sealed class ErrorsTests
 
         Assert.Equal(2, model.CallCount);
         Assert.Equal(0, executions);
-        var finalStep = (await result.Steps).Last();
+        var finalStep = await result.FinalStep;
         Assert.Empty(finalStep.ToolCalls);
         Assert.Empty(finalStep.ToolResults);
     }

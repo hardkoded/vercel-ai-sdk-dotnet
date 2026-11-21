@@ -268,9 +268,7 @@ public sealed class StreamTextTransformBaseTransformationTests
 
     [Fact]
     [UpstreamTest(
-        Base + "result.toolCalls should be transformed",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "StreamTextResult has no ToolCalls property, so it asserts the tool calls of the final step."
+        Base + "result.toolCalls should be transformed"
     )]
     public async Task Result_toolCalls_should_be_transformed()
     {
@@ -293,7 +291,7 @@ public sealed class StreamTextTransformBaseTransformationTests
                 }
             );
 
-        var call = Assert.Single((await result.Steps).Last().ToolCalls);
+        var call = Assert.Single(await result.ToolCalls);
 
         Assert.Equal("call-1", call.ToolCallId);
         Assert.Equal("tool1", call.ToolName);
@@ -305,9 +303,7 @@ public sealed class StreamTextTransformBaseTransformationTests
 
     [Fact]
     [UpstreamTest(
-        Base + "result.toolResults should be transformed",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "StreamTextResult has no ToolResults property, so it asserts the tool results of the final step."
+        Base + "result.toolResults should be transformed"
     )]
     public async Task Result_toolResults_should_be_transformed()
     {
@@ -335,7 +331,7 @@ public sealed class StreamTextTransformBaseTransformationTests
                 }
             );
 
-        var executed = Assert.Single((await result.Steps).Last().ToolResults);
+        var executed = Assert.Single(await result.ToolResults);
 
         Assert.False(executed.Dynamic);
         Assert.Equal("call-1", executed.ToolCallId);
