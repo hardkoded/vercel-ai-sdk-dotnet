@@ -1093,9 +1093,9 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
         if (additionalTools != null)
         {
             additional ??= new JsonObject();
-            foreach (var (key, value) in additionalTools)
+            foreach (var entry in additionalTools)
             {
-                additional[key] = value?.DeepClone();
+                additional[entry.Key] = entry.Value?.DeepClone();
             }
         }
 
