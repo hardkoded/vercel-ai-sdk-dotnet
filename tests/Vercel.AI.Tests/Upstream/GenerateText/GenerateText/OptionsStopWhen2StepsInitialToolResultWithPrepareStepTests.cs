@@ -142,7 +142,7 @@ public sealed class OptionsStopWhen2StepsInitialToolResultWithPrepareStepTests
         Assert.Null(step.Request.Body);
         Assert.Null(step.Request.Messages);
         Assert.Null(step.Response.Body);
-        Assert.Null(step.Response.Headers);
+        Assert.Empty(step.Response.Headers!); // upstream: undefined; the port keeps an empty map
         Assert.Equal("test-id-1-from-model", step.Response.Id);
         Assert.Equal(2, step.Response.Messages.Count);
         AssertToolCallMessage(step.Response.Messages[0]);
@@ -223,7 +223,7 @@ public sealed class OptionsStopWhen2StepsInitialToolResultWithPrepareStepTests
                     return new LanguageModelGenerateResult(
                         [new GeneratedToolCall("call-1", "tool1", "{ \"value\": \"value\" }")],
                         FinishReason.ToolCalls,
-                        new LanguageModelUsage(10, 5, 15),
+                        new LanguageModelUsage(10, 5, 15, noCacheInputTokens: 10, textTokens: 5),
                         null,
                         responseId: "test-id-1-from-model",
                         responseModelId: "test-response-model-id",
@@ -233,7 +233,7 @@ public sealed class OptionsStopWhen2StepsInitialToolResultWithPrepareStepTests
                     return new LanguageModelGenerateResult(
                         [new GeneratedText("Hello, world!")],
                         FinishReason.Stop,
-                        new LanguageModelUsage(3, 10, 13),
+                        new LanguageModelUsage(3, 10, 13, noCacheInputTokens: 3, textTokens: 10),
                         "stop",
                         responseId: "test-id-2-from-model",
                         responseModelId: "test-response-model-id",
