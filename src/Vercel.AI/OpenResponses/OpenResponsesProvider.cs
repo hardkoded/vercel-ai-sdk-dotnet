@@ -34,6 +34,12 @@ public sealed class OpenResponsesOptions
     /// </summary>
     public bool StrictResponseInput { get; set; }
 
+    /// <summary>
+    /// Provider-tool ID used for caller-executed Open Responses custom tools, shaped <c>&lt;provider&gt;.&lt;tool&gt;</c>.
+    /// Maps to <c>customToolId</c>.
+    /// </summary>
+    public string CustomToolId { get; set; } = "open-responses.custom";
+
     /// <summary>Extra headers sent with every request.</summary>
     public IReadOnlyDictionary<string, string>? Headers { get; set; }
 
@@ -70,7 +76,11 @@ public sealed class OpenResponsesProvider : ProviderBase
         Options = options ?? new OpenResponsesOptions();
         ExtensionRegistry = OpenResponsesExtensions.CreateRegistry(Options.Extensions);
         Http = new ProviderHttp(httpClient ?? throw new ArgumentNullException(nameof(httpClient)));
+        Tools = new OpenResponsesTools(Options.CustomToolId);
     }
+
+    /// <summary>The provider tools, such as caller-executed custom tools.</summary>
+    public OpenResponsesTools Tools { get; }
 
     /// <summary>Options.</summary>
     public OpenResponsesOptions Options { get; }
@@ -288,7 +298,8 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
             _provider.Name,
             _provider.Options.StrictResponseInput,
             Registry,
-            providerToolsByName
+            providerToolsByName,
+            _provider.Options.CustomToolId
         );
         warnings.AddRange(converted.Warnings);
         var encodedProviderTools = new Dictionary<string, OpenResponsesExtension>(
@@ -307,7 +318,13 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
         OpenAIJson.Set(
             body,
             "tool_choice",
-            ToolChoice(options.Tools, options.ToolChoice, encodedProviderTools, warnings)
+            ToolChoice(
+                options.Tools,
+                options.ToolChoice,
+                encodedProviderTools,
+                warnings,
+                _provider.Options.CustomToolId
+            )
         );
         if (
             options.JsonSchema is
@@ -405,6 +422,12 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
         {
             if (tool.IsProviderDefined)
             {
+                if (tool.ProviderToolId == _provider.Options.CustomToolId)
+                {
+                    converted.Add(CustomTool(tool));
+                    continue;
+                }
+
                 JsonObject? encoded = null;
                 if (Registry.ByProviderToolId.TryGetValue(tool.ProviderToolId!, out var extension))
                 {
@@ -464,6 +487,52 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
         return converted.Count > 0 ? converted : null;
     }
 
+    private static JsonObject CustomTool(LanguageModelTool tool)
+    {
+        var custom = new JsonObject { ["type"] = "custom", ["name"] = tool.Name };
+        if (tool.Args.ValueKind == JsonValueKind.Object)
+        {
+            if (
+                tool.Args.TryGetProperty("description", out var description)
+                && description.ValueKind == JsonValueKind.String
+            )
+            {
+                custom["description"] = description.GetString();
+            }
+
+            if (
+                tool.Args.TryGetProperty("format", out var format)
+                && format.ValueKind == JsonValueKind.Object
+                && format.TryGetProperty("type", out var type)
+                && type.ValueKind == JsonValueKind.String
+            )
+            {
+                if (
+                    type.GetString() == "grammar"
+                    && format.TryGetProperty("syntax", out var syntax)
+                    && syntax.ValueKind == JsonValueKind.String
+                    && syntax.GetString() is "regex" or "lark"
+                    && format.TryGetProperty("definition", out var definition)
+                    && definition.ValueKind == JsonValueKind.String
+                )
+                {
+                    custom["format"] = new JsonObject
+                    {
+                        ["type"] = "grammar",
+                        ["syntax"] = syntax.GetString(),
+                        ["definition"] = definition.GetString(),
+                    };
+                }
+                else if (type.GetString() == "text")
+                {
+                    custom["format"] = new JsonObject { ["type"] = "text" };
+                }
+            }
+        }
+
+        return custom;
+    }
+
     /// <summary>
     /// Converts the tool choice. A named provider tool is encoded through its extension, and omitted when that tool was not
     /// encoded or its extension cannot encode the choice.
@@ -472,7 +541,8 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
         IReadOnlyList<LanguageModelTool>? tools,
         ToolChoice? toolChoice,
         Dictionary<string, OpenResponsesExtension> encodedProviderTools,
-        List<CallWarning> warnings
+        List<CallWarning> warnings,
+        string customToolId
     )
     {
         if (toolChoice is not ToolChoice.NamedChoice named)
@@ -486,6 +556,11 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
         if (tool == null)
         {
             return new JsonObject { ["type"] = "function", ["name"] = named.ToolName };
+        }
+
+        if (tool.ProviderToolId == customToolId)
+        {
+            return new JsonObject { ["type"] = "custom", ["name"] = named.ToolName };
         }
 
         if (!encodedProviderTools.TryGetValue(named.ToolName, out var extension))
@@ -664,6 +739,20 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
                         }
                     }
 
+                    break;
+                case "custom_tool_call":
+                    hasToolCalls = true;
+                    content.Add(
+                        new GeneratedToolCall(
+                            OpenAIJson.String(part, "call_id") ?? string.Empty,
+                            OpenAIJson.String(part, "name") ?? string.Empty,
+                            JsonSerializer.Serialize(OpenAIJson.Child(part, "input")),
+                            OpenResponsesResults.ItemMetadata(
+                                _provider.Name,
+                                OpenAIJson.String(part, "id")
+                            )
+                        )
+                    );
                     break;
                 case "function_call":
                     hasToolCalls = true;
