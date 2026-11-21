@@ -29,4 +29,16 @@ public sealed class OutputTextParseCompleteOutputTests
         Assert.Equal(JsonValueKind.String, result.ValueKind);
         Assert.Equal(string.Empty, result.GetString());
     }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should handle undefined as string \"undefined\"",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void Should_handle_undefined_as_string_undefined()
+    {
+        // Output.text() expects a string; upstream casts undefined in to see what happens: undefined comes out.
+        var result = OutputSpec.Text().ParseCompleteOutput(null);
+        Assert.Equal(JsonValueKind.Undefined, result.ValueKind);
+    }
 }
