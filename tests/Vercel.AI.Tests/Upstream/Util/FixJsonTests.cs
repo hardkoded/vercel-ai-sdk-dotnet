@@ -273,6 +273,20 @@ public sealed class FixJsonTests
     }
 
     [UpstreamTest(
+        "packages/ai/src/util/fix-json.test.ts::array::should handle incomplete negative number as first element",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    [Fact]
+    public void Drops_an_incomplete_negative_number_as_first_element()
+    {
+        Assert.Equal("[]", FixJson.Repair("[-"));
+        Assert.Equal("[]", FixJson.Repair("[ -"));
+        Assert.Equal("[[1], []]", FixJson.Repair("[[1], [-"));
+        Assert.Equal("{\"a\": []}", FixJson.Repair("{\"a\": [-"));
+        Assert.Equal("[-1]", FixJson.Repair("[-1"));
+    }
+
+    [UpstreamTest(
         "packages/ai/src/util/fix-json.test.ts::object::should handle keys without values",
         Coverage = UpstreamCoverage.Covered
     )]
