@@ -193,6 +193,9 @@ internal static class Generation
     {
         // The start-step part of the step was streamed by a cancelled model call.
         public bool StartStepStreamed { get; set; }
+
+        // onStepStart was notified for the step by a cancelled model call, and it is notified once per step.
+        public bool StepStartNotified { get; set; }
     }
 
     // Maps to the shouldStartNextStep of generateText and streamText. A step with no client tool calls continues
@@ -352,34 +355,14 @@ internal static class Generation
                 await NotifyAsync(
                         () =>
                             options.OnStart(
-                                new GenerateTextStartEvent
-                                {
-                                    CallId = callId,
-                                    Provider = model.Provider,
-                                    ModelId = model.ModelId,
-                                    Instructions = initialInstructions,
-                                    Messages = initialMessages,
-                                    Tools = options.Tools,
-                                    ToolChoice = options.ToolChoice,
-                                    ActiveTools = options.ActiveTools,
-                                    ToolOrder = options.ToolOrder,
-                                    MaxOutputTokens = options.MaxOutputTokens,
-                                    Temperature = options.Temperature,
-                                    TopP = options.TopP,
-                                    TopK = options.TopK,
-                                    PresencePenalty = options.PresencePenalty,
-                                    FrequencyPenalty = options.FrequencyPenalty,
-                                    StopSequences = options.StopSequences,
-                                    Seed = options.Seed,
-                                    Reasoning = options.Reasoning,
-                                    MaxRetries = resolvedMaxRetries,
-                                    Timeout = options.Timeout,
-                                    Headers = options.Headers,
-                                    ProviderOptions = options.ProviderOptions,
-                                    Output = options.Output,
-                                    ToolsContext = options.ToolsContext,
-                                    RuntimeContext = options.RuntimeContext,
-                                },
+                                CreateStartEvent(
+                                    options,
+                                    callId,
+                                    model,
+                                    initialInstructions,
+                                    initialMessages,
+                                    resolvedMaxRetries
+                                ),
                                 cancellationToken
                             ),
                         cancellationToken
@@ -500,8 +483,10 @@ internal static class Generation
                     )
                     .ConfigureAwait(false);
 
-                if (options.OnStepStart != null)
+                var stepStartNotified = redo?.StepStartNotified == true;
+                if (options.OnStepStart != null && !stepStartNotified)
                 {
+                    stepStartNotified = true;
                     await NotifyAsync(
                             () =>
                                 options.OnStepStart(
@@ -577,7 +562,11 @@ internal static class Generation
                         && timeouts?.Signal.Aborted != true
                     )
                 {
-                    redo = stepStart with { DeliveredSteeringMessages = deliveredSteeringMessages };
+                    redo = stepStart with
+                    {
+                        DeliveredSteeringMessages = deliveredSteeringMessages,
+                        StepStartNotified = stepStartNotified,
+                    };
                     continue;
                 }
                 finally
@@ -1183,6 +1172,27 @@ internal static class Generation
             buffer.Add(new StartPart());
             var callId = (options.GenerateCallId ?? NewCallId)();
             recorder.CallId = callId;
+            if (options.OnStart != null)
+            {
+                await NotifyAsync(
+                        () =>
+                            options.OnStart(
+                                CreateStartEvent(
+                                    options,
+                                    callId,
+                                    model,
+                                    initialInstructions,
+                                    initialMessages,
+                                    Vercel.AI.Operations.OperationRetry.ResolveMaxRetries(
+                                        options.MaxRetries
+                                    )
+                                ),
+                                cancellationToken
+                            ),
+                        cancellationToken
+                    )
+                    .ConfigureAwait(false);
+            }
             await ProcessInitialApprovalsAsync(
                     options,
                     messages,
@@ -1282,6 +1292,7 @@ internal static class Generation
                 var stepStartMs = now();
                 // The start-step part of a step is streamed once, even when a cancelled model call already streamed it:
                 var startStepStreamed = redo?.StartStepStreamed == true;
+                var stepStartNotified = redo?.StepStartNotified == true;
                 var stepStarted = false;
                 var stepResponseId = Vercel.AI.ProviderUtils.JsonValues.GenerateId("aitxt-");
                 var stepResponseTimestamp = DateTimeOffset.UtcNow;
@@ -1319,6 +1330,42 @@ internal static class Generation
                     update?.ProviderOptions
                 );
                 streamOptions.IncludeRawChunks = options.Include?.RawChunks == true;
+                // onStepStart runs once per step with the converted prompt, even when a steering interrupt redoes the model call:
+                streamOptions.OnStart = async (_, token) =>
+                {
+                    if (stepStartNotified || options.OnStepStart == null)
+                    {
+                        return;
+                    }
+
+                    stepStartNotified = true;
+                    await NotifyAsync(
+                            () =>
+                                options.OnStepStart(
+                                    new GenerateTextStepStartEvent
+                                    {
+                                        CallId = callId,
+                                        Provider = current.Provider,
+                                        ModelId = current.ModelId,
+                                        StepNumber = steps.Count,
+                                        Instructions = instructions,
+                                        Messages = stepMessages.Skip(instructionCount).ToArray(),
+                                        Tools = options.Tools,
+                                        ToolChoice = streamOptions.ToolChoice,
+                                        ActiveTools = options.ActiveTools,
+                                        ToolOrder = streamOptions.ToolOrder,
+                                        Steps = steps.ToArray(),
+                                        ProviderOptions = streamOptions.ProviderOptions,
+                                        Output = options.Output,
+                                        ToolsContext = options.ToolsContext,
+                                        RuntimeContext = options.RuntimeContext,
+                                    },
+                                    token
+                                ),
+                            token
+                        )
+                        .ConfigureAwait(false);
+                };
                 using var interrupt =
                     steeringRun == null
                         ? null
@@ -1354,6 +1401,7 @@ internal static class Generation
                     {
                         DeliveredSteeringMessages = stepDeliveredMessages,
                         StartStepStreamed = startStepStreamed || stepStarted,
+                        StepStartNotified = stepStartNotified,
                     };
                     continue;
                 }
@@ -1888,6 +1936,7 @@ internal static class Generation
                     {
                         DeliveredSteeringMessages = stepDeliveredMessages,
                         StartStepStreamed = startStepStreamed || stepStarted,
+                        StepStartNotified = stepStartNotified,
                     };
                     continue;
                 }
@@ -3864,6 +3913,43 @@ internal static class Generation
     private static string NewCallId() => "call-" + Guid.NewGuid().ToString("N");
 
     // Upstream's `notify` ignores an error a callback throws, so a faulty listener cannot break generation.
+    private static GenerateTextStartEvent CreateStartEvent(
+        GenerateTextOptions options,
+        string callId,
+        ILanguageModel model,
+        Instructions? initialInstructions,
+        IReadOnlyList<ModelMessage> initialMessages,
+        int resolvedMaxRetries
+    ) =>
+        new GenerateTextStartEvent
+        {
+            CallId = callId,
+            Provider = model.Provider,
+            ModelId = model.ModelId,
+            Instructions = initialInstructions,
+            Messages = initialMessages,
+            Tools = options.Tools,
+            ToolChoice = options.ToolChoice,
+            ActiveTools = options.ActiveTools,
+            ToolOrder = options.ToolOrder,
+            MaxOutputTokens = options.MaxOutputTokens,
+            Temperature = options.Temperature,
+            TopP = options.TopP,
+            TopK = options.TopK,
+            PresencePenalty = options.PresencePenalty,
+            FrequencyPenalty = options.FrequencyPenalty,
+            StopSequences = options.StopSequences,
+            Seed = options.Seed,
+            Reasoning = options.Reasoning,
+            MaxRetries = resolvedMaxRetries,
+            Timeout = options.Timeout,
+            Headers = options.Headers,
+            ProviderOptions = options.ProviderOptions,
+            Output = options.Output,
+            ToolsContext = options.ToolsContext,
+            RuntimeContext = options.RuntimeContext,
+        };
+
     internal static async Task NotifyAsync(Func<Task> callback, CancellationToken cancellationToken)
     {
         try
