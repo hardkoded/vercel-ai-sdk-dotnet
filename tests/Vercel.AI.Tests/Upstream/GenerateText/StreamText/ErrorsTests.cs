@@ -2,10 +2,15 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
+using System.Threading.Channels;
+using Vercel.AI.AspNetCore;
 using Vercel.AI.GenerateText;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
+using Vercel.AI.Tests.Upstream.GenerateTextSteering;
 using Vercel.AI.Tests.Upstream.StreamText;
+using Vercel.AI.Ui;
 using static Vercel.AI.Tests.Upstream.GenerateText.ToolExecutionCallbackSupport;
 
 namespace Vercel.AI.Tests.Upstream.GenerateText.StreamText;
@@ -1064,6 +1069,502 @@ public sealed class ErrorsTests
         var finalStep = await result.FinalStep;
         Assert.Empty(finalStep.ToolCalls);
         Assert.Empty(finalStep.ToolResults);
+    }
+
+    private static Tool EmptyTool(
+        Func<JsonElement, CancellationToken, Task<string>>? execute = null
+    ) => Tool.Function("tool1", null, "{\"type\":\"object\",\"properties\":{}}", execute);
+
+    private static StreamTextOptions RecoveringOptions(
+        StreamTextTransformTestSupport.CallsModel model,
+        Tool? tool = null
+    ) =>
+        new()
+        {
+            Model = model,
+            Prompt = "test-input",
+            Tools = tool == null ? null : [tool],
+            StreamRetries = 1,
+            OnError = (_, _) => Task.CompletedTask,
+        };
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should execute a repeated tool call id only from the recovered attempt",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_execute_a_repeated_tool_call_id_only_from_the_recovered_attempt()
+    {
+        var executions = 0;
+        var model = new StreamTextTransformTestSupport.CallsModel(
+            (call, _) =>
+                new StreamTextTransformTestSupport.CallScript(
+                    call == 0
+                        ?
+                        [
+                            new ToolCallStreamPart("shared-tool-call", "tool1", "{}"),
+                            ProviderError(),
+                        ]
+                        :
+                        [
+                            new ToolCallStreamPart("shared-tool-call", "tool1", "{}"),
+                            new FinishStreamPart(
+                                FinishReason.ToolCalls,
+                                StreamTextTransformTestSupport.TestUsage,
+                                "tool-calls"
+                            ),
+                        ]
+                )
+        );
+
+        var result = RetryClient()
+            .StreamTextAsync(
+                RecoveringOptions(
+                    model,
+                    EmptyTool(
+                        (_, _) =>
+                        {
+                            executions++;
+                            return Task.FromResult("tool result");
+                        }
+                    )
+                )
+            );
+
+        await result.ConsumeStreamAsync();
+
+        Assert.Equal(2, model.CallCount);
+        Assert.Equal(1, executions);
+        Assert.Single((await result.FinalStep).ToolCalls);
+        Assert.Single((await result.FinalStep).ToolResults);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should discard tool callbacks and approvals from a failed attempt",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_discard_tool_callbacks_and_approvals_from_a_failed_attempt()
+    {
+        var inputStarts = 0;
+        var inputDeltas = 0;
+        var inputAvailables = 0;
+        var approvals = 0;
+        var model = new StreamTextTransformTestSupport.CallsModel(
+            (call, _) =>
+                new StreamTextTransformTestSupport.CallScript(
+                    call == 0
+                        ?
+                        [
+                            new ToolInputStartStreamPart("failed-tool-call", "tool1"),
+                            new ToolInputDeltaStreamPart("failed-tool-call", "{}"),
+                            new ToolInputEndStreamPart("failed-tool-call"),
+                            new ToolCallStreamPart("failed-tool-call", "tool1", "{}"),
+                            ProviderError(),
+                        ]
+                        : Recovered("1", "recovered")
+                )
+        );
+        var tool = EmptyTool();
+        tool.OnInputStart = _ =>
+        {
+            inputStarts++;
+            return Task.CompletedTask;
+        };
+        tool.OnInputDelta = _ =>
+        {
+            inputDeltas++;
+            return Task.CompletedTask;
+        };
+        tool.OnInputAvailable = _ =>
+        {
+            inputAvailables++;
+            return Task.CompletedTask;
+        };
+        var options = RecoveringOptions(model, tool);
+        options.ToolApproval = new ToolApprovalConfiguration(_ =>
+        {
+            approvals++;
+            return Task.FromResult<ToolApprovalStatus?>(ToolApprovalStatus.Approved);
+        });
+
+        var result = RetryClient().StreamTextAsync(options);
+
+        await result.ConsumeStreamAsync();
+
+        Assert.Equal(0, inputStarts);
+        Assert.Equal(0, inputDeltas);
+        Assert.Equal(0, inputAvailables);
+        Assert.Equal(0, approvals);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should scope lifecycle callbacks to logical steps and completed model calls",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_scope_lifecycle_callbacks_to_logical_steps_and_completed_model_calls()
+    {
+        var stepStarts = 0;
+        var callStarts = 0;
+        var callEnds = 0;
+        var model = new StreamTextTransformTestSupport.CallsModel(
+            (call, _) =>
+                new StreamTextTransformTestSupport.CallScript(
+                    call == 0 ? [ProviderError()] : Recovered("1", "recovered")
+                )
+        );
+        var options = RecoveringOptions(model);
+        options.OnStepStart = (_, _) =>
+        {
+            Interlocked.Increment(ref stepStarts);
+            return Task.CompletedTask;
+        };
+        options.OnLanguageModelCallStart = (_, _) =>
+        {
+            Interlocked.Increment(ref callStarts);
+            return Task.CompletedTask;
+        };
+        options.OnLanguageModelCallEnd = (_, _) =>
+        {
+            Interlocked.Increment(ref callEnds);
+            return Task.CompletedTask;
+        };
+
+        var result = RetryClient().StreamTextAsync(options);
+
+        await result.ConsumeStreamAsync();
+
+        Assert.Equal(1, stepStarts);
+        Assert.Equal(2, callStarts);
+        Assert.Equal(1, callEnds);
+        Assert.Single(await result.Steps);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should close partial text and reasoning before recovered UI output",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_close_partial_text_and_reasoning_before_recovered_UI_output()
+    {
+        var model = new StreamTextTransformTestSupport.CallsModel(
+            (call, _) =>
+                new StreamTextTransformTestSupport.CallScript(
+                    call == 0
+                        ?
+                        [
+                            new TextStartStreamPart("failed-text"),
+                            new TextDeltaStreamPart("failed-text", "partial text"),
+                            new ReasoningStartStreamPart("failed-reasoning"),
+                            new ReasoningDeltaStreamPart("failed-reasoning", "partial reasoning"),
+                            ProviderError(),
+                        ]
+                        :
+                        [
+                            new TextStartStreamPart("recovered-text"),
+                            new TextDeltaStreamPart("recovered-text", "recovered text"),
+                            new TextEndStreamPart("recovered-text"),
+                            new ReasoningStartStreamPart("recovered-reasoning"),
+                            new ReasoningDeltaStreamPart(
+                                "recovered-reasoning",
+                                "recovered reasoning"
+                            ),
+                            new ReasoningEndStreamPart("recovered-reasoning"),
+                            StreamTextTransformTestSupport.Finish(),
+                        ]
+                )
+        );
+
+        var result = RetryClient().StreamTextAsync(RecoveringOptions(model));
+
+        UIMessage? last = null;
+        await foreach (
+            var message in UIMessageStreamConverter.ReadUIMessageStream(
+                new ReadUIMessageStreamOptions(result.ToUIMessageStream())
+            )
+        )
+        {
+            last = message;
+        }
+
+        var parts = last!.Parts;
+        Assert.Equal(5, parts.Count);
+        Assert.IsType<StepStartUIPart>(parts[0]);
+        var failedText = Assert.IsType<TextUIPart>(parts[1]);
+        Assert.Equal("partial text", failedText.Text);
+        Assert.Equal("done", failedText.State);
+        var failedReasoning = Assert.IsType<ReasoningUIPart>(parts[2]);
+        Assert.Equal("failed-reasoning", failedReasoning.Id);
+        Assert.Equal("partial reasoning", failedReasoning.Text);
+        Assert.Equal("done", failedReasoning.State);
+        var recoveredText = Assert.IsType<TextUIPart>(parts[3]);
+        Assert.Equal("recovered text", recoveredText.Text);
+        Assert.Equal("done", recoveredText.State);
+        var recoveredReasoning = Assert.IsType<ReasoningUIPart>(parts[4]);
+        Assert.Equal("recovered-reasoning", recoveredReasoning.Id);
+        Assert.Equal("recovered reasoning", recoveredReasoning.Text);
+        Assert.Equal("done", recoveredReasoning.State);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should stream tool parts incrementally when recovery is not configured",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_stream_tool_parts_incrementally_when_recovery_is_not_configured()
+    {
+        await AssertToolPartsStreamIncrementallyAsync(onError: false);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should stream tool parts incrementally for an existing onError observer",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_stream_tool_parts_incrementally_for_an_existing_onError_observer()
+    {
+        await AssertToolPartsStreamIncrementallyAsync(onError: true);
+    }
+
+    private static async Task AssertToolPartsStreamIncrementallyAsync(bool onError)
+    {
+        var provider = Channel.CreateUnbounded<LanguageModelStreamPart>();
+        var model = new MockLanguageModel(
+            (_, cancellationToken) =>
+                Task.FromResult(
+                    new LanguageModelStreamResult(
+                        provider.Reader.ReadAllAsync(cancellationToken),
+                        null,
+                        null
+                    )
+                )
+        );
+        var options = new StreamTextOptions
+        {
+            Model = model,
+            Prompt = "test-input",
+            Tools =
+            [
+                Tool.Function(
+                    "tool1",
+                    null,
+                    "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}},\"required\":[\"value\"]}",
+                    null
+                ),
+            ],
+        };
+        if (onError)
+        {
+            options.OnError = (_, _) => Task.CompletedTask;
+        }
+
+        var result = RetryClient().StreamTextAsync(options);
+        await using var reader = result.Stream().GetAsyncEnumerator();
+
+        async Task<TextStreamPart> ReadUntilAsync(string type)
+        {
+            while (true)
+            {
+                var next = reader.MoveNextAsync().AsTask();
+                if (await Task.WhenAny(next, Task.Delay(5000)) != next)
+                {
+                    throw new TimeoutException($"Timed out waiting for {type}");
+                }
+
+                if (!await next || reader.Current.Type == type)
+                {
+                    return reader.Current;
+                }
+            }
+        }
+
+        await provider.Writer.WriteAsync(new ToolInputStartStreamPart("tool-call-1", "tool1"));
+        var start = Assert.IsType<ToolInputStartPart>(await ReadUntilAsync("tool-input-start"));
+        Assert.Equal("tool-call-1", start.Id);
+        Assert.Equal("tool1", start.ToolName);
+        Assert.False(start.Dynamic);
+
+        await provider.Writer.WriteAsync(
+            new ToolCallStreamPart("tool-call-1", "tool1", "{\"value\":\"test\"}")
+        );
+        var call = Assert.IsType<ToolCallPart>(await ReadUntilAsync("tool-call"));
+        Assert.Equal("tool-call-1", call.ToolCall.ToolCallId);
+        Assert.Equal("tool1", call.ToolCall.ToolName);
+        using var input = JsonDocument.Parse(call.ToolCall.ArgumentsJson);
+        Assert.Equal("test", input.RootElement.GetProperty("value").GetString());
+
+        await provider.Writer.WriteAsync(
+            new FinishStreamPart(
+                FinishReason.ToolCalls,
+                StreamTextTransformTestSupport.TestUsage,
+                "tool-calls"
+            )
+        );
+        provider.Writer.Complete();
+
+        while (await reader.MoveNextAsync()) { }
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should preserve onChunk before onError ordering when retries are disabled",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_preserve_onChunk_before_onError_ordering_when_retries_are_disabled()
+    {
+        var order = new List<string>();
+        var model = new StreamTextTransformTestSupport.CallsModel(
+            (_, _) => new StreamTextTransformTestSupport.CallScript([ProviderError()])
+        );
+
+        var result = RetryClient()
+            .StreamTextAsync(
+                new StreamTextOptions
+                {
+                    Model = model,
+                    Prompt = "test-input",
+                    OnChunk = (chunk, _) =>
+                    {
+                        if (chunk.Chunk is ErrorPart)
+                        {
+                            order.Add("onChunk");
+                        }
+
+                        return Task.CompletedTask;
+                    },
+                    OnError = (_, _) =>
+                    {
+                        order.Add("onError");
+                        return Task.CompletedTask;
+                    },
+                }
+            );
+
+        await result.ConsumeStreamAsync();
+
+        Assert.Equal(["onChunk", "onError"], order);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should emit the final error after stream retries are exhausted",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_emit_the_final_error_after_stream_retries_are_exhausted()
+    {
+        var errors = 0;
+        var model = new StreamTextTransformTestSupport.CallsModel(
+            (call, _) =>
+                new StreamTextTransformTestSupport.CallScript([
+                    ProviderError($"provider error {call + 1}"),
+                ])
+        );
+        var options = RecoveringOptions(model);
+        options.OnError = (_, _) =>
+        {
+            errors++;
+            return Task.CompletedTask;
+        };
+
+        var result = RetryClient().StreamTextAsync(options);
+
+        var parts = new List<TextStreamPart>();
+        await foreach (var part in result.Stream())
+        {
+            parts.Add(part);
+        }
+
+        Assert.Equal(2, model.CallCount);
+        Assert.Equal(2, errors);
+        Assert.Contains(parts.OfType<ErrorPart>(), part =>
+            part.Error?.Message == "provider error 2"
+        );
+        Assert.Equal(FinishReason.Error, await result.FinishReason);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should emit a normal terminal error when a recovery call fails to start",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_emit_a_normal_terminal_error_when_a_recovery_call_fails_to_start()
+    {
+        var calls = 0;
+        var errors = new List<Exception>();
+        GenerateTextResult? finished = null;
+        var model = new MockLanguageModel(
+            (_, cancellationToken) =>
+            {
+                if (Interlocked.Increment(ref calls) == 1)
+                {
+                    return Task.FromResult(
+                        new LanguageModelStreamResult(
+                            SteeringTestModel.ToAsync(
+                                [
+                                    new TextStartStreamPart("failed-text"),
+                                    new TextDeltaStreamPart("failed-text", "partial"),
+                                    new ToolCallStreamPart("failed-tool-call", "tool1", "{}"),
+                                    ProviderError(),
+                                ],
+                                cancellationToken
+                            ),
+                            null,
+                            null
+                        )
+                    );
+                }
+
+                throw new InvalidOperationException("recovery startup error");
+            }
+        );
+
+        var result = RetryClient()
+            .StreamTextAsync(
+                new StreamTextOptions
+                {
+                    Model = model,
+                    Prompt = "test-input",
+                    Tools = [EmptyTool((_, _) => Task.FromResult(string.Empty))],
+                    MaxRetries = 0,
+                    StreamRetries = 1,
+                    OnError = (error, _) =>
+                    {
+                        errors.Add(error);
+                        return Task.CompletedTask;
+                    },
+                    OnEnd = (finish, _) =>
+                    {
+                        finished = finish;
+                        return Task.CompletedTask;
+                    },
+                }
+            );
+
+        var parts = new List<TextStreamPart>();
+        await foreach (var part in result.Stream())
+        {
+            parts.Add(part);
+        }
+
+        Assert.Equal(2, calls);
+        Assert.Contains(parts.OfType<ErrorPart>(), part =>
+            part.Error?.Message == "recovery startup error"
+        );
+        Assert.DoesNotContain(parts.OfType<ToolCallPart>(), part =>
+            part.ToolCall.ToolCallId == "failed-tool-call"
+        );
+        Assert.Equal(2, errors.Count);
+        Assert.Equal("provider error", errors[0].Message);
+        Assert.Equal("recovery startup error", errors[1].Message);
+        Assert.NotNull(finished);
+        Assert.Equal(FinishReason.Error, finished!.FinishReason);
+        Assert.Equal("partial", finished.Text);
+        Assert.Empty(finished.ToolCalls);
+        Assert.Empty(finished.ToolResults);
+        Assert.Equal(FinishReason.Error, await result.FinishReason);
+        Assert.Equal("partial", await result.Text);
+        Assert.Empty((await result.FinalStep).ToolCalls);
     }
 
     [Fact]
