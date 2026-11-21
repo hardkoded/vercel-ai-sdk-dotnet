@@ -116,8 +116,7 @@ internal static class ConvertToGroqChatMessages
             throw Unsupported("Non-image file content parts");
         }
 
-        var url =
-            file.Url
+        var url = file.Url
             ?? "data:"
                 + MediaTypes.ResolveFullMediaType(file.MediaType, file.Data)
                 + ";base64,"

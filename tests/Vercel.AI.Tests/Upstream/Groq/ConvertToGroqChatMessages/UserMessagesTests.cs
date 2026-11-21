@@ -58,6 +58,5 @@ public sealed class UserMessagesTests
         JsonAssert.Equal(result, """[{"content":"Hello","role":"user"}]""");
     }
 
-    private static FileContentPart ImageData() =>
-        new("image/png", null, Bytes0123, null);
+    private static FileContentPart ImageData() => new("image/png", null, Bytes0123, null);
 }

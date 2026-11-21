@@ -94,9 +94,7 @@ public sealed class ToolArgumentAndOutputSerializationResilienceTests
             Assistant(Call("call-2", "process", StringifyWithBigIntAndCycles(cyclicInput)))
         );
 
-        var args = result[0]!["tool_calls"]![0]!["function"]![
-            "arguments"
-        ]!.GetValue<string>();
+        var args = result[0]!["tool_calls"]![0]!["function"]!["arguments"]!.GetValue<string>();
         Assert.Contains("\"id\":\"12345678901234567890\"", args);
         Assert.Contains("\"self\":\"[Circular]\"", args);
     }
@@ -135,13 +133,13 @@ public sealed class ToolArgumentAndOutputSerializationResilienceTests
         var shared = new Dictionary<string, object?> { ["city"] = "Paris" };
 
         var result = Run(
-                ToolJson(
-                    "call-4",
-                    "getData",
-                    StringifyWithBigIntAndCycles(
-                        new Dictionary<string, object?> { ["first"] = shared, ["second"] = shared }
-                    )
+            ToolJson(
+                "call-4",
+                "getData",
+                StringifyWithBigIntAndCycles(
+                    new Dictionary<string, object?> { ["first"] = shared, ["second"] = shared }
                 )
+            )
         );
 
         var content = result[0]!["content"]!.GetValue<string>();

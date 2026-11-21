@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json.Nodes;
-using Converter = Vercel.AI.Groq.ConvertToGroqChatMessages;
 using Vercel.AI.Provider;
+using Converter = Vercel.AI.Groq.ConvertToGroqChatMessages;
 
 namespace Vercel.AI.Tests.Upstream.Groq.ConvertToGroqChatMessages;
 
@@ -19,8 +19,7 @@ internal static class ConvertToGroqChatMessagesSupport
     /// <summary>The bytes of upstream's <c>iVBORw0KGgo=</c>, a PNG signature.</summary>
     internal static readonly byte[] PngBytes = System.Convert.FromBase64String("iVBORw0KGgo=");
 
-    internal static JsonArray Run(params ModelMessage[] prompt) =>
-        Converter.Convert(prompt);
+    internal static JsonArray Run(params ModelMessage[] prompt) => Converter.Convert(prompt);
 
     internal static UserModelMessage User(params UserContentPart[] parts) => new(parts);
 
