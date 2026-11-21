@@ -498,6 +498,8 @@ public sealed class StreamTextTransformBaseTransformationTests
             Assert.Equal(3, usage.InputTokens);
             Assert.Equal(10, usage.OutputTokens);
             Assert.Equal(13, usage.TotalTokens);
+            Assert.Equal(3, usage.NoCacheInputTokens);
+            Assert.Equal(10, usage.TextTokens);
             Assert.Null(usage.CacheReadTokens);
             Assert.Null(usage.CacheWriteTokens);
             Assert.Null(usage.ReasoningTokens);
@@ -698,11 +700,15 @@ public sealed class StreamTextTransformBaseTransformationTests
         Assert.Equal(3, finishStep.Step.Usage.InputTokens);
         Assert.Equal(10, finishStep.Step.Usage.OutputTokens);
         Assert.Equal(13, finishStep.Step.Usage.TotalTokens);
+        Assert.Equal(3, finishStep.Step.Usage.NoCacheInputTokens);
+        Assert.Equal(10, finishStep.Step.Usage.TextTokens);
 
         var finish = Assert.IsType<FinishPart>(chunks[17]);
         Assert.Equal(FinishReason.Stop, finish.FinishReason);
         Assert.Equal(3, finish.Usage.InputTokens);
         Assert.Equal(10, finish.Usage.OutputTokens);
         Assert.Equal(13, finish.Usage.TotalTokens);
+        Assert.Equal(3, finish.Usage.NoCacheInputTokens);
+        Assert.Equal(10, finish.Usage.TextTokens);
     }
 }

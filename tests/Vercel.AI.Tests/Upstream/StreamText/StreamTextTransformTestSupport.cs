@@ -249,6 +249,8 @@ internal static class StreamTextTransformTestSupport
         Assert.Equal(3, step.Usage.InputTokens);
         Assert.Equal(10, step.Usage.OutputTokens);
         Assert.Equal(13, step.Usage.TotalTokens);
+        Assert.Equal(3, step.Usage.NoCacheInputTokens);
+        Assert.Equal(10, step.Usage.TextTokens);
         Assert.Null(step.Usage.CacheReadTokens);
         Assert.Null(step.Usage.CacheWriteTokens);
         Assert.Null(step.Usage.ReasoningTokens);

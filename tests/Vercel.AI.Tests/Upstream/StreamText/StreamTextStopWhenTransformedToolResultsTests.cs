@@ -360,8 +360,14 @@ public sealed class StreamTextStopWhenTransformedToolResultsTests
         Assert.Equal(FinishReason.ToolCalls, firstFinishStep.Step.FinishReason);
         Assert.Equal("1", Assert.Single(firstFinishStep.Response.Headers!).Value);
         Assert.Equal("1", Assert.IsType<TextStartPart>(parts[9]).Id);
-        Assert.Equal("Hello, ", Assert.IsType<TextDeltaPart>(parts[10]).Text);
-        Assert.Equal("world!", Assert.IsType<TextDeltaPart>(parts[11]).Text);
+        foreach (var (index, text) in new[] { (10, "Hello, "), (11, "world!") })
+        {
+            var delta = Assert.IsType<TextDeltaPart>(parts[index]);
+            Assert.Equal("1", delta.Id);
+            Assert.Equal(text, delta.Text);
+            Assert.Null(delta.ProviderMetadata);
+        }
+
         Assert.Equal("1", Assert.IsType<TextEndPart>(parts[12]).Id);
         var secondFinishStep = Assert.IsType<StepFinishPart>(parts[13]);
         AssertStep2(secondFinishStep.Step, chunk: true);
