@@ -1440,6 +1440,9 @@ public class GenerateTextOptions
     /// <summary>The clock for step timing in milliseconds. Tests replace it. Maps to <c>_internal.now</c>.</summary>
     internal Func<double>? NowMs { get; set; }
 
+    /// <summary>The clock for the step response timestamp. Tests replace it. Upstream tests freeze the system time instead.</summary>
+    internal Func<DateTimeOffset>? CurrentDate { get; set; }
+
     /// <summary>Generates the id of the call. Maps to <c>_internal.generateCallId</c>.</summary>
     internal Func<string>? GenerateCallId { get; set; }
 
