@@ -198,6 +198,12 @@ public sealed class AmazonBedrockProvider : ProviderBase
     public override IEmbeddingModel EmbeddingModel(string modelId) =>
         new AmazonBedrockEmbeddingModel(this, modelId);
 
+    /// <summary>Creates a language model with <paramref name="settings"/>.</summary>
+    public AmazonBedrockLanguageModel LanguageModel(
+        string modelId,
+        AmazonBedrockChatModelSettings? settings
+    ) => new AmazonBedrockLanguageModel(this, modelId, settings);
+
     /// <summary>Creates an embedding model with <paramref name="settings"/>.</summary>
     public AmazonBedrockEmbeddingModel EmbeddingModel(
         string modelId,
@@ -222,12 +228,18 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
     private const string JsonToolName = "json";
 
     private readonly AmazonBedrockProvider _provider;
+    private readonly AmazonBedrockChatModelFamily? _modelFamily;
 
     /// <summary>Creates a model.</summary>
-    public AmazonBedrockLanguageModel(AmazonBedrockProvider provider, string modelId)
+    public AmazonBedrockLanguageModel(
+        AmazonBedrockProvider provider,
+        string modelId,
+        AmazonBedrockChatModelSettings? settings = null
+    )
     {
         _provider = provider;
         ModelId = modelId;
+        _modelFamily = settings?.ModelFamily;
     }
 
     /// <inheritdoc />
@@ -895,6 +907,7 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
         var capabilities = AnthropicModelCapabilities.Get(ModelId);
         var isAnthropicModel = AmazonBedrockModelSupport.IsAnthropicModel(
             ModelId,
+            _modelFamily,
             reasoningConfig?.BudgetTokens
         );
         var temperature = options.Temperature;
@@ -1081,13 +1094,16 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
             ModelId,
             tools,
             toolChoice,
+            _modelFamily,
             reasoningConfig?.BudgetTokens,
             ReadBool(
                 ReadProviderOptions(options.ProviderOptions, "anthropic"),
                 "disableParallelToolUse"
             ),
+            capabilities.RejectsForcedToolUse,
             out var toolWarnings,
-            out var additionalTools
+            out var additionalTools,
+            out var betas
         );
         warnings.AddRange(toolWarnings);
         if (additionalTools != null)
@@ -1097,6 +1113,30 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
             {
                 additional[entry.Key] = entry.Value?.DeepClone();
             }
+        }
+
+        if (betas.Count > 0)
+        {
+            var mergedBetas = new JsonArray();
+            if (
+                bedrock is { ValueKind: JsonValueKind.Object } bedrockOptions
+                && bedrockOptions.TryGetProperty("anthropicBeta", out var existingBetas)
+                && existingBetas.ValueKind == JsonValueKind.Array
+            )
+            {
+                foreach (var existing in existingBetas.EnumerateArray())
+                {
+                    mergedBetas.Add(JsonNode.Parse(existing.GetRawText()));
+                }
+            }
+
+            foreach (var beta in betas)
+            {
+                mergedBetas.Add(beta);
+            }
+
+            additional ??= new JsonObject();
+            additional["anthropic_beta"] = mergedBetas;
         }
 
         var thinkingType = reasoningConfig?.Type;
