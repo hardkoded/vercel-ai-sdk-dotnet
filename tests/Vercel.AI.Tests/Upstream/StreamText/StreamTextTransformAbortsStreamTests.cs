@@ -62,8 +62,33 @@ public sealed class StreamTextTransformAbortsStreamTests
             new TextDeltaStreamPart("1", "STOP"),
             new TextDeltaStreamPart("1", " World"),
             new TextEndStreamPart("1"),
-            Finish(),
+            new FinishStreamPart(FinishReason.Stop, LanguageModelUsage.Null, "stop"),
         ]);
+
+    private static void AssertNullUsage(LanguageModelUsage usage)
+    {
+        Assert.Null(usage.InputTokens);
+        Assert.Null(usage.OutputTokens);
+        Assert.Null(usage.TotalTokens);
+        Assert.Null(usage.CacheReadTokens);
+        Assert.Null(usage.CacheWriteTokens);
+        Assert.Null(usage.NoCacheInputTokens);
+        Assert.Null(usage.ReasoningTokens);
+        Assert.Null(usage.TextTokens);
+        Assert.Null(usage.Raw);
+    }
+
+    private static void AssertEmptyPerformance(StepPerformance performance)
+    {
+        Assert.Equal(0, performance.EffectiveOutputTokensPerSecond);
+        Assert.Equal(0, performance.EffectiveTotalTokensPerSecond);
+        Assert.Null(performance.InputTokensPerSecond);
+        Assert.Null(performance.OutputTokensPerSecond);
+        Assert.Equal(0, performance.ResponseTimeMs);
+        Assert.Equal(0, performance.StepTimeMs);
+        Assert.Null(performance.TimeToFirstOutputMs);
+        Assert.Empty(performance.ToolExecutionMs);
+    }
 
     private static CallsModel HelloModel() =>
         CallsModel.Single([
@@ -76,8 +101,7 @@ public sealed class StreamTextTransformAbortsStreamTests
     [Fact]
     [UpstreamTest(
         Prefix + "stream should stop when STOP token is encountered",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Asserts the parts and the payload of finish-step and finish, not the performance numbers."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Stream_should_stop_when_STOP_token_is_encountered()
     {
@@ -98,8 +122,20 @@ public sealed class StreamTextTransformAbortsStreamTests
             ["start", "start-step", "text-start", "text-delta", "finish-step", "finish"],
             parts.Select(part => part.Type)
         );
-        Assert.Equal("Hello, ", Assert.IsType<TextDeltaPart>(parts[3]).Text);
+        var startStep = Assert.IsType<StartStepPart>(parts[1]);
+        Assert.Null(startStep.Request.Body);
+        Assert.Null(startStep.Request.Messages);
+        Assert.Empty(startStep.Warnings);
+        Assert.Equal("1", Assert.IsType<TextStartPart>(parts[2]).Id);
+        var delta = Assert.IsType<TextDeltaPart>(parts[3]);
+        Assert.Equal("1", delta.Id);
+        Assert.Null(delta.ProviderMetadata);
+        Assert.Equal("Hello, ", delta.Text);
         var stepFinish = Assert.IsType<StepFinishPart>(parts[4]);
+        AssertEmptyPerformance(stepFinish.Performance);
+        Assert.Null(stepFinish.ProviderMetadata);
+        AssertNullUsage(stepFinish.Step.Usage);
+        Assert.Null(stepFinish.Response.Headers);
         Assert.Equal(FinishReason.Stop, stepFinish.Step.FinishReason);
         Assert.Null(stepFinish.RawFinishReason);
         Assert.Equal("response-id", stepFinish.Response.Id);
@@ -107,8 +143,7 @@ public sealed class StreamTextTransformAbortsStreamTests
         Assert.Equal(DateTimeOffset.UnixEpoch, stepFinish.Response.Timestamp);
         var finish = Assert.IsType<FinishPart>(parts[5]);
         Assert.Equal(FinishReason.Stop, finish.FinishReason);
-        Assert.Null(finish.Usage.InputTokens);
-        Assert.Null(finish.Usage.OutputTokens);
+        AssertNullUsage(finish.Usage);
     }
 
     [Fact]
@@ -178,8 +213,7 @@ public sealed class StreamTextTransformAbortsStreamTests
     [Fact]
     [UpstreamTest(
         Prefix + "options.onStepFinish should be called",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Asserts the fields of the step as the port exposes them, not the full snapshot or the performance numbers."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Options_onStepFinish_should_be_called()
     {
@@ -223,7 +257,17 @@ public sealed class StreamTextTransformAbortsStreamTests
             Assert.IsType<AssistantTextPart>(Assert.Single(message.Parts)).Text
         );
         Assert.Equal(0, received.StepNumber);
-        Assert.Null(received.Usage.InputTokens);
+        Assert.Equal("mock-provider", received.Model.Provider);
+        Assert.Equal("mock-model-id", received.Model.ModelId);
+        AssertEmptyPerformance(received.Performance);
+        Assert.Null(received.ProviderMetadata);
+        Assert.Null(received.Request.Body);
+        Assert.Null(received.Request.Messages);
+        Assert.Null(received.Response.Headers);
+        Assert.Equal("mock-model-id", received.Response.ModelId);
+        Assert.Empty(received.RuntimeContext);
+        Assert.Empty(received.ToolsContext);
+        AssertNullUsage(received.Usage);
         Assert.Empty(received.Warnings);
     }
 }
