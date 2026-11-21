@@ -77,7 +77,7 @@ public sealed class HeyGenVideoModelTests
         string mode
     )
     {
-        foreach (var duration in new[] { 1, 16, 31, 60 })
+        foreach (var duration in new double[] { 1, 16, 31, 60, 2147483648 })
         {
             foreach (var enhancement in new[] { "quality", "turbo", "disabled" })
             {

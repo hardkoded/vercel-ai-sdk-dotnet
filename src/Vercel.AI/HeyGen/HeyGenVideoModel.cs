@@ -560,7 +560,7 @@ public sealed class HeyGenVideoModel : IVideoModel, IVideoCaller
             ["model"] = ModelId,
             ["mode"] = mode,
             ["prompt"] = call.Prompt,
-            ["duration"] = call.Duration != null ? (int)call.Duration.Value : 5,
+            ["duration"] = call.Duration ?? 5d,
             ["resolution"] = resolution,
         };
         if (mode != "image_to_video")
