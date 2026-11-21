@@ -16,6 +16,13 @@ internal sealed class TelemetryDispatcher
     /// <summary>Maps to <c>onEnd</c>. Null when no integration has it.</summary>
     public Func<GenerateTextResult, CancellationToken, Task>? OnEnd { get; init; }
 
+    /// <summary>Maps to <c>onLanguageModelCallStart</c>. Null when no integration has it.</summary>
+    public Func<
+        LanguageModelCallStartEvent,
+        CancellationToken,
+        Task
+    >? OnLanguageModelCallStart { get; init; }
+
     /// <summary>Maps to <c>onLanguageModelCallEnd</c>. Null when no integration has it.</summary>
     public Func<
         LanguageModelCallEndEvent,
@@ -52,6 +59,7 @@ internal sealed class TelemetryDispatcher
         {
             HasIntegrations = integrations.Count > 0,
             OnEnd = Merge(integrations.Select(i => i.OnEnd)),
+            OnLanguageModelCallStart = Merge(integrations.Select(i => i.OnLanguageModelCallStart)),
             OnLanguageModelCallEnd = Merge(integrations.Select(i => i.OnLanguageModelCallEnd)),
         };
     }

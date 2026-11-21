@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using Vercel.AI.Operations;
 using Vercel.AI.Prompt;
 using Vercel.AI.Provider;
 using Vercel.AI.Testing;
@@ -17,8 +18,7 @@ public sealed class OptionsOnStartTests
     [Fact]
     [UpstreamTest(
         Prefix + "should send correct information with text prompt",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The port has no telemetry settings, so functionId and the user-agent header are not checked. The snapshot is checked field by field."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Should_send_correct_information_with_text_prompt()
     {
@@ -34,6 +34,7 @@ public sealed class OptionsOnStartTests
                         OnGenerate = _ => TestLanguageModel.Text("Hello, World!"),
                     },
                     Prompt = "test-input",
+                    Telemetry = new TelemetryOptions { FunctionId = "test-function" },
                     GenerateCallId = () => "test-telemetry-call-id",
                     OnStart = (@event, _) =>
                     {
@@ -62,6 +63,16 @@ public sealed class OptionsOnStartTests
         Assert.Null(startEvent.Output);
         Assert.Null(startEvent.ProviderOptions);
         Assert.Null(startEvent.Timeout);
+        var headers = Assert.IsAssignableFrom<IReadOnlyDictionary<string, string?>>(
+            startEvent.Headers
+        );
+        var userAgent = Assert.Single(headers);
+        Assert.Equal("user-agent", userAgent.Key);
+        Assert.Equal(AiSdkVersion.UserAgent, userAgent.Value);
+        Assert.Empty(startEvent.RuntimeContext!);
+        Assert.Empty(startEvent.ToolsContext!);
+        Assert.Null(typeof(GenerateTextStartEvent).GetProperty("FunctionId"));
+        Assert.Null(typeof(GenerateTextStartEvent).GetProperty("IsEnabled"));
     }
 
     [Fact]
@@ -95,6 +106,45 @@ public sealed class OptionsOnStartTests
 
         Assert.Equal("test-user", startEvent!.RuntimeContext!["userId"]);
         Assert.Equal("123", startEvent.RuntimeContext["sessionId"]);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should accept deprecated experimental_telemetry as an alias for telemetry",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_accept_deprecated_experimental_telemetry_as_an_alias_for_telemetry()
+    {
+        GenerateTextStartEvent? startEvent = null;
+
+        await ToolExecutionCallbackSupport
+            .Client()
+            .GenerateTextAsync(
+                new GenerateTextOptions
+                {
+                    Model = new TestLanguageModel
+                    {
+                        OnGenerate = _ => TestLanguageModel.Text("Hello!"),
+                    },
+                    Prompt = "test-input",
+#pragma warning disable CS0618 // the deprecated alias is what this test covers
+                    ExperimentalTelemetry = new TelemetryOptions
+                    {
+                        IsEnabled = true,
+                        FunctionId = "deprecated-fn",
+                    },
+#pragma warning restore CS0618
+                    OnStart = (@event, _) =>
+                    {
+                        startEvent = @event;
+                        return Task.CompletedTask;
+                    },
+                }
+            );
+
+        Assert.NotNull(startEvent);
+        Assert.Null(typeof(GenerateTextStartEvent).GetProperty("IsEnabled"));
+        Assert.Null(typeof(GenerateTextStartEvent).GetProperty("FunctionId"));
     }
 
     [Fact]
