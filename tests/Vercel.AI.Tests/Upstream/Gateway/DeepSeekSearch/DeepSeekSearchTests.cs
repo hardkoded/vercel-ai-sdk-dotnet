@@ -88,11 +88,11 @@ public sealed class DeepSeekSearchTests
         Assert.False(properties.TryGetProperty("localization", out _));
     }
 
-    public static TheoryData<string> QueryValidationCases =>
+    public static TheoryData<string> Queries =>
         ["", " ", new string('x', 129), string.Concat(Enumerable.Repeat("😀", 129))];
 
     [Theory]
-    [MemberData(nameof(QueryValidationCases))]
+    [MemberData(nameof(Queries))]
     [UpstreamTest(
         Prefix + "leaves query validation to the gateway (%j)",
         Coverage = UpstreamCoverage.Covered,
