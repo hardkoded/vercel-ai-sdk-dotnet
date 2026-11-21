@@ -223,7 +223,8 @@ public sealed class GoogleCoreUpstreamTests
     [Fact]
     [UpstreamTest(
         "packages/google/src/google-json-accumulator.test.ts::GoogleJSONAccumulator > flat paths::should close a continued string on its final chunk",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "9f108f8a570c80fde8a72059a2d35c707c39b639"
     )]
     public void Closes_a_continued_string_on_its_final_chunk()
     {
@@ -237,7 +238,8 @@ public sealed class GoogleCoreUpstreamTests
     [Fact]
     [UpstreamTest(
         "packages/google/src/google-json-accumulator.test.ts::GoogleJSONAccumulator > flat paths::should close a continued string on an empty final chunk",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "9f108f8a570c80fde8a72059a2d35c707c39b639"
     )]
     public void Closes_a_continued_string_on_an_empty_final_chunk()
     {
