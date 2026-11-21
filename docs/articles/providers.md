@@ -1879,7 +1879,7 @@ var result = await Extract.ExtractAsync(new ExtractRequest
 
 ## Message prompts in batches
 
-A `text` `BatchRequest` takes either `Prompt` (a string) or `Messages` (a `ModelMessage` list), plus `Instructions` or `System`, like `generateText`. Combining `Prompt` and `Messages` throws `InvalidPromptException`. `Batch.StartBatchAsync` passes the batch API's `SupportedUrls` to `LanguageModelPrompts.ConvertToLanguageModelPromptAsync` (upstream `supportedUrls` of `convertToLanguageModelPrompt`). File parts whose URL matches a supported pattern stay URLs, and the others are downloaded with the default download function. Providers that accept only text parts in batches (OpenAI, xAI) throw `UnsupportedFunctionalityException` for a file part.
+A `text` `BatchRequest` takes either `Prompt` (a string) or `Messages` (a `ModelMessage` list), plus `Instructions` or `System`, like `generateText`. Combining `Prompt` and `Messages` throws `InvalidPromptException`. `Batch.StartBatchAsync` passes the batch API's `SupportedUrls` to `LanguageModelPrompts.ConvertToLanguageModelPromptAsync` (upstream `supportedUrls` of `convertToLanguageModelPrompt`). File parts whose URL matches a supported pattern stay URLs, and the others are downloaded with the default download function. OpenAI and xAI batches convert file parts the same way as their Responses models.
 
 ## Structured output in batches
 
