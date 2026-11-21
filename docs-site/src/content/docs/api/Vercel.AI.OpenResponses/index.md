@@ -14,6 +14,8 @@ Public types in the `Vercel.AI.OpenResponses` namespace.
 
 | Type | Summary |
 | --- | --- |
+| [OpenResponsesCustomToolFormat](/api/Vercel.AI.OpenResponses/OpenResponsesCustomToolFormat/) | The raw text format of a custom tool. Maps to the format member of OpenResponsesCustomToolOptions. |
+| [OpenResponsesCustomToolOptions](/api/Vercel.AI.OpenResponses/OpenResponsesCustomToolOptions/) | Options of CustomTool(OpenResponsesCustomToolOptions). Maps to OpenResponsesCustomToolOptions. |
 | [OpenResponsesDecodeEventContext](/api/Vercel.AI.OpenResponses/OpenResponsesDecodeEventContext/) | Input of DecodeEvent. |
 | [OpenResponsesDecodeItemContext](/api/Vercel.AI.OpenResponses/OpenResponsesDecodeItemContext/) | Input of DecodeItem. |
 | [OpenResponsesEncodeInputItemContext](/api/Vercel.AI.OpenResponses/OpenResponsesEncodeInputItemContext/) | Input of EncodeInputItem. |
@@ -26,6 +28,7 @@ Public types in the `Vercel.AI.OpenResponses` namespace.
 | [OpenResponsesProvider](/api/Vercel.AI.OpenResponses/OpenResponsesProvider/) | Open Responses provider. |
 | [OpenResponsesServiceCollectionExtensions](/api/Vercel.AI.OpenResponses/OpenResponsesServiceCollectionExtensions/) | Registers Open Responses. |
 | [OpenResponsesToolContext](/api/Vercel.AI.OpenResponses/OpenResponsesToolContext/) | Input of EncodeTool and EncodeToolChoice. |
+| [OpenResponsesTools](/api/Vercel.AI.OpenResponses/OpenResponsesTools/) | The provider tools of an Open Responses provider. Maps to createOpenResponsesTools. |
 
 ## Enums
 
