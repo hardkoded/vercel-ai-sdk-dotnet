@@ -402,7 +402,7 @@ System messages become `instructions`, joined with a blank line. The sampling se
 
 ## Mistral transcription
 
-`MistralProvider.TranscriptionModel(id)` returns a `MistralTranscriptionModel` with provider id `mistral.transcription`. It implements `ITranscriptionModel` and `ITranscriptionCaller`, so it works with `Transcribe`. It posts a multipart request to `{base}/audio/transcriptions`. It also streams live audio; see [Mistral realtime transcription](#mistral-realtime-transcription). Mistral voice agents (provider-owned LiveKit transport) are not ported yet.
+`MistralProvider.TranscriptionModel(id)` returns a `MistralTranscriptionModel` with provider id `mistral.transcription`. It implements `ITranscriptionModel` and `ITranscriptionCaller`, so it works with `Transcribe`. It posts a multipart request to `{base}/audio/transcriptions`. It also streams live audio; see [Mistral realtime transcription](#mistral-realtime-transcription). For voice agents, see [Mistral voice agent](#mistral-voice-agent).
 
 ```csharp
 var result = await Transcribe.TranscribeAsync(new TranscribeRequest
@@ -423,6 +423,24 @@ Read the options from `providerOptions.mistral`. `MistralTranscriptionModelOptio
 - `targetStreamingDelayMs`, `speakerReferences`, and `turnDetection` are realtime only. `DoGenerateAsync` does not send them and each adds an `unsupported` warning.
 
 The result carries the text, language, segments, and duration (`prompt_audio_seconds`, else the end of the last segment). `Usage` is the raw Mistral usage. Token and prompt-audio usage is in `ProviderMetadata.mistral.usage`, and segments with a type, score, or speaker id are in `ProviderMetadata.mistral.segments`. `Response.ModelId` is the model id Mistral returns.
+
+### Mistral voice agent
+
+`MistralProvider.ExperimentalRealtime` (upstream `experimental_realtime`) is a `MistralRealtimeFactory`. `Model(id)` (also `MistralProvider.RealtimeModel(id)`) returns a `MistralRealtimeModel` with provider id `mistral.realtime`. It touches no API key. Its `Capabilities` are `turn-based`, transports `webrtc`, connections `provider`, `Startup` `session-update` and `Finalization` `transport-close`. It has no WebSocket, so `BuildUri` and `ConnectAsync` throw, and `SerializeClientEvent` throws `UnsupportedFunctionalityException`.
+
+Call these on the server with the Mistral API key:
+
+```csharp
+var session = await mistral.ExperimentalRealtime.CreateSessionAsync("mistral-small-latest", sessionConfig);
+// Hand session.Id, session.ParticipantToken and session.ServerUrl to the browser.
+await mistral.ExperimentalRealtime.CloseSessionAsync(session.Id);
+```
+
+`CreateSessionAsync` posts to `{base}/audio/sessions` and returns a `MistralRealtimeSession` (`Id`, `ParticipantToken`, `ServerUrl`). `CloseSessionAsync` sends `DELETE {base}/audio/sessions/{id}`. An empty or `.`/`..` id throws `InvalidArgumentException` before any request.
+
+`MistralRealtimeModelOptions.BuildMistralRealtimeSessionConfig` maps a `RealtimeModelV4SessionConfig` to the Mistral body. `providerOptions.mistral` accepts `stt`, `tts`, `turn`, `welcomeMessage`, `agentId` and `agentVersion`; unknown keys and out-of-range values throw. Input and output audio formats, turn detection, `inputAudioTranscription.prompt`, and `outputModalities` without `audio` throw `UnsupportedFunctionalityException`. With `update: true` only `Instructions`, `Tools` and `providerOptions.mistral.turn` are accepted.
+
+The provider-owned LiveKit transport is not ported: there is no LiveKit client in .NET and no browser realtime client. The transport contract is: `IRealtimeModelV4Transport`, `RealtimeModelV4TransportOptions` and `IProviderTransportRealtimeModel.CreateTransport` (upstream `RealtimeModelV4Transport`, `RealtimeModelV4TransportOptions` and `createTransport`). `RealtimeCapabilities` gains `Startup` and `Finalization`, and `Connections` may contain `provider`.
 
 ### Mistral realtime transcription
 

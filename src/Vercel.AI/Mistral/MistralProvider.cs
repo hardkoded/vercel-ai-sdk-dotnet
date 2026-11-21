@@ -34,7 +34,13 @@ public sealed class MistralProvider : OpenAICompatibleProvider
 
     /// <summary>Creates a provider.</summary>
     public MistralProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)
-        : base(Prepare(options), httpClient) { }
+        : base(Prepare(options), httpClient)
+    {
+        ExperimentalRealtime = new MistralRealtimeFactory(this);
+    }
+
+    /// <summary>Creates Mistral voice agent models and manages their sessions. Maps to <c>experimental_realtime</c>.</summary>
+    public MistralRealtimeFactory ExperimentalRealtime { get; }
 
     /// <summary>Creates a provider. Pass a handler from tests.</summary>
     public static new MistralProvider Create(
@@ -65,6 +71,10 @@ public sealed class MistralProvider : OpenAICompatibleProvider
     /// <inheritdoc />
     public override ITranscriptionModel TranscriptionModel(string modelId) =>
         new MistralTranscriptionModel(this, modelId);
+
+    /// <inheritdoc />
+    public override IRealtimeModel RealtimeModel(string modelId) =>
+        ExperimentalRealtime.Model(modelId);
 
     private static string? ResolveReasoningEffort(
         string modelId,
