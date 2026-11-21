@@ -1101,13 +1101,35 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
 
             var form = new MultipartFormDataContent();
             form.Add(new StringContent(ModelId), "model_id");
-            var file = new ByteArrayContent(audio.Data);
-            if (!string.IsNullOrEmpty(audio.MediaType))
+
+            // ElevenLabs accepts exactly one of `file` or `source_url`.
+            if (Child(elevenlabs, "sourceUrl") is { ValueKind: JsonValueKind.String } sourceUrl)
             {
-                file.Headers.ContentType = MediaTypeHeaderValue.Parse(audio.MediaType);
+                form.Add(new StringContent(sourceUrl.GetString()!), "source_url");
+                if (audio.Data.Length > 0)
+                {
+                    warnings.Add(
+                        new OtherWarning(
+                            "ElevenLabs transcribes providerOptions.elevenlabs.sourceUrl; the audio input was ignored."
+                        )
+                    );
+                }
+            }
+            else
+            {
+                var file = new ByteArrayContent(audio.Data);
+                if (!string.IsNullOrEmpty(audio.MediaType))
+                {
+                    file.Headers.ContentType = MediaTypeHeaderValue.Parse(audio.MediaType);
+                }
+
+                form.Add(
+                    file,
+                    "file",
+                    "audio." + ProviderValues.MediaTypeToExtension(audio.MediaType)
+                );
             }
 
-            form.Add(file, "file", "audio." + ProviderValues.MediaTypeToExtension(audio.MediaType));
             form.Add(
                 new StringContent(
                     (elevenlabs != null ? FormValue(Child(elevenlabs, "diarize")) : null) ?? "true"
