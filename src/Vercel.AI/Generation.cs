@@ -682,7 +682,10 @@ internal static class Generation
                         current,
                         cancellationToken,
                         new StepTiming(now, stepStartMs, responseTimeMs, Array.Empty<double>()),
-                        LanguageModelRequestMetadata.Empty,
+                        new LanguageModelRequestMetadata
+                        {
+                            Url = RequestOrigin.SanitizeRequestMetadata(modelResponse.Request)?.Url,
+                        },
                         GeneratedResponseInfo(generated, current),
                         ParseResponseBody(generated.RawResponse),
                         steeringMessages: deliveredSteeringMessages,
@@ -1502,14 +1505,17 @@ internal static class Generation
                     break;
                 }
 
-                LanguageModelRequestMetadata RequestMetadata(JsonElement? requestBody) =>
+                LanguageModelRequestMetadata RequestMetadata(
+                    LanguageModelStreamRequest? modelRequest
+                ) =>
                     new()
                     {
-                        Body = options.Include?.RequestBody == true ? requestBody : null,
+                        Url = RequestOrigin.SanitizeRequestMetadata(modelRequest)?.Url,
+                        Body = options.Include?.RequestBody == true ? modelRequest?.Body : null,
                         Messages = options.Include?.RequestMessages == true ? stepMessages : null,
                     };
 
-                var stepRequest = RequestMetadata(streamResult.Request?.Body);
+                var stepRequest = RequestMetadata(streamResult.Request);
                 // The start-step part of a step is streamed once. A model call that follows a cancelled one sends a boundary instead,
                 // which replaces what the step recorded for the cancelled call, such as its request and warnings.
                 TextStreamPart StepStart(IReadOnlyList<CallWarning>? stepWarnings) =>
@@ -1928,7 +1934,7 @@ internal static class Generation
                                 // The retried attempt gets its own timeout windows.
                                 timeouts?.ClearModelOutput();
                                 timeouts?.StartFirstChunk();
-                                stepRequest = RequestMetadata(retry?.Current.Request?.Body);
+                                stepRequest = RequestMetadata(retry?.Current.Request);
                                 buffer.Add(new StreamRetryBoundaryPart(stepRequest, warnings));
                                 break;
                             case ModelCallStartPart start:
