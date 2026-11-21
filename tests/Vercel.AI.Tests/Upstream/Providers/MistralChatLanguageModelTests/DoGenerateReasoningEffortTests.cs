@@ -13,6 +13,9 @@ public sealed class DoGenerateReasoningEffortTests
     private const string Prefix =
         "packages/mistral/src/mistral-chat-language-model.test.ts::doGenerate > reasoning_effort::";
 
+    private const string LowMediumHighPrefix =
+        "packages/mistral/src/mistral-chat-language-model.test.ts::doGenerate > reasoning_effort > low, medium and high reasoning effort model %s::";
+
     [Fact]
     [UpstreamTest(
         Prefix + "should send reasoning_effort high for reasoning high",
@@ -207,6 +210,87 @@ public sealed class DoGenerateReasoningEffortTests
         await Model(capture, modelId).DoGenerateAsync(options, CancellationToken.None);
 
         Assert.Equal("high", UpstreamChat.Body(capture)["reasoning_effort"]!.GetValue<string>());
+    }
+
+    [Theory]
+    [InlineData("mistral-large-4", "minimal", "low")]
+    [InlineData("mistral-large-4", "low", "low")]
+    [InlineData("mistral-large-4", "medium", "medium")]
+    [InlineData("mistral-large-4", "high", "high")]
+    [InlineData("mistral-large-4", "xhigh", "high")]
+    [InlineData("mistral-large-4", "max", "high")]
+    [InlineData("mistral-large-4-0", "minimal", "low")]
+    [InlineData("mistral-large-4-0", "low", "low")]
+    [InlineData("mistral-large-4-0", "medium", "medium")]
+    [InlineData("mistral-large-4-0", "high", "high")]
+    [InlineData("mistral-large-4-0", "xhigh", "high")]
+    [InlineData("mistral-large-4-0", "max", "high")]
+    [UpstreamTest(
+        LowMediumHighPrefix + "should map reasoning %s to reasoning_effort %s",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d55f3cfc456d1b7bc7db3a4b70fbf602ddc8647d"
+    )]
+    public async Task Should_map_reasoning_to_reasoning_effort(
+        string modelId,
+        string reasoning,
+        string effort
+    )
+    {
+        var capture = new UpstreamCapture();
+        var options = UpstreamChat.Prompt();
+        options.Reasoning = reasoning;
+
+        await Model(capture, modelId).DoGenerateAsync(options, CancellationToken.None);
+
+        Assert.Equal(effort, UpstreamChat.Body(capture)["reasoning_effort"]!.GetValue<string>());
+    }
+
+    [Theory]
+    [InlineData("mistral-large-4")]
+    [InlineData("mistral-large-4-0")]
+    [UpstreamTest(
+        LowMediumHighPrefix + "preserves native medium reasoning effort without warnings",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d55f3cfc456d1b7bc7db3a4b70fbf602ddc8647d"
+    )]
+    public async Task Preserves_native_medium_reasoning_effort_without_warnings(string modelId)
+    {
+        var capture = new UpstreamCapture();
+        var options = UpstreamChat.Prompt();
+        options.ProviderOptions = UpstreamChat.Bag("mistral", "{\"reasoningEffort\":\"medium\"}");
+
+        var result = await Model(capture, modelId).DoGenerateAsync(options, CancellationToken.None);
+
+        Assert.Equal("medium", UpstreamChat.Body(capture)["reasoning_effort"]!.GetValue<string>());
+        Assert.Empty(result.Warnings);
+    }
+
+    [Theory]
+    [InlineData("mistral-large-4")]
+    [InlineData("mistral-large-4-0")]
+    [UpstreamTest(
+        LowMediumHighPrefix + "should map reasoning none to reasoning_effort low with a warning",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d55f3cfc456d1b7bc7db3a4b70fbf602ddc8647d"
+    )]
+    public async Task Should_map_reasoning_none_to_reasoning_effort_low_with_a_warning(
+        string modelId
+    )
+    {
+        var capture = new UpstreamCapture();
+        var options = UpstreamChat.Prompt();
+        options.Reasoning = "none";
+
+        var result = await Model(capture, modelId).DoGenerateAsync(options, CancellationToken.None);
+
+        Assert.Equal("low", UpstreamChat.Body(capture)["reasoning_effort"]!.GetValue<string>());
+        var warning = Assert.Single(result.Warnings);
+        Assert.Equal("compatibility", warning.Type);
+        Assert.Equal("reasoning", warning.Feature);
+        Assert.Equal(
+            "reasoning \"none\" is not directly supported by this model. mapped to effort \"low\".",
+            warning.Message
+        );
     }
 
     private static OpenAICompatibleLanguageModel Model(
