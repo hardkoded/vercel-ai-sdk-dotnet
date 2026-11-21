@@ -27,4 +27,19 @@ public sealed class TelemetryOptions
     /// the globally registered integrations for this call. Maps to <c>integrations</c>.
     /// </summary>
     public IReadOnlyList<ITelemetry>? Integrations { get; set; }
+
+    /// <summary>
+    /// Top-level runtime context properties that should be included in telemetry. Runtime context properties are excluded
+    /// unless they are explicitly set to <c>true</c>. Maps to <c>includeRuntimeContext</c>.
+    /// </summary>
+    public IReadOnlyDictionary<string, bool>? IncludeRuntimeContext { get; set; }
+
+    /// <summary>
+    /// Top-level tool context properties that should be included in telemetry, configured per tool name. Tool context properties
+    /// are excluded unless they are explicitly set to <c>true</c>. Maps to <c>includeToolsContext</c>.
+    /// </summary>
+    public IReadOnlyDictionary<
+        string,
+        IReadOnlyDictionary<string, bool>
+    >? IncludeToolsContext { get; set; }
 }
