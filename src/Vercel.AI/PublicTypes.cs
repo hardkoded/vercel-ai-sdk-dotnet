@@ -111,6 +111,24 @@ public sealed class Tool
     public Func<JsonElement, JsonElement>? ContextSchema { get; set; }
 
     /// <summary>
+    /// Called when the model starts generating the tool input. In <c>streamText</c> it runs on the <c>tool-input-start</c> part.
+    /// Maps to <c>onInputStart</c>.
+    /// </summary>
+    public Func<ToolExecutionOptions, Task>? OnInputStart { get; set; }
+
+    /// <summary>
+    /// Called when a fragment of the streamed tool input is available. Only <c>streamText</c> calls it.
+    /// Maps to <c>onInputDelta</c>.
+    /// </summary>
+    public Func<ToolInputDeltaOptions, Task>? OnInputDelta { get; set; }
+
+    /// <summary>
+    /// Called when the tool input is complete and the call can start, even when the tool has no executor. A call that failed
+    /// validation does not reach it. Maps to <c>onInputAvailable</c>.
+    /// </summary>
+    public Func<ToolInputAvailableOptions, Task>? OnInputAvailable { get; set; }
+
+    /// <summary>
     /// Transforms the input of a call after it matches <see cref="InputSchema"/>, as a Zod <c>.transform</c> on the input schema does.
     /// It returns the schema output, which the tool, the callbacks, and the approval check see, and throws when the input is invalid.
     /// Null passes the input through unchanged.
@@ -208,7 +226,7 @@ public sealed class Tool
 }
 
 /// <summary>The options a tool receives when it runs. Maps to the second argument of <c>execute</c>.</summary>
-public sealed class ToolExecutionOptions
+public class ToolExecutionOptions
 {
     /// <summary>Creates the options.</summary>
     public ToolExecutionOptions(
@@ -239,6 +257,30 @@ public sealed class ToolExecutionOptions
     /// Maps to <c>context</c>.
     /// </summary>
     public JsonElement? Context { get; init; }
+}
+
+/// <summary>The options of <see cref="Tool.OnInputDelta"/>. Maps to <c>{ inputTextDelta } &amp; ToolExecutionOptions</c>.</summary>
+public sealed class ToolInputDeltaOptions(
+    string toolCallId,
+    IReadOnlyList<ModelMessage> messages,
+    CancellationToken abortSignal,
+    string inputTextDelta
+) : ToolExecutionOptions(toolCallId, messages, abortSignal)
+{
+    /// <summary>The fragment of the tool input text. Maps to <c>inputTextDelta</c>.</summary>
+    public string InputTextDelta { get; } = inputTextDelta;
+}
+
+/// <summary>The options of <see cref="Tool.OnInputAvailable"/>. Maps to <c>{ input } &amp; ToolExecutionOptions</c>.</summary>
+public sealed class ToolInputAvailableOptions(
+    string toolCallId,
+    IReadOnlyList<ModelMessage> messages,
+    CancellationToken abortSignal,
+    JsonElement input
+) : ToolExecutionOptions(toolCallId, messages, abortSignal)
+{
+    /// <summary>The input of the tool call.</summary>
+    public JsonElement Input { get; } = input;
 }
 
 /// <summary>The result of executing a tool.</summary>

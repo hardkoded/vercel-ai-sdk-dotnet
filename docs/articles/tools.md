@@ -67,6 +67,23 @@ A `ToolApprovalStatus` is `not-applicable`, `approved`, `denied` or `user-approv
 
 `GenerateTextOptions.ToolsContext` holds one JSON context per tool name and `RuntimeContext` holds your own context. A per-tool approval function receives them as `ToolContext` and `RuntimeContext` on its `SingleToolApprovalOptions`. A generic function receives `ToolsContext` and `RuntimeContext` on its `GenericToolApprovalOptions`. A tool's `ContextSchema` validates and normalizes its context before a per-tool or tool-defined function sees it. It returns the validated context, with defaults applied, and throws when the context is invalid. A rejected context throws `TypeValidationException` (`Context.Field` is `tool context`) before the approval function runs. The same validated context reaches the tool as `ToolExecutionOptions.Context` when it runs, and the tool execution callbacks carry it as `ToolContext`.
 
+### Tool input lifecycle hooks
+
+A tool can observe its input as the model generates it:
+
+- `OnInputStart` runs when the model starts generating the input of the call.
+- `OnInputDelta` runs for each fragment of the input text, as `InputTextDelta`.
+- `OnInputAvailable` runs when the complete input is available, as `Input`, even when the tool has no executor. A call that failed validation (`Invalid`) does not reach it. It runs for the tool that the completed call names, which can differ from the tool that started the input when `RepairToolCall` renamed the call.
+
+Each hook receives the `ToolCallId`, the `Messages` of the step, the `AbortSignal` and the `Context` of the tool, validated with `ContextSchema`. The context is validated once per tool call and shared by its hooks. `StreamTextAsync` calls all three. After a stream retry starts a new attempt, the tool calls of the failed attempt are forgotten. `GenerateTextAsync` does not call these hooks yet.
+
+```csharp
+var tool = Tool.Function("getWeather", "Get the weather", schema, execute);
+tool.OnInputStart = options => { Console.WriteLine("Tool call starting"); return Task.CompletedTask; };
+tool.OnInputDelta = options => { Console.WriteLine(options.InputTextDelta); return Task.CompletedTask; };
+tool.OnInputAvailable = options => { Console.WriteLine(options.Input); return Task.CompletedTask; };
+```
+
 `Tool.DescriptionFactory` resolves the description per call, instead of the fixed `Description`. It receives a `ToolDescriptionContext` with the tool's entry of `ToolsContext` as `Context` and the `Description` of `ExperimentalSandbox` as `SandboxDescription`. This maps to a function-valued `description` upstream.
 
 A tool's `InputTransform` is the transform of an input schema, such as a Zod `.transform`. It runs after the input matches `InputSchema` and returns the schema output, which the tool, the callbacks, and the approval check see. It throws when the input is invalid, which becomes an `InvalidToolInputError`. When an approved call is re-validated, the transform runs on the schema input, and the result must equal the approved input. `ValidateUIMessagesAsync` applies the transform to the validated input of a tool part, so a persisted UI message that keeps the schema input round-trips.
