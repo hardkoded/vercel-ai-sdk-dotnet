@@ -684,6 +684,10 @@ public sealed class OpenAIBatchApi : BatchResultsApiBase
     {
         var mediaType = Str(part, "mediaType") ?? string.Empty;
         var fileName = Str(part, "filename");
+        var options = OpenAIJson.Child(part, "providerOptions")
+            is { ValueKind: JsonValueKind.Object } wireOptions
+            ? wireOptions.EnumerateObject().ToDictionary(p => p.Name, p => p.Value.Clone())
+            : null;
         var data = OpenAIJson.Child(part, "data");
         if (data is { ValueKind: JsonValueKind.String } text)
         {
@@ -692,24 +696,54 @@ public sealed class OpenAIBatchApi : BatchResultsApiBase
                 null,
                 System.Convert.FromBase64String(text.GetString()!),
                 fileName
-            );
+            )
+            {
+                ProviderOptions = options,
+            };
         }
 
         var kind = data is { ValueKind: JsonValueKind.Object } wire ? Str(wire, "type") : null;
-        return kind switch
+        switch (kind)
         {
-            "url" => new FileContentPart(mediaType, Str(data!.Value, "url"), null, fileName),
-            "data" => new FileContentPart(
-                mediaType,
-                null,
-                System.Convert.FromBase64String(Str(data!.Value, "data") ?? string.Empty),
-                fileName
-            ),
-            var type => throw new UnsupportedFunctionalityException(
-                "batch file part data: " + type,
-                providerName + " batches support only URL and data file parts."
-            ),
-        };
+            case "url":
+                return new FileContentPart(mediaType, Str(data!.Value, "url"), null, fileName)
+                {
+                    ProviderOptions = options,
+                };
+            case "data":
+                return new FileContentPart(
+                    mediaType,
+                    null,
+                    System.Convert.FromBase64String(Str(data!.Value, "data") ?? string.Empty),
+                    fileName
+                )
+                {
+                    ProviderOptions = options,
+                };
+            case "text":
+                return FileContentPart.FromText(
+                    mediaType,
+                    Str(data!.Value, "text") ?? string.Empty,
+                    fileName,
+                    options
+                );
+            case "reference"
+                when OpenAIJson.Child(data, "reference")
+                    is { ValueKind: JsonValueKind.Object } reference:
+                return FileContentPart.FromProviderReference(
+                    mediaType,
+                    reference
+                        .EnumerateObject()
+                        .ToDictionary(p => p.Name, p => p.Value.GetString() ?? string.Empty),
+                    fileName,
+                    options
+                );
+            default:
+                throw new UnsupportedFunctionalityException(
+                    "batch file part data: " + kind,
+                    providerName + " batches support only URL, data, text and reference file parts."
+                );
+        }
     }
 
     private static BatchItem Convert(JsonElement line)
