@@ -13,7 +13,7 @@ internal static class MistralRealtimeModelTestSupport
 {
     public const string Url = "https://api.mistral.ai/v1/audio/sessions";
     public const string SessionId = "session-1";
-    public const string Commit = "0912e0b";
+    public const string Commit = "0912e0b1b937418b438344ff2098a57961a83787";
 
     public static ParityHandler SessionHandler()
     {

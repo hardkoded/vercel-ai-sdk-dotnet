@@ -17,7 +17,7 @@ public sealed class ParseMistralRealtimeEventTests
     [UpstreamTest(
         Id + "preserves unknown provider events without inventing response commands",
         Coverage = UpstreamCoverage.Covered,
-        Commit = "0912e0b"
+        Commit = "0912e0b1b937418b438344ff2098a57961a83787"
     )]
     public void Preserves_unknown_provider_events_without_inventing_response_commands()
     {
