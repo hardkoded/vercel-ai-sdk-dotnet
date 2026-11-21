@@ -155,7 +155,7 @@ internal static class WebFetchResource
                 {
                     return WebFetchResourceResult.Error(
                         "network_error",
-                        "A redirect could not be validated and was blocked."
+                        "The server returned an invalid redirect location."
                     );
                 }
 

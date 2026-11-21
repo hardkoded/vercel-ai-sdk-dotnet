@@ -91,4 +91,20 @@ public sealed class RedirectsTests
 
         Assert.Equal("too_many_redirects", ErrorCode(output));
     }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "returns an error for an invalid redirect location",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task ReturnsAnErrorForAnInvalidRedirectLocation()
+    {
+        var fetch = new RecordingFetch((_, _) => Redirect(302, "http://[invalid"));
+        var webFetch = WebFetchTools.Create(new WebFetchToolOptions { Fetch = fetch.Fetch });
+
+        var output = await ExecuteAsync(webFetch, "https://example.com/");
+
+        Assert.Equal("network_error", ErrorCode(output));
+        Assert.Single(fetch.Calls);
+    }
 }
