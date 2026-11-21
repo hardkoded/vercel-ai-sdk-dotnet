@@ -223,7 +223,7 @@ public sealed class AiClient : IAiClient
                                 MaxRetries = Vercel.AI.Operations.OperationRetry.ResolveMaxRetries(
                                     options.MaxRetries
                                 ),
-                                Headers = options.Headers,
+                                Headers = Generation.WithUserAgentHeader(options.Headers),
                                 ProviderOptions = options.ProviderOptions,
                                 Output = "object",
                                 Schema = ParseSchema(options.Schema),
@@ -303,7 +303,7 @@ public sealed class AiClient : IAiClient
                             new GenerateObjectStepStartEvent(callId, model.Provider, model.ModelId)
                             {
                                 ProviderOptions = options.ProviderOptions,
-                                Headers = options.Headers,
+                                Headers = Generation.WithUserAgentHeader(options.Headers),
                                 PromptMessages = promptMessages,
                             },
                             cancellationToken

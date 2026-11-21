@@ -3995,7 +3995,7 @@ internal static class Generation
     }
 
     // Maps to `withUserAgentSuffix(headers, `ai/${VERSION}`)`.
-    private static IReadOnlyDictionary<string, string?> WithUserAgentHeader(
+    internal static IReadOnlyDictionary<string, string?> WithUserAgentHeader(
         IReadOnlyDictionary<string, string?>? headers
     ) =>
         Vercel

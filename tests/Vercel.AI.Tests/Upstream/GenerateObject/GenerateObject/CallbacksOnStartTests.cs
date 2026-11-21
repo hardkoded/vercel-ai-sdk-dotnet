@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Vercel.AI.GenerateObject;
+using Vercel.AI.Operations;
 using static Vercel.AI.Tests.Upstream.GenerateObject.GenerateObject.GenerateObjectTestSupport;
 
 namespace Vercel.AI.Tests.Upstream.GenerateObject.GenerateObject;
@@ -38,7 +39,7 @@ public sealed class CallbacksOnStartTests
     [Fact]
     [UpstreamTest(
         Id + "should send correct information with text prompt",
-        Coverage = UpstreamCoverage.Partial
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Should_send_correct_information_with_text_prompt()
     {
@@ -63,6 +64,9 @@ public sealed class CallbacksOnStartTests
         Assert.NotNull(startEvent);
         Assert.Equal("test-call-id", startEvent.CallId);
         Assert.Null(startEvent.FrequencyPenalty);
+        var userAgent = Assert.Single(Assert.IsAssignableFrom<IReadOnlyDictionary<string, string?>>(startEvent.Headers));
+        Assert.Equal("user-agent", userAgent.Key);
+        Assert.Equal(AiSdkVersion.UserAgent, userAgent.Value);
         Assert.Equal(100, startEvent.MaxOutputTokens);
         Assert.Equal(2, startEvent.MaxRetries);
         Assert.Null(startEvent.Messages);
