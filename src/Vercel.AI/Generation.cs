@@ -1294,8 +1294,7 @@ internal static class Generation
                 var startStepStreamed = redo?.StartStepStreamed == true;
                 var stepStartNotified = redo?.StepStartNotified == true;
                 var stepStarted = false;
-                var stepResponseId = options.GenerateId?.Invoke()
-                    ?? Vercel.AI.ProviderUtils.JsonValues.GenerateId("aitxt-");
+                var stepResponseId = Vercel.AI.ProviderUtils.JsonValues.GenerateId("aitxt-");
                 var stepResponseTimestamp = DateTimeOffset.UtcNow;
                 var stepResponseModelId = current.ModelId;
                 var emittedResultIds = new HashSet<string>(StringComparer.Ordinal);
@@ -1835,8 +1834,9 @@ internal static class Generation
                                 usage = LanguageModelUsage.Null;
                                 modelCallPerformance = null;
                                 toolChoiceViolation = null;
-                                stepResponseId = options.GenerateId?.Invoke()
-                                    ?? Vercel.AI.ProviderUtils.JsonValues.GenerateId("aitxt-");
+                                stepResponseId = Vercel.AI.ProviderUtils.JsonValues.GenerateId(
+                                    "aitxt-"
+                                );
                                 stepResponseTimestamp = DateTimeOffset.UtcNow;
                                 stepResponseModelId = current.ModelId;
                                 warnings = attemptBoundary.Warnings;

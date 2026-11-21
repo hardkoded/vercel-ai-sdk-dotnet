@@ -550,13 +550,17 @@ public sealed class StreamTextTransformBaseTransformationTests
     public async Task It_should_send_transformed_chunks_to_onChunk()
     {
         var chunks = new List<TextStreamPart>();
-        var startedAt = DateTimeOffset.UtcNow;
         var result = SteeringTestSupport
             .Client()
             .StreamTextAsync(
                 new StreamTextOptions
                 {
                     Model = CallsModel.Single([
+                        new ResponseMetadataStreamPart(
+                            "id-0",
+                            "mock-model-id",
+                            DateTimeOffset.UnixEpoch
+                        ),
                         new TextStartStreamPart("1"),
                         new TextDeltaStreamPart("1", "Hello"),
                         new ReasoningStartStreamPart("2"),
@@ -576,7 +580,6 @@ public sealed class StreamTextTransformBaseTransformationTests
                     Prompt = "test-input",
                     GenerateCallId = () => "test-telemetry-call-id",
                     NowMs = () => 0,
-                    GenerateId = () => "id-0",
                     OnChunk = (chunk, _) =>
                     {
                         chunks.Add(chunk.Chunk);
@@ -689,8 +692,7 @@ public sealed class StreamTextTransformBaseTransformationTests
         Assert.Equal(0, execution.Value);
         Assert.Equal("id-0", finishStep.Response.Id);
         Assert.Equal("mock-model-id", finishStep.Response.ModelId);
-        // Upstream freezes the system time at epoch; the port stamps the response with the clock, so assert the window.
-        Assert.InRange(finishStep.Response.Timestamp, startedAt, DateTimeOffset.UtcNow);
+        Assert.Equal(DateTimeOffset.UnixEpoch, finishStep.Response.Timestamp);
         Assert.Null(finishStep.Response.Headers);
         Assert.Equal(3, finishStep.Step.Usage.InputTokens);
         Assert.Equal(10, finishStep.Step.Usage.OutputTokens);
