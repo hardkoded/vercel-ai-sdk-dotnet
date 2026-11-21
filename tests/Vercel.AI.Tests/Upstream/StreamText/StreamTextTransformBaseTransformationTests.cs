@@ -348,11 +348,7 @@ public sealed class StreamTextTransformBaseTransformationTests
     }
 
     [Fact]
-    [UpstreamTest(
-        Base + "result.steps should be transformed",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Asserts the content, text, tool calls and results, finish reason, response and messages of the step, not the performance numbers."
-    )]
+    [UpstreamTest(Base + "result.steps should be transformed", Coverage = UpstreamCoverage.Covered)]
     public async Task Result_steps_should_be_transformed()
     {
         var result = SteeringTestSupport
@@ -382,37 +378,13 @@ public sealed class StreamTextTransformBaseTransformationTests
                     ExperimentalTransform = [UpperCase],
                     Prompt = "test-input",
                     GenerateCallId = () => "test-telemetry-call-id",
+                    NowMs = () => 0,
                 }
             );
 
         var step = Assert.Single(await result.Steps);
 
-        Assert.Equal("test-telemetry-call-id", step.CallId);
-        Assert.Equal(0, step.StepNumber);
-        Assert.Equal("HELLO, WORLD!", step.Text);
-        Assert.Equal(["text", "tool-call", "tool-result"], step.Content.Select(part => part.Type));
-        Assert.Equal("HELLO, WORLD!", Assert.IsType<GeneratedText>(step.Content[0]).Text);
-        Assert.Equal(
-            "VALUE",
-            JsonDocument
-                .Parse(Assert.IsType<GeneratedToolCall>(step.Content[1]).ArgumentsJson)
-                .RootElement.GetProperty("value")
-                .GetString()
-        );
-        Assert.Equal("RESULT1", Assert.IsType<GeneratedToolResult>(step.Content[2]).ResultJson);
-        Assert.Equal(FinishReason.Stop, step.FinishReason);
-        Assert.Equal("stop", step.RawFinishReason);
-        Assert.Equal("mock-provider", step.Provider);
-        Assert.Equal("mock-model-id", step.ModelId);
-        Assert.Equal(3, step.Usage.InputTokens);
-        Assert.Equal(10, step.Usage.OutputTokens);
-        Assert.Equal("id-0", step.Response.Id);
-        Assert.Equal(DateTimeOffset.UnixEpoch, step.Response.Timestamp);
-        Assert.Equal(2, step.Response.Messages.Count);
-        var assistant = Assert.IsType<AssistantModelMessage>(step.Response.Messages[0]);
-        Assert.Equal("HELLO, WORLD!", Assert.IsType<AssistantTextPart>(assistant.Parts[0]).Text);
-        Assert.IsType<AssistantToolCallPart>(assistant.Parts[1]);
-        Assert.IsType<ToolModelMessage>(step.Response.Messages[1]);
+        AssertTransformedStep(step, "RESULT1");
     }
 
     [Fact]
@@ -453,8 +425,7 @@ public sealed class StreamTextTransformBaseTransformationTests
     [Fact]
     [UpstreamTest(
         Base + "options.onFinish should receive transformed data",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Asserts the fields of the end event as the port exposes them, not the full snapshot (no finalStep, files or tool call splits on the end result)."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Options_onFinish_should_receive_transformed_data()
     {
@@ -467,6 +438,8 @@ public sealed class StreamTextTransformBaseTransformationTests
                     Model = ToolModel(metadata: true),
                     Tools = [Tool1()],
                     Prompt = "test-input",
+                    GenerateCallId = () => "test-telemetry-call-id",
+                    NowMs = () => 0,
                     OnEnd = (end, _) =>
                     {
                         received = end;
@@ -479,39 +452,64 @@ public sealed class StreamTextTransformBaseTransformationTests
         await result.ConsumeStreamAsync();
 
         Assert.NotNull(received);
-        Assert.Equal("HELLO, WORLD!", received!.Text);
-        Assert.Equal(FinishReason.Stop, received.FinishReason);
-        var step = Assert.Single(received.Steps);
-        Assert.Equal(["text", "tool-call", "tool-result"], step.Content.Select(part => part.Type));
-        Assert.Equal(
+        var step = Assert.Single(received!.Steps);
+        AssertTransformedStep(
+            step,
             "VALUE-RESULT",
-            Assert.IsType<GeneratedToolResult>(step.Content[2]).ResultJson
+            "{\"testProvider\":{\"testKey\":\"TEST VALUE\"}}",
+            "2"
         );
-        Assert.Equal("VALUE-RESULT", Assert.Single(step.ToolResults).OutputJson);
-        Assert.Equal(
-            "VALUE",
-            JsonDocument
-                .Parse(Assert.Single(step.ToolCalls).ArgumentsJson)
-                .RootElement.GetProperty("value")
-                .GetString()
-        );
+        Assert.Same(step, received.FinalStep);
+        Assert.Equal("test-telemetry-call-id", received.CallId);
+        Assert.Equal(0, received.StepNumber);
+        Assert.Equal(step.Content, received.Content);
+        Assert.Equal("HELLO, WORLD!", received.Text);
+        Assert.Null(received.ReasoningText);
+        Assert.Empty(received.Reasoning);
+        Assert.Empty(received.Files);
+        Assert.Empty(received.Sources);
+        Assert.Empty(received.Warnings);
+        Assert.Equal(FinishReason.Stop, received.FinishReason);
+        Assert.Equal("stop", received.RawFinishReason);
+        Assert.Equal("mock-provider", received.Model.Provider);
+        Assert.Equal("mock-model-id", received.Model.ModelId);
         Assert.Equal(
             "{\"testProvider\":{\"testKey\":\"TEST VALUE\"}}",
             received.ProviderMetadata!.Value.GetRawText()
         );
-        Assert.Equal(2, received.ResponseMessages.Count);
-        Assert.Equal(3, received.Usage.InputTokens);
-        Assert.Equal(
-            "call-1",
-            Assert.Single(received.Steps.SelectMany(s => s.ToolCalls)).ToolCallId
-        );
+        Assert.Null(received.Request.Body);
+        Assert.Null(received.Request.Messages);
+        Assert.Same(step.Response, received.Response);
+        Assert.Equal(step.Response.Messages, received.ResponseMessages);
+        Assert.Empty(received.RuntimeContext);
+        Assert.Empty(received.ToolsContext);
+        var call = Assert.Single(received.ToolCalls);
+        Assert.Equal("call-1", call.ToolCallId);
+        Assert.Equal("{\"value\":\"VALUE\"}", call.ArgumentsJson);
+        Assert.Equal(call, Assert.Single(received.StaticToolCalls));
+        Assert.Empty(received.DynamicToolCalls);
+        var toolResult = Assert.Single(received.ToolResults);
+        Assert.Equal("VALUE-RESULT", toolResult.OutputJson);
+        Assert.False(toolResult.Dynamic);
+        Assert.Equal(toolResult, Assert.Single(received.StaticToolResults));
+        Assert.Empty(received.DynamicToolResults);
+        foreach (var usage in new[] { received.Usage, received.TotalUsage })
+        {
+            Assert.Equal(3, usage.InputTokens);
+            Assert.Equal(10, usage.OutputTokens);
+            Assert.Equal(13, usage.TotalTokens);
+            Assert.Equal(3, usage.NoCacheInputTokens);
+            Assert.Equal(10, usage.TextTokens);
+            Assert.Null(usage.CacheReadTokens);
+            Assert.Null(usage.CacheWriteTokens);
+            Assert.Null(usage.ReasoningTokens);
+        }
     }
 
     [Fact]
     [UpstreamTest(
         Base + "options.onStepFinish should receive transformed data",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Asserts the fields of the step as the port exposes them, not the full snapshot."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Options_onStepFinish_should_receive_transformed_data()
     {
@@ -524,6 +522,8 @@ public sealed class StreamTextTransformBaseTransformationTests
                     Model = ToolModel(metadata: true),
                     Tools = [Tool1()],
                     Prompt = "test-input",
+                    GenerateCallId = () => "test-telemetry-call-id",
+                    NowMs = () => 0,
                     OnStepEnd = (step, _) =>
                     {
                         received = step;
@@ -536,16 +536,11 @@ public sealed class StreamTextTransformBaseTransformationTests
         await result.ConsumeStreamAsync();
 
         Assert.NotNull(received);
-        Assert.Equal("HELLO, WORLD!", received!.Text);
-        Assert.Equal("VALUE-RESULT", Assert.Single(received.ToolResults).OutputJson);
-        Assert.Equal(
+        AssertTransformedStep(
+            received!,
+            "VALUE-RESULT",
             "{\"testProvider\":{\"testKey\":\"TEST VALUE\"}}",
-            received.ProviderMetadata!.Value.GetRawText()
-        );
-        Assert.Equal("id-0", received.Response.Id);
-        Assert.Equal(
-            "call",
-            Assert.Single(received.Response.Headers ?? new Dictionary<string, string>()).Key
+            "2"
         );
     }
 
@@ -553,7 +548,7 @@ public sealed class StreamTextTransformBaseTransformationTests
     [UpstreamTest(
         Base + "it should send transformed chunks to onChunk",
         Coverage = UpstreamCoverage.Partial,
-        Note = "Asserts the type and the text, tool input and tool result values of each chunk, not the performance numbers of finish-step."
+        Note = "The model sends a response-metadata part (id-0, epoch) instead of upstream's mockId and frozen system time, because streamText ignores GenerateId and has no clock hook for the response timestamp (#1567). Tool-call input is compared as JSON."
     )]
     public async Task It_should_send_transformed_chunks_to_onChunk()
     {
@@ -564,6 +559,11 @@ public sealed class StreamTextTransformBaseTransformationTests
                 new StreamTextOptions
                 {
                     Model = CallsModel.Single([
+                        new ResponseMetadataStreamPart(
+                            "id-0",
+                            "mock-model-id",
+                            DateTimeOffset.UnixEpoch
+                        ),
                         new TextStartStreamPart("1"),
                         new TextDeltaStreamPart("1", "Hello"),
                         new ReasoningStartStreamPart("2"),
@@ -581,6 +581,8 @@ public sealed class StreamTextTransformBaseTransformationTests
                     ]),
                     Tools = [Tool1()],
                     Prompt = "test-input",
+                    GenerateCallId = () => "test-telemetry-call-id",
+                    NowMs = () => 0,
                     OnChunk = (chunk, _) =>
                     {
                         chunks.Add(chunk.Chunk);
@@ -630,5 +632,83 @@ public sealed class StreamTextTransformBaseTransformationTests
         );
         Assert.Equal(" WORLD", Assert.IsType<TextDeltaPart>(chunks[13]).Text);
         Assert.Equal("TEST-RESULT", chunks.OfType<ToolResultPart>().Single().Result.OutputJson);
+
+        var start = Assert.IsType<StartPart>(chunks[0]);
+        Assert.NotNull(start);
+        var startStep = Assert.IsType<StartStepPart>(chunks[1]);
+        Assert.Null(startStep.Request.Body);
+        Assert.Null(startStep.Request.Messages);
+        Assert.Empty(startStep.Warnings);
+        Assert.Equal("1", Assert.IsType<TextStartPart>(chunks[2]).Id);
+        var firstDelta = Assert.IsType<TextDeltaPart>(chunks[3]);
+        Assert.Equal("1", firstDelta.Id);
+        Assert.Null(firstDelta.ProviderMetadata);
+        Assert.Equal("2", Assert.IsType<ReasoningStartPart>(chunks[4]).Id);
+        var reasoning = Assert.IsType<ReasoningDeltaPart>(chunks[5]);
+        Assert.Equal("2", reasoning.Id);
+        Assert.Null(reasoning.ProviderMetadata);
+        Assert.Equal("2", Assert.IsType<ReasoningEndPart>(chunks[6]).Id);
+        var inputStart = Assert.IsType<ToolInputStartPart>(chunks[7]);
+        Assert.Equal("call-1", inputStart.Id);
+        Assert.Equal("tool1", inputStart.ToolName);
+        Assert.False(inputStart.Dynamic);
+        Assert.Null(inputStart.Title);
+        Assert.All(chunks.OfType<ToolInputDeltaPart>(), delta => Assert.Equal("call-1", delta.Id));
+        Assert.Equal("call-1", Assert.IsType<ToolInputEndPart>(chunks[11]).Id);
+        var toolCall = chunks.OfType<ToolCallPart>().Single().ToolCall;
+        Assert.Equal("call-1", toolCall.ToolCallId);
+        Assert.Equal("tool1", toolCall.ToolName);
+        Assert.False(toolCall.Dynamic);
+        Assert.False(toolCall.ProviderExecuted);
+        Assert.Null(toolCall.ProviderMetadata);
+        Assert.Null(toolCall.Title);
+        Assert.Equal("1", Assert.IsType<TextDeltaPart>(chunks[13]).Id);
+        Assert.Equal("1", Assert.IsType<TextEndPart>(chunks[14]).Id);
+        var toolResult = chunks.OfType<ToolResultPart>().Single().Result;
+        Assert.False(toolResult.Dynamic);
+        Assert.Equal("call-1", toolResult.ToolCallId);
+        Assert.Equal("tool1", toolResult.ToolName);
+        Assert.Equal(
+            "TEST",
+            JsonDocument.Parse(toolResult.InputJson!).RootElement.GetProperty("value").GetString()
+        );
+
+        var finishStep = Assert.IsType<StepFinishPart>(chunks[16]);
+        Assert.Equal(FinishReason.Stop, finishStep.Step.FinishReason);
+        Assert.Equal("stop", finishStep.RawFinishReason);
+        Assert.Null(finishStep.ProviderMetadata);
+        var performance = finishStep.Performance;
+        Assert.Equal(0, performance.EffectiveOutputTokensPerSecond);
+        Assert.Equal(0, performance.EffectiveTotalTokensPerSecond);
+        Assert.Equal(0, performance.InputTokensPerSecond);
+        Assert.Equal(0, performance.OutputTokensPerSecond);
+        Assert.Equal(0, performance.ResponseTimeMs);
+        Assert.Equal(0, performance.StepTimeMs);
+        Assert.Equal(0, performance.TimeToFirstOutputMs);
+        var gaps = performance.TimeBetweenOutputChunksMs!;
+        Assert.Equal(
+            [0, 0, 0, 0, 0, 0],
+            [gaps.Avg, gaps.Max, gaps.Median, gaps.Min, gaps.P10, gaps.P90]
+        );
+        var execution = Assert.Single(performance.ToolExecutionMs);
+        Assert.Equal("call-1", execution.Key);
+        Assert.Equal(0, execution.Value);
+        Assert.Equal("id-0", finishStep.Response.Id);
+        Assert.Equal("mock-model-id", finishStep.Response.ModelId);
+        Assert.Equal(DateTimeOffset.UnixEpoch, finishStep.Response.Timestamp);
+        Assert.Null(finishStep.Response.Headers);
+        Assert.Equal(3, finishStep.Step.Usage.InputTokens);
+        Assert.Equal(10, finishStep.Step.Usage.OutputTokens);
+        Assert.Equal(13, finishStep.Step.Usage.TotalTokens);
+        Assert.Equal(3, finishStep.Step.Usage.NoCacheInputTokens);
+        Assert.Equal(10, finishStep.Step.Usage.TextTokens);
+
+        var finish = Assert.IsType<FinishPart>(chunks[17]);
+        Assert.Equal(FinishReason.Stop, finish.FinishReason);
+        Assert.Equal(3, finish.Usage.InputTokens);
+        Assert.Equal(10, finish.Usage.OutputTokens);
+        Assert.Equal(13, finish.Usage.TotalTokens);
+        Assert.Equal(3, finish.Usage.NoCacheInputTokens);
+        Assert.Equal(10, finish.Usage.TextTokens);
     }
 }
