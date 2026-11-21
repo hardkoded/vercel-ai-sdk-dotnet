@@ -729,7 +729,13 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
         }
 
         string? reasoningEffort;
-        if (_provider.Options.ResolveReasoningEffort != null)
+        if (settings.ReasoningEffortIsNull)
+        {
+            // An explicit null is sent as "reasoning_effort": null and wins over the top-level reasoning.
+            body["reasoning_effort"] = null;
+            reasoningEffort = null;
+        }
+        else if (_provider.Options.ResolveReasoningEffort != null)
         {
             reasoningEffort = _provider.Options.ResolveReasoningEffort(
                 ModelId,
@@ -1008,6 +1014,10 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
                     if (property.Value.ValueKind == JsonValueKind.String)
                     {
                         settings.ReasoningEffort = property.Value.GetString();
+                    }
+                    else if (property.Value.ValueKind == JsonValueKind.Null)
+                    {
+                        settings.ReasoningEffortIsNull = true;
                     }
 
                     break;
@@ -1416,6 +1426,8 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
         public string? User { get; set; }
 
         public string? ReasoningEffort { get; set; }
+
+        public bool ReasoningEffortIsNull { get; set; }
 
         public string? TextVerbosity { get; set; }
 
