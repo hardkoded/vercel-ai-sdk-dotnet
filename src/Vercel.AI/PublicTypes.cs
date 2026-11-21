@@ -400,12 +400,24 @@ public sealed class StepResult
     public int StepNumber { get; internal init; }
 
     /// <summary>The context of each tool in this step, keyed by tool name. Empty when none was set. Maps to <c>toolsContext</c>.</summary>
-    public IReadOnlyDictionary<string, JsonElement> ToolsContext { get; internal init; } =
+    public IReadOnlyDictionary<string, JsonElement> ToolsContext { get; internal set; } =
         EmptyToolsContext;
 
     /// <summary>The user-defined runtime context of this step. Empty when none was set. Maps to <c>runtimeContext</c>.</summary>
-    public IReadOnlyDictionary<string, object?> RuntimeContext { get; internal init; } =
+    public IReadOnlyDictionary<string, object?> RuntimeContext { get; internal set; } =
         EmptyRuntimeContext;
+
+    // A copy of the step with other contexts. Telemetry hands integrations the filtered contexts and leaves the original step alone.
+    internal StepResult WithContexts(
+        IReadOnlyDictionary<string, object?> runtimeContext,
+        IReadOnlyDictionary<string, JsonElement> toolsContext
+    )
+    {
+        var copy = (StepResult)MemberwiseClone();
+        copy.RuntimeContext = runtimeContext;
+        copy.ToolsContext = toolsContext;
+        return copy;
+    }
 
     internal static IReadOnlyDictionary<string, JsonElement> EmptyToolsContext { get; } =
         new Dictionary<string, JsonElement>();
@@ -2177,6 +2189,13 @@ public class GenerateTextResult
             return Steps[Steps.Count - 1];
         }
     }
+
+    // A copy of the result with other steps. Telemetry uses it to send the steps with filtered contexts.
+    internal GenerateTextResult WithSteps(IReadOnlyList<StepResult> steps) =>
+        new(Text, ReasoningText, steps, FinishReason, Usage, Output, Sources, ProviderMetadata)
+        {
+            ResponseMessages = ResponseMessages,
+        };
 
     /// <summary>Text from the last step.</summary>
     public string Text { get; }
