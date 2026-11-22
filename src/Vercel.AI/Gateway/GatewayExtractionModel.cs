@@ -349,13 +349,13 @@ public sealed class GatewayExtractionModel : IExtractionCaller
         }
 
         var type = source.GetProperty("type").GetString()!;
-        var part = source.GetProperty("part").GetInt32();
+        var part = source.GetProperty("part").GetDouble();
         return type == "text"
             ? new ExtractionSource(
                 type,
                 part,
-                source.GetProperty("start").GetInt32(),
-                source.GetProperty("end").GetInt32()
+                source.GetProperty("start").GetDouble(),
+                source.GetProperty("end").GetDouble()
             )
             : new ExtractionSource(type, part);
     }

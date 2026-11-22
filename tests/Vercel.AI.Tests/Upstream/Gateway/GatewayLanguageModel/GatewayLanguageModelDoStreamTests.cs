@@ -146,32 +146,28 @@ public sealed class GatewayLanguageModelDoStreamTests
     public async Task Should_pass_abortSignal_to_fetch_when_provided_for_streaming()
     {
         var server = PrepareStreamResponse("Test content");
+        var tokens = new List<CancellationToken>();
         using var source = new CancellationTokenSource();
-        server.BeforeRespond = source.Cancel;
 
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
-            CreateTestModel(server).DoStreamAsync(TestPrompt, source.Token)
-        );
+        await CreateTestModel(Recording(server, tokens)).DoStreamAsync(TestPrompt, source.Token);
 
-        Assert.Equal(1, server.Calls);
-        Assert.True(server.RequestToken.CanBeCanceled);
-        Assert.True(server.RequestToken.IsCancellationRequested);
+        Assert.Equal(source.Token, Assert.Single(tokens));
     }
 
     [Fact]
     [UpstreamTest(
         Prefix + "should not pass abortSignal to fetch when not provided for streaming",
-        Coverage = UpstreamCoverage.Covered,
-        Note = "A .NET call always has a token and HttpClient adds its own, so the test checks that the request token is not cancelled."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Should_not_pass_abortSignal_to_fetch_when_not_provided_for_streaming()
     {
         var server = PrepareStreamResponse("Test content");
+        var tokens = new List<CancellationToken>();
 
-        await CreateTestModel(server).DoStreamAsync(TestPrompt, CancellationToken.None);
+        await CreateTestModel(Recording(server, tokens))
+            .DoStreamAsync(TestPrompt, CancellationToken.None);
 
-        Assert.Equal(1, server.Calls);
-        Assert.False(server.RequestToken.IsCancellationRequested);
+        Assert.False(Assert.Single(tokens).CanBeCanceled);
     }
 
     [Fact]

@@ -2995,7 +2995,10 @@ internal static class Generation
             responseInfo.Headers,
             responseMessages.Skip(stepResponseStart).ToArray(),
             responseBody
-        );
+        )
+        {
+            RedactBody = generated.RedactRawResponse,
+        };
         var performance =
             timing.ModelCallPerformance != null
                 ? StepPerformanceCalculator.Create(

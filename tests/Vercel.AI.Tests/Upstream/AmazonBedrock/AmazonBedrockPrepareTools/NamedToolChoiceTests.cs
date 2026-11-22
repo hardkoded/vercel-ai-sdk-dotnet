@@ -153,11 +153,12 @@ public sealed class NamedToolChoiceTests
     [Fact]
     [UpstreamTest(
         "packages/amazon-bedrock/src/amazon-bedrock-prepare-tools.test.ts::prepareTools > tool choice > named tool choice::should send provider tools and every function tool with the named tool choice",
-        Coverage = UpstreamCoverage.Partial,
+        Coverage = UpstreamCoverage.Covered,
         Commit = "62a4dcd641895b3aca4698015c0378b2bd558c4e"
     )]
     public void Should_send_provider_tools_and_every_function_tool_with_the_named_tool_choice()
     {
+        var mock = new PrepareAnthropicToolsMock();
         var full = AmazonBedrockTools.Prepare(
             AnthropicModel,
             [.. Tools(), BashTool()],
@@ -166,19 +167,16 @@ public sealed class NamedToolChoiceTests
             null,
             null,
             false,
+            mock.Invoke,
             out _,
-            out var additionalTools,
+            out _,
             out _
         );
 
         Assert.Equal(["bash", "getWeather", "getTime"], Names(full));
-        // Upstream spies on prepareAnthropicTools. The port reads the same arguments from the
-        // tool_choice that the Anthropic preparation produced.
-        Assert.Equal(
-            "{\"tool_choice\":{\"type\":\"tool\",\"name\":\"getWeather\",\"disable_parallel_tool_use\":true}}",
-            additionalTools!.ToJsonString()
-        );
-        Assert.Null(full["toolChoice"]);
+        Assert.Equal("tool", mock.LastCall.ToolChoiceType);
+        Assert.Equal("getWeather", mock.LastCall.ToolName);
+        Assert.True(mock.LastCall.DisableParallelToolUse);
     }
 
     [Theory]

@@ -40,4 +40,59 @@ public sealed class GatewayLanguageModelDoGenerateTests
             Assert.Equal(header.Value, server.RequestHeaders[header.Key]);
         }
     }
+
+    private static GatewayLanguageModelServer PrepareJsonResponse() =>
+        new()
+        {
+            ContentType = "application/json",
+            ResponseBody =
+                "{\"id\":\"test-id\",\"created\":1711115037,\"model\":\"test-model\",\"content\":[{\"type\":\"text\",\"text\":\"Test response\"}],\"finish_reason\":\"stop\",\"usage\":{\"prompt_tokens\":4,\"completion_tokens\":30}}",
+        };
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should remove abortSignal from the request body",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_remove_abortSignal_from_the_request_body()
+    {
+        var server = PrepareJsonResponse();
+        using var source = new CancellationTokenSource();
+
+        await CreateTestModel(server).DoGenerateAsync(TestPrompt, source.Token);
+
+        Assert.Null(server.RequestJson["abortSignal"]);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should pass abortSignal to fetch when provided",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_pass_abortSignal_to_fetch_when_provided()
+    {
+        var server = PrepareJsonResponse();
+        var tokens = new List<CancellationToken>();
+        using var source = new CancellationTokenSource();
+
+        await CreateTestModel(Recording(server, tokens)).DoGenerateAsync(TestPrompt, source.Token);
+
+        Assert.Equal(source.Token, Assert.Single(tokens));
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should not pass abortSignal to fetch when not provided",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_not_pass_abortSignal_to_fetch_when_not_provided()
+    {
+        var server = PrepareJsonResponse();
+        var tokens = new List<CancellationToken>();
+
+        await CreateTestModel(Recording(server, tokens))
+            .DoGenerateAsync(TestPrompt, CancellationToken.None);
+
+        Assert.False(Assert.Single(tokens).CanBeCanceled);
+    }
 }
