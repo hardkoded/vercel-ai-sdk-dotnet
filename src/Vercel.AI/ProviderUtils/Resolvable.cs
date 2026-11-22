@@ -23,6 +23,9 @@ public sealed class Resolvable<T>
         _callback = callback;
     }
 
+    /// <summary>True when the value comes from a callback rather than a static value or a task.</summary>
+    public bool IsCallback => _callback is not null;
+
     /// <summary>Wraps a value.</summary>
     public static implicit operator Resolvable<T>(T value) => From(value);
 
