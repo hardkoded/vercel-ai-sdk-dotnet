@@ -37,7 +37,7 @@ internal sealed class LiveKitRtcRemoteTrack(RemoteTrack track, LiveKitRtcClientO
 
 /// <summary>
 /// Reads the agent's audio and hands its frames to the host while playing. Each play opens a fresh stream and each
-/// pause disposes it, so no audio queues while paused. A new pump starts only after the previous one finished its
+/// pause disposes it at once, so no audio queues while paused or while a slow callback finishes. A new pump starts only after the previous one finished its
 /// in-flight callback, so <c>onFrame</c> is never called concurrently.
 /// </summary>
 internal sealed class LiveKitRtcAudioElement(
@@ -60,7 +60,7 @@ internal sealed class LiveKitRtcAudioElement(
                 return Task.CompletedTask;
             }
 
-            var pump = new Pump(createStream());
+            var pump = new Pump();
             _current = pump;
             var previous = _previous;
             pump.Task = Task.Run(() => RunAsync(pump, previous));
@@ -108,7 +108,15 @@ internal sealed class LiveKitRtcAudioElement(
         try
         {
             await previous.ConfigureAwait(false);
-            await foreach (var frame in pump.Stream.WithCancellation(pump.Cancellation.Token))
+
+            // The stream opens only now, so no audio queues while the previous callback finishes.
+            var stream = pump.Open(createStream);
+            if (stream is null)
+            {
+                return;
+            }
+
+            await foreach (var frame in stream.WithCancellation(pump.Cancellation.Token))
             {
                 if (onFrame is not null)
                 {
@@ -137,19 +145,43 @@ internal sealed class LiveKitRtcAudioElement(
         }
     }
 
-    private sealed class Pump(AudioStream stream)
+    private sealed class Pump
     {
-        public AudioStream Stream { get; } = stream;
+        private readonly object _gate = new();
+        private AudioStream? _stream;
+        private bool _stopped;
 
         public CancellationTokenSource Cancellation { get; } = new();
 
         public Task Task { get; set; } = Task.CompletedTask;
 
-        public void Stop() => Cancellation.Cancel();
+        /// <summary>Opens the stream, or returns <see langword="null"/> when the pump was stopped first.</summary>
+        public AudioStream? Open(Func<AudioStream> createStream)
+        {
+            lock (_gate)
+            {
+                return _stopped ? null : _stream = createStream();
+            }
+        }
+
+        /// <summary>Cancels the pump and disposes its stream at once, without waiting for the callback.</summary>
+        public void Stop()
+        {
+            AudioStream? stream;
+            lock (_gate)
+            {
+                _stopped = true;
+                stream = _stream;
+                _stream = null;
+            }
+
+            Cancellation.Cancel();
+            stream?.Dispose();
+        }
 
         public void Dispose()
         {
-            Stream.Dispose();
+            Stop();
             Cancellation.Dispose();
         }
     }
