@@ -129,7 +129,10 @@ public sealed class WrapGenerateTests
                 }
             );
 
-        Assert.Equal("final", result.Output!.Value.GetProperty("value").GetString());
+        Assert.Equal(
+            "final",
+            ((GenerateTextResult)result).Output!.Value.GetProperty("value").GetString()
+        );
         Assert.Equal("{\"value\":\"draft\"}" + text, result.Text);
         Assert.Equal(reasoning, result.ReasoningText);
         Assert.Collection(

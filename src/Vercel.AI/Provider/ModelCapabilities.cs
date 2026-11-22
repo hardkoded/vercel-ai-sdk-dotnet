@@ -345,8 +345,14 @@ public sealed class RealtimeCapabilities
     /// <summary>Upstream <c>transports</c>: <c>websocket</c> or <c>webrtc</c>.</summary>
     public IReadOnlyList<string> Transports { get; init; } = [];
 
-    /// <summary>Upstream <c>connections</c>: <c>client-secret-websocket</c>, <c>server-websocket</c> or <c>webrtc</c>.</summary>
+    /// <summary>Upstream <c>connections</c>: <c>client-secret-websocket</c>, <c>server-websocket</c>, <c>webrtc</c> or <c>provider</c>.</summary>
     public IReadOnlyList<string> Connections { get; init; } = [];
+
+    /// <summary>Upstream <c>startup</c>: <c>session-start</c> or <c>session-update</c>. Null preserves session-update startup.</summary>
+    public string? Startup { get; init; }
+
+    /// <summary>Upstream <c>finalization</c>: <c>session-close</c> or <c>transport-close</c>. Null preserves transport-close finalization.</summary>
+    public string? Finalization { get; init; }
 }
 
 /// <summary>

@@ -1271,30 +1271,12 @@ internal static class StreamObject
         {
             LogWarnings.Log(
                 new LogWarningsOptions(
-                    (warnings ?? []).Select(ToModelWarning).ToArray(),
+                    (warnings ?? []).Select(Generation.ToModelWarning).ToArray(),
                     model.Provider,
                     model.ModelId
                 )
             );
         }
-
-        private static ModelWarning ToModelWarning(CallWarning warning) =>
-            warning.Type switch
-            {
-                "unsupported" => new UnsupportedWarning(
-                    warning.Feature ?? warning.Message,
-                    warning.Feature == null ? null : warning.Message
-                ),
-                "compatibility" => new CompatibilityWarning(
-                    warning.Feature ?? warning.Message,
-                    warning.Feature == null ? null : warning.Message
-                ),
-                "deprecated" => new DeprecatedWarning(
-                    warning.Setting ?? string.Empty,
-                    warning.Message
-                ),
-                _ => new OtherWarning(warning.Message),
-            };
 
         // Maps to isDeepEqualData for JSON values.
         private static bool IsDeepEqual(JsonElement left, JsonElement right) =>

@@ -23,7 +23,7 @@ Open Responses provider.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [ProviderBase](/api/Vercel.AI.Provider/ProviderBase/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesProvider.cs#L61)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesProvider.cs#L67)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates a provider.
 | `httpClient` | [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient) |  |
 | `options` | [OpenResponsesOptions](/api/Vercel.AI.OpenResponses/OpenResponsesOptions/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesProvider.cs#L67)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesProvider.cs#L73)
 
 ## Fields
 
@@ -65,7 +65,7 @@ Default provider name.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesProvider.cs#L64)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesProvider.cs#L70)
 
 ## Properties
 
@@ -84,7 +84,7 @@ The registered extensions, indexed.
 
 **Value:** [OpenResponsesExtensionRegistry](/api/Vercel.AI.OpenResponses/OpenResponsesExtensionRegistry/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesProvider.cs#L79)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesProvider.cs#L89)
 
 <a id="Vercel_AI_OpenResponses_OpenResponsesProvider_Http_"></a>
 <a id="Vercel_AI_OpenResponses_OpenResponsesProvider_Http"></a>
@@ -101,7 +101,7 @@ HTTP helper.
 
 **Value:** [ProviderHttp](/api/Vercel.AI.ProviderUtils/ProviderHttp/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesProvider.cs#L82)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesProvider.cs#L92)
 
 <a id="Vercel_AI_OpenResponses_OpenResponsesProvider_Options_"></a>
 <a id="Vercel_AI_OpenResponses_OpenResponsesProvider_Options"></a>
@@ -118,7 +118,24 @@ Options.
 
 **Value:** [OpenResponsesOptions](/api/Vercel.AI.OpenResponses/OpenResponsesOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesProvider.cs#L76)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesProvider.cs#L86)
+
+<a id="Vercel_AI_OpenResponses_OpenResponsesProvider_Tools_"></a>
+<a id="Vercel_AI_OpenResponses_OpenResponsesProvider_Tools"></a>
+
+### Tools
+
+
+```csharp
+public OpenResponsesTools Tools { get; }
+```
+
+
+The provider tools, such as caller-executed custom tools.
+
+**Value:** [OpenResponsesTools](/api/Vercel.AI.OpenResponses/OpenResponsesTools/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesProvider.cs#L83)
 
 ## Methods
 
@@ -144,7 +161,7 @@ Creates a provider.
 
 **Returns:** [OpenResponsesProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesProvider.cs#L85)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesProvider.cs#L95)
 
 <a id="Vercel_AI_OpenResponses_OpenResponsesProvider_LanguageModel_"></a>
 <a id="Vercel_AI_OpenResponses_OpenResponsesProvider_LanguageModel_System_String_"></a>
@@ -167,4 +184,4 @@ Returns a language model.
 
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesProvider.cs#L97)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesProvider.cs#L107)

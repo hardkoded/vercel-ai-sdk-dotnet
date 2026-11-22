@@ -78,7 +78,10 @@ public sealed class WrapGenerateTests
                 }
             );
 
-        Assert.Equal("final", result.Output!.Value.GetProperty("value").GetString());
+        Assert.Equal(
+            "final",
+            ((GenerateTextResult)result).Output!.Value.GetProperty("value").GetString()
+        );
         Assert.Equal("{\"value\":\"draft\"}{\"value\":\"final\"}", result.Text);
         Assert.Collection(
             result.Content,

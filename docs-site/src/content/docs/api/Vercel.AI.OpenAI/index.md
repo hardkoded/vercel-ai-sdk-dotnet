@@ -73,6 +73,9 @@ OpenAI Chat Completions, Responses, images, speech, and transcription.
 | [OpenAIResponsesNamespaceToolDefinition](/api/Vercel.AI.OpenAI/OpenAIResponsesNamespaceToolDefinition/) | A namespace of function tools (type: 'namespace'). |
 | [OpenAIResponsesPreparedRequest](/api/Vercel.AI.OpenAI/OpenAIResponsesPreparedRequest/) | Responses API request body and the warnings produced while building it. |
 | [OpenAIResponsesSystemMessageOptions](/api/Vercel.AI.OpenAI/OpenAIResponsesSystemMessageOptions/) | The openai options of a system message in Responses history. Maps to OpenAIResponsesSystemMessageOptions. |
+| [OpenAIResponsesTextFormat](/api/Vercel.AI.OpenAI/OpenAIResponsesTextFormat/) | Text format accepted by textFormat and textFormatUpdate: OpenAIResponsesTextFormatText or OpenAIResponsesTextFormatJsonSchema. Maps to OpenAIResponsesTextFormat (openai-responses-text-format.ts). |
+| [OpenAIResponsesTextFormatJsonSchema](/api/Vercel.AI.OpenAI/OpenAIResponsesTextFormatJsonSchema/) | A JSON Schema format (the jsonschema type). |
+| [OpenAIResponsesTextFormatText](/api/Vercel.AI.OpenAI/OpenAIResponsesTextFormatText/) | The plain text format (type: 'text'). |
 | [OpenAIResponsesToolResultOptions](/api/Vercel.AI.OpenAI/OpenAIResponsesToolResultOptions/) | The openai options of an ordinary tool result in Responses history. Maps to OpenAIResponsesToolResultOptions. |
 | [OpenAIServiceCollectionExtensions](/api/Vercel.AI.OpenAI/OpenAIServiceCollectionExtensions/) | Registers OpenAIProvider. |
 | [OpenAIShellAction](/api/Vercel.AI.OpenAI/OpenAIShellAction/) | The shell action of a OpenAIShellInput. Maps to the action of the upstream shell input. |

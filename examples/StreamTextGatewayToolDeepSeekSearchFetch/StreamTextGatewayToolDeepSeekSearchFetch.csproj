@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <Description>Streams a run that uses both the Gateway DeepSeek Search and Fetch tools.</Description>
+    </PropertyGroup>
+</Project>

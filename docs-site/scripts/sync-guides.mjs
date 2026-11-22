@@ -66,6 +66,14 @@ const pages = [
         target: "/scaledown/",
     },
     {
+        source: "docs/articles/parallel.md",
+        output: "parallel.md",
+        title: "Parallel",
+        label: "Parallel",
+        legacy: "articles/parallel.html",
+        target: "/parallel/",
+    },
+    {
         source: "docs/articles/compatibility.md",
         output: "compatibility.md",
         title: "Compatibility",

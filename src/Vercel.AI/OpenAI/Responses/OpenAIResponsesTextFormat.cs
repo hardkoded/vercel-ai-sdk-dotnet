@@ -9,8 +9,12 @@ using Vercel.AI.Operations;
 
 namespace Vercel.AI.OpenAI;
 
-/// <summary>Text format accepted by <c>textFormat</c> and <c>textFormatUpdate</c>. Mirrors <c>openai-responses-text-format.ts</c>.</summary>
-internal static class OpenAIResponsesTextFormat
+/// <summary>
+/// Text format accepted by <c>textFormat</c> and <c>textFormatUpdate</c>: <see cref="OpenAIResponsesTextFormatText"/> or
+/// <see cref="OpenAIResponsesTextFormatJsonSchema"/>. Maps to <c>OpenAIResponsesTextFormat</c>
+/// (<c>openai-responses-text-format.ts</c>).
+/// </summary>
+public abstract class OpenAIResponsesTextFormat
 {
     private static readonly Regex s_name = new(
         "^[a-zA-Z0-9_-]+\\z",
@@ -22,6 +26,13 @@ internal static class OpenAIResponsesTextFormat
     /// Validates a <c>text</c> or <c>json_schema</c> format (<c>openaiResponsesTextFormatSchema</c>) and returns the wire
     /// format with its schema normalized (<c>normalizeOpenAIResponsesTextFormat</c>). The input is not modified.
     /// </summary>
+    private protected OpenAIResponsesTextFormat() { }
+
+    /// <summary>Returns the format as the JSON value of <c>textFormat</c> or <c>textFormatUpdate</c>.</summary>
+    public JsonElement ToJsonElement() => JsonSerializer.SerializeToElement(ToJson());
+
+    internal abstract JsonObject ToJson();
+
     internal static JsonObject Normalize(JsonElement format, List<OpenAICallWarning> warnings)
     {
         var type = OpenAIJson.String(format, "type");
@@ -71,4 +82,47 @@ internal static class OpenAIResponsesTextFormat
 
     private static InvalidArgumentException Invalid(JsonElement format) =>
         new("providerOptions", format.GetRawText(), "invalid openai provider options");
+}
+
+/// <summary>The plain text format (<c>type: 'text'</c>).</summary>
+public sealed class OpenAIResponsesTextFormatText : OpenAIResponsesTextFormat
+{
+    internal override JsonObject ToJson() => new() { ["type"] = "text" };
+}
+
+/// <summary>A JSON Schema format (the <c>json_schema</c> type).</summary>
+public sealed class OpenAIResponsesTextFormatJsonSchema : OpenAIResponsesTextFormat
+{
+    /// <summary>The format name: 1 to 64 characters of letters, digits, <c>_</c> or <c>-</c>.</summary>
+    public string Name { get; set; } = "";
+
+    /// <summary>The JSON Schema, an object.</summary>
+    public JsonElement Schema { get; set; }
+
+    /// <summary>The format description.</summary>
+    public string? Description { get; set; }
+
+    /// <summary>Strict mode.</summary>
+    public bool? Strict { get; set; }
+
+    internal override JsonObject ToJson()
+    {
+        var json = new JsonObject
+        {
+            ["type"] = "json_schema",
+            ["name"] = Name,
+            ["schema"] = JsonNode.Parse(Schema.GetRawText()),
+        };
+        if (Description != null)
+        {
+            json["description"] = Description;
+        }
+
+        if (Strict is { } strict)
+        {
+            json["strict"] = strict;
+        }
+
+        return json;
+    }
 }

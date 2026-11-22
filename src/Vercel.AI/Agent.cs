@@ -124,7 +124,7 @@ public sealed class Agent : IAgent
         ISteering? experimentalSteering
     ) => GenerateCoreAsync(call, cancellationToken, timeout, experimentalSteering, null);
 
-    internal Task<GenerateTextResult> GenerateCoreAsync(
+    internal async Task<GenerateTextResult> GenerateCoreAsync(
         GenerateTextOptions call,
         CancellationToken cancellationToken,
         TimeoutConfiguration? timeout,
@@ -138,7 +138,7 @@ public sealed class Agent : IAgent
         prepared.ExperimentalSteering = experimentalSteering ?? prepared.ExperimentalSteering;
         prepared.OnStepEnd = MergeStepEnd(Options.OnStepEnd, prepared.OnStepEnd);
 
-        return _client.GenerateTextAsync(prepared, cancellationToken);
+        return await _client.GenerateTextAsync(prepared, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>

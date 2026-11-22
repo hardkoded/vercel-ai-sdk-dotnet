@@ -111,6 +111,24 @@ public sealed class Tool
     public Func<JsonElement, JsonElement>? ContextSchema { get; set; }
 
     /// <summary>
+    /// Called when the model starts generating the tool input. In <c>streamText</c> it runs on the <c>tool-input-start</c> part.
+    /// Maps to <c>onInputStart</c>.
+    /// </summary>
+    public Func<ToolExecutionOptions, Task>? OnInputStart { get; set; }
+
+    /// <summary>
+    /// Called when a fragment of the streamed tool input is available. Only <c>streamText</c> calls it.
+    /// Maps to <c>onInputDelta</c>.
+    /// </summary>
+    public Func<ToolInputDeltaOptions, Task>? OnInputDelta { get; set; }
+
+    /// <summary>
+    /// Called when the tool input is complete and the call can start, even when the tool has no executor. A call that failed
+    /// validation does not reach it. Maps to <c>onInputAvailable</c>.
+    /// </summary>
+    public Func<ToolInputAvailableOptions, Task>? OnInputAvailable { get; set; }
+
+    /// <summary>
     /// Transforms the input of a call after it matches <see cref="InputSchema"/>, as a Zod <c>.transform</c> on the input schema does.
     /// It returns the schema output, which the tool, the callbacks, and the approval check see, and throws when the input is invalid.
     /// Null passes the input through unchanged.
@@ -208,7 +226,7 @@ public sealed class Tool
 }
 
 /// <summary>The options a tool receives when it runs. Maps to the second argument of <c>execute</c>.</summary>
-public sealed class ToolExecutionOptions
+public class ToolExecutionOptions
 {
     /// <summary>Creates the options.</summary>
     public ToolExecutionOptions(
@@ -239,6 +257,30 @@ public sealed class ToolExecutionOptions
     /// Maps to <c>context</c>.
     /// </summary>
     public JsonElement? Context { get; init; }
+}
+
+/// <summary>The options of <see cref="Tool.OnInputDelta"/>. Maps to <c>{ inputTextDelta } &amp; ToolExecutionOptions</c>.</summary>
+public sealed class ToolInputDeltaOptions(
+    string toolCallId,
+    IReadOnlyList<ModelMessage> messages,
+    CancellationToken abortSignal,
+    string inputTextDelta
+) : ToolExecutionOptions(toolCallId, messages, abortSignal)
+{
+    /// <summary>The fragment of the tool input text. Maps to <c>inputTextDelta</c>.</summary>
+    public string InputTextDelta { get; } = inputTextDelta;
+}
+
+/// <summary>The options of <see cref="Tool.OnInputAvailable"/>. Maps to <c>{ input } &amp; ToolExecutionOptions</c>.</summary>
+public sealed class ToolInputAvailableOptions(
+    string toolCallId,
+    IReadOnlyList<ModelMessage> messages,
+    CancellationToken abortSignal,
+    JsonElement input
+) : ToolExecutionOptions(toolCallId, messages, abortSignal)
+{
+    /// <summary>The input of the tool call.</summary>
+    public JsonElement Input { get; } = input;
 }
 
 /// <summary>The result of executing a tool.</summary>
@@ -358,12 +400,24 @@ public sealed class StepResult
     public int StepNumber { get; internal init; }
 
     /// <summary>The context of each tool in this step, keyed by tool name. Empty when none was set. Maps to <c>toolsContext</c>.</summary>
-    public IReadOnlyDictionary<string, JsonElement> ToolsContext { get; internal init; } =
+    public IReadOnlyDictionary<string, JsonElement> ToolsContext { get; internal set; } =
         EmptyToolsContext;
 
     /// <summary>The user-defined runtime context of this step. Empty when none was set. Maps to <c>runtimeContext</c>.</summary>
-    public IReadOnlyDictionary<string, object?> RuntimeContext { get; internal init; } =
+    public IReadOnlyDictionary<string, object?> RuntimeContext { get; internal set; } =
         EmptyRuntimeContext;
+
+    // A copy of the step with other contexts. Telemetry hands integrations the filtered contexts and leaves the original step alone.
+    internal StepResult WithContexts(
+        IReadOnlyDictionary<string, object?> runtimeContext,
+        IReadOnlyDictionary<string, JsonElement> toolsContext
+    )
+    {
+        var copy = (StepResult)MemberwiseClone();
+        copy.RuntimeContext = runtimeContext;
+        copy.ToolsContext = toolsContext;
+        return copy;
+    }
 
     internal static IReadOnlyDictionary<string, JsonElement> EmptyToolsContext { get; } =
         new Dictionary<string, JsonElement>();
@@ -1389,6 +1443,12 @@ public class GenerateTextOptions
     /// <summary>Generates the id of the call. Maps to <c>_internal.generateCallId</c>.</summary>
     internal Func<string>? GenerateCallId { get; set; }
 
+    /// <summary>Gives the result of the call its typed output. The call stays the same, so callbacks get the same instance.</summary>
+    internal Func<GenerateTextResult, GenerateTextResult>? ResultFactory { get; set; }
+
+    internal GenerateTextResult WrapResult(GenerateTextResult result) =>
+        ResultFactory is null ? result : ResultFactory(result);
+
     /// <summary>A shallow copy of these options, so a caller can change one property without changing the original.</summary>
     internal GenerateTextOptions ShallowCopy() => (GenerateTextOptions)MemberwiseClone();
 
@@ -2135,6 +2195,13 @@ public class GenerateTextResult
             return Steps[Steps.Count - 1];
         }
     }
+
+    // A copy of the result with other steps. Telemetry uses it to send the steps with filtered contexts.
+    internal GenerateTextResult WithSteps(IReadOnlyList<StepResult> steps) =>
+        new(Text, ReasoningText, steps, FinishReason, Usage, Output, Sources, ProviderMetadata)
+        {
+            ResponseMessages = ResponseMessages,
+        };
 
     /// <summary>Text from the last step.</summary>
     public string Text { get; }

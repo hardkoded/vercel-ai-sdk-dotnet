@@ -328,13 +328,32 @@ public static class V4Json
 
     private static JsonObject FileData(FileContentPart file)
     {
-        return file.Url is { } url
-            ? new JsonObject { ["type"] = "url", ["url"] = url }
-            : new JsonObject
+        if (file.Url is { } url)
+        {
+            return new JsonObject { ["type"] = "url", ["url"] = url };
+        }
+
+        if (file.Data is null && file.Text is { } text)
+        {
+            return new JsonObject { ["type"] = "text", ["text"] = text };
+        }
+
+        if (file.Data is null && file.ProviderReference is { } reference)
+        {
+            var references = new JsonObject();
+            foreach (var pair in reference)
             {
-                ["type"] = "data",
-                ["data"] = file.Data is null ? null : Convert.ToBase64String(file.Data),
-            };
+                references[pair.Key] = pair.Value;
+            }
+
+            return new JsonObject { ["type"] = "reference", ["reference"] = references };
+        }
+
+        return new JsonObject
+        {
+            ["type"] = "data",
+            ["data"] = file.Data is null ? null : Convert.ToBase64String(file.Data),
+        };
     }
 
     private static JsonObject Message(ModelMessage message)
@@ -353,14 +372,29 @@ public static class V4Json
                     }
                     else if (part is FileContentPart file)
                     {
-                        userParts.Add(
-                            new JsonObject
+                        var filePart = new JsonObject
+                        {
+                            ["type"] = "file",
+                            ["mediaType"] = file.MediaType,
+                            ["data"] = FileData(file),
+                        };
+                        if (file.FileName is { } fileName)
+                        {
+                            filePart["filename"] = fileName;
+                        }
+
+                        if (file.ProviderOptions is { Count: > 0 } fileOptions)
+                        {
+                            var options = new JsonObject();
+                            foreach (var pair in fileOptions)
                             {
-                                ["type"] = "file",
-                                ["mediaType"] = file.MediaType,
-                                ["data"] = FileData(file),
+                                options[pair.Key] = JsonNode.Parse(pair.Value.GetRawText());
                             }
-                        );
+
+                            filePart["providerOptions"] = options;
+                        }
+
+                        userParts.Add(filePart);
                     }
                 }
 
