@@ -64,4 +64,39 @@ public sealed class CreateTelemetryDispatcherIsEnabledFilterTests
 
         Assert.Empty(events);
     }
+
+    [Fact]
+    [UpstreamTest(
+        Id + "does not augment events with isEnabled",
+        Note = "Checked on onLanguageModelCallStart, the start event the port dispatches."
+    )]
+    public async Task Does_not_augment_events_with_isEnabled()
+    {
+        LanguageModelCallStartEvent? received = null;
+        var telemetry = Vercel.AI.TelemetryDispatcher.Create(
+            new TelemetryOptions
+            {
+                IsEnabled = true,
+                Integrations =
+                [
+                    new TestTelemetry
+                    {
+                        OnLanguageModelCallStart = (e, _) =>
+                        {
+                            received = e;
+                            return Task.CompletedTask;
+                        },
+                    },
+                ],
+            }
+        );
+
+        await telemetry.OnLanguageModelCallStart!(
+            new LanguageModelCallStartEvent { CallId = "call-1", ModelId = "model-1" },
+            CancellationToken.None
+        );
+
+        Assert.NotNull(received);
+        Assert.Null(received!.GetType().GetProperty("IsEnabled"));
+    }
 }

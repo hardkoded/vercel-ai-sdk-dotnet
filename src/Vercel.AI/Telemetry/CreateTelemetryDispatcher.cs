@@ -239,24 +239,32 @@ internal sealed class TelemetryDispatcher
             ),
             OnToolExecutionStart = Filter<ToolExecutionStartEvent>(
                 Merge(integrations.Select(i => i.OnToolExecutionStart)),
-                e => new ToolExecutionStartEvent(e.ToolCall, e.Messages)
-                {
-                    CallId = e.CallId,
-                    ToolContext = FilterToolContext(e, telemetry),
-                }
+                e =>
+                    FilterTelemetryEventHelper.FilterToolEvent(
+                        new ToolExecutionStartEvent(e.ToolCall, e.Messages)
+                        {
+                            CallId = e.CallId,
+                            ToolContext = FilterToolContext(e, telemetry),
+                        },
+                        telemetry
+                    )
             ),
             OnToolExecutionEnd = Filter<ToolExecutionEndEvent>(
                 Merge(integrations.Select(i => i.OnToolExecutionEnd)),
-                e => new ToolExecutionEndEvent(
-                    e.ToolCall,
-                    e.Messages,
-                    e.ToolOutput,
-                    e.ToolExecutionTime
-                )
-                {
-                    CallId = e.CallId,
-                    ToolContext = FilterToolContext(e, telemetry),
-                }
+                e =>
+                    FilterTelemetryEventHelper.FilterToolEvent(
+                        new ToolExecutionEndEvent(
+                            e.ToolCall,
+                            e.Messages,
+                            e.ToolOutput,
+                            e.ToolExecutionTime
+                        )
+                        {
+                            CallId = e.CallId,
+                            ToolContext = FilterToolContext(e, telemetry),
+                        },
+                        telemetry
+                    )
             ),
             // Fans out to the deprecated onStepFinish too, so integrations that only implement it keep working.
             OnStepEnd = Filter<StepResult>(
