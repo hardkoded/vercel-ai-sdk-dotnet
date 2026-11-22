@@ -20,7 +20,7 @@ public sealed class FalProvider : OpenAICompatibleProvider
     /// <summary>Default API origin.</summary>
     public const string DefaultBaseUrl = "https://fal.run";
 
-    private readonly HttpClient _httpClient;
+    internal readonly HttpClient _httpClient;
 
     /// <summary>Creates a provider.</summary>
     public FalProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)
@@ -79,6 +79,12 @@ public sealed class FalProvider : OpenAICompatibleProvider
     public override ITranscriptionModel TranscriptionModel(string modelId) =>
         new FalTranscriptionModel(this, modelId);
 
+    /// <inheritdoc />
+    public override IVideoModel VideoModel(string modelId) => new FalVideoModel(this, modelId);
+
+    /// <summary>Creates a video model. Same as <see cref="VideoModel"/>.</summary>
+    public IVideoModel Video(string modelId) => VideoModel(modelId);
+
     /// <summary>Posts <paramref name="options"/> to <c>{base}/{modelId}</c>. <paramref name="headers"/> override the provider headers.</summary>
     public Task<ImageGenerationResult> GenerateImageAsync(
         string modelId,
@@ -95,7 +101,8 @@ public sealed class FalProvider : OpenAICompatibleProvider
         Uri uri,
         HttpContent? content,
         IReadOnlyDictionary<string, string>? headers,
-        CancellationToken cancellationToken
+        CancellationToken cancellationToken,
+        Func<int, string, ApiException>? failedResponseHandler = null
     )
     {
         return await ProviderExchange
@@ -108,7 +115,8 @@ public sealed class FalProvider : OpenAICompatibleProvider
                     await CreateHeadersAsync(cancellationToken).ConfigureAwait(false),
                     headers
                 ),
-                cancellationToken
+                cancellationToken,
+                failedResponseHandler
             )
             .ConfigureAwait(false);
     }
