@@ -1656,8 +1656,9 @@ public class GenerateTextOptions
     public IReadOnlyDictionary<string, object?>? RuntimeContext { get; set; }
 
     /// <summary>
-    /// Secret for HMAC-signing tool approval requests. When it is set, each approval request is signed when it is issued, and
+    /// Secret for HMAC-signing tool approval requests. When it is set, approval requests are signed when they are issued, and
     /// the signature is verified when the approval is sent back, which prevents forged approvals.
+    /// Approval requests of automatically denied tool calls are not signed.
     /// Maps to <c>experimental_toolApprovalSecret</c> given as a string. See also <see cref="ExperimentalToolApprovalSecretBytes"/>.
     /// </summary>
     public string? ExperimentalToolApprovalSecret { get; set; }
