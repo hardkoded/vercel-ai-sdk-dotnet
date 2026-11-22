@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <Description>Searches the web with the Gateway DeepSeek Search tool.</Description>
+    </PropertyGroup>
+</Project>

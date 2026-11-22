@@ -321,26 +321,60 @@ public sealed class OpenAIChatSettingsUpstreamTests
         }
     }
 
-    [Fact]
+    [Theory]
+    [InlineData("none")]
+    [InlineData("minimal")]
     [UpstreamTest(
-        Reasoning + "should omit unsupported GPT-6 reasoning effort %s",
-        Coverage = UpstreamCoverage.Covered
+        Reasoning + "should send provider reasoning effort %s unchanged for GPT-6 models",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2"
     )]
-    public void OmitsUnsupportedGpt6Efforts()
+    public void SendsProviderReasoningEffortUnchangedForGpt6(string effort)
     {
-        foreach (var effort in new[] { "none", "minimal" })
-        {
-            var prepared = OpenAIChatLanguageModel.Prepare(
-                "gpt-6-astra",
-                Call("{\"reasoningEffort\":\"" + effort + "\"}")
-            );
-            Assert.Null(prepared.Body["reasoning_effort"]);
-            Assert.Equal("reasoningEffort", prepared.Warnings[0].Feature);
-            Assert.Equal(
-                "gpt-6-astra only supports the following reasoning efforts: low, medium, high, xhigh, max",
-                prepared.Warnings[0].Details
-            );
-        }
+        var prepared = OpenAIChatLanguageModel.Prepare(
+            "gpt-6-astra",
+            Call("{\"reasoningEffort\":\"" + effort + "\"}")
+        );
+        OpenAIUpstream.Equal(
+            prepared.Body,
+            "{\"model\":\"gpt-6-astra\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}],\"reasoning_effort\":\""
+                + effort
+                + "\"}"
+        );
+        Assert.Empty(prepared.Warnings);
+    }
+
+    [Theory]
+    [InlineData("none")]
+    [InlineData("minimal")]
+    [UpstreamTest(
+        Reasoning + "should map unsupported GPT-6 reasoning %s to the lowest supported effort",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2"
+    )]
+    public void MapsUnsupportedGpt6ReasoningToTheLowestSupportedEffort(string reasoning)
+    {
+        var prepared = OpenAIChatLanguageModel.Prepare(
+            "gpt-6-astra",
+            new LanguageModelCallOptions
+            {
+                Prompt = OpenAIUpstream.Hello().Prompt,
+                Reasoning = reasoning,
+            }
+        );
+        OpenAIUpstream.Equal(
+            prepared.Body,
+            "{\"model\":\"gpt-6-astra\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}],\"reasoning_effort\":\"low\"}"
+        );
+        var warning = Assert.Single(prepared.Warnings);
+        Assert.Equal("compatibility", warning.Type);
+        Assert.Equal("reasoning", warning.Feature);
+        Assert.Equal(
+            "reasoning \""
+                + reasoning
+                + "\" is not directly supported by this model. mapped to effort \"low\".",
+            warning.Details
+        );
     }
 
     [Fact]

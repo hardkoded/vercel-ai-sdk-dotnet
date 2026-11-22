@@ -175,7 +175,9 @@ internal sealed class AzureMaiImageModel : IImageModel
             fields["background"] = background;
         }
 
-        var headers = _provider.CreateHeaders(AzureApi.Mai, options.Headers);
+        var headers = await _provider
+            .CreateHeadersAsync(AzureApi.Mai, options.Headers, cancellationToken)
+            .ConfigureAwait(false);
 
         // When one request fails the siblings are cancelled instead of left running.
         using var siblings = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -507,7 +509,7 @@ internal sealed class AzureMaiImageModel : IImageModel
             var (data, mediaType) = await ImageFileDownload
                 .DownloadBlobAsync(
                     _provider,
-                    _provider.CreateHeaders(),
+                    await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false),
                     file.Url!,
                     cancellationToken
                 )

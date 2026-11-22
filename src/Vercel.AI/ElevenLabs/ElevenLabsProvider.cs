@@ -600,9 +600,11 @@ public sealed class ElevenLabsSpeechResult
         string mediaType,
         IReadOnlyList<ModelWarning> warnings,
         string requestBody,
-        ElevenLabsResponse response
+        ElevenLabsResponse response,
+        JsonElement? providerMetadata = null
     )
     {
+        ProviderMetadata = providerMetadata;
         Audio = audio ?? Array.Empty<byte>();
         MediaType = mediaType ?? "audio/mpeg";
         Warnings = warnings ?? Array.Empty<ModelWarning>();
@@ -624,6 +626,13 @@ public sealed class ElevenLabsSpeechResult
 
     /// <summary>Response metadata.</summary>
     public ElevenLabsResponse Response { get; }
+
+    /// <summary>
+    /// Provider metadata, <c>{"elevenlabs":{...}}</c>. It holds <c>outputFormat</c>, and with
+    /// <c>providerOptions.elevenlabs.withTimestamps</c> also <c>alignment</c> and <c>normalizedAlignment</c>
+    /// (<c>characters</c>, <c>characterStartTimesSeconds</c>, <c>characterEndTimesSeconds</c>).
+    /// </summary>
+    public JsonElement? ProviderMetadata { get; }
 }
 
 /// <summary>Provider options and headers for one ElevenLabs transcription.</summary>
@@ -809,6 +818,7 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
             ["pcm_24000"] = "pcm_24000",
             ["pcm_44100"] = "pcm_44100",
             ["ulaw"] = "ulaw_8000",
+            ["wav"] = "wav_44100",
         };
 
         private readonly ElevenLabsProvider _provider;
@@ -853,14 +863,15 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
             var elevenlabs = ElevenLabsObject(request.ProviderOptions);
             var body = new JsonObject { ["text"] = request.Text, ["model_id"] = ModelId };
             var query = new List<string>();
-            if (!string.IsNullOrEmpty(request.OutputFormat))
+            var requestedOutputFormat = request.OutputFormat;
+            if (!string.IsNullOrEmpty(requestedOutputFormat))
             {
                 query.Add(
                     "output_format="
                         + Uri.EscapeDataString(
-                            OutputFormats.TryGetValue(request.OutputFormat, out var mapped)
+                            OutputFormats.TryGetValue(requestedOutputFormat, out var mapped)
                                 ? mapped
-                                : request.OutputFormat
+                                : requestedOutputFormat
                         )
                 );
             }
@@ -960,9 +971,11 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
             var voice = string.IsNullOrEmpty(request.Voice)
                 ? ElevenLabsSpeechRequest.DefaultVoiceId
                 : request.Voice!;
+            var withTimestamps = Child(elevenlabs, "withTimestamps")?.GetBoolean() == true;
             var path =
                 "/v1/text-to-speech/"
                 + Uri.EscapeDataString(voice)
+                + (withTimestamps ? "/with-timestamps" : string.Empty)
                 + (query.Count > 0 ? "?" + string.Join("&", query) : string.Empty);
             var json = body.ToJsonString();
             var uri = ApiKeys.Combine(_provider.Options.BaseUrl, path);
@@ -971,7 +984,10 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
                     uri,
                     ProviderExchange.Json(json),
                     body,
-                    ProviderExchange.Merge(_provider.CreateHeaders(), request.Headers),
+                    ProviderExchange.Merge(
+                        await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false),
+                        request.Headers
+                    ),
                     cancellationToken
                 )
                 .ConfigureAwait(false);
@@ -987,13 +1003,165 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
                 ).Trim();
             }
 
+            var outputFormat = OutputFormats.TryGetValue(
+                requestedOutputFormat ?? string.Empty,
+                out var native
+            )
+                ? native
+                : requestedOutputFormat;
+            var metadata = new JsonObject();
+            if (!string.IsNullOrEmpty(outputFormat))
+            {
+                metadata["outputFormat"] = outputFormat;
+            }
+
+            var audio = response.Bytes;
+            JsonElement? rawBody = null;
+            if (withTimestamps)
+            {
+                var envelope = ReadTimestampsEnvelope(response.Body, uri.ToString(), body);
+                rawBody = envelope.Raw;
+                audio = envelope.Audio;
+                if (envelope.Alignment != null)
+                {
+                    metadata["alignment"] = envelope.Alignment;
+                }
+
+                if (envelope.NormalizedAlignment != null)
+                {
+                    metadata["normalizedAlignment"] = envelope.NormalizedAlignment;
+                }
+            }
+
             return new ElevenLabsSpeechResult(
-                response.Bytes,
+                audio,
                 mediaType,
                 warnings,
                 json,
-                new ElevenLabsResponse(timestamp, ModelId, response.Headers, null)
+                new ElevenLabsResponse(timestamp, ModelId, response.Headers, rawBody),
+                JsonSerializer.SerializeToElement(new JsonObject { ["elevenlabs"] = metadata })
             );
+        }
+
+        private static (
+            byte[] Audio,
+            JsonElement Raw,
+            JsonObject? Alignment,
+            JsonObject? NormalizedAlignment
+        ) ReadTimestampsEnvelope(string text, string url, object requestBodyValues)
+        {
+            ApiException Invalid(Exception cause) =>
+                new("Invalid JSON response", 200, text, cause)
+                {
+                    Url = url,
+                    RequestBodyValues = requestBodyValues,
+                };
+
+            var parsed = JsonParsing.SafeParse(text);
+            if (!parsed.Success || parsed.RawValue is not { } raw)
+            {
+                throw Invalid(
+                    parsed.Error
+                        ?? new JsonParseException(text, new JsonException("Invalid JSON response"))
+                );
+            }
+
+            try
+            {
+                if (
+                    raw.ValueKind != JsonValueKind.Object
+                    || !raw.TryGetProperty("audio_base64", out var audioBase64)
+                    || audioBase64.ValueKind != JsonValueKind.String
+                )
+                {
+                    throw new TypeValidationException(
+                        "Type validation failed: audio_base64 must be a string.",
+                        raw
+                    );
+                }
+
+                return (
+                    Convert.FromBase64String(audioBase64.GetString()!),
+                    raw,
+                    ToAlignmentMetadata(raw, "alignment"),
+                    ToAlignmentMetadata(raw, "normalized_alignment")
+                );
+            }
+            catch (Exception error) when (error is TypeValidationException or FormatException)
+            {
+                throw Invalid(error);
+            }
+        }
+
+        private static JsonObject? ToAlignmentMetadata(JsonElement root, string name)
+        {
+            if (
+                !root.TryGetProperty(name, out var alignment)
+                || alignment.ValueKind == JsonValueKind.Null
+            )
+            {
+                return null;
+            }
+
+            return new JsonObject
+            {
+                ["characters"] = AlignmentArray(
+                    root,
+                    alignment,
+                    "characters",
+                    JsonValueKind.String
+                ),
+                ["characterStartTimesSeconds"] = AlignmentArray(
+                    root,
+                    alignment,
+                    "character_start_times_seconds",
+                    JsonValueKind.Number
+                ),
+                ["characterEndTimesSeconds"] = AlignmentArray(
+                    root,
+                    alignment,
+                    "character_end_times_seconds",
+                    JsonValueKind.Number
+                ),
+            };
+        }
+
+        private static JsonArray AlignmentArray(
+            JsonElement root,
+            JsonElement alignment,
+            string name,
+            JsonValueKind kind
+        )
+        {
+            if (
+                alignment.ValueKind != JsonValueKind.Object
+                || !alignment.TryGetProperty(name, out var items)
+                || items.ValueKind != JsonValueKind.Array
+            )
+            {
+                throw new TypeValidationException(
+                    "Type validation failed: alignment." + name + " must be an array.",
+                    root
+                );
+            }
+
+            var array = new JsonArray();
+            foreach (var item in items.EnumerateArray())
+            {
+                if (item.ValueKind != kind)
+                {
+                    throw new TypeValidationException(
+                        "Type validation failed: alignment."
+                            + name
+                            + " has an item of the wrong type.",
+                        root
+                    );
+                }
+
+                array.Add(JsonNode.Parse(item.GetRawText()));
+            }
+
+            return array;
         }
 
         private static void CopyNumber(
@@ -1164,7 +1332,10 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
                     uri,
                     form,
                     new Dictionary<string, string> { ["model_id"] = ModelId },
-                    ProviderExchange.Merge(_provider.CreateHeaders(), request?.Headers),
+                    ProviderExchange.Merge(
+                        await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false),
+                        request?.Headers
+                    ),
                     cancellationToken
                 )
                 .ConfigureAwait(false);

@@ -27,7 +27,7 @@ public sealed class StartBatchTests
     {
         var api = new BatchTests.BatchFake();
         await BatchApi.StartBatchAsync(
-            new BatchRequestOptions
+            new StartBatchOptions
             {
                 Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(api),
                 Output = OutputSpec.Object(OutputSchema),
@@ -73,7 +73,7 @@ public sealed class StartBatchTests
     {
         var api = new BatchTests.BatchFake();
         await BatchApi.StartBatchAsync(
-            new BatchRequestOptions
+            new StartBatchOptions
             {
                 Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(api),
                 Requests = new[]

@@ -320,15 +320,23 @@ internal sealed class StreamTextErrorHandling
     {
         try
         {
+            StreamTextOnErrorResult? result = null;
             if (options.OnErrorRetry != null)
             {
-                return await options.OnErrorRetry(error, cancellationToken).ConfigureAwait(false);
+                result = await options.OnErrorRetry(error, cancellationToken).ConfigureAwait(false);
             }
-
-            if (options.OnError != null)
+            else if (options.OnError != null)
             {
                 await options.OnError(error, cancellationToken).ConfigureAwait(false);
             }
+
+            if (TelemetryDispatcher.Create(options).OnError is { } telemetryOnError)
+            {
+                await telemetryOnError(new TelemetryErrorEvent(null, error), cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            return result;
         }
         catch (Exception) when (swallow && !cancellationToken.IsCancellationRequested)
         {

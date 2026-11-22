@@ -58,7 +58,9 @@ public sealed class CohereLanguageModel : ILanguageModel
                 HttpMethod.Post,
                 ChatUri,
                 body.ToJsonString(),
-                _provider.Headers(options.Headers),
+                await _provider
+                    .HeadersAsync(options.Headers, cancellationToken)
+                    .ConfigureAwait(false),
                 cancellationToken
             )
             .ConfigureAwait(false);
@@ -169,7 +171,9 @@ public sealed class CohereLanguageModel : ILanguageModel
             .Http.OpenSseResponseAsync(
                 ChatUri,
                 json,
-                _provider.Headers(options.Headers),
+                await _provider
+                    .HeadersAsync(options.Headers, cancellationToken)
+                    .ConfigureAwait(false),
                 cancellationToken
             )
             .ConfigureAwait(false);
@@ -343,14 +347,15 @@ public sealed class CohereLanguageModel : ILanguageModel
             MaxThinkingBudget,
             modelWarnings
         );
-        foreach (var warning in modelWarnings.OfType<UnsupportedWarning>())
+        foreach (var warning in modelWarnings)
         {
-            warnings.Add(new CallWarning(warning.Type, warning.Feature, warning.Details));
+            if (ReasoningMap.ToCallWarning(warning) is { } callWarning)
+            {
+                warnings.Add(callWarning);
+            }
         }
 
-        return tokenBudget is { } value
-            ? new JsonObject { ["type"] = "enabled", ["token_budget"] = value }
-            : null;
+        return new JsonObject { ["type"] = "enabled", ["token_budget"] = tokenBudget };
     }
 
     private static FinishReason MapFinishReason(string? finishReason)

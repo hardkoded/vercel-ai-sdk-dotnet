@@ -5,21 +5,14 @@
 using System.Globalization;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using Vercel.AI.ProviderUtils;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.Google;
 
 /// <summary>Maps the shared reasoning option onto Gemini thinking configuration.</summary>
 public static class GoogleThinking
 {
-    private static readonly string[] ReasoningLevels =
-    [
-        "minimal",
-        "low",
-        "medium",
-        "high",
-        "xhigh",
-        "max",
-    ];
     private static readonly Regex Hydrogen = new(
         @"(^|[/.])gemini-4-(?:hydrogen|neon)(?:-|\z)",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
@@ -66,13 +59,33 @@ public static class GoogleThinking
             return level == null ? null : new JsonObject { ["thinkingLevel"] = level };
         }
 
-        if (reasoning == "none")
-        {
-            return new JsonObject { ["thinkingBudget"] = 0 };
-        }
+        return new JsonObject { ["thinkingBudget"] = Budget(reasoning!, modelId, warnings) };
+    }
 
-        var budget = Budget(reasoning!, modelId, warnings);
-        return budget == null ? null : new JsonObject { ["thinkingBudget"] = budget };
+    private static void AddWarnings(
+        IList<GoogleWarning> warnings,
+        IEnumerable<ModelWarning> modelWarnings
+    )
+    {
+        foreach (var warning in modelWarnings)
+        {
+            switch (warning)
+            {
+                case UnsupportedWarning unsupported:
+                    warnings.Add(
+                        GoogleWarning.Unsupported(unsupported.Feature, unsupported.Details)
+                    );
+                    break;
+                case CompatibilityWarning compatibility:
+                    warnings.Add(
+                        GoogleWarning.Compatibility(
+                            compatibility.Feature,
+                            compatibility.Details ?? string.Empty
+                        )
+                    );
+                    break;
+            }
+        }
     }
 
     private static string? Gemini3Level(
@@ -81,62 +94,15 @@ public static class GoogleThinking
         IList<GoogleWarning> warnings
     )
     {
-        var levels = ThinkingLevels(modelId);
-        var index = Array.IndexOf(ReasoningLevels, reasoning);
-        if (index < 0 && reasoning != "none")
-        {
-            warnings.Add(
-                GoogleWarning.Unsupported(
-                    "reasoning",
-                    "reasoning \"" + reasoning + "\" is not supported by this model."
-                )
-            );
-            return null;
-        }
-
-        // Nearest supported level: the level itself, then lower ones, then higher ones. "none" maps to the lowest level.
-        var candidates = new List<string>();
-        if (index >= 0)
-        {
-            candidates.Add(reasoning);
-            for (var i = index - 1; i >= 0; i--)
-            {
-                candidates.Add(ReasoningLevels[i]);
-            }
-        }
-
-        for (var i = index + 1; i < ReasoningLevels.Length; i++)
-        {
-            candidates.Add(ReasoningLevels[i]);
-        }
-
-        var mapped = candidates.FirstOrDefault(levels.Contains);
-        if (mapped == null)
-        {
-            warnings.Add(
-                GoogleWarning.Unsupported(
-                    "reasoning",
-                    "reasoning \"" + reasoning + "\" is not supported by this model."
-                )
-            );
-            return null;
-        }
-
-        if (reasoning != "none" && mapped != reasoning)
-        {
-            warnings.Add(
-                GoogleWarning.Compatibility(
-                    "reasoning",
-                    "reasoning \""
-                        + reasoning
-                        + "\" is not directly supported by this model. mapped to effort \""
-                        + mapped
-                        + "\"."
-                )
-            );
-        }
-
-        return mapped;
+        // Gemini 3 thinking cannot be fully disabled, so reasoning "none" maps to the lowest supported level.
+        var modelWarnings = new List<ModelWarning>();
+        var effort = ReasoningMap.MapReasoningToProviderEffort(
+            reasoning,
+            ThinkingLevels(modelId).ToDictionary(level => level, level => level),
+            modelWarnings
+        );
+        AddWarnings(warnings, modelWarnings);
+        return effort;
     }
 
     /// <summary>The reasoning efforts of the model catalog entry. Empty for budget-based models.</summary>
@@ -232,27 +198,15 @@ public static class GoogleThinking
         return major > 3 || (major == 3 && minor >= 7) ? "low" : "minimal";
     }
 
-    private static int? Budget(string reasoning, string modelId, IList<GoogleWarning> warnings)
+    private static int Budget(string reasoning, string modelId, IList<GoogleWarning> warnings)
     {
-        double? percent = reasoning switch
+        // Gemini 2.5 Pro cannot disable thinking and requires a thinking budget of at least 128 tokens. Other
+        // Gemini 2.5 models can disable thinking with a budget of 0.
+        var minThinking =
+            modelId.IndexOf("2.5-pro", StringComparison.OrdinalIgnoreCase) >= 0 ? 128 : 0;
+        if (reasoning == "none" && minThinking == 0)
         {
-            "minimal" => 0.02,
-            "low" => 0.1,
-            "medium" => 0.3,
-            "high" => 0.6,
-            "xhigh" => 0.9,
-            "max" => 0.95,
-            _ => null,
-        };
-        if (percent == null)
-        {
-            warnings.Add(
-                GoogleWarning.Unsupported(
-                    "reasoning",
-                    "reasoning \"" + reasoning + "\" is not supported by this model."
-                )
-            );
-            return null;
+            return 0;
         }
 
         var maxThinking =
@@ -260,12 +214,15 @@ public static class GoogleThinking
             || modelId.IndexOf("gemini-3-pro-image", StringComparison.OrdinalIgnoreCase) >= 0
                 ? 32768
                 : 24576;
-        var tokens = (int)Math.Round(65536 * percent.Value);
-        if (tokens > maxThinking)
-        {
-            tokens = maxThinking;
-        }
-
-        return tokens < 0 ? 0 : tokens;
+        var modelWarnings = new List<ModelWarning>();
+        var budget = ReasoningMap.MapReasoningToProviderBudget(
+            reasoning,
+            65536,
+            maxThinking,
+            modelWarnings,
+            minThinking
+        );
+        AddWarnings(warnings, modelWarnings);
+        return budget;
     }
 }

@@ -79,7 +79,7 @@ public sealed class MistralRealtimeFactory
                 HttpMethod.Post,
                 url,
                 ProviderExchange.Json(requestBody),
-                _provider.CreateHeaders(),
+                await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false),
                 cancellationToken,
                 (status, text) => MistralError.FailedResponse(status, text, url, body)
             )
@@ -131,7 +131,7 @@ public sealed class MistralRealtimeFactory
                 HttpMethod.Delete,
                 url,
                 null,
-                _provider.CreateHeaders(),
+                await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false),
                 cancellationToken,
                 (status, text) => MistralError.FailedResponse(status, text, url, null)
             )

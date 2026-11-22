@@ -39,7 +39,8 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
     private readonly Func<Uri> _url;
     private readonly Func<
         IReadOnlyDictionary<string, string?>?,
-        Dictionary<string, string?>
+        CancellationToken,
+        Task<Dictionary<string, string?>>
     > _headers;
 
     /// <summary>Creates a Chat Completions model.</summary>
@@ -54,7 +55,7 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
         _http = provider.Http;
         _providerName = provider.Name;
         _url = () => ApiKeys.Combine(provider.Options.BaseUrl, "chat/completions");
-        _headers = provider.CreateOpenAIHeaders;
+        _headers = provider.CreateOpenAIHeadersAsync;
     }
 
     /// <summary>
@@ -80,7 +81,7 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
         _http = provider.Http;
         _providerName = provider.Name;
         _url = () => provider.ChatUri(deploymentId);
-        _headers = provider.CreateHeaders;
+        _headers = provider.CreateHeadersAsync;
     }
 
     /// <inheritdoc />
@@ -399,7 +400,7 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
                 HttpMethod.Post,
                 _url(),
                 prepared.Body.ToJsonString(),
-                _headers(options.Headers),
+                await _headers(options.Headers, cancellationToken).ConfigureAwait(false),
                 cancellationToken
             )
             .ConfigureAwait(false);
@@ -421,7 +422,12 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
         body["stream_options"] = new JsonObject { ["include_usage"] = true };
         var json = body.ToJsonString();
         var sse = await _http
-            .OpenSseResponseAsync(_url(), json, _headers(options.Headers), cancellationToken)
+            .OpenSseResponseAsync(
+                _url(),
+                json,
+                await _headers(options.Headers, cancellationToken).ConfigureAwait(false),
+                cancellationToken
+            )
             .ConfigureAwait(false);
         return sse.ToStreamResult(
             StreamAsync(options, prepared, sse.Events, cancellationToken),
@@ -734,31 +740,12 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
         List<OpenAICallWarning> warnings
     )
     {
-        var effort = OpenAIJson.String(openai, "reasoningEffort");
-        if (effort == null && !string.IsNullOrEmpty(reasoning) && reasoning != "provider-default")
-        {
-            effort = reasoning;
-        }
-
-        if (
-            effort != null
-            && capabilities.SupportedReasoningEfforts != null
-            && !Contains(capabilities.SupportedReasoningEfforts, effort)
-        )
-        {
-            warnings.Add(
-                new OpenAICallWarning(
-                    "unsupported",
-                    "reasoningEffort",
-                    modelId
-                        + " only supports the following reasoning efforts: "
-                        + string.Join(", ", capabilities.SupportedReasoningEfforts)
-                )
-            );
-            return null;
-        }
-
-        return effort;
+        return OpenAILanguageModelCapabilities.ResolveOpenAIReasoningEffort(
+            OpenAIJson.String(openai, "reasoningEffort"),
+            reasoning,
+            capabilities.SupportedReasoningEfforts,
+            warnings
+        );
     }
 
     private static bool Contains(IReadOnlyList<string> values, string effort)

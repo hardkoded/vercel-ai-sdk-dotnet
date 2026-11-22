@@ -90,8 +90,13 @@ public sealed class MistralSpeechModel : ISpeechModel, ISpeechCaller
         var timestamp = _clock?.Invoke() ?? DateTime.UtcNow;
         var (requestBody, requestBodyValues, warnings) = GetArgs(call);
         var url = ApiKeys.Combine(_provider.Options.BaseUrl, "audio/speech");
-        var headers = _provider.CreateHeaders(
-            call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value)
+        var headers = (
+            await _provider
+                .CreateHeadersAsync(
+                    call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value),
+                    cancellationToken
+                )
+                .ConfigureAwait(false)
         );
         var response = await ProviderExchange
             .SendAsync(

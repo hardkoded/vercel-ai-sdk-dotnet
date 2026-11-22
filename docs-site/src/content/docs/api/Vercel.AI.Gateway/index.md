@@ -14,6 +14,11 @@ Vercel AI Gateway provider.
 
 | Type | Summary |
 | --- | --- |
+| [DeepSeekFetchOutput](/api/Vercel.AI.Gateway/DeepSeekFetchOutput/) | Output of the DeepSeek Fetch tool: a DeepSeekFetchResponse or a GatewayToolError. Maps to DeepSeekFetchOutput. |
+| [DeepSeekFetchResponse](/api/Vercel.AI.Gateway/DeepSeekFetchResponse/) | Output of the DeepSeek Fetch tool. Maps to DeepSeekFetchResponse. |
+| [DeepSeekSearchOutput](/api/Vercel.AI.Gateway/DeepSeekSearchOutput/) | Output of the DeepSeek Search tool: a DeepSeekSearchResponse or a GatewayToolError. Maps to DeepSeekSearchOutput. |
+| [DeepSeekSearchResponse](/api/Vercel.AI.Gateway/DeepSeekSearchResponse/) | Output of the DeepSeek Search tool. Maps to DeepSeekSearchResponse. |
+| [DeepSeekSearchResult](/api/Vercel.AI.Gateway/DeepSeekSearchResult/) | One DeepSeek search result. Maps to DeepSeekSearchResult. |
 | [GatewayAccessPolicyDeniedError](/api/Vercel.AI.Gateway/GatewayAccessPolicyDeniedError/) | An AI Gateway access policy that applies to the request does not allow the requested model or provider. |
 | [GatewayAuthenticationError](/api/Vercel.AI.Gateway/GatewayAuthenticationError/) | Authentication failed. |
 | [GatewayBatchApi](/api/Vercel.AI.Gateway/GatewayBatchApi/) | AI Gateway batch API. Downloads the JSONL results of a batch. |
@@ -21,6 +26,10 @@ Vercel AI Gateway provider.
 | [GatewayCreditsResponse](/api/Vercel.AI.Gateway/GatewayCreditsResponse/) | The Gateway credit balance. Maps to GatewayCreditsResponse. |
 | [GatewayDecisionModel](/api/Vercel.AI.Gateway/GatewayDecisionModel/) | Answers questions through the Gateway /decision-model route. |
 | [GatewayDecisionModelId](/api/Vercel.AI.Gateway/GatewayDecisionModelId/) | Known AI Gateway model ids. Maps to GatewayDecisionModelId; any other string is accepted too. |
+| [GatewayDeepSeekFetch](/api/Vercel.AI.Gateway/GatewayDeepSeekFetch/) | Declares the Gateway DeepSeek Fetch tool: fetches a page as Markdown through DeepSeek's standalone Fetch API. The AI Gateway executes it for any model, separate from native model web search. Maps to gatewayTools.deepseekFetch. |
+| [GatewayDeepSeekFetchConfig](/api/Vercel.AI.Gateway/GatewayDeepSeekFetchConfig/) | Developer-only configuration of the Gateway DeepSeek Fetch tool. Maps to DeepSeekFetchConfig. |
+| [GatewayDeepSeekSearch](/api/Vercel.AI.Gateway/GatewayDeepSeekSearch/) | Declares the Gateway DeepSeek Search tool: searches the web through DeepSeek's standalone Search API. The AI Gateway executes it for any model, separate from native model web search. Maps to gatewayTools.deepseekSearch. |
+| [GatewayDeepSeekSearchConfig](/api/Vercel.AI.Gateway/GatewayDeepSeekSearchConfig/) | Developer-only configuration of the Gateway DeepSeek Search tool. Maps to DeepSeekSearchConfig. |
 | [GatewayEmbeddingModel](/api/Vercel.AI.Gateway/GatewayEmbeddingModel/) | Gateway embedding model. |
 | [GatewayEmbeddingModelId](/api/Vercel.AI.Gateway/GatewayEmbeddingModelId/) | Known AI Gateway model ids. Maps to GatewayEmbeddingModelId; any other string is accepted too. |
 | [GatewayError](/api/Vercel.AI.Gateway/GatewayError/) | Base class for AI Gateway errors. The message includes [generationId] when one was returned. |

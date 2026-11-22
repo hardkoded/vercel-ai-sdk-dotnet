@@ -557,10 +557,10 @@ public sealed class DoStreamTests
             "test-provider",
             new ProviderHttp(new HttpClient(new OpenAICapture())),
             path => new Uri("https://api.openai.com/v1/" + path),
-            headers
-                ?? (
-                    () =>
-                        new Dictionary<string, string?>
+            _ =>
+                Task.FromResult(
+                    headers?.Invoke()
+                        ?? new Dictionary<string, string?>
                         {
                             ["Authorization"] = "Bearer test-api-key",
                         }

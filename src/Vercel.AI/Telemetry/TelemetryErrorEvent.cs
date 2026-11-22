@@ -11,14 +11,14 @@ namespace Vercel.AI;
 public sealed class TelemetryErrorEvent
 {
     /// <summary>Creates an event.</summary>
-    public TelemetryErrorEvent(string callId, Exception error)
+    public TelemetryErrorEvent(string? callId, Exception error)
     {
         CallId = callId;
         Error = error;
     }
 
-    /// <summary>Unique identifier of the failed call.</summary>
-    public string CallId { get; }
+    /// <summary>Unique identifier of the failed call. Null for a stream, which has no call id.</summary>
+    public string? CallId { get; }
 
     /// <summary>The error. A download error arrives without its URL.</summary>
     public Exception Error { get; }

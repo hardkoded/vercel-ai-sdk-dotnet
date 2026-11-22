@@ -90,7 +90,7 @@ public sealed class FalProvider : OpenAICompatibleProvider
         return new FalImageModel(this, modelId).GenerateAsync(options, headers, cancellationToken);
     }
 
-    internal Task<ProviderExchangeResult> SendAsync(
+    internal async Task<ProviderExchangeResult> SendAsync(
         HttpMethod method,
         Uri uri,
         HttpContent? content,
@@ -98,14 +98,19 @@ public sealed class FalProvider : OpenAICompatibleProvider
         CancellationToken cancellationToken
     )
     {
-        return ProviderExchange.SendAsync(
-            _httpClient,
-            method,
-            uri,
-            content,
-            ProviderExchange.Merge(CreateHeaders(), headers),
-            cancellationToken
-        );
+        return await ProviderExchange
+            .SendAsync(
+                _httpClient,
+                method,
+                uri,
+                content,
+                ProviderExchange.Merge(
+                    await CreateHeadersAsync(cancellationToken).ConfigureAwait(false),
+                    headers
+                ),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
     }
 
     /// <summary>Downloads a generated file. A URL outside <paramref name="trustedOrigin"/> must pass download validation.</summary>
@@ -124,7 +129,9 @@ public sealed class FalProvider : OpenAICompatibleProvider
                 null,
                 cancellationToken,
                 ProviderExchange.DownloadClient(Options),
-                ProviderExchange.UserAgentOnly(CreateHeaders())
+                ProviderExchange.UserAgentOnly(
+                    await CreateHeadersAsync(cancellationToken).ConfigureAwait(false)
+                )
             )
             .ConfigureAwait(false);
         return response.Bytes;

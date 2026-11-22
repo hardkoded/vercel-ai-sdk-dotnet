@@ -427,7 +427,9 @@ public sealed class SharedModelStateTests
             "|",
             options.ProviderName,
             options.BaseUrl,
-            options.ApiKey,
+            options.ApiKey is null
+                ? null
+                : System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(options.ApiKey),
             options.ApiKeyEnvironmentVariable,
             options.ApiKeyStyle,
             options.ApiKeyHeaderName,

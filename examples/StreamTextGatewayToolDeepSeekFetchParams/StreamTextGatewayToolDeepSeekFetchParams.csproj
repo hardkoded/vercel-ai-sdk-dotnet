@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <Description>Pins the Gateway DeepSeek Fetch URL.</Description>
+    </PropertyGroup>
+</Project>

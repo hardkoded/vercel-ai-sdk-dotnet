@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 using Vercel.AI.Anthropic;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.MiniMax;
 
@@ -99,7 +100,10 @@ public sealed class MiniMaxChatLanguageModel : AnthropicLanguageModel
             throw new ArgumentNullException(nameof(serialized));
         }
 
-        var options = new MiniMaxOptions { ApiKey = apiKey };
+        var options = new MiniMaxOptions
+        {
+            ApiKey = apiKey is null ? null : Resolvable<string>.From(apiKey),
+        };
         if (serialized.Config.TryGetValue("baseURL", out var baseUrl) && baseUrl is string url)
         {
             options.BaseUrl = url;
@@ -140,24 +144,7 @@ public sealed class MiniMaxChatLanguageModel : AnthropicLanguageModel
             return options;
         }
 
-        string? effort;
-        if (reasoning == "none")
-        {
-            warnings.Add(
-                new AnthropicWarning(
-                    "compatibility",
-                    "reasoning",
-                    "reasoning 'none' is not supported by "
-                        + ModelId
-                        + "; it always reasons. Using effort 'low' to minimize thinking instead."
-                )
-            );
-            effort = "low";
-        }
-        else
-        {
-            effort = MapEffort(reasoning!, warnings);
-        }
+        var effort = MapEffort(reasoning!, warnings);
 
         var minimax = new JsonObject();
         if (
@@ -232,45 +219,33 @@ public sealed class MiniMaxChatLanguageModel : AnthropicLanguageModel
 
     private static string? MapEffort(string reasoning, IList<AnthropicWarning> warnings)
     {
-        string mapped;
-        switch (reasoning)
+        var modelWarnings = new List<ModelWarning>();
+        var effort = ReasoningMap.MapReasoningToProviderEffort(
+            reasoning,
+            new Dictionary<string, string>
+            {
+                { "low", "low" },
+                { "medium", "medium" },
+                { "high", "high" },
+                { "xhigh", "xhigh" },
+                { "max", "max" },
+            },
+            modelWarnings
+        );
+        foreach (var warning in modelWarnings)
         {
-            case "minimal":
-            case "low":
-                mapped = "low";
-                break;
-            case "medium":
-            case "high":
-            case "xhigh":
-            case "max":
-                mapped = reasoning;
-                break;
-            default:
+            if (ReasoningMap.ToCallWarning(warning) is { } callWarning)
+            {
                 warnings.Add(
                     new AnthropicWarning(
-                        "unsupported",
-                        "reasoning",
-                        "reasoning \"" + reasoning + "\" is not supported by this model."
+                        callWarning.Type,
+                        callWarning.Feature!,
+                        callWarning.Message
                     )
                 );
-                return null;
+            }
         }
 
-        if (mapped != reasoning)
-        {
-            warnings.Add(
-                new AnthropicWarning(
-                    "compatibility",
-                    "reasoning",
-                    "reasoning \""
-                        + reasoning
-                        + "\" is not directly supported by this model. mapped to effort \""
-                        + mapped
-                        + "\"."
-                )
-            );
-        }
-
-        return mapped;
+        return effort;
     }
 }

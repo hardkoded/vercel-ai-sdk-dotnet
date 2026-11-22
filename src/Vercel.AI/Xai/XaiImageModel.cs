@@ -19,7 +19,7 @@ public sealed class XaiImageModelConfig
     public XaiImageModelConfig(
         string provider,
         string baseUrl,
-        Func<IReadOnlyDictionary<string, string?>> headers,
+        Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>> headers,
         HttpClient httpClient
     )
     {
@@ -36,7 +36,7 @@ public sealed class XaiImageModelConfig
     public string BaseUrl { get; }
 
     /// <summary>Resolves the request headers, including the credential.</summary>
-    public Func<IReadOnlyDictionary<string, string?>> Headers { get; }
+    public Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>> Headers { get; }
 
     /// <summary>Maps <c>fetch</c>: the HTTP client for API calls.</summary>
     public HttpClient HttpClient { get; }
@@ -209,7 +209,10 @@ public sealed class XaiImageModel : IImageModel, IImageCaller
         }
 
         var timestamp = _config.CurrentDate?.Invoke() ?? DateTime.UtcNow;
-        var headers = ProviderExchange.Merge(_config.Headers(), call.Headers);
+        var headers = ProviderExchange.Merge(
+            await _config.Headers(cancellationToken).ConfigureAwait(false),
+            call.Headers
+        );
         var response = await ProviderExchange
             .SendAsync(
                 _config.HttpClient,

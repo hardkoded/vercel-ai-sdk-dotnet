@@ -5,6 +5,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.OpenAICompatible;
 
@@ -40,7 +41,7 @@ public class OpenAICompatibleOptions
     public string BaseUrl { get; set; } = "https://api.openai.com/v1";
 
     /// <summary>Explicit API key. Wins over the environment variable.</summary>
-    public string? ApiKey { get; set; }
+    public Resolvable<string>? ApiKey { get; set; }
 
     /// <summary>Environment variable read when <see cref="ApiKey"/> is empty.</summary>
     public string ApiKeyEnvironmentVariable { get; set; } = "OPENAI_API_KEY";
@@ -176,6 +177,13 @@ public class OpenAICompatibleOptions
         IList<CallWarning>,
         string?
     >? ResolveReasoningEffort { get; set; }
+
+    /// <summary>
+    /// Maps the top-level <c>Reasoning</c> option to the <c>reasoning_effort</c> request value. Arguments are the model id,
+    /// the portable reasoning level, and the call warnings. It is not applied to a <c>reasoningEffort</c> from provider
+    /// options, which is always sent unchanged. Null sends the reasoning value directly. Maps to <c>mapReasoning</c>.
+    /// </summary>
+    public Func<string, string, IList<CallWarning>, string?>? MapReasoning { get; set; }
 
     /// <summary>Converts the raw chat usage object. Null uses <see cref="OpenAICompatibleChat.ConvertUsage"/>.</summary>
     public Func<JsonElement, LanguageModelUsage>? ConvertUsage { get; set; }

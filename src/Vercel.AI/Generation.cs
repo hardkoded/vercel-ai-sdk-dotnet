@@ -373,6 +373,7 @@ internal static class Generation
             var initialMessages = messages.Skip(instructionCount).ToArray();
             var responseMessages = new List<ModelMessage>();
             var callId = (options.GenerateCallId ?? NewCallId)();
+            var telemetryDispatcher = TelemetryDispatcher.Create(options);
             if (options.OnStart != null)
             {
                 await NotifyAsync(
@@ -388,6 +389,23 @@ internal static class Generation
                                 ),
                                 cancellationToken
                             ),
+                        cancellationToken
+                    )
+                    .ConfigureAwait(false);
+            }
+
+            if (telemetryDispatcher.OnStart != null)
+            {
+                await telemetryDispatcher
+                    .OnStart(
+                        CreateStartEvent(
+                            options,
+                            callId,
+                            model,
+                            initialInstructions,
+                            initialMessages,
+                            resolvedMaxRetries
+                        ),
                         cancellationToken
                     )
                     .ConfigureAwait(false);
@@ -508,35 +526,45 @@ internal static class Generation
                     .ConfigureAwait(false);
 
                 var stepStartNotified = redo?.StepStartNotified == true;
-                if (options.OnStepStart != null && !stepStartNotified)
+                if (
+                    (options.OnStepStart != null || telemetryDispatcher.OnStepStart != null)
+                    && !stepStartNotified
+                )
                 {
                     stepStartNotified = true;
-                    await NotifyAsync(
-                            () =>
-                                options.OnStepStart(
-                                    new GenerateTextStepStartEvent
-                                    {
-                                        CallId = callId,
-                                        Provider = current.Provider,
-                                        ModelId = current.ModelId,
-                                        StepNumber = steps.Count,
-                                        Instructions = instructions,
-                                        Messages = messages.Skip(instructionCount).ToArray(),
-                                        Tools = options.Tools,
-                                        ToolChoice = update?.ToolChoice ?? options.ToolChoice,
-                                        ActiveTools = stepActiveOptions.ActiveTools,
-                                        ToolOrder = update?.ToolOrder ?? options.ToolOrder,
-                                        Steps = steps.ToArray(),
-                                        ProviderOptions = callOptions.ProviderOptions,
-                                        Output = options.Output,
-                                        ToolsContext = options.ToolsContext,
-                                        RuntimeContext = options.RuntimeContext,
-                                    },
-                                    cancellationToken
-                                ),
-                            cancellationToken
-                        )
-                        .ConfigureAwait(false);
+                    var stepStartEvent = new GenerateTextStepStartEvent
+                    {
+                        CallId = callId,
+                        Provider = current.Provider,
+                        ModelId = current.ModelId,
+                        StepNumber = steps.Count,
+                        Instructions = instructions,
+                        Messages = messages.Skip(instructionCount).ToArray(),
+                        Tools = options.Tools,
+                        ToolChoice = update?.ToolChoice ?? options.ToolChoice,
+                        ActiveTools = stepActiveOptions.ActiveTools,
+                        ToolOrder = update?.ToolOrder ?? options.ToolOrder,
+                        Steps = steps.ToArray(),
+                        ProviderOptions = callOptions.ProviderOptions,
+                        Output = options.Output,
+                        ToolsContext = options.ToolsContext,
+                        RuntimeContext = options.RuntimeContext,
+                    };
+                    if (options.OnStepStart != null)
+                    {
+                        await NotifyAsync(
+                                () => options.OnStepStart(stepStartEvent, cancellationToken),
+                                cancellationToken
+                            )
+                            .ConfigureAwait(false);
+                    }
+
+                    if (telemetryDispatcher.OnStepStart != null)
+                    {
+                        await telemetryDispatcher
+                            .OnStepStart(stepStartEvent, cancellationToken)
+                            .ConfigureAwait(false);
+                    }
                 }
 
                 if (options.OnLanguageModelCallStart != null)
@@ -631,7 +659,6 @@ internal static class Generation
                         cancellationToken
                     )
                     .ConfigureAwait(false);
-                var telemetryDispatcher = TelemetryDispatcher.Create(options);
                 if (
                     options.OnLanguageModelCallEnd != null
                     || telemetryDispatcher.OnLanguageModelCallEnd != null
@@ -697,6 +724,13 @@ internal static class Generation
                 if (ResolveOnStepEnd(options) is { } onStepEnd)
                 {
                     await onStepEnd(step, cancellationToken).ConfigureAwait(false);
+                }
+
+                if (telemetryDispatcher.OnStepEnd != null)
+                {
+                    await telemetryDispatcher
+                        .OnStepEnd(step, cancellationToken)
+                        .ConfigureAwait(false);
                 }
 
                 LogWarnings.Log(
@@ -811,6 +845,12 @@ internal static class Generation
             if (options.OnError != null)
             {
                 await options.OnError(error, callerToken).ConfigureAwait(false);
+            }
+
+            if (TelemetryDispatcher.Create(options).OnError is { } telemetryOnError)
+            {
+                await telemetryOnError(new TelemetryErrorEvent(null, error), callerToken)
+                    .ConfigureAwait(false);
             }
 
             if (!ReferenceEquals(error, exception))
@@ -1219,14 +1259,25 @@ internal static class Generation
     {
         // The step loop sees the steps that the event processor recorded from the transformed stream, as upstream.
         var steps = recorder.Steps;
-        if (options.OnAbort is { } onAbort)
+        var abortDispatcher = TelemetryDispatcher.Create(options);
+        if (options.OnAbort is { } || abortDispatcher.OnAbort != null)
         {
             // An abort that follows the consumer's cancellation still reaches onAbort, like upstream's same-tick cancel-then-abort.
-            abort.OnLateAbort = error =>
-                onAbort(
-                    new StreamAbortContext(recorder.SnapshotSteps(), error),
-                    CancellationToken.None
-                );
+            abort.OnLateAbort = async error =>
+            {
+                var context = new StreamAbortContext(recorder.SnapshotSteps(), error);
+                if (options.OnAbort is { } onAbort)
+                {
+                    await onAbort(context, CancellationToken.None).ConfigureAwait(false);
+                }
+
+                if (abortDispatcher.OnAbort != null)
+                {
+                    await abortDispatcher
+                        .OnAbort(context, CancellationToken.None)
+                        .ConfigureAwait(false);
+                }
+            };
         }
         var cancellationToken = abort.Token;
         try
@@ -1242,6 +1293,7 @@ internal static class Generation
             var current = model;
             buffer.Add(new StartPart());
             var callId = (options.GenerateCallId ?? NewCallId)();
+            var telemetryDispatcher = TelemetryDispatcher.Create(options);
             recorder.CallId = callId;
             if (options.OnStart != null)
             {
@@ -1256,10 +1308,31 @@ internal static class Generation
                                     initialMessages,
                                     Vercel.AI.Operations.OperationRetry.ResolveMaxRetries(
                                         options.MaxRetries
-                                    )
+                                    ),
+                                    "ai.streamText"
                                 ),
                                 cancellationToken
                             ),
+                        cancellationToken
+                    )
+                    .ConfigureAwait(false);
+            }
+
+            if (telemetryDispatcher.OnStart != null)
+            {
+                await telemetryDispatcher
+                    .OnStart(
+                        CreateStartEvent(
+                            options,
+                            callId,
+                            model,
+                            initialInstructions,
+                            initialMessages,
+                            Vercel.AI.Operations.OperationRetry.ResolveMaxRetries(
+                                options.MaxRetries
+                            ),
+                            "ai.streamText"
+                        ),
                         cancellationToken
                     )
                     .ConfigureAwait(false);
@@ -1365,8 +1438,8 @@ internal static class Generation
                 var startStepStreamed = redo?.StartStepStreamed == true;
                 var stepStartNotified = redo?.StepStartNotified == true;
                 var stepStarted = false;
-                var stepResponseId = Vercel.AI.ProviderUtils.JsonValues.GenerateId("aitxt-");
-                var stepResponseTimestamp = DateTimeOffset.UtcNow;
+                var stepResponseId = NewStepResponseId(options);
+                var stepResponseTimestamp = (options.CurrentDate ?? DefaultCurrentDate)();
                 var stepResponseModelId = current.ModelId;
                 var emittedResultIds = new HashSet<string>(StringComparer.Ordinal);
                 var text = new StringBuilder();
@@ -1389,6 +1462,8 @@ internal static class Generation
 
                 var streamOptions = StreamLanguageModelCallOptions.From(options);
                 streamOptions.Model = current;
+                // The step draws its response id once from options.GenerateId (stepResponseId); the model call must not draw another:
+                streamOptions.GenerateId = null;
                 streamOptions.PromptMessages = stepMessages;
                 streamOptions.PromptInstructions = instructions;
                 streamOptions.NowMs = now;
@@ -1414,38 +1489,45 @@ internal static class Generation
                 // onStepStart runs once per step with the converted prompt, even when a steering interrupt redoes the model call:
                 streamOptions.OnStart = async (_, token) =>
                 {
-                    if (stepStartNotified || options.OnStepStart == null)
+                    if (
+                        stepStartNotified
+                        || (options.OnStepStart == null && telemetryDispatcher.OnStepStart == null)
+                    )
                     {
                         return;
                     }
 
                     stepStartNotified = true;
-                    await NotifyAsync(
-                            () =>
-                                options.OnStepStart(
-                                    new GenerateTextStepStartEvent
-                                    {
-                                        CallId = callId,
-                                        Provider = current.Provider,
-                                        ModelId = current.ModelId,
-                                        StepNumber = steps.Count,
-                                        Instructions = instructions,
-                                        Messages = stepMessages.Skip(instructionCount).ToArray(),
-                                        Tools = options.Tools,
-                                        ToolChoice = streamOptions.ToolChoice,
-                                        ActiveTools = options.ActiveTools,
-                                        ToolOrder = streamOptions.ToolOrder,
-                                        Steps = steps.ToArray(),
-                                        ProviderOptions = streamOptions.ProviderOptions,
-                                        Output = options.Output,
-                                        ToolsContext = options.ToolsContext,
-                                        RuntimeContext = options.RuntimeContext,
-                                    },
-                                    token
-                                ),
-                            token
-                        )
-                        .ConfigureAwait(false);
+                    var stepStartEvent = new GenerateTextStepStartEvent
+                    {
+                        CallId = callId,
+                        Provider = current.Provider,
+                        ModelId = current.ModelId,
+                        StepNumber = steps.Count,
+                        Instructions = instructions,
+                        Messages = stepMessages.Skip(instructionCount).ToArray(),
+                        Tools = options.Tools,
+                        ToolChoice = streamOptions.ToolChoice,
+                        ActiveTools = streamOptions.ActiveTools,
+                        ToolOrder = streamOptions.ToolOrder,
+                        Steps = steps.ToArray(),
+                        ProviderOptions = streamOptions.ProviderOptions,
+                        Output = options.Output,
+                        ToolsContext = options.ToolsContext,
+                        RuntimeContext = options.RuntimeContext,
+                    };
+                    if (options.OnStepStart != null)
+                    {
+                        await NotifyAsync(() => options.OnStepStart(stepStartEvent, token), token)
+                            .ConfigureAwait(false);
+                    }
+
+                    if (telemetryDispatcher.OnStepStart != null)
+                    {
+                        await telemetryDispatcher
+                            .OnStepStart(stepStartEvent, token)
+                            .ConfigureAwait(false);
+                    }
                 };
                 using var interrupt =
                     steeringRun == null
@@ -1925,10 +2007,10 @@ internal static class Generation
                                 usage = LanguageModelUsage.Null;
                                 modelCallPerformance = null;
                                 toolChoiceViolation = null;
-                                stepResponseId = Vercel.AI.ProviderUtils.JsonValues.GenerateId(
-                                    "aitxt-"
-                                );
-                                stepResponseTimestamp = DateTimeOffset.UtcNow;
+                                stepResponseId = NewStepResponseId(options);
+                                stepResponseTimestamp = (
+                                    options.CurrentDate ?? DefaultCurrentDate
+                                )();
                                 stepResponseModelId = current.ModelId;
                                 warnings = attemptBoundary.Warnings;
                                 // The retried attempt gets its own timeout windows.
@@ -2253,13 +2335,21 @@ internal static class Generation
     )
     {
         Exception? callbackError = null;
-        if (options.OnAbort != null)
+        var telemetryOnAbort = TelemetryDispatcher.Create(options).OnAbort;
+        if (options.OnAbort != null || telemetryOnAbort != null)
         {
             try
             {
-                await options
-                    .OnAbort(new StreamAbortContext(steps.ToArray(), error), CancellationToken.None)
-                    .ConfigureAwait(false);
+                var context = new StreamAbortContext(steps.ToArray(), error);
+                if (options.OnAbort != null)
+                {
+                    await options.OnAbort(context, CancellationToken.None).ConfigureAwait(false);
+                }
+
+                if (telemetryOnAbort != null)
+                {
+                    await telemetryOnAbort(context, CancellationToken.None).ConfigureAwait(false);
+                }
             }
             catch (Exception callback)
             {
@@ -3837,6 +3927,11 @@ internal static class Generation
         return result;
     }
 
+    internal static DateTimeOffset DefaultCurrentDate() => DateTimeOffset.UtcNow;
+
+    internal static string NewStepResponseId(GenerateTextOptions options) =>
+        options.GenerateId?.Invoke() ?? Vercel.AI.ProviderUtils.JsonValues.GenerateId("aitxt-");
+
     internal static string NewApprovalId(GenerateTextOptions options) =>
         options.GenerateId?.Invoke() ?? Vercel.AI.ProviderUtils.JsonValues.GenerateId(string.Empty);
 
@@ -4091,11 +4186,13 @@ internal static class Generation
         ILanguageModel model,
         Instructions? initialInstructions,
         IReadOnlyList<ModelMessage> initialMessages,
-        int resolvedMaxRetries
+        int resolvedMaxRetries,
+        string operationId = "ai.generateText"
     ) =>
         new GenerateTextStartEvent
         {
             CallId = callId,
+            OperationId = operationId,
             Provider = model.Provider,
             ModelId = model.ModelId,
             Instructions = initialInstructions,

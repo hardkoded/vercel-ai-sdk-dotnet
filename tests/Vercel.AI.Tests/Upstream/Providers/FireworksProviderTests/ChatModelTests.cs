@@ -43,7 +43,7 @@ public sealed class ChatModelTests
         );
         var warnings = new List<CallWarning>();
 
-        var mapped = provider.Options.ResolveReasoningEffort!(modelId, reasoning, null, warnings);
+        var mapped = provider.Options.MapReasoning!(modelId, reasoning, warnings);
 
         Assert.Equal(effort, mapped);
         if (hasWarning)

@@ -49,7 +49,7 @@ object with a `message`.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleTransforms.cs#L366)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleTransforms.cs#L308)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleTransforms_Cerebras_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleTransforms_Cerebras_System_Text_Json_Nodes_JsonObject_System_Collections_Generic_IList_Vercel_AI_Provider_CallWarning__"></a>
@@ -73,7 +73,7 @@ Maps Cerebras field names and assistant `reasoning_content` onto `reasoning`.
 
 **Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleTransforms.cs#L72)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleTransforms.cs#L14)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleTransforms_CerebrasError_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleTransforms_CerebrasError_System_String_"></a>
@@ -96,7 +96,7 @@ Reads a Cerebras error message from the top-level `message` field.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleTransforms.cs#L385)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleTransforms.cs#L327)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleTransforms_Fireworks_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleTransforms_Fireworks_System_Text_Json_Nodes_JsonObject_System_Collections_Generic_IList_Vercel_AI_Provider_CallWarning__"></a>
@@ -120,7 +120,7 @@ Maps Fireworks thinking, cache, and service tier. Reasoning effort is resolved p
 
 **Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleTransforms.cs#L112)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleTransforms.cs#L54)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleTransforms_GmiCloudError_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleTransforms_GmiCloudError_System_String_"></a>
@@ -143,32 +143,7 @@ Reads a GMI Cloud error, preferring the diagnostic nested in `error.details`.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleTransforms.cs#L329)
-
-<a id="Vercel_AI_OpenAICompatible_OpenAICompatibleTransforms_Groq_"></a>
-<a id="Vercel_AI_OpenAICompatible_OpenAICompatibleTransforms_Groq_System_Text_Json_Nodes_JsonObject_System_Collections_Generic_IList_Vercel_AI_Provider_CallWarning__"></a>
-
-### `Groq(JsonObject, IList<CallWarning>)`
-
-
-```csharp
-public static JsonObject Groq(JsonObject body, IList<CallWarning> warnings)
-```
-
-
-Maps Groq reasoning levels. `none` is kept only for `qwen/qwen3.6-27b`.
-`minimal` becomes `low` and `xhigh` and `max` become `high`.
-
-**Parameters**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| `body` | [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject) |  |
-| `warnings` | [IList&lt;CallWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ilist-1) |  |
-
-**Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
-
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleTransforms.cs#L17)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleTransforms.cs#L271)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleTransforms_Zai_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleTransforms_Zai_System_Text_Json_Nodes_JsonObject_System_Collections_Generic_IList_Vercel_AI_Provider_CallWarning__"></a>
@@ -192,7 +167,7 @@ Drops fields Z.AI does not accept and renames its provider options.
 
 **Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleTransforms.cs#L157)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleTransforms.cs#L99)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleTransforms_ZaiError_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleTransforms_ZaiError_System_String_"></a>
@@ -215,7 +190,7 @@ Reads a Z.AI error from `error.message` or a top-level `message`.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleTransforms.cs#L404)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleTransforms.cs#L346)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleTransforms_ZaiFinish_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleTransforms_ZaiFinish_System_String_"></a>
@@ -238,4 +213,4 @@ Maps a Z.AI finish reason. Unrecognized values fall through.
 
 **Returns:** `FinishReason?`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleTransforms.cs#L313)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleTransforms.cs#L255)

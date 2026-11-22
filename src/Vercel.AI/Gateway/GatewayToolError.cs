@@ -42,3 +42,27 @@ public sealed class GatewayToolError
     [JsonExtensionData]
     public IDictionary<string, JsonElement>? AdditionalProperties { get; set; }
 }
+
+internal static class GatewayToolErrorShape
+{
+    private static readonly string[] Codes =
+    [
+        "api_error",
+        "configuration_error",
+        "execution_error",
+        "gateway_rate_limit",
+        "invalid_input",
+        "rate_limit",
+        "timeout",
+        "unknown",
+        "unknown_tool",
+    ];
+
+    /// <summary>True when the object has a known <c>error</c> code and a string <c>message</c>. Maps to <c>gatewayToolErrorSchema</c>.</summary>
+    public static bool Matches(JsonElement root) =>
+        root.TryGetProperty("error", out var code)
+        && code.ValueKind == JsonValueKind.String
+        && Array.IndexOf(Codes, code.GetString()) >= 0
+        && root.TryGetProperty("message", out var message)
+        && message.ValueKind == JsonValueKind.String;
+}

@@ -16,8 +16,8 @@ public sealed class CohereOptions
     /// <summary>API origin.</summary>
     public string BaseUrl { get; set; } = "https://api.cohere.com/v2";
 
-    /// <summary>Explicit key.</summary>
-    public string? ApiKey { get; set; }
+    /// <summary>Explicit key. A callback is resolved before each request.</summary>
+    public Resolvable<string>? ApiKey { get; set; }
 
     /// <summary>Headers sent with every request. Call headers override them.</summary>
     public Dictionary<string, string?> Headers { get; } = new(StringComparer.OrdinalIgnoreCase);
@@ -73,13 +73,18 @@ public sealed class CohereProvider : ProviderBase
     public override IRerankingModel RerankingModel(string modelId) =>
         new CohereRerankingModel(this, modelId);
 
-    internal Dictionary<string, string?> Headers(
-        IReadOnlyDictionary<string, string?>? callHeaders = null
+    internal async Task<Dictionary<string, string?>> HeadersAsync(
+        IReadOnlyDictionary<string, string?>? callHeaders,
+        CancellationToken cancellationToken
     )
     {
         var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
         {
-            ["Authorization"] = "Bearer " + ApiKeys.Require(Options.ApiKey, "COHERE_API_KEY"),
+            ["Authorization"] =
+                "Bearer "
+                + await ApiKeys
+                    .RequireAsync(Options.ApiKey, "COHERE_API_KEY", null, cancellationToken)
+                    .ConfigureAwait(false),
         };
         foreach (var pair in Options.Headers)
         {
@@ -161,7 +166,7 @@ public sealed class CohereEmbeddingModel : IEmbeddingModel
                 HttpMethod.Post,
                 ApiKeys.Combine(_provider.Options.BaseUrl, "embed"),
                 body.ToJsonString(),
-                _provider.Headers(headers),
+                await _provider.HeadersAsync(headers, cancellationToken).ConfigureAwait(false),
                 cancellationToken
             )
             .ConfigureAwait(false);
@@ -340,7 +345,10 @@ public sealed class CohereRerankingModel : IRerankingModel
             body["priority"] = priority;
         }
 
-        var headers = ProviderExchange.Merge(_provider.Headers(), request.Headers);
+        var headers = ProviderExchange.Merge(
+            await _provider.HeadersAsync(null, cancellationToken).ConfigureAwait(false),
+            request.Headers
+        );
         var response = await ProviderExchange
             .SendAsync(
                 _provider._httpClient,
