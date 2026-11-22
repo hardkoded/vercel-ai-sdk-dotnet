@@ -4,6 +4,7 @@
 
 using System.Text.Json;
 using Vercel.AI.Operations;
+using Vercel.AI.Provider;
 
 namespace Vercel.AI;
 
@@ -163,6 +164,73 @@ internal static class FilterTelemetryEventHelper
             ExperimentalSteeringMessages = hideInputs ? [] : step.ExperimentalSteeringMessages,
             StructuredOutputText = hideOutputs ? string.Empty : step.StructuredOutputText,
         };
+    }
+
+    /// <summary>Filters the tool call and the tool output of a tool execution event. Maps to the <c>toolCall</c> and <c>toolOutput</c> branches of <c>filterTelemetryEvent</c>.</summary>
+    internal static T FilterToolEvent<T>(T source, TelemetryOptions? telemetry)
+        where T : ToolExecutionStartEvent
+    {
+        var hideInputs = telemetry?.RecordInputs == false;
+        var hideOutputs = telemetry?.RecordOutputs == false;
+        if (!hideInputs && !hideOutputs)
+        {
+            return source;
+        }
+
+        // Raw provider payloads and errors can contain either inputs or outputs.
+        var toolCall = new GeneratedToolCall(
+            source.ToolCall.ToolCallId,
+            source.ToolCall.ToolName,
+            hideInputs ? "{}" : source.ToolCall.ArgumentsJson
+        )
+        {
+            ProviderExecuted = source.ToolCall.ProviderExecuted,
+            Dynamic = source.ToolCall.Dynamic,
+            Invalid = source.ToolCall.Invalid,
+            Error =
+                source.ToolCall.Error == null
+                    ? null
+                    : new InvalidOperationException("AI SDK operation failed"),
+            Title = source.ToolCall.Title,
+            ToolMetadata = source.ToolCall.ToolMetadata,
+            InputSchemaInput = hideInputs ? null : source.ToolCall.InputSchemaInput,
+        };
+        if (source is not ToolExecutionEndEvent end)
+        {
+            return (T)
+                (object)
+                    new ToolExecutionStartEvent(toolCall, source.Messages)
+                    {
+                        CallId = source.CallId,
+                        ToolContext = source.ToolContext,
+                    };
+        }
+
+        var output = new ExecutedTool(
+            end.ToolOutput.ToolCallId,
+            end.ToolOutput.ToolName,
+            hideOutputs ? "null" : end.ToolOutput.OutputJson,
+            end.ToolOutput.IsError
+        )
+        {
+            Error =
+                hideOutputs || end.ToolOutput.Error == null
+                    ? null
+                    : new InvalidOperationException("AI SDK operation failed"),
+            ProviderExecuted = end.ToolOutput.ProviderExecuted,
+            InputJson = hideInputs ? null : end.ToolOutput.InputJson,
+            Dynamic = end.ToolOutput.Dynamic,
+            Title = end.ToolOutput.Title,
+            ToolMetadata = end.ToolOutput.ToolMetadata,
+            Preliminary = end.ToolOutput.Preliminary,
+        };
+        return (T)
+            (object)
+                new ToolExecutionEndEvent(toolCall, end.Messages, output, end.ToolExecutionTime)
+                {
+                    CallId = end.CallId,
+                    ToolContext = end.ToolContext,
+                };
     }
 
     /// <summary>Filters an extract start event.</summary>

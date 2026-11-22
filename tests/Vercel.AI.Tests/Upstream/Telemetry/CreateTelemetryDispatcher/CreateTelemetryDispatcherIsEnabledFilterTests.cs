@@ -210,11 +210,36 @@ public sealed class CreateTelemetryDispatcherIsEnabledFilterTests
     [Fact]
     [UpstreamTest(
         Id + "does not augment events with isEnabled",
-        Note = "The events have no IsEnabled property, so the test checks the type has none."
+        Note = "Checked on onLanguageModelCallStart, the start event the port dispatches."
     )]
-    public void Does_not_augment_events_with_isEnabled()
+    public async Task Does_not_augment_events_with_isEnabled()
     {
-        Assert.Null(typeof(LanguageModelCallStartEvent).GetProperty("IsEnabled"));
+        LanguageModelCallStartEvent? received = null;
+        var telemetry = Vercel.AI.TelemetryDispatcher.Create(
+            new TelemetryOptions
+            {
+                IsEnabled = true,
+                Integrations =
+                [
+                    new TestTelemetry
+                    {
+                        OnLanguageModelCallStart = (e, _) =>
+                        {
+                            received = e;
+                            return Task.CompletedTask;
+                        },
+                    },
+                ],
+            }
+        );
+
+        await telemetry.OnLanguageModelCallStart!(
+            new LanguageModelCallStartEvent { CallId = "call-1", ModelId = "model-1" },
+            CancellationToken.None
+        );
+
+        Assert.NotNull(received);
+        Assert.Null(received!.GetType().GetProperty("IsEnabled"));
     }
 }
 

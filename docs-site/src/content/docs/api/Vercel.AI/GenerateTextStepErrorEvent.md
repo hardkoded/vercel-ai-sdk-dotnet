@@ -24,7 +24,7 @@ start event of the failed step and the error. Maps to `GenerateTextStepErrorEven
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [GenerateTextStepStartEvent](/api/Vercel.AI/GenerateTextStepStartEvent/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1921)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1944)
 
 ## Constructors
 
@@ -48,7 +48,7 @@ Creates an event.
 | `step` | [GenerateTextStepStartEvent](/api/Vercel.AI/GenerateTextStepStartEvent/) |  |
 | `error` | [Exception](https://learn.microsoft.com/dotnet/api/system.exception) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1924)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1947)
 
 ## Properties
 
@@ -67,4 +67,4 @@ The error that ended the step. Maps to `error`.
 
 **Value:** [Exception](https://learn.microsoft.com/dotnet/api/system.exception)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1931)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1954)

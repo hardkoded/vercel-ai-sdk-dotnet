@@ -23,7 +23,7 @@ A cited document. Maps to the `source` stream part of source type `document`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [TextStreamPart](/api/Vercel.AI/TextStreamPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L3056)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L3079)
 
 ## Constructors
 
@@ -46,7 +46,7 @@ Creates a document source part.
 | --- | --- | --- |
 | `source` | [GeneratedDocumentSource](/api/Vercel.AI.Provider/GeneratedDocumentSource/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L3059)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L3082)
 
 ## Properties
 
@@ -65,4 +65,4 @@ Source.
 
 **Value:** [GeneratedDocumentSource](/api/Vercel.AI.Provider/GeneratedDocumentSource/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L3066)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L3089)

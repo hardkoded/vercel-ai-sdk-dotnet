@@ -32,7 +32,7 @@ Maps to `GenerateTextResult<TOOLS, OUTPUT>`.
 
 **Implements:** [IOperationEndEvent](/api/Vercel.AI/IOperationEndEvent/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2426)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2449)
 
 ## Properties
 
@@ -52,4 +52,4 @@ A mismatch with &lt;code class="typeparamref"&gt;TOutput&lt;/code&gt; throws [Js
 
 **Value:** `TOutput`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2443)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2466)

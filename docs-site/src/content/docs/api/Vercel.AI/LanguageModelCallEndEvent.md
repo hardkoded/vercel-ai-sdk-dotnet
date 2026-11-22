@@ -23,7 +23,7 @@ Passed to [OnLanguageModelCallEnd](/api/Vercel.AI/GenerateTextOptions/#Vercel_AI
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1972)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1995)
 
 ## Constructors
 
@@ -53,7 +53,7 @@ Creates an event.
 | `providerMetadata` | [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 | `responseTime` | [TimeSpan](https://learn.microsoft.com/dotnet/api/system.timespan) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1975)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1998)
 
 ## Properties
 
@@ -72,7 +72,7 @@ The version of the SDK that emitted the event. Set only on events sent to teleme
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2039)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2062)
 
 <a id="Vercel_AI_LanguageModelCallEndEvent_CallId_"></a>
 <a id="Vercel_AI_LanguageModelCallEndEvent_CallId"></a>
@@ -89,7 +89,7 @@ Id of the model call, when the call has one. Maps to `callId`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2021)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2044)
 
 <a id="Vercel_AI_LanguageModelCallEndEvent_Content_"></a>
 <a id="Vercel_AI_LanguageModelCallEndEvent_Content"></a>
@@ -106,7 +106,7 @@ Content the model generated, including its tool calls.
 
 **Value:** [IReadOnlyList&lt;GeneratedContent&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2009)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2032)
 
 <a id="Vercel_AI_LanguageModelCallEndEvent_FinishReason_"></a>
 <a id="Vercel_AI_LanguageModelCallEndEvent_FinishReason"></a>
@@ -123,7 +123,7 @@ Finish reason.
 
 **Value:** [FinishReason](/api/Vercel.AI.Provider/FinishReason/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2003)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2026)
 
 <a id="Vercel_AI_LanguageModelCallEndEvent_FunctionId_"></a>
 <a id="Vercel_AI_LanguageModelCallEndEvent_FunctionId"></a>
@@ -140,7 +140,7 @@ The [FunctionId](/api/Vercel.AI/TelemetryOptions/#Vercel_AI_TelemetryOptions_Fun
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2036)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2059)
 
 <a id="Vercel_AI_LanguageModelCallEndEvent_ModelId_"></a>
 <a id="Vercel_AI_LanguageModelCallEndEvent_ModelId"></a>
@@ -157,7 +157,7 @@ Model id the provider reported, or the requested one when it reported none.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2000)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2023)
 
 <a id="Vercel_AI_LanguageModelCallEndEvent_Provider_"></a>
 <a id="Vercel_AI_LanguageModelCallEndEvent_Provider"></a>
@@ -174,7 +174,7 @@ Provider id of the model that was called.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1997)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2020)
 
 <a id="Vercel_AI_LanguageModelCallEndEvent_ProviderMetadata_"></a>
 <a id="Vercel_AI_LanguageModelCallEndEvent_ProviderMetadata"></a>
@@ -191,7 +191,7 @@ Provider metadata of the response, when the provider sent any.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2015)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2038)
 
 <a id="Vercel_AI_LanguageModelCallEndEvent_RecordInputs_"></a>
 <a id="Vercel_AI_LanguageModelCallEndEvent_RecordInputs"></a>
@@ -208,7 +208,7 @@ Whether input recording was enabled for the call, as [RecordInputs](/api/Vercel.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2030)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2053)
 
 <a id="Vercel_AI_LanguageModelCallEndEvent_RecordOutputs_"></a>
 <a id="Vercel_AI_LanguageModelCallEndEvent_RecordOutputs"></a>
@@ -225,7 +225,7 @@ Whether output recording was enabled for the call, as [RecordOutputs](/api/Verce
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2033)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2056)
 
 <a id="Vercel_AI_LanguageModelCallEndEvent_Request_"></a>
 <a id="Vercel_AI_LanguageModelCallEndEvent_Request"></a>
@@ -242,7 +242,7 @@ Request of the model call. Only [Url](/api/Vercel.AI.Provider/LanguageModelStrea
 
 **Value:** [LanguageModelStreamRequest](/api/Vercel.AI.Provider/LanguageModelStreamRequest/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2024)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2047)
 
 <a id="Vercel_AI_LanguageModelCallEndEvent_ResponseId_"></a>
 <a id="Vercel_AI_LanguageModelCallEndEvent_ResponseId"></a>
@@ -259,7 +259,7 @@ Provider response id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2012)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2035)
 
 <a id="Vercel_AI_LanguageModelCallEndEvent_ResponseTime_"></a>
 <a id="Vercel_AI_LanguageModelCallEndEvent_ResponseTime"></a>
@@ -276,7 +276,7 @@ Time the model call took. Maps to `performance.responseTimeMs`.
 
 **Value:** [TimeSpan](https://learn.microsoft.com/dotnet/api/system.timespan)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2018)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2041)
 
 <a id="Vercel_AI_LanguageModelCallEndEvent_Usage_"></a>
 <a id="Vercel_AI_LanguageModelCallEndEvent_Usage"></a>
@@ -293,4 +293,4 @@ Usage of this model call.
 
 **Value:** [LanguageModelUsage](/api/Vercel.AI.Provider/LanguageModelUsage/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2006)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2029)

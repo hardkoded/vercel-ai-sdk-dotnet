@@ -335,16 +335,18 @@ internal sealed class TelemetryDispatcher
             ),
             OnStart = Filter<IOperationStartEvent>(Merge(integrations.Select(i => i.OnStart)), e =>
                 e is GenerateTextStartEvent textStart
-                    ? textStart.WithContexts(
-                        FilterIncludedContextHelper.FilterIncludedContext(
-                            textStart.RuntimeContext,
-                            telemetry?.IncludeRuntimeContext
-                        ),
-                        FilterIncludedContextHelper.FilterToolsContext(
-                            textStart.ToolsContext,
-                            telemetry?.IncludeToolsContext
+                    ? textStart
+                        .WithContexts(
+                            FilterIncludedContextHelper.FilterIncludedContext(
+                                textStart.RuntimeContext,
+                                telemetry?.IncludeRuntimeContext
+                            ),
+                            FilterIncludedContextHelper.FilterToolsContext(
+                                textStart.ToolsContext,
+                                telemetry?.IncludeToolsContext
+                            )
                         )
-                    )
+                        .WithTelemetry(telemetry)
                     : e switch
                     {
                         EmbedStartEvent embed => FilterTelemetryEventHelper.FilterTelemetryEvent(
@@ -380,32 +382,32 @@ internal sealed class TelemetryDispatcher
             ),
             OnToolExecutionStart = Filter<ToolExecutionStartEvent>(
                 Merge(integrations.Select(i => i.OnToolExecutionStart)),
-                e => new ToolExecutionStartEvent(e.ToolCall, e.Messages)
-                {
-                    CallId = e.CallId,
-                    ToolContext = FilterToolContext(e, telemetry),
-                    RecordInputs = telemetry?.RecordInputs,
-                    RecordOutputs = telemetry?.RecordOutputs,
-                    FunctionId = telemetry?.FunctionId,
-                    AiVersion = Operations.AiSdkVersion.Version,
-                }
+                e =>
+                    FilterTelemetryEventHelper.FilterToolEvent(
+                        new ToolExecutionStartEvent(e.ToolCall, e.Messages)
+                        {
+                            CallId = e.CallId,
+                            ToolContext = FilterToolContext(e, telemetry),
+                        },
+                        telemetry
+                    )
             ),
             OnToolExecutionEnd = Filter<ToolExecutionEndEvent>(
                 Merge(integrations.Select(i => i.OnToolExecutionEnd)),
-                e => new ToolExecutionEndEvent(
-                    e.ToolCall,
-                    e.Messages,
-                    e.ToolOutput,
-                    e.ToolExecutionTime
-                )
-                {
-                    CallId = e.CallId,
-                    ToolContext = FilterToolContext(e, telemetry),
-                    RecordInputs = telemetry?.RecordInputs,
-                    RecordOutputs = telemetry?.RecordOutputs,
-                    FunctionId = telemetry?.FunctionId,
-                    AiVersion = Operations.AiSdkVersion.Version,
-                }
+                e =>
+                    FilterTelemetryEventHelper.FilterToolEvent(
+                        new ToolExecutionEndEvent(
+                            e.ToolCall,
+                            e.Messages,
+                            e.ToolOutput,
+                            e.ToolExecutionTime
+                        )
+                        {
+                            CallId = e.CallId,
+                            ToolContext = FilterToolContext(e, telemetry),
+                        },
+                        telemetry
+                    )
             ),
             // Fans out to the deprecated onStepFinish too, so integrations that only implement it keep working.
             OnStepEnd = Filter<StepResult>(
