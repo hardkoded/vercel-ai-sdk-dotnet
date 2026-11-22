@@ -993,6 +993,9 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
             }
         }
 
+        var hasExplicitDisabledThinking = reasoningConfig?.Type == "disabled";
+        var explicitReasoningEffort = reasoningConfig?.MaxReasoningEffort;
+
         reasoningConfig = ResolveReasoningConfig(
             options.Reasoning,
             reasoningConfig,
@@ -1002,8 +1005,92 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
             ModelId,
             capabilities
         );
+        var thinkingType = reasoningConfig?.Type;
+        var maxReasoningEffort = reasoningConfig?.MaxReasoningEffort;
+
+        if (isAnthropicModel && thinkingType == "disabled")
+        {
+            if (
+                Regex.IsMatch(
+                    ModelId,
+                    @"claude-(?:instant|v?2|3-(?:5-)?(?:haiku|sonnet|opus))(?=[-.:]|$)",
+                    RegexOptions.CultureInvariant,
+                    TimeSpan.FromSeconds(1)
+                )
+            )
+            {
+                // Claude 3.5 and earlier do not accept a thinking field, even disabled.
+                thinkingType = null;
+            }
+            else if (capabilities.RejectsThinkingDisabled)
+            {
+                thinkingType = capabilities.SupportsBetweenToolsThinking
+                    ? "between_tools"
+                    : "adaptive";
+
+                if (!hasExplicitDisabledThinking && thinkingType == "adaptive")
+                {
+                    maxReasoningEffort ??= explicitReasoningEffort;
+
+                    if (
+                        maxReasoningEffort == null
+                        && ReadAdditionalOutputConfigEffort(additional) == null
+                    )
+                    {
+                        maxReasoningEffort = "low";
+                    }
+                }
+
+                warnings.Add(
+                    new CallWarning(
+                        hasExplicitDisabledThinking ? "unsupported" : "compatibility",
+                        hasExplicitDisabledThinking
+                            ? "providerOptions.amazonBedrock.reasoningConfig"
+                            : "reasoning",
+                        "thinking cannot be disabled for "
+                            + ModelId
+                            + ". Using '"
+                            + thinkingType
+                            + "' thinking instead."
+                    )
+                );
+            }
+
+            var effort = maxReasoningEffort ?? ReadAdditionalOutputConfigEffort(additional);
+
+            if (
+                (
+                    (
+                        thinkingType == "disabled"
+                        && capabilities.RejectsThinkingDisabledAboveHighEffort
+                    )
+                    || thinkingType == "between_tools"
+                ) && (effort == "xhigh" || effort == "max")
+            )
+            {
+                warnings.Add(
+                    new CallWarning(
+                        "unsupported",
+                        maxReasoningEffort != null
+                            ? "providerOptions.amazonBedrock.reasoningConfig.maxReasoningEffort"
+                            : "providerOptions.amazonBedrock.additionalModelRequestFields.output_config.effort",
+                        "effort '"
+                            + effort
+                            + "' is not supported by "
+                            + ModelId
+                            + " with '"
+                            + thinkingType
+                            + "' thinking. The effort has been lowered to 'high'."
+                    )
+                );
+                maxReasoningEffort = "high";
+            }
+        }
+
         var isThinkingEnabled =
-            reasoningConfig?.Type == "enabled" || reasoningConfig?.Type == "adaptive";
+            thinkingType == "enabled"
+            || thinkingType == "adaptive"
+            || thinkingType == "between_tools";
 
         var structuredOutputMode = ReadString(bedrock, "structuredOutputMode")
             ?? ReadString(
@@ -1141,7 +1228,6 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
             additional["anthropic_beta"] = mergedBetas;
         }
 
-        var thinkingType = reasoningConfig?.Type;
         var thinkingBudget = thinkingType == "enabled" ? reasoningConfig?.BudgetTokens : null;
         var isAnthropicThinkingEnabled = isAnthropicModel && isThinkingEnabled;
         var maxTokens = options.MaxOutputTokens;
@@ -1169,6 +1255,16 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
                 additional ??= new JsonObject();
                 additional["thinking"] = thinking;
             }
+            else if (thinkingType == "between_tools")
+            {
+                additional ??= new JsonObject();
+                additional["thinking"] = new JsonObject { ["type"] = thinkingType };
+            }
+        }
+        else if (isAnthropicModel && thinkingType == "disabled")
+        {
+            additional ??= new JsonObject();
+            additional["thinking"] = new JsonObject { ["type"] = thinkingType };
         }
         else if (!isAnthropicModel)
         {
@@ -1195,7 +1291,6 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
             }
         }
 
-        var maxReasoningEffort = reasoningConfig?.MaxReasoningEffort;
         if (maxReasoningEffort != null)
         {
             additional ??= new JsonObject();
@@ -1455,6 +1550,16 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
         }
 
         return result;
+    }
+
+    private static string? ReadAdditionalOutputConfigEffort(JsonObject? additional)
+    {
+        return
+            additional?["output_config"] is JsonObject outputConfig
+            && outputConfig["effort"] is JsonValue effort
+            && effort.TryGetValue<string>(out var value)
+            ? value
+            : null;
     }
 
     private static BedrockReasoningConfig? ResolveReasoningConfig(
