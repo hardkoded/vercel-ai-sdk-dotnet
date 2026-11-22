@@ -1115,16 +1115,18 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
             }
         }
 
-        if (betas.Count > 0)
+        var hasUserBetas =
+            bedrock is { ValueKind: JsonValueKind.Object } bedrockOptions
+            && bedrockOptions.TryGetProperty("anthropicBeta", out var existingBetas)
+            && existingBetas.ValueKind == JsonValueKind.Array;
+        if (betas.Count > 0 || hasUserBetas)
         {
             var mergedBetas = new JsonArray();
-            if (
-                bedrock is { ValueKind: JsonValueKind.Object } bedrockOptions
-                && bedrockOptions.TryGetProperty("anthropicBeta", out var existingBetas)
-                && existingBetas.ValueKind == JsonValueKind.Array
-            )
+            if (hasUserBetas)
             {
-                foreach (var existing in existingBetas.EnumerateArray())
+                foreach (
+                    var existing in bedrock!.Value.GetProperty("anthropicBeta").EnumerateArray()
+                )
                 {
                     mergedBetas.Add(JsonNode.Parse(existing.GetRawText()));
                 }
