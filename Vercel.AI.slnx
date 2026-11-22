@@ -27,6 +27,7 @@
         <Project Path="examples/DecideScaleDownBasic/DecideScaleDownBasic.csproj" />
         <Project Path="examples/DecideScaleDownMixedQuestions/DecideScaleDownMixedQuestions.csproj" />
         <Project Path="examples/GatewayToolTakoSearchVariableCost/GatewayToolTakoSearchVariableCost.csproj" />
+        <Project Path="examples/GatewayRealtimeLive/GatewayRealtimeLive.csproj" />
         <Project Path="examples/GenerateTextGatewayToolDeepSeekSearch/GenerateTextGatewayToolDeepSeekSearch.csproj" />
         <Project Path="examples/StreamTextGatewayToolDeepSeekSearch/StreamTextGatewayToolDeepSeekSearch.csproj" />
         <Project Path="examples/GenerateTextGatewayToolDeepSeekSearchParams/GenerateTextGatewayToolDeepSeekSearchParams.csproj" />
