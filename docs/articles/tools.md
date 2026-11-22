@@ -92,7 +92,7 @@ With `user-approval`, the step content holds a `GeneratedToolApprovalRequest` an
 
 `StreamTextAsync` settles the approval responses at the end of the history the same way, before its first step, right after the `start` part. It emits a `ToolOutputDeniedPart` for each denied call (also a provider-executed one, and one that already has an execution-denied result), a `ToolErrorPart` for an approved call whose input is no longer valid, and the `ToolResultPart` parts of the approved calls, preliminary results first. `StreamTextResult.ResponseMessages` starts with the tool message of these results. Its `ToolExecutionOptions.AbortSignal` is the cancellation token of the stream.
 
-Set `ExperimentalToolApprovalSecret` (or `ExperimentalToolApprovalSecretBytes`) to sign each approval request with an HMAC. A response whose signature is missing or wrong throws `InvalidToolApprovalSignatureError`. Without a secret, signatures are ignored.
+Set `ExperimentalToolApprovalSecret` (or `ExperimentalToolApprovalSecretBytes`) to sign approval requests with an HMAC, except the requests of tool calls that the approval policy denied automatically. A response whose signature is missing or wrong throws `InvalidToolApprovalSignatureError`. Because an automatic denial is not signed, a client cannot send a denied tool call back as approved: that response throws `InvalidToolApprovalSignatureError` before any tool runs. Conversations that contain an automatic denial continue as before. Without a secret, signatures are ignored.
 
 A prompt where a local tool call has no tool result before the next user or system message (or at the end) is rejected with `MissingToolResultsError`, whose `ToolCallIds` lists the calls. Provider-executed calls are exempt. When you continue a chat after an approval, make sure the approval response reaches the model call or drop the unresolved call from the history. On continuation, the approval policy sees the current tool's `Title`, `Metadata` and dynamic flag, not the values stored in the history.
 
@@ -391,6 +391,8 @@ var tools = await McpClient.ConnectAsync(transport);
 `SseMcpTransport` mirrors upstream's `start`, `send`, `close`, `onmessage`, `onerror`, `onclose`, and `protocolVersion` as `StartAsync`, `SendAsync`, `CloseAsync`, `OnMessage`, `OnError`, `OnClose`, and `ProtocolVersion`. `CallAsync` starts the transport when needed. The `fetch` option is the `HttpClient` you pass in.
 
 A non-2xx response to the event stream throws an `MCPClientError` with `StatusCode`, `Url`, and `ResponseBody`. Its message is `MCP SSE Transport Error: {status} {reason}: {body}`, plus a hint to use the `http` transport on a 405. A non-2xx response to a `SendAsync` post throws the same error, with the message `MCP SSE Transport Error: POSTing to endpoint (HTTP {status}): {body}`. The `endpoint` event must stay on the origin of the event stream.
+
+`HttpMcpTransport` throws an `MCPClientError` when the server answers a request with a JSON-RPC `error` body, even on a non-2xx response. The error carries `Code`, `Data`, `StatusCode`, `Url` and `ResponseBody`, and its message is the JSON-RPC `error.message`. Upstream also sets `cause` to the error object. The port's `Exception` cause cannot hold it.
 
 The `redirect` option and OAuth (`authProvider`) are not ported ([#585](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/585)). Redirects follow the `HttpClient` handler.
 

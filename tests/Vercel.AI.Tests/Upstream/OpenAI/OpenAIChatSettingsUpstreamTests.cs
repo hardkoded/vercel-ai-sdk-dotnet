@@ -379,6 +379,56 @@ public sealed class OpenAIChatSettingsUpstreamTests
 
     [Fact]
     [UpstreamTest(
+        Generate + "should map unsupported top-level reasoning for GPT-5 models",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void Should_map_unsupported_top_level_reasoning_for_GPT_5_models()
+    {
+        var prepared = OpenAIChatLanguageModel.Prepare(
+            "gpt-5.5",
+            new LanguageModelCallOptions
+            {
+                Prompt = OpenAIUpstream.Hello().Prompt,
+                Reasoning = "minimal",
+            }
+        );
+        Assert.Equal("low", prepared.Body["reasoning_effort"]!.GetValue<string>());
+        var warning = Assert.Single(prepared.Warnings);
+        Assert.Equal("compatibility", warning.Type);
+        Assert.Equal("reasoning", warning.Feature);
+        Assert.Equal(
+            "reasoning \"minimal\" is not directly supported by this model. mapped to effort \"low\".",
+            warning.Details
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Generate + "should map max reasoning to xhigh for GPT-6 models",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void Should_map_max_reasoning_to_xhigh_for_GPT_6_models()
+    {
+        var prepared = OpenAIChatLanguageModel.Prepare(
+            "gpt-6-sol",
+            new LanguageModelCallOptions
+            {
+                Prompt = OpenAIUpstream.Hello().Prompt,
+                Reasoning = "max",
+            }
+        );
+        Assert.Equal("xhigh", prepared.Body["reasoning_effort"]!.GetValue<string>());
+        var warning = Assert.Single(prepared.Warnings);
+        Assert.Equal("compatibility", warning.Type);
+        Assert.Equal("reasoning", warning.Feature);
+        Assert.Equal(
+            "reasoning \"max\" is not directly supported by this model. mapped to effort \"xhigh\".",
+            warning.Details
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
         Reasoning + "should strip sampling and logprob settings for GPT-6 models",
         Coverage = UpstreamCoverage.Covered
     )]

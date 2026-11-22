@@ -573,9 +573,9 @@ internal sealed class GoogleVertexOpenAICompatibleProvider : OpenAICompatiblePro
         ) { }
 
     /// <summary>Returns no key, so an <c>OPENAI_API_KEY</c> in the environment is never sent to Vertex.</summary>
-    protected override string? ResolveApiKey()
+    protected override Task<string?> ResolveApiKeyAsync(CancellationToken cancellationToken)
     {
-        return null;
+        return Task.FromResult<string?>(null);
     }
 }
 

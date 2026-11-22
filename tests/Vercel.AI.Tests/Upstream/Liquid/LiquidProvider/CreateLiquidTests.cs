@@ -6,6 +6,7 @@ using System.Text.Json;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 using Vercel.AI.Tests.MoreProviders;
 using LiquidProviderType = Vercel.AI.Liquid.LiquidProvider;
 
@@ -50,7 +51,10 @@ public sealed class CreateLiquidTests
                 ParityHandler.Json("{\"answers\":{\"refund\":{\"type\":\"noul\",\"noul\":0.9}}}")
             );
             var provider = LiquidProviderType.Create(
-                new OpenAICompatibleOptions { ApiKey = explicitKey ? "explicit-key" : null },
+                new OpenAICompatibleOptions
+                {
+                    ApiKey = explicitKey ? Resolvable<string>.From("explicit-key") : null,
+                },
                 handler
             );
             var result = await provider

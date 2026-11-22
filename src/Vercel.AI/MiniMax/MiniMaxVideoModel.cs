@@ -20,7 +20,7 @@ public sealed class MiniMaxVideoModelConfig
     public MiniMaxVideoModelConfig(
         string provider,
         string baseUrl,
-        Func<Dictionary<string, string>> headers,
+        Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>> headers,
         HttpClient httpClient,
         Func<DateTime>? currentDate = null
     )
@@ -39,7 +39,7 @@ public sealed class MiniMaxVideoModelConfig
     public string BaseUrl { get; }
 
     /// <summary>Resolves the request headers on every call (bearer token and user agent).</summary>
-    public Func<Dictionary<string, string>> Headers { get; }
+    public Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>> Headers { get; }
 
     /// <summary>The client every request goes through (upstream <c>fetch</c>).</summary>
     public HttpClient HttpClient { get; }
@@ -258,7 +258,7 @@ public sealed class MiniMaxVideoModel : IVideoModel, IVideoCaller
                 HttpMethod.Post,
                 createUrl,
                 ProviderExchange.Json(body.ToJsonString()),
-                RequestHeaders(call.Headers),
+                await RequestHeadersAsync(call.Headers, cancellationToken).ConfigureAwait(false),
                 cancellationToken,
                 (status, body) =>
                     MiniMaxVideoError.FailedResponseHandler(status, body, createUrl.AbsoluteUri)
@@ -455,10 +455,16 @@ public sealed class MiniMaxVideoModel : IVideoModel, IVideoCaller
         );
     }
 
-    private Dictionary<string, string?> RequestHeaders(IReadOnlyDictionary<string, string> headers)
+    private async Task<Dictionary<string, string?>> RequestHeadersAsync(
+        IReadOnlyDictionary<string, string> headers,
+        CancellationToken cancellationToken
+    )
     {
         return ProviderExchange.Merge(
-            Config.Headers().ToDictionary(pair => pair.Key, pair => (string?)pair.Value),
+            (await Config.Headers(cancellationToken).ConfigureAwait(false)).ToDictionary(
+                pair => pair.Key,
+                pair => pair.Value
+            ),
             headers
         );
     }
@@ -1030,7 +1036,8 @@ public sealed class MiniMaxVideoModel : IVideoModel, IVideoCaller
             Config.BaseUrl,
             "/v2/query/video_generation/" + PathSegments.Encode(taskId)
         );
-        var requestHeaders = RequestHeaders(headers);
+        var requestHeaders = await RequestHeadersAsync(headers, cancellationToken)
+            .ConfigureAwait(false);
         var exchange = await ProviderExchange
             .GetResponseUrlAsync(
                 Config.HttpClient,

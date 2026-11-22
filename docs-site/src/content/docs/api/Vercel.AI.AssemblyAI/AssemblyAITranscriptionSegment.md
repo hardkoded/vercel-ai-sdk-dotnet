@@ -23,7 +23,7 @@ One transcribed word.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L222)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L326)
 
 ## Constructors
 
@@ -48,7 +48,7 @@ Creates a segment.
 | `startSecond` | [double](https://learn.microsoft.com/dotnet/api/system.double) |  |
 | `endSecond` | [double](https://learn.microsoft.com/dotnet/api/system.double) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L225)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L329)
 
 ## Properties
 
@@ -67,7 +67,7 @@ End time in seconds.
 
 **Value:** [double](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L239)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L343)
 
 <a id="Vercel_AI_AssemblyAI_AssemblyAITranscriptionSegment_StartSecond_"></a>
 <a id="Vercel_AI_AssemblyAI_AssemblyAITranscriptionSegment_StartSecond"></a>
@@ -84,7 +84,7 @@ Start time in seconds.
 
 **Value:** [double](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L236)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L340)
 
 <a id="Vercel_AI_AssemblyAI_AssemblyAITranscriptionSegment_Text_"></a>
 <a id="Vercel_AI_AssemblyAI_AssemblyAITranscriptionSegment_Text"></a>
@@ -101,4 +101,4 @@ Word text.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L233)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L337)

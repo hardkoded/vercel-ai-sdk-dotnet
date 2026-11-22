@@ -119,7 +119,7 @@ public sealed class DeepSeekFileStore : Provider.IFileStore, Operations.IFileSto
             );
         }
 
-        var headers = _provider.CreateHeaders();
+        var headers = await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false);
         if (callHeaders != null)
         {
             foreach (var header in callHeaders)

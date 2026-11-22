@@ -44,10 +44,19 @@ public sealed class MistralRealtimeFactory
         _provider = provider;
     }
 
-    /// <summary>Creates a browser model. It does not load an API key. Maps to calling the factory with a model id.</summary>
-    public MistralRealtimeModel Model(string modelId)
+    /// <summary>
+    /// Creates a browser model. It does not load an API key. Maps to calling the factory with a model id.
+    /// <paramref name="liveKit"/> is the host's LiveKit client (upstream loads <c>livekit-client</c>), for example the
+    /// <c>LiveKitRtcClient</c> of the <c>Vercel.AI.Mistral.LiveKit</c> package; <paramref name="httpClient"/> calls
+    /// the application's session endpoint (upstream <c>fetch</c>).
+    /// </summary>
+    public MistralRealtimeModel Model(
+        string modelId,
+        ILiveKitClient? liveKit = null,
+        HttpClient? httpClient = null
+    )
     {
-        return new MistralRealtimeModel(modelId);
+        return new MistralRealtimeModel(modelId, liveKit, httpClient);
     }
 
     /// <summary>Server-only: creates a voice session using the Mistral API key. Maps to <c>createSession</c>.</summary>
@@ -79,7 +88,7 @@ public sealed class MistralRealtimeFactory
                 HttpMethod.Post,
                 url,
                 ProviderExchange.Json(requestBody),
-                _provider.CreateHeaders(),
+                await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false),
                 cancellationToken,
                 (status, text) => MistralError.FailedResponse(status, text, url, body)
             )
@@ -131,7 +140,7 @@ public sealed class MistralRealtimeFactory
                 HttpMethod.Delete,
                 url,
                 null,
-                _provider.CreateHeaders(),
+                await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false),
                 cancellationToken,
                 (status, text) => MistralError.FailedResponse(status, text, url, null)
             )

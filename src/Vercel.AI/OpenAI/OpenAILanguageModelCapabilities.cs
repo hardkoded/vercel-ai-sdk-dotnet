@@ -72,6 +72,11 @@ public sealed class OpenAILanguageModelCapabilities
         var isGpt6OrLater = gpt != null && gpt.Value.Major >= 6;
         var isGpt6SolOrLuna =
             modelId == "gpt-6-sol" || modelId == "gpt-6-luna" || modelId == "gpt-6.1-terra";
+        // Pro, codex, and chat variants are excluded because their supported efforts are not known.
+        var isStandardGpt5 =
+            gpt != null
+            && gpt.Value.Major == 5
+            && (variant == null || StandardGpt5Variant.IsMatch(variant));
         var supportsFlex =
             (oSeries != null && oSeries >= 3)
             || (gpt != null && gpt.Value.Major >= 5 && !isGptChat);
@@ -90,6 +95,7 @@ public sealed class OpenAILanguageModelCapabilities
         IReadOnlyList<string>? efforts =
             isGpt6SolOrLuna ? new[] { "none", "low", "medium", "high", "xhigh", "max" }
             : isGpt6OrLater ? new[] { "low", "medium", "high", "xhigh", "max" }
+            : isStandardGpt5 ? GetGpt5ReasoningEfforts(gpt!.Value.Minor ?? 0)
             : null;
         return new OpenAILanguageModelCapabilities(
             isReasoning,
@@ -159,6 +165,11 @@ public sealed class OpenAILanguageModelCapabilities
         RegexOptions.CultureInvariant,
         TimeSpan.FromMilliseconds(100)
     );
+    private static readonly Regex StandardGpt5Variant = new Regex(
+        "^(?:(?:mini|nano|sol|luna|terra)(?:-[0-9]{4}-[0-9]{2}-[0-9]{2})?|[0-9]{4}-[0-9]{2}-[0-9]{2})\\z",
+        RegexOptions.CultureInvariant,
+        TimeSpan.FromMilliseconds(100)
+    );
     private static readonly Regex Gpt = new Regex(
         "^gpt-([0-9]+)(?:\\.([0-9]+))?(?:-(.+))?\\z",
         RegexOptions.CultureInvariant,
@@ -172,6 +183,17 @@ public sealed class OpenAILanguageModelCapabilities
         return match.Success && TryParseInt(match.Groups[1].Value, out var version)
             ? version
             : null;
+    }
+
+    private static string[] GetGpt5ReasoningEfforts(int minor)
+    {
+        return minor switch
+        {
+            0 => ["minimal", "low", "medium", "high"],
+            1 => ["none", "low", "medium", "high"],
+            < 6 => ["none", "low", "medium", "high", "xhigh"],
+            _ => ["none", "low", "medium", "high", "xhigh", "max"],
+        };
     }
 
     private static (int Major, int? Minor, string? Variant)? GetGptVersion(string modelId)

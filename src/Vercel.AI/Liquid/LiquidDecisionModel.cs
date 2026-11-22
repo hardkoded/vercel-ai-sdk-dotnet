@@ -54,7 +54,7 @@ public sealed class DecisionLiquidModel : IDecisionCaller
     public SerializedModelOptions Serialize()
     {
         var headers = new Dictionary<string, string>();
-        foreach (var pair in _provider.CreateHeaders())
+        foreach (var pair in _provider.CreateHeadersForSerialization())
         {
             if (pair.Value != null)
             {
@@ -186,7 +186,10 @@ public sealed class DecisionLiquidModel : IDecisionCaller
                     HttpMethod.Post,
                     ApiKeys.Combine(_provider.Options.BaseUrl, "decisions/v1/systemone"),
                     ProviderExchange.Json(body.ToJsonString()),
-                    ProviderExchange.Merge(_provider.CreateHeaders(), call.Headers),
+                    ProviderExchange.Merge(
+                        await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false),
+                        call.Headers
+                    ),
                     cancellationToken
                 )
                 .ConfigureAwait(false);

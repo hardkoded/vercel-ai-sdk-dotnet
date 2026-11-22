@@ -95,18 +95,23 @@ public class OpenAICompatibleProvider : ProviderBase
     }
 
     /// <summary>Resolves the API key and builds request headers.</summary>
-    public Dictionary<string, string?> CreateHeaders()
+    public Task<Dictionary<string, string?>> CreateHeadersAsync(
+        CancellationToken cancellationToken = default
+    )
     {
-        return CreateHeaders(null);
+        return CreateHeadersAsync(null, cancellationToken);
     }
 
-    /// <summary>Builds headers and lets <paramref name="callHeaders"/> override them.</summary>
-    public Dictionary<string, string?> CreateHeaders(
-        IReadOnlyDictionary<string, string?>? callHeaders
+    /// <summary>
+    /// Resolves the API key for this request and builds headers. <paramref name="callHeaders"/> override them.
+    /// </summary>
+    public async Task<Dictionary<string, string?>> CreateHeadersAsync(
+        IReadOnlyDictionary<string, string?>? callHeaders,
+        CancellationToken cancellationToken = default
     )
     {
         var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
-        var key = ResolveApiKey();
+        var key = await ResolveApiKeyAsync(cancellationToken).ConfigureAwait(false);
         if (!string.IsNullOrEmpty(key))
         {
             switch (Options.ApiKeyStyle)
@@ -162,12 +167,33 @@ public class OpenAICompatibleProvider : ProviderBase
         return headers;
     }
 
-    /// <summary>Resolves the API key. A missing key is omitted unless <see cref="OpenAICompatibleOptions.RequireApiKey"/> is set.</summary>
-    protected virtual string? ResolveApiKey()
+    /// <summary>
+    /// Builds the headers for a workflow boundary (<c>[WORKFLOW_SERIALIZE]</c>). Upstream resolves with
+    /// <c>resolveWith</c>, which keeps a synchronous credential synchronous. A credential that resolves
+    /// asynchronously cannot cross the boundary, so this throws for it.
+    /// </summary>
+    public Dictionary<string, string?> CreateHeadersForSerialization()
     {
-        if (!string.IsNullOrWhiteSpace(Options.ApiKey))
+        var task = CreateHeadersAsync(CancellationToken.None);
+        if (!task.IsCompleted)
         {
-            return Options.ApiKey;
+            throw new AiSdkException(
+                "An asynchronous API key cannot be serialized. Use a value or a synchronous callback."
+            );
+        }
+
+        return task.GetAwaiter().GetResult();
+    }
+
+    /// <summary>Resolves the API key. A missing key is omitted unless <see cref="OpenAICompatibleOptions.RequireApiKey"/> is set.</summary>
+    protected virtual async Task<string?> ResolveApiKeyAsync(CancellationToken cancellationToken)
+    {
+        var apiKey = Options.ApiKey is null
+            ? null
+            : await Options.ApiKey.ResolveAsync(cancellationToken).ConfigureAwait(false);
+        if (!string.IsNullOrWhiteSpace(apiKey))
+        {
+            return apiKey;
         }
 
         var fromEnvironment = Environment.GetEnvironmentVariable(Options.ApiKeyEnvironmentVariable);
@@ -764,7 +790,11 @@ public sealed class OpenAICompatibleEmbeddingModel : IEmbeddingModel
             .PostJsonAsync(
                 Endpoint ?? _provider.EmbeddingsUri(ModelId),
                 body.ToJsonString(),
-                _provider.CreateHeaders(call.Headers),
+                (
+                    await _provider
+                        .CreateHeadersAsync(call.Headers, cancellationToken)
+                        .ConfigureAwait(false)
+                ),
                 cancellationToken
             )
             .ConfigureAwait(false);
@@ -953,7 +983,11 @@ public sealed class OpenAICompatibleImageModel : IImageModel
             warnings.Add(new CallWarning("unsupported", "seed", null));
         }
 
-        var headers = _provider.CreateHeaders(options.Headers);
+        var headers = (
+            await _provider
+                .CreateHeadersAsync(options.Headers, cancellationToken)
+                .ConfigureAwait(false)
+        );
         ProviderTextResponse response;
         Uri requestUri;
         if (options.Files != null && options.Files.Count > 0)

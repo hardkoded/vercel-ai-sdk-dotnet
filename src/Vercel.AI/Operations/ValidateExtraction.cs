@@ -389,23 +389,30 @@ public static class ValidateExtraction
         }
     }
 
+    private static bool IsInteger(double value)
+    {
+        return !double.IsNaN(value) && !double.IsInfinity(value) && Math.Floor(value) == value;
+    }
+
     private static bool IsSource(
         ExtractionSource source,
         IReadOnlyList<DecisionModelStatePart> state
     )
     {
-        if (source.Part < 0 || source.Part >= state.Count)
+        if (!IsInteger(source.Part) || source.Part < 0 || source.Part >= state.Count)
         {
             return false;
         }
 
-        var part = state[source.Part];
+        var part = state[(int)source.Part];
         switch (source.Type)
         {
             case "text":
                 return part is DecisionModelTextPart text
                     && source.Start is { } start
                     && source.End is { } end
+                    && IsInteger(start)
+                    && IsInteger(end)
                     && start >= 0
                     && start < end
                     && end <= text.Text.Length;

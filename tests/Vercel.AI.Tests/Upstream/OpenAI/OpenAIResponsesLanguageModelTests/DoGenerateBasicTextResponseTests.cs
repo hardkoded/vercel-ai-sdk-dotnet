@@ -36,6 +36,74 @@ public sealed class DoGenerateBasicTextResponseTests
         }
         """;
 
+    [Theory]
+    [InlineData("gpt-5.5", "minimal", "low")]
+    [InlineData("gpt-5.1", "xhigh", "high")]
+    [InlineData("gpt-5-nano", "none", "minimal")]
+    [UpstreamTest(
+        "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doGenerate > basic text response::should map unsupported reasoning for %s from %s to %s",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void Should_map_unsupported_reasoning_for_model(
+        string modelId,
+        string reasoning,
+        string expectedEffort
+    )
+    {
+        var prepared = OpenAIResponsesLanguageModel.Prepare(
+            modelId,
+            new LanguageModelCallOptions
+            {
+                Prompt = OpenAIUpstream.Hello().Prompt,
+                Reasoning = reasoning,
+            },
+            false
+        );
+
+        Assert.Equal(expectedEffort, prepared.Body["reasoning"]!["effort"]!.GetValue<string>());
+        AssertMappedWarning(prepared, reasoning, expectedEffort);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doGenerate > basic text response::should send max reasoning for GPT-5.6 models",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void Should_send_max_reasoning_for_GPT_5_6_models()
+    {
+        var prepared = OpenAIResponsesLanguageModel.Prepare(
+            "gpt-5.6-luna",
+            new LanguageModelCallOptions
+            {
+                Prompt = OpenAIUpstream.Hello().Prompt,
+                Reasoning = "max",
+            },
+            false
+        );
+
+        Assert.Equal("max", prepared.Body["reasoning"]!["effort"]!.GetValue<string>());
+        Assert.Empty(prepared.Warnings);
+    }
+
+    private static void AssertMappedWarning(
+        OpenAIResponsesPreparedRequest prepared,
+        string reasoning,
+        string effort
+    )
+    {
+        var warning = Assert.Single(prepared.Warnings);
+        Assert.Equal("compatibility", warning.Type);
+        Assert.Equal("reasoning", warning.Feature);
+        Assert.Equal(
+            "reasoning \""
+                + reasoning
+                + "\" is not directly supported by this model. mapped to effort \""
+                + effort
+                + "\".",
+            warning.Details
+        );
+    }
+
     [Fact]
     [UpstreamTest(
         "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doGenerate > basic text response::should omit reasoning effort updates for models before GPT-6",

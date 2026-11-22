@@ -322,7 +322,7 @@ public sealed class BasetenUpstreamTests
         Provider + "createBaseten::should create a BasetenProvider instance with default options",
         Coverage = UpstreamCoverage.Covered
     )]
-    public void The_default_provider_reads_the_api_key_from_the_environment()
+    public async Task The_default_provider_reads_the_api_key_from_the_environment()
     {
         var previous = Environment.GetEnvironmentVariable("BASETEN_API_KEY");
         Environment.SetEnvironmentVariable("BASETEN_API_KEY", "environment-key");
@@ -331,7 +331,10 @@ public sealed class BasetenUpstreamTests
             var provider = BasetenProvider.Create();
             var model = (OpenAICompatibleLanguageModel)
                 provider.LanguageModel("deepseek-ai/DeepSeek-V3-0324");
-            Assert.Equal("Bearer environment-key", provider.CreateHeaders()["Authorization"]);
+            Assert.Equal(
+                "Bearer environment-key",
+                (await provider.CreateHeadersAsync(CancellationToken.None))["Authorization"]
+            );
             Assert.Equal("baseten.chat", model.Provider);
         }
         finally
@@ -345,7 +348,7 @@ public sealed class BasetenUpstreamTests
         Provider + "createBaseten::should create a BasetenProvider instance with custom options",
         Coverage = UpstreamCoverage.Covered
     )]
-    public void Custom_options_set_the_key_and_headers()
+    public async Task Custom_options_set_the_key_and_headers()
     {
         var options = new OpenAICompatibleOptions
         {
@@ -353,7 +356,9 @@ public sealed class BasetenUpstreamTests
             BaseUrl = "https://custom.url",
         };
         options.Headers["Custom-Header"] = "value";
-        var headers = BasetenProvider.Create(options).CreateHeaders();
+        var headers = await BasetenProvider
+            .Create(options)
+            .CreateHeadersAsync(CancellationToken.None);
         Assert.Equal("Bearer custom-key", headers["Authorization"]);
         Assert.Equal("value", headers["custom-header"]);
     }
@@ -676,13 +681,15 @@ public sealed class BasetenUpstreamTests
         Provider + "Headers::should include Authorization header with API key",
         Coverage = UpstreamCoverage.Covered
     )]
-    public void Headers_include_the_bearer_token()
+    public async Task Headers_include_the_bearer_token()
     {
         Assert.Equal(
             "Bearer secret",
-            BasetenProvider
-                .Create(new OpenAICompatibleOptions { ApiKey = "secret" })
-                .CreateHeaders()["Authorization"]
+            (
+                await BasetenProvider
+                    .Create(new OpenAICompatibleOptions { ApiKey = "secret" })
+                    .CreateHeadersAsync(CancellationToken.None)
+            )["Authorization"]
         );
     }
 
@@ -691,11 +698,13 @@ public sealed class BasetenUpstreamTests
         Provider + "Headers::should include custom headers when provided",
         Coverage = UpstreamCoverage.Covered
     )]
-    public void Headers_include_custom_headers()
+    public async Task Headers_include_custom_headers()
     {
         var options = new OpenAICompatibleOptions { ApiKey = "secret" };
         options.Headers["Custom-Header"] = "custom-value";
-        var headers = BasetenProvider.Create(options).CreateHeaders();
+        var headers = await BasetenProvider
+            .Create(options)
+            .CreateHeadersAsync(CancellationToken.None);
         Assert.Equal("Bearer secret", headers["Authorization"]);
         Assert.Equal("custom-value", headers["custom-header"]);
     }
@@ -705,13 +714,15 @@ public sealed class BasetenUpstreamTests
         Provider + "Headers::should include user-agent with version",
         Coverage = UpstreamCoverage.Covered
     )]
-    public void Headers_include_the_sdk_user_agent()
+    public async Task Headers_include_the_sdk_user_agent()
     {
         Assert.Contains(
             "ai-sdk/baseten/" + AiSdkVersion.Version,
-            BasetenProvider
-                .Create(new OpenAICompatibleOptions { ApiKey = "secret" })
-                .CreateHeaders()["User-Agent"],
+            (
+                await BasetenProvider
+                    .Create(new OpenAICompatibleOptions { ApiKey = "secret" })
+                    .CreateHeadersAsync(CancellationToken.None)
+            )["User-Agent"],
             StringComparison.Ordinal
         );
     }

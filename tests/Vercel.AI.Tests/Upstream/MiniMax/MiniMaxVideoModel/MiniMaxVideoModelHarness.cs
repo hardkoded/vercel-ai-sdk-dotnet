@@ -105,7 +105,10 @@ internal static class MiniMaxVideoModelHarness
             new MiniMaxVideoModelConfig(
                 "minimax.video",
                 baseUrl,
-                () => new Dictionary<string, string> { ["Authorization"] = "Bearer test-key" },
+                _ =>
+                    Task.FromResult<IReadOnlyDictionary<string, string?>>(
+                        new Dictionary<string, string?> { ["Authorization"] = "Bearer test-key" }
+                    ),
                 new HttpClient(handler),
                 currentDate
             )

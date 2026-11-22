@@ -25,7 +25,10 @@ public class TypeSafeAiDecisionModelConfig
     /// Provider headers, resolved on every call. When null, the model sends a bearer token read from
     /// <c>TYPESAFE_AI_API_KEY</c> at call time.
     /// </summary>
-    public Func<IReadOnlyDictionary<string, string>>? Headers { get; set; }
+    public Func<
+        CancellationToken,
+        Task<IReadOnlyDictionary<string, string?>>
+    >? Headers { get; set; }
 
     /// <summary>HTTP client. Not serialized.</summary>
     public HttpClient? HttpClient { get; set; }
@@ -72,10 +75,21 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
         {
             config["headers"] = new Func<Dictionary<string, string>>(() =>
             {
-                var copy = new Dictionary<string, string>();
-                foreach (var pair in headers())
+                // Upstream resolves with resolveWith, which keeps a synchronous value synchronous. A value that
+                // resolves asynchronously cannot cross the workflow boundary.
+                var pending = headers(CancellationToken.None);
+                if (!pending.IsCompleted)
                 {
-                    copy[pair.Key] = pair.Value;
+                    throw new SerializationError("Cannot serialize asynchronous model options.");
+                }
+
+                var copy = new Dictionary<string, string>();
+                foreach (var pair in pending.GetAwaiter().GetResult())
+                {
+                    if (pair.Value != null)
+                    {
+                        copy[pair.Key] = pair.Value;
+                    }
                 }
 
                 return copy;
@@ -130,7 +144,10 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
             var copy = values
                 .Where(pair => pair.Value is string)
                 .ToDictionary(pair => pair.Key, pair => (string)pair.Value!);
-            config.Headers = () => copy;
+            config.Headers = _ =>
+                Task.FromResult<IReadOnlyDictionary<string, string?>>(
+                    copy.ToDictionary(pair => pair.Key, pair => (string?)pair.Value)
+                );
         }
 
         return config;
@@ -270,7 +287,7 @@ public class TypeSafeAiDecisionModel : IEvaluationDecisionCaller
         var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         if (_config.Headers is { } providerHeaders)
         {
-            foreach (var pair in providerHeaders())
+            foreach (var pair in await providerHeaders(cancellationToken).ConfigureAwait(false))
             {
                 headers[pair.Key] = pair.Value;
             }

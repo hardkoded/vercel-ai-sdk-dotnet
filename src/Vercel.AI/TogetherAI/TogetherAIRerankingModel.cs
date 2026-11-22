@@ -81,7 +81,7 @@ public sealed class TogetherAIRerankingModel : IRerankingModel, Operations.IRera
             body["rank_fields"] = JsonNode.Parse(rankFields.GetRawText());
         }
 
-        var headers = _provider.CreateHeaders();
+        var headers = await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false);
         if (call.Headers != null)
         {
             foreach (var header in call.Headers)

@@ -21,7 +21,7 @@ internal sealed class AzureMaiTranscriptionModel
     private const double DefaultSampleRate = 24000;
 
     private readonly Func<Uri> _url;
-    private readonly Func<Dictionary<string, string?>> _headers;
+    private readonly Func<CancellationToken, Task<Dictionary<string, string?>>> _headers;
     private readonly WebSocketFactory? _webSocket;
     private readonly WebSocketFactory? _nativeWebSocket;
 
@@ -37,7 +37,7 @@ internal sealed class AzureMaiTranscriptionModel
     public AzureMaiTranscriptionModel(
         string modelId,
         Func<Uri> url,
-        Func<Dictionary<string, string?>> headers,
+        Func<CancellationToken, Task<Dictionary<string, string?>>> headers,
         WebSocketFactory? webSocket = null,
         WebSocketFactory? nativeWebSocket = null
     )
@@ -67,7 +67,7 @@ internal sealed class AzureMaiTranscriptionModel
     }
 
     /// <summary>Starts a streaming transcription. Maps to <c>doStream</c>.</summary>
-    public Task<TranscriptionStreamStart?> DoStreamAsync(
+    public async Task<TranscriptionStreamStart?> DoStreamAsync(
         TranscriptionStreamCall call,
         AzureTranscriptionModelMaiOptions maiOptions,
         IReadOnlyList<OperationWarning> warnings
@@ -118,7 +118,10 @@ internal sealed class AzureMaiTranscriptionModel
             },
         };
 
-        var headers = new Dictionary<string, string?>(_headers(), StringComparer.OrdinalIgnoreCase);
+        var headers = new Dictionary<string, string?>(
+            await _headers(call.CancellationToken).ConfigureAwait(false),
+            StringComparer.OrdinalIgnoreCase
+        );
         foreach (var pair in call.Headers)
         {
             headers[pair.Key] = pair.Value;
@@ -165,12 +168,10 @@ internal sealed class AzureMaiTranscriptionModel
             secrets
         );
         session.Start(connection.Url, connection.Headers, _webSocket ?? _nativeWebSocket);
-        return Task.FromResult<TranscriptionStreamStart?>(
-            new TranscriptionStreamStart(
-                new ModelPartStream(session.Queue, session.Cancel),
-                new ProviderResponse(timestamp: timestamp, modelId: ModelId),
-                new ProviderRequest(sessionUpdate.ToJsonString())
-            )
+        return new TranscriptionStreamStart(
+            new ModelPartStream(session.Queue, session.Cancel),
+            new ProviderResponse(timestamp: timestamp, modelId: ModelId),
+            new ProviderRequest(sessionUpdate.ToJsonString())
         );
     }
 

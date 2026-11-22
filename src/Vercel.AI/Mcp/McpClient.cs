@@ -464,20 +464,9 @@ public sealed class StdioMcpTransport : IMcpTransport, IDisposable
 
     internal static JsonElement Unwrap(JsonElement root)
     {
-        if (root.TryGetProperty("error", out var error))
+        if (root.TryGetProperty("error", out _))
         {
-            var message = error.TryGetProperty("message", out var text)
-                ? text.GetString()
-                : error.ToString();
-            int? code =
-                error.TryGetProperty("code", out var codeElement)
-                && codeElement.TryGetInt32(out var value)
-                    ? value
-                    : null;
-            JsonElement? data = error.TryGetProperty("data", out var dataElement)
-                ? dataElement.Clone()
-                : null;
-            throw new MCPClientError(message ?? "MCP call failed.", code: code, data: data);
+            throw CreateError(root);
         }
 
         if (!root.TryGetProperty("result", out var result))
@@ -486,6 +475,39 @@ public sealed class StdioMcpTransport : IMcpTransport, IDisposable
         }
 
         return result.Clone();
+    }
+
+    internal static MCPClientError CreateError(
+        JsonElement root,
+        int? statusCode = null,
+        string? url = null,
+        string? responseBody = null
+    )
+    {
+        var error = root.GetProperty("error");
+        var message =
+            error.ValueKind == JsonValueKind.Object && error.TryGetProperty("message", out var text)
+                ? text.GetString()
+                : error.ToString();
+        int? code =
+            error.ValueKind == JsonValueKind.Object
+            && error.TryGetProperty("code", out var codeElement)
+            && codeElement.TryGetInt32(out var value)
+                ? value
+                : null;
+        JsonElement? data =
+            error.ValueKind == JsonValueKind.Object
+            && error.TryGetProperty("data", out var dataElement)
+                ? dataElement.Clone()
+                : null;
+        return new MCPClientError(
+            message ?? "MCP call failed.",
+            code: code,
+            statusCode: statusCode,
+            url: url,
+            responseBody: responseBody,
+            data: data
+        );
     }
 
     private async Task<string?> ReadLineAsync(CancellationToken cancellationToken)
@@ -591,6 +613,19 @@ public sealed class HttpMcpTransport : IMcpTransport
             .ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
+            if (TryParseJsonRpcError(body, out var jsonRpcError))
+            {
+                using (jsonRpcError)
+                {
+                    throw StdioMcpTransport.CreateError(
+                        jsonRpcError.RootElement,
+                        (int)response.StatusCode,
+                        _endpoint.AbsoluteUri,
+                        body
+                    );
+                }
+            }
+
             throw new MCPClientError(
                 "MCP HTTP call failed with status " + (int)response.StatusCode + ".",
                 statusCode: (int)response.StatusCode,
@@ -601,5 +636,29 @@ public sealed class HttpMcpTransport : IMcpTransport
 
         using var document = JsonDocument.Parse(body);
         return StdioMcpTransport.Unwrap(document.RootElement);
+    }
+
+    private static bool TryParseJsonRpcError(string body, out JsonDocument document)
+    {
+        try
+        {
+            document = JsonDocument.Parse(body);
+        }
+        catch (JsonException)
+        {
+            document = null!;
+            return false;
+        }
+
+        if (
+            document.RootElement.ValueKind == JsonValueKind.Object
+            && document.RootElement.TryGetProperty("error", out _)
+        )
+        {
+            return true;
+        }
+
+        document.Dispose();
+        return false;
     }
 }

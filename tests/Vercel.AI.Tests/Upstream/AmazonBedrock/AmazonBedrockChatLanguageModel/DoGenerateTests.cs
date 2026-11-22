@@ -1048,6 +1048,95 @@ public sealed class DoGenerateTests
 
     [Fact]
     [UpstreamTest(
+        "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::should include anthropic_beta in additionalModelRequestFields when using extended context",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_include_anthropic_beta_in_additionalModelRequestFields_when_using_extended_context()
+    {
+        var (_, body) = await Run(
+            AnthropicModelId,
+            TextResponse,
+            new LanguageModelCallOptions
+            {
+                Prompt = TestPrompt,
+                ProviderOptions = Options(
+                    "{\"bedrock\":{\"anthropicBeta\":[\"context-1m-2025-08-07\"]}}"
+                ),
+            }
+        );
+
+        AssertEqual(
+            "{\"anthropic_beta\":[\"context-1m-2025-08-07\"]}",
+            body.GetProperty("additionalModelRequestFields")
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::should not include anthropic-beta in HTTP headers",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_not_include_anthropic_beta_in_HTTP_headers()
+    {
+        var handler = new UpstreamRecordingHandler(TextResponse);
+        var provider = global::Vercel.AI.AmazonBedrock.AmazonBedrockProvider.Create(
+            new AmazonBedrockOptions
+            {
+                AccessKeyId = "test-access-key",
+                SecretAccessKey = "test-secret",
+                UtcNow = () => new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            },
+            handler
+        );
+
+        await provider
+            .LanguageModel(AnthropicModelId)
+            .DoGenerateAsync(
+                new LanguageModelCallOptions { Prompt = TestPrompt, Tools = new[] { BashTool() } },
+                CancellationToken.None
+            );
+
+        Assert.False(handler.Headers.ContainsKey("anthropic-beta"));
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::should combine user-provided and tool-generated betas in body",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_combine_user_provided_and_tool_generated_betas_in_body()
+    {
+        var (_, body) = await Run(
+            AnthropicModelId,
+            TextResponse,
+            new LanguageModelCallOptions
+            {
+                Prompt = TestPrompt,
+                Tools = new[] { BashTool() },
+                ProviderOptions = Options(
+                    "{\"bedrock\":{\"anthropicBeta\":[\"context-1m-2025-08-07\"]}}"
+                ),
+            }
+        );
+
+        AssertEqual(
+            "[\"context-1m-2025-08-07\",\"computer-use-2024-10-22\"]",
+            body.GetProperty("additionalModelRequestFields").GetProperty("anthropic_beta")
+        );
+    }
+
+    private static LanguageModelTool BashTool()
+    {
+        using var args = JsonDocument.Parse("{}");
+        return LanguageModelTool.ProviderDefined(
+            "anthropic.bash_20241022",
+            "bash",
+            args.RootElement.Clone()
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
         "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model.test.ts::doGenerate::should properly combine headers from all sources",
         Coverage = UpstreamCoverage.Covered
     )]
@@ -1093,6 +1182,8 @@ public sealed class DoGenerateTests
 
     private const string OpenAiResponse =
         "{\"output\":{\"message\":{\"content\":[{\"text\":\"Hello\"}],\"role\":\"assistant\"}},\"stopReason\":\"end_turn\",\"usage\":{\"inputTokens\":1,\"outputTokens\":1,\"totalTokens\":2}}";
+    internal const string AnthropicModelId = "anthropic.claude-3-5-sonnet-20240620-v1:0";
+
     internal const string HaikuModelId = "anthropic.claude-3-haiku-20240307-v1:0";
     internal const string NewerAnthropicModelId = "anthropic.claude-sonnet-4-6-v1";
     private const string NameSchema =

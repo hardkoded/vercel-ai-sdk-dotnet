@@ -39,7 +39,8 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
     private readonly Func<Uri> _url;
     private readonly Func<
         IReadOnlyDictionary<string, string?>?,
-        Dictionary<string, string?>
+        CancellationToken,
+        Task<Dictionary<string, string?>>
     > _headers;
 
     /// <summary>Creates a Chat Completions model.</summary>
@@ -54,7 +55,7 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
         _http = provider.Http;
         _providerName = provider.Name;
         _url = () => ApiKeys.Combine(provider.Options.BaseUrl, "chat/completions");
-        _headers = provider.CreateOpenAIHeaders;
+        _headers = provider.CreateOpenAIHeadersAsync;
     }
 
     /// <summary>
@@ -80,7 +81,7 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
         _http = provider.Http;
         _providerName = provider.Name;
         _url = () => provider.ChatUri(deploymentId);
-        _headers = provider.CreateHeaders;
+        _headers = provider.CreateHeadersAsync;
     }
 
     /// <inheritdoc />
@@ -136,7 +137,7 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
             providerOptionsNames.ToArray()
         );
         var capabilities = OpenAILanguageModelCapabilities.ForModel(modelId);
-        var effort = ResolveEffort(openai, options.Reasoning, capabilities, modelId, warnings);
+        var effort = ResolveEffort(openai, options.Reasoning, capabilities, warnings);
         var reasoning = OpenAIJson.Bool(openai, "forceReasoning") ?? capabilities.IsReasoningModel;
         if (options.TopK != null)
         {
@@ -238,10 +239,7 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
         Copy(body, "prompt_cache_retention", OpenAIJson.String(openai, "promptCacheRetention"));
         Copy(body, "safety_identifier", OpenAIJson.String(openai, "safetyIdentifier"));
 
-        if (
-            capabilities.SupportedReasoningEfforts != null
-            && body["prompt_cache_retention"] != null
-        )
+        if (capabilities.SupportsConfigurationUpdate && body["prompt_cache_retention"] != null)
         {
             body.Remove("prompt_cache_retention");
             warnings.Add(
@@ -399,7 +397,7 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
                 HttpMethod.Post,
                 _url(),
                 prepared.Body.ToJsonString(),
-                _headers(options.Headers),
+                await _headers(options.Headers, cancellationToken).ConfigureAwait(false),
                 cancellationToken
             )
             .ConfigureAwait(false);
@@ -421,7 +419,12 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
         body["stream_options"] = new JsonObject { ["include_usage"] = true };
         var json = body.ToJsonString();
         var sse = await _http
-            .OpenSseResponseAsync(_url(), json, _headers(options.Headers), cancellationToken)
+            .OpenSseResponseAsync(
+                _url(),
+                json,
+                await _headers(options.Headers, cancellationToken).ConfigureAwait(false),
+                cancellationToken
+            )
             .ConfigureAwait(false);
         return sse.ToStreamResult(
             StreamAsync(options, prepared, sse.Events, cancellationToken),
@@ -730,14 +733,17 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
         JsonElement? openai,
         string? reasoning,
         OpenAILanguageModelCapabilities capabilities,
-        string modelId,
         List<OpenAICallWarning> warnings
     )
     {
+        // Only the Responses API supports `max`.
+        var supported = capabilities
+            .SupportedReasoningEfforts?.Where(effort => effort != "max")
+            .ToList();
         return OpenAILanguageModelCapabilities.ResolveOpenAIReasoningEffort(
             OpenAIJson.String(openai, "reasoningEffort"),
             reasoning,
-            capabilities.SupportedReasoningEfforts,
+            supported,
             warnings
         );
     }

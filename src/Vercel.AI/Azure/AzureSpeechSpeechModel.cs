@@ -72,7 +72,7 @@ public sealed class AzureSpeechSpeechModel : ISpeechModel
 
     private readonly ProviderHttp _http;
     private readonly Func<Uri> _url;
-    private readonly Func<Dictionary<string, string?>> _headers;
+    private readonly Func<CancellationToken, Task<Dictionary<string, string?>>> _headers;
     private readonly Func<DateTimeOffset>? _currentDate;
 
     /// <summary>
@@ -83,7 +83,7 @@ public sealed class AzureSpeechSpeechModel : ISpeechModel
         string modelId,
         ProviderHttp http,
         Func<Uri> url,
-        Func<Dictionary<string, string?>> headers,
+        Func<CancellationToken, Task<Dictionary<string, string?>>> headers,
         Func<DateTimeOffset>? currentDate = null
     )
     {
@@ -201,7 +201,7 @@ public sealed class AzureSpeechSpeechModel : ISpeechModel
             style != null ? styleDegree : null
         );
 
-        var headers = _headers();
+        var headers = await _headers(cancellationToken).ConfigureAwait(false);
         headers["X-Microsoft-OutputFormat"] = outputFormat;
         if (call.Headers != null)
         {

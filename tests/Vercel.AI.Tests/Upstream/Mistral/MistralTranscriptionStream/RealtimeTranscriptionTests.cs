@@ -241,6 +241,39 @@ public sealed class RealtimeTranscriptionTests
 
     [Fact]
     [UpstreamTest(
+        Prefix + "resolves async API keys for each realtime session",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "7716e189ee4d50b24661b2fe4cfe25130643529b"
+    )]
+    public async Task Resolves_async_API_keys_for_each_realtime_session()
+    {
+        MockWebSocket.Reset();
+        var keys = new Queue<string>(["first-key", "second-key"]);
+        var calls = 0;
+        var model = Model(configure: options =>
+            options.ApiKey = Resolvable<string>.From(() =>
+            {
+                calls++;
+                return Task.FromResult(keys.Dequeue());
+            })
+        );
+
+        foreach (var key in new[] { "first-key", "second-key" })
+        {
+            var result = await DoStream(model, Call(Audio()));
+            var headers = new Dictionary<string, string>(
+                MockWebSocket.Instances[^1].Headers!,
+                StringComparer.OrdinalIgnoreCase
+            );
+            Assert.Equal($"Bearer {key}", headers["authorization"]);
+            result!.Stream.Cancel();
+        }
+
+        Assert.Equal(2, calls);
+    }
+
+    [Fact]
+    [UpstreamTest(
         Prefix + "preserves untimed speaker segments without fabricating timestamps",
         Coverage = UpstreamCoverage.Covered,
         Commit = "b26902ea1a0d65e893e2f48d2bcbedcf5df70926"
