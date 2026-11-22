@@ -604,7 +604,12 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
                         HttpMethod.Post,
                         uri,
                         ProviderExchange.Json(json),
-                        ProviderExchange.Merge(_provider.CreateHeaders(), request.Headers),
+                        ProviderExchange.Merge(
+                            await _provider
+                                .CreateHeadersAsync(cancellationToken)
+                                .ConfigureAwait(false),
+                            request.Headers
+                        ),
                         cancellationToken
                     )
                     .ConfigureAwait(false);
