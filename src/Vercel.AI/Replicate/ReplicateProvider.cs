@@ -74,6 +74,13 @@ public sealed class ReplicateProvider : OpenAICompatibleProvider
     public override IImageModel ImageModel(string modelId) =>
         new ReplicateImageModel(this, modelId);
 
+    /// <inheritdoc />
+    public override IVideoModel VideoModel(string modelId) =>
+        new ReplicateVideoModel(this, modelId);
+
+    /// <summary>Creates a video model. Same as <see cref="VideoModel"/>.</summary>
+    public IVideoModel Video(string modelId) => VideoModel(modelId);
+
     /// <summary>Sends a request with the provider headers. <paramref name="headers"/> override them.</summary>
     internal async Task<ProviderExchangeResult> SendAsync(
         HttpMethod method,
