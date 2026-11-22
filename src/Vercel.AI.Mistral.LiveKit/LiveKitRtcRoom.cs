@@ -24,8 +24,9 @@ internal sealed class LiveKitRtcRemoteTrack(RemoteTrack track, LiveKitRtcClientO
 
     public ILiveKitMediaElement Attach() =>
         new LiveKitRtcAudioElement(
-            AudioStream.FromTrack(track, (uint)options.SampleRate, (uint)options.NumChannels),
-            options.OnRemoteAudioFrame
+            () => AudioStream.FromTrack(track, (uint)options.SampleRate, (uint)options.NumChannels),
+            options.OnRemoteAudioFrame,
+            options.OnRemoteAudioError
         );
 
     public void Detach(ILiveKitMediaElement element)
@@ -34,32 +35,36 @@ internal sealed class LiveKitRtcRemoteTrack(RemoteTrack track, LiveKitRtcClientO
     }
 }
 
-/// <summary>Reads the agent's audio stream and hands its frames to the host while playing.</summary>
+/// <summary>
+/// Reads the agent's audio and hands its frames to the host while playing. Each play opens a fresh stream and each
+/// pause disposes it, so no audio queues while paused. A new pump starts only after the previous one finished its
+/// in-flight callback, so <c>onFrame</c> is never called concurrently.
+/// </summary>
 internal sealed class LiveKitRtcAudioElement(
-    AudioStream stream,
-    Func<AudioFrame, ValueTask>? onFrame
+    Func<AudioStream> createStream,
+    Func<AudioFrame, ValueTask>? onFrame,
+    Action<Exception>? onError
 ) : ILiveKitMediaElement
 {
     private readonly object _gate = new();
-    private CancellationTokenSource? _pump;
-    private Task _pumping = Task.CompletedTask;
+    private Pump? _current;
+    private Task _previous = Task.CompletedTask;
     private bool _disposed;
 
     public Task PlayAsync()
     {
         lock (_gate)
         {
-            if (_disposed)
+            if (_disposed || _current is not null)
             {
                 return Task.CompletedTask;
             }
 
-            if (_pump is null)
-            {
-                var cts = new CancellationTokenSource();
-                _pump = cts;
-                _pumping = Task.Run(() => PumpAsync(cts.Token));
-            }
+            var pump = new Pump(createStream());
+            _current = pump;
+            var previous = _previous;
+            pump.Task = Task.Run(() => RunAsync(pump, previous));
+            _previous = pump.Task;
         }
 
         return Task.CompletedTask;
@@ -67,21 +72,14 @@ internal sealed class LiveKitRtcAudioElement(
 
     public void Pause()
     {
-        Task stopped;
+        Pump? pump;
         lock (_gate)
         {
-            if (_pump is null)
-            {
-                return;
-            }
-
-            _pump.Cancel();
-            _pump.Dispose();
-            _pump = null;
-            stopped = _pumping;
+            pump = _current;
+            _current = null;
         }
 
-        _ = stopped.ContinueWith(_ => { }, TaskScheduler.Default);
+        pump?.Stop();
     }
 
     public void ClearSource() => Release();
@@ -103,14 +101,14 @@ internal sealed class LiveKitRtcAudioElement(
         }
 
         Pause();
-        stream.Dispose();
     }
 
-    private async Task PumpAsync(CancellationToken cancellationToken)
+    private async Task RunAsync(Pump pump, Task previous)
     {
         try
         {
-            await foreach (var frame in stream.WithCancellation(cancellationToken))
+            await previous.ConfigureAwait(false);
+            await foreach (var frame in pump.Stream.WithCancellation(pump.Cancellation.Token))
             {
                 if (onFrame is not null)
                 {
@@ -118,14 +116,48 @@ internal sealed class LiveKitRtcAudioElement(
                 }
             }
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
-        catch (ObjectDisposedException) { }
+        catch (OperationCanceledException) when (pump.Cancellation.IsCancellationRequested) { }
+        catch (ObjectDisposedException) when (pump.Cancellation.IsCancellationRequested) { }
+        catch (Exception exception)
+        {
+            lock (_gate)
+            {
+                // Only the pump that failed leaves the playing state, never a newer one.
+                if (ReferenceEquals(_current, pump))
+                {
+                    _current = null;
+                }
+            }
+
+            onError?.Invoke(exception);
+        }
+        finally
+        {
+            pump.Dispose();
+        }
+    }
+
+    private sealed class Pump(AudioStream stream)
+    {
+        public AudioStream Stream { get; } = stream;
+
+        public CancellationTokenSource Cancellation { get; } = new();
+
+        public Task Task { get; set; } = Task.CompletedTask;
+
+        public void Stop() => Cancellation.Cancel();
+
+        public void Dispose()
+        {
+            Stream.Dispose();
+            Cancellation.Dispose();
+        }
     }
 }
 
 internal sealed class LiveKitRtcLocalParticipant(
     LocalParticipant participant,
-    ConcurrentDictionary<ILiveKitMediaTrack, string> published
+    ConcurrentDictionary<ILiveKitMediaTrack, LocalTrackPublication> published
 ) : ILiveKitLocalParticipant
 {
     public async Task PublishMicrophoneTrackAsync(ILiveKitMediaTrack track)
@@ -144,14 +176,15 @@ internal sealed class LiveKitRtcLocalParticipant(
                 new TrackPublishOptions { Source = TrackSource.SourceMicrophone }
             )
             .ConfigureAwait(false);
-        published[track] = publication.Sid;
+        published[track] = publication;
     }
 
     public async Task UnpublishTrackAsync(ILiveKitMediaTrack track, bool stopOnUnpublish)
     {
-        if (published.TryRemove(track, out var sid))
+        if (published.TryRemove(track, out var publication))
         {
-            await participant.UnpublishTrackAsync(sid).ConfigureAwait(false);
+            // The SID changes when the SDK republishes after a full reconnect, so read it now.
+            await participant.UnpublishTrackAsync(publication.Sid).ConfigureAwait(false);
         }
 
         if (stopOnUnpublish && track is LiveKitRtcMediaTrack rtcTrack)
@@ -196,7 +229,8 @@ internal sealed class LiveKitRtcRoom : ILiveKitRoom
     private readonly Room _room = new();
     private readonly ConcurrentDictionary<Participant, LiveKitRtcParticipant> _participants = new();
     private readonly ConcurrentDictionary<RemoteTrack, LiveKitRtcRemoteTrack> _tracks = new();
-    private readonly ConcurrentDictionary<ILiveKitMediaTrack, string> _published = new();
+    private readonly ConcurrentDictionary<ILiveKitMediaTrack, LocalTrackPublication> _published =
+        new();
     private LiveKitRtcLocalParticipant? _local;
 
     public LiveKitRtcRoom(LiveKitRtcClientOptions options)

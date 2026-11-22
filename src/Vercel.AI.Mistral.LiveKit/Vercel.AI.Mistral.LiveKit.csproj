@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
+        <!-- net10.0 only: Livekit.Rtc.Dotnet targets netstandard2.1 and ships native binaries, so this adapter cannot build for netstandard2.0. Vercel.AI itself keeps both targets. -->
         <TargetFrameworks>net10.0</TargetFrameworks>
         <Description>LiveKit adapter for the Mistral realtime transport of the community .NET port of the Vercel AI SDK. Wraps the Livekit.Rtc.Dotnet client. Not an official Vercel product.</Description>
         <IsPackable>true</IsPackable>
