@@ -19,23 +19,21 @@ public sealed class WhenAToolApprovalSecretIsConfiguredTests
 
     private static async Task<ToolApprovalRequestPart> GetApprovalRequest(string status)
     {
-        var tools = new[] { ValueTool("tool1", (value, _) => Task.FromResult(JsonSerializer.Serialize(value + "-result"))) };
-
-        var parts = await Run(
-            Options(
-                tools,
-                options =>
-                {
-                    options.ToolApproval = new ToolApprovalConfiguration
-                    {
-                        { "tool1", new ToolApprovalStatus(status) },
-                    };
-                    options.ExperimentalToolApprovalSecret = ToolApprovalSecret;
-                }
+        var tools = new[]
+        {
+            ValueTool("tool1", (value, _) =>
+                Task.FromResult(JsonSerializer.Serialize(value + "-result"))
             ),
-            Call("call-1", "tool1"),
-            FinishChunk()
-        );
+        };
+
+        var parts = await Run(Options(tools, options =>
+            {
+                options.ToolApproval = new ToolApprovalConfiguration
+                {
+                    { "tool1", new ToolApprovalStatus(status) },
+                };
+                options.ExperimentalToolApprovalSecret = ToolApprovalSecret;
+            }), Call("call-1", "tool1"), FinishChunk());
 
         return parts.OfType<ToolApprovalRequestPart>().First();
     }

@@ -48,7 +48,13 @@ public sealed class WhenTheModelCallsAToolTests
                     Tools = new[] { tool },
                     ToolApproval = new ToolApprovalConfiguration
                     {
-                        { "tool1", (_, _) => Task.FromResult<ToolApprovalStatus?>(new ToolApprovalStatus(getStatus())) },
+                        {
+                            "tool1",
+                            (_, _) =>
+                                Task.FromResult<ToolApprovalStatus?>(
+                                    new ToolApprovalStatus(getStatus())
+                                )
+                        },
                     },
                     ExperimentalToolApprovalSecret = TestSecret,
                     StopWhen = StopWhen.IsStepCount(3),

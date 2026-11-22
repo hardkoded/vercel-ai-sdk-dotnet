@@ -44,7 +44,13 @@ public sealed class WhenExperimentalToolApprovalSecretIsConfiguredTests
                     Tools = new[] { tool },
                     ToolApproval = new ToolApprovalConfiguration
                     {
-                        { "tool1", (_, _) => Task.FromResult<ToolApprovalStatus?>(new ToolApprovalStatus(getStatus())) },
+                        {
+                            "tool1",
+                            (_, _) =>
+                                Task.FromResult<ToolApprovalStatus?>(
+                                    new ToolApprovalStatus(getStatus())
+                                )
+                        },
                     },
                     ExperimentalToolApprovalSecret = TestSecret,
                     StopWhen = StopWhen.IsStepCount(3),
@@ -157,7 +163,10 @@ public sealed class WhenExperimentalToolApprovalSecretIsConfiguredTests
     {
         var executeCalls = 0;
 
-        var responseMessages = await CallTool(() => "denied", () => executeCalls++).ResponseMessages;
+        var responseMessages = await CallTool(
+            () => "denied",
+            () => executeCalls++
+        ).ResponseMessages;
 
         var continued = CallTool(
             () => "denied",
