@@ -171,10 +171,12 @@ public sealed class AnthropicLanguageModelClaudeSonnet55SpecificBehaviorTests
 
     [Fact]
     [UpstreamTest(
-        Prefix + "should map reasoning \"none\" to between_tools thinking",
-        Coverage = UpstreamCoverage.Covered
+        Prefix
+            + "should map reasoning \"none\" to between_tools thinking with a compatibility warning",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2"
     )]
-    public async Task Should_map_reasoning_none_to_between_tools_thinking()
+    public async Task Should_map_reasoning_none_to_between_tools_thinking_with_a_compatibility_warning()
     {
         var options = AnthropicParity.Hello();
         options.Reasoning = "none";
@@ -182,7 +184,13 @@ public sealed class AnthropicLanguageModelClaudeSonnet55SpecificBehaviorTests
 
         Assert.Equal("{\"type\":\"between_tools\"}", body["thinking"]!.ToJsonString());
         Assert.Null(body["output_config"]);
-        Assert.Empty(result.Warnings);
+        var warning = Assert.Single(result.Warnings);
+        Assert.Equal("compatibility", warning.Type);
+        Assert.Equal("reasoning", warning.Feature);
+        Assert.Equal(
+            "reasoning 'none' is not supported by claude-sonnet-5-5; thinking cannot be disabled. Using 'between_tools' thinking, the lowest thinking setting, instead.",
+            warning.Message
+        );
     }
 
     [Fact]

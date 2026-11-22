@@ -752,7 +752,9 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
                 && OpenAICompatibleChat.IsCustomReasoning(options.Reasoning)
             )
             {
-                reasoningEffort = options.Reasoning;
+                reasoningEffort = _provider.Options.MapReasoning is { } mapReasoning
+                    ? mapReasoning(ModelId, options.Reasoning!, warnings)
+                    : options.Reasoning;
             }
         }
 

@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <Description>Fetches a page with the Gateway DeepSeek Fetch tool.</Description>
+    </PropertyGroup>
+</Project>

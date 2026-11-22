@@ -123,6 +123,7 @@ public sealed class OpenAICapabilitiesAndSchemaTests
                 "gpt-5.100",
                 "gpt-6-sol",
                 "gpt-6-luna",
+                "gpt-6.1-terra",
             }
         )
         {

@@ -2,6 +2,9 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using Vercel.AI.ProviderUtils;
+using Vercel.AI.Util;
+
 namespace Vercel.AI.Anthropic;
 
 /// <summary>Thinking and effort derived from a top-level reasoning level.</summary>
@@ -60,6 +63,15 @@ public static class AnthropicReasoning
         {
             if (capabilities.SupportsBetweenToolsThinking)
             {
+                warnings.Add(
+                    new AnthropicWarning(
+                        "compatibility",
+                        "reasoning",
+                        "reasoning 'none' is not supported by "
+                            + modelId
+                            + "; thinking cannot be disabled. Using 'between_tools' thinking, the lowest thinking setting, instead."
+                    )
+                );
                 return new AnthropicReasoningConfig("between_tools", null, null, null);
             }
 
@@ -87,11 +99,6 @@ public static class AnthropicReasoning
         }
 
         var budget = MapBudget(reasoning!, capabilities.MaxOutputTokens, warnings);
-        if (budget == null)
-        {
-            return null;
-        }
-
         return new AnthropicReasoningConfig("enabled", budget, null, null);
     }
 
@@ -101,105 +108,63 @@ public static class AnthropicReasoning
         IList<AnthropicWarning> warnings
     )
     {
-        string? mapped;
-        switch (reasoning)
+        var effortMap = new Dictionary<string, string>
         {
-            case "minimal":
-                mapped = "low";
-                break;
-            case "low":
-                mapped = "low";
-                break;
-            case "medium":
-                mapped = "medium";
-                break;
-            case "high":
-                mapped = "high";
-                break;
-            case "xhigh":
-                mapped = supportsXhigh ? "xhigh" : "max";
-                break;
-            case "max":
-                mapped = "max";
-                break;
-            default:
+            { "low", "low" },
+            { "medium", "medium" },
+            { "high", "high" },
+            { "max", "max" },
+        };
+        if (supportsXhigh)
+        {
+            effortMap["xhigh"] = "xhigh";
+        }
+
+        var modelWarnings = new List<ModelWarning>();
+        var effort = ReasoningMap.MapReasoningToProviderEffort(reasoning, effortMap, modelWarnings);
+        foreach (var warning in modelWarnings)
+        {
+            if (ReasoningMap.ToCallWarning(warning) is { } callWarning)
+            {
                 warnings.Add(
                     new AnthropicWarning(
-                        "unsupported",
-                        "reasoning",
-                        "reasoning \"" + reasoning + "\" is not supported by this model."
+                        callWarning.Type,
+                        callWarning.Feature!,
+                        callWarning.Message
                     )
                 );
-                return null;
+            }
         }
 
-        if (mapped != reasoning)
-        {
-            warnings.Add(
-                new AnthropicWarning(
-                    "compatibility",
-                    "reasoning",
-                    "reasoning \""
-                        + reasoning
-                        + "\" is not directly supported by this model. mapped to effort \""
-                        + mapped
-                        + "\"."
-                )
-            );
-        }
-
-        return mapped;
+        return effort;
     }
 
     /// <summary>Token budget for budget-based thinking. Clamped to at least 1024.</summary>
-    public static int? MapBudget(
+    public static int MapBudget(
         string reasoning,
         int maxOutputTokens,
         IList<AnthropicWarning> warnings
     )
     {
-        double? percent;
-        switch (reasoning)
+        var modelWarnings = new List<ModelWarning>();
+        var budget = ReasoningMap.MapReasoningToProviderBudget(
+            reasoning,
+            maxOutputTokens,
+            maxOutputTokens,
+            modelWarnings
+        );
+        foreach (var warning in modelWarnings)
         {
-            case "minimal":
-                percent = 0.02;
-                break;
-            case "low":
-                percent = 0.1;
-                break;
-            case "medium":
-                percent = 0.3;
-                break;
-            case "high":
-                percent = 0.6;
-                break;
-            case "xhigh":
-                percent = 0.9;
-                break;
-            case "max":
-                percent = 0.95;
-                break;
-            default:
+            if (ReasoningMap.ToCallWarning(warning) is { } callWarning)
+            {
                 warnings.Add(
                     new AnthropicWarning(
-                        "unsupported",
-                        "reasoning",
-                        "reasoning \"" + reasoning + "\" is not supported by this model."
+                        callWarning.Type,
+                        callWarning.Feature!,
+                        callWarning.Message
                     )
                 );
-                return null;
-        }
-
-        var budget = (int)
-            Math.Round(maxOutputTokens * percent.Value, MidpointRounding.AwayFromZero);
-        if (budget < 1024)
-        {
-            budget = 1024;
-        }
-
-        if (budget > maxOutputTokens)
-        {
-            budget = maxOutputTokens;
+            }
         }
 
         return budget;

@@ -4,6 +4,8 @@
 
 using System.Globalization;
 using System.Text.RegularExpressions;
+using Vercel.AI.ProviderUtils;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.OpenAI;
 
@@ -68,7 +70,8 @@ public sealed class OpenAILanguageModelCapabilities
             && variant.StartsWith("chat", StringComparison.Ordinal);
         var isGptNano = variant != null && variant.StartsWith("nano", StringComparison.Ordinal);
         var isGpt6OrLater = gpt != null && gpt.Value.Major >= 6;
-        var isGpt6SolOrLuna = modelId == "gpt-6-sol" || modelId == "gpt-6-luna";
+        var isGpt6SolOrLuna =
+            modelId == "gpt-6-sol" || modelId == "gpt-6-luna" || modelId == "gpt-6.1-terra";
         // Pro, codex, and chat variants are excluded because their supported efforts are not known.
         var isStandardGpt5 =
             gpt != null
@@ -104,6 +107,57 @@ public sealed class OpenAILanguageModelCapabilities
             efforts,
             supportsNonReasoning
         );
+    }
+
+    // Unknown model families send the reasoning value directly.
+    private static readonly string[] AllOpenAIReasoningEfforts =
+    [
+        "none",
+        "minimal",
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max",
+    ];
+
+    /// <summary>
+    /// Resolves the reasoning effort to send to OpenAI. A reasoning effort from provider options is sent unchanged.
+    /// Otherwise the top-level reasoning value is mapped to the closest effort that the model family supports, or sent
+    /// directly when the supported efforts are not known. Maps to <c>resolveOpenAIReasoningEffort</c>.
+    /// </summary>
+    internal static string? ResolveOpenAIReasoningEffort(
+        string? providerReasoningEffort,
+        string? reasoning,
+        IReadOnlyList<string>? supportedReasoningEfforts,
+        IList<OpenAICallWarning> warnings
+    )
+    {
+        var modelWarnings = new List<ModelWarning>();
+        var effort = ReasoningMap.MapReasoningToProviderEffort(
+            reasoning,
+            (supportedReasoningEfforts ?? AllOpenAIReasoningEfforts).ToDictionary(
+                value => value,
+                value => value
+            ),
+            modelWarnings,
+            providerReasoningEffort
+        );
+        foreach (var warning in modelWarnings)
+        {
+            if (ReasoningMap.ToCallWarning(warning) is { } callWarning)
+            {
+                warnings.Add(
+                    new OpenAICallWarning(
+                        callWarning.Type,
+                        callWarning.Feature!,
+                        callWarning.Message
+                    )
+                );
+            }
+        }
+
+        return effort;
     }
 
     private static readonly Regex OSeries = new Regex(

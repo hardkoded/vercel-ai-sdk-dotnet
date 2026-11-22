@@ -255,8 +255,8 @@ internal static class AnthropicCaseRegistration
             AnthropicAssertions.ReasoningHighAdaptive
         );
         AnthropicCases.Add(
-            "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (newer models with adaptive thinking)::should map reasoning \"xhigh\" to adaptive thinking with effort \"max\"",
-            AnthropicAssertions.ReasoningXhighMapsToMax
+            "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (newer models with adaptive thinking)::should map reasoning \"xhigh\" to adaptive thinking with effort \"high\"",
+            AnthropicAssertions.ReasoningXhighMapsToHigh
         );
         AnthropicCases.Add(
             "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (newer models with adaptive thinking)::should map reasoning \"minimal\" to adaptive thinking with effort \"low\" and emit compatibility warning",

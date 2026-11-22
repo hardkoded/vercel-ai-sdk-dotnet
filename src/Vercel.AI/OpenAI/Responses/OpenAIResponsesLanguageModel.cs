@@ -341,7 +341,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         var warnings = new List<OpenAICallWarning>();
         var openai = ProviderOptionsFor(options.ProviderOptions, providerOptionsName);
         var capabilities = OpenAILanguageModelCapabilities.ForModel(modelId);
-        var effort = OpenAIReasoningEffortResolver.ResolveOpenAIReasoningEffort(
+        var effort = OpenAILanguageModelCapabilities.ResolveOpenAIReasoningEffort(
             OpenAIJson.String(openai, "reasoningEffort"),
             options.Reasoning,
             capabilities.SupportedReasoningEfforts,

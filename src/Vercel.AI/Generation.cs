@@ -1365,8 +1365,8 @@ internal static class Generation
                 var startStepStreamed = redo?.StartStepStreamed == true;
                 var stepStartNotified = redo?.StepStartNotified == true;
                 var stepStarted = false;
-                var stepResponseId = Vercel.AI.ProviderUtils.JsonValues.GenerateId("aitxt-");
-                var stepResponseTimestamp = DateTimeOffset.UtcNow;
+                var stepResponseId = NewStepResponseId(options);
+                var stepResponseTimestamp = (options.CurrentDate ?? DefaultCurrentDate)();
                 var stepResponseModelId = current.ModelId;
                 var emittedResultIds = new HashSet<string>(StringComparer.Ordinal);
                 var text = new StringBuilder();
@@ -1389,6 +1389,8 @@ internal static class Generation
 
                 var streamOptions = StreamLanguageModelCallOptions.From(options);
                 streamOptions.Model = current;
+                // The step draws its response id once from options.GenerateId (stepResponseId); the model call must not draw another:
+                streamOptions.GenerateId = null;
                 streamOptions.PromptMessages = stepMessages;
                 streamOptions.PromptInstructions = instructions;
                 streamOptions.NowMs = now;
@@ -1925,10 +1927,10 @@ internal static class Generation
                                 usage = LanguageModelUsage.Null;
                                 modelCallPerformance = null;
                                 toolChoiceViolation = null;
-                                stepResponseId = Vercel.AI.ProviderUtils.JsonValues.GenerateId(
-                                    "aitxt-"
-                                );
-                                stepResponseTimestamp = DateTimeOffset.UtcNow;
+                                stepResponseId = NewStepResponseId(options);
+                                stepResponseTimestamp = (
+                                    options.CurrentDate ?? DefaultCurrentDate
+                                )();
                                 stepResponseModelId = current.ModelId;
                                 warnings = attemptBoundary.Warnings;
                                 // The retried attempt gets its own timeout windows.
@@ -3836,6 +3838,11 @@ internal static class Generation
 
         return result;
     }
+
+    internal static DateTimeOffset DefaultCurrentDate() => DateTimeOffset.UtcNow;
+
+    internal static string NewStepResponseId(GenerateTextOptions options) =>
+        options.GenerateId?.Invoke() ?? Vercel.AI.ProviderUtils.JsonValues.GenerateId("aitxt-");
 
     internal static string NewApprovalId(GenerateTextOptions options) =>
         options.GenerateId?.Invoke() ?? Vercel.AI.ProviderUtils.JsonValues.GenerateId(string.Empty);

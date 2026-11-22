@@ -144,8 +144,31 @@ public sealed class GroqUpstreamTests
 
     [Fact]
     [UpstreamTest(
-        "packages/groq/src/groq-chat-language-model.test.ts::doGenerate > top-level reasoning::should omit unsupported top-level reasoning none and warn",
-        Coverage = UpstreamCoverage.Covered
+        "packages/groq/src/groq-chat-language-model.test.ts::doGenerate > top-level reasoning::should map top-level reasoning none to the lowest effort for GPT-OSS models",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2"
+    )]
+    public async Task Gpt_oss_maps_reasoning_none_to_the_lowest_effort()
+    {
+        var capture = new UpstreamCapture();
+        var options = UpstreamChat.Prompt();
+        options.Reasoning = "none";
+        var result = await Chat(capture, "openai/gpt-oss-120b")
+            .DoGenerateAsync(options, CancellationToken.None);
+        Assert.Equal("low", UpstreamChat.Body(capture)["reasoning_effort"]!.GetValue<string>());
+        Assert.Contains(result.Warnings, warning =>
+            warning.Type == "compatibility"
+            && warning.Feature == "reasoning"
+            && warning.Message
+                == "reasoning \"none\" is not directly supported by this model. mapped to effort \"low\"."
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/groq/src/groq-chat-language-model.test.ts::doGenerate > top-level reasoning::should omit top-level reasoning none for models without reasoning and warn",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2"
     )]
     public async Task Other_models_drop_reasoning_none()
     {

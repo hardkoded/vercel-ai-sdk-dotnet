@@ -734,7 +734,7 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
         var supported = capabilities
             .SupportedReasoningEfforts?.Where(effort => effort != "max")
             .ToList();
-        return OpenAIReasoningEffortResolver.ResolveOpenAIReasoningEffort(
+        return OpenAILanguageModelCapabilities.ResolveOpenAIReasoningEffort(
             OpenAIJson.String(openai, "reasoningEffort"),
             reasoning,
             supported,

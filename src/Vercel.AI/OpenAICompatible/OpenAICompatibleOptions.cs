@@ -177,6 +177,13 @@ public class OpenAICompatibleOptions
         string?
     >? ResolveReasoningEffort { get; set; }
 
+    /// <summary>
+    /// Maps the top-level <c>Reasoning</c> option to the <c>reasoning_effort</c> request value. Arguments are the model id,
+    /// the portable reasoning level, and the call warnings. It is not applied to a <c>reasoningEffort</c> from provider
+    /// options, which is always sent unchanged. Null sends the reasoning value directly. Maps to <c>mapReasoning</c>.
+    /// </summary>
+    public Func<string, string, IList<CallWarning>, string?>? MapReasoning { get; set; }
+
     /// <summary>Converts the raw chat usage object. Null uses <see cref="OpenAICompatibleChat.ConvertUsage"/>.</summary>
     public Func<JsonElement, LanguageModelUsage>? ConvertUsage { get; set; }
 

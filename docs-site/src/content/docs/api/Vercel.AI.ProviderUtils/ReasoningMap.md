@@ -57,11 +57,13 @@ True for every reasoning value except omitted and `provider-default`. Maps to `i
 
 
 ```csharp
-public static int? MapReasoningToProviderBudget(string reasoning, int maxOutputTokens, int maxReasoningBudget, IList<ModelWarning> warnings, int minReasoningBudget = 1024, IReadOnlyDictionary<string, double>? budgetPercentages = null)
+public static int MapReasoningToProviderBudget(string reasoning, int maxOutputTokens, int maxReasoningBudget, IList<ModelWarning> warnings, int minReasoningBudget = 1024, IReadOnlyDictionary<string, double>? budgetPercentages = null)
 ```
 
 
-Maps a reasoning level to a token budget. Maps to `mapReasoningToProviderBudget`.
+Maps a reasoning value to a token budget. Levels missing from &lt;code class="paramref"&gt;budgetPercentages&lt;/code&gt; use the default
+percentages. Handle `none` before calling when the model can disable reasoning. Otherwise `none` maps to
+&lt;code class="paramref"&gt;minReasoningBudget&lt;/code&gt; with a compatibility warning. Maps to `mapReasoningToProviderBudget`.
 
 **Parameters**
 
@@ -74,23 +76,25 @@ Maps a reasoning level to a token budget. Maps to `mapReasoningToProviderBudget`
 | `minReasoningBudget` | [int](https://learn.microsoft.com/dotnet/api/system.int32) |  |
 | `budgetPercentages` | [IReadOnlyDictionary&lt;string, double&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2) |  |
 
-**Returns:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
+**Returns:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ReasoningMap.cs#L132)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ReasoningMap.cs#L150)
 
 <a id="Vercel_AI_ProviderUtils_ReasoningMap_MapReasoningToProviderEffort_"></a>
-<a id="Vercel_AI_ProviderUtils_ReasoningMap_MapReasoningToProviderEffort_System_String_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Collections_Generic_IList_Vercel_AI_Util_ModelWarning__"></a>
+<a id="Vercel_AI_ProviderUtils_ReasoningMap_MapReasoningToProviderEffort_System_String_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Collections_Generic_IList_Vercel_AI_Util_ModelWarning__System_String_"></a>
 
-### `MapReasoningToProviderEffort(string, IReadOnlyDictionary<string, string>, IList<ModelWarning>)`
+### `MapReasoningToProviderEffort(string?, IReadOnlyDictionary<string, string>, IList<ModelWarning>, string?)`
 
 
 ```csharp
-public static string? MapReasoningToProviderEffort(string reasoning, IReadOnlyDictionary<string, string> effortMap, IList<ModelWarning> warnings)
+public static string? MapReasoningToProviderEffort(string? reasoning, IReadOnlyDictionary<string, string> effortMap, IList<ModelWarning> warnings, string? providerOptionsEffort = null)
 ```
 
 
-Maps a reasoning level through &lt;code class="paramref"&gt;effortMap&lt;/code&gt;. An unsupported level maps to the next lower supported
-level, or the next higher one. Maps to `mapReasoningToProviderEffort`.
+Maps a reasoning value to a provider effort string. A &lt;code class="paramref"&gt;providerOptionsEffort&lt;/code&gt; is returned
+unchanged. Otherwise an omitted or `provider-default` reasoning returns `null`. An unsupported value maps
+to the next lower supported level, or the next higher one if there is no lower level. `none` is never a
+fallback, so an unsupported `none` maps to the lowest supported level. Maps to `mapReasoningToProviderEffort`.
 
 **Parameters**
 
@@ -99,7 +103,8 @@ level, or the next higher one. Maps to `mapReasoningToProviderEffort`.
 | `reasoning` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `effortMap` | [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2) |  |
 | `warnings` | [IList&lt;ModelWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ilist-1) |  |
+| `providerOptionsEffort` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ReasoningMap.cs#L65)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/ReasoningMap.cs#L67)

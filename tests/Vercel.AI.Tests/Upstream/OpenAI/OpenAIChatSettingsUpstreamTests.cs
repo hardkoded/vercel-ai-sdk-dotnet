@@ -325,8 +325,32 @@ public sealed class OpenAIChatSettingsUpstreamTests
     [InlineData("none")]
     [InlineData("minimal")]
     [UpstreamTest(
+        Reasoning + "should send provider reasoning effort %s unchanged for GPT-6 models",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2"
+    )]
+    public void SendsProviderReasoningEffortUnchangedForGpt6(string effort)
+    {
+        var prepared = OpenAIChatLanguageModel.Prepare(
+            "gpt-6-astra",
+            Call("{\"reasoningEffort\":\"" + effort + "\"}")
+        );
+        OpenAIUpstream.Equal(
+            prepared.Body,
+            "{\"model\":\"gpt-6-astra\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}],\"reasoning_effort\":\""
+                + effort
+                + "\"}"
+        );
+        Assert.Empty(prepared.Warnings);
+    }
+
+    [Theory]
+    [InlineData("none")]
+    [InlineData("minimal")]
+    [UpstreamTest(
         Reasoning + "should map unsupported GPT-6 reasoning %s to the lowest supported effort",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2"
     )]
     public void MapsUnsupportedGpt6ReasoningToTheLowestSupportedEffort(string reasoning)
     {
@@ -338,7 +362,10 @@ public sealed class OpenAIChatSettingsUpstreamTests
                 Reasoning = reasoning,
             }
         );
-        Assert.Equal("low", prepared.Body["reasoning_effort"]!.GetValue<string>());
+        OpenAIUpstream.Equal(
+            prepared.Body,
+            "{\"model\":\"gpt-6-astra\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello\"}],\"reasoning_effort\":\"low\"}"
+        );
         var warning = Assert.Single(prepared.Warnings);
         Assert.Equal("compatibility", warning.Type);
         Assert.Equal("reasoning", warning.Feature);

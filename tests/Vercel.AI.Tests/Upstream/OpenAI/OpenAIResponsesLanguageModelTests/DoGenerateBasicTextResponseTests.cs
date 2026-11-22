@@ -37,32 +37,6 @@ public sealed class DoGenerateBasicTextResponseTests
         """;
 
     [Theory]
-    [InlineData("none")]
-    [InlineData("minimal")]
-    [UpstreamTest(
-        "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doGenerate > basic text response::should map unsupported GPT-6 reasoning %s to the lowest supported effort",
-        Coverage = UpstreamCoverage.Covered
-    )]
-    public void Should_map_unsupported_GPT_6_reasoning_to_the_lowest_supported_effort(
-        string reasoning
-    )
-    {
-        var prepared = OpenAIResponsesLanguageModel.Prepare(
-            "gpt-6-astra",
-            new LanguageModelCallOptions
-            {
-                Prompt = OpenAIUpstream.Hello().Prompt,
-                Reasoning = reasoning,
-            },
-            false
-        );
-
-        Assert.Equal("gpt-6-astra", prepared.Body["model"]!.GetValue<string>());
-        Assert.Equal("low", prepared.Body["reasoning"]!["effort"]!.GetValue<string>());
-        AssertMappedWarning(prepared, reasoning, "low");
-    }
-
-    [Theory]
     [InlineData("gpt-5.5", "minimal", "low")]
     [InlineData("gpt-5.1", "xhigh", "high")]
     [InlineData("gpt-5-nano", "none", "minimal")]
@@ -158,6 +132,68 @@ public sealed class DoGenerateBasicTextResponseTests
         Assert.Equal("reasoningEffortUpdate", warning.Feature);
         Assert.Equal(
             "Configuration updates are only supported by GPT-6 and later models",
+            warning.Details
+        );
+    }
+
+    [Theory]
+    [InlineData("none")]
+    [InlineData("minimal")]
+    [UpstreamTest(
+        "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doGenerate > basic text response::should send provider reasoning effort %s unchanged for GPT-6 models",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2"
+    )]
+    public void Should_send_provider_reasoning_effort_unchanged_for_GPT_6_models(string effort)
+    {
+        var prepared = OpenAIResponsesLanguageModel.Prepare(
+            "gpt-6-astra",
+            new LanguageModelCallOptions
+            {
+                Prompt = OpenAIUpstream.Hello().Prompt,
+                ProviderOptions = OpenAIUpstream.OpenAIOptionsJson(
+                    "{\"reasoningEffort\":\"" + effort + "\"}"
+                ),
+            },
+            false
+        );
+
+        Assert.Equal("gpt-6-astra", prepared.Body["model"]!.GetValue<string>());
+        Assert.Equal(effort, prepared.Body["reasoning"]!["effort"]!.GetValue<string>());
+        Assert.Empty(prepared.Warnings);
+    }
+
+    [Theory]
+    [InlineData("none")]
+    [InlineData("minimal")]
+    [UpstreamTest(
+        "packages/openai/src/responses/openai-responses-language-model.test.ts::OpenAIResponsesLanguageModel > doGenerate > basic text response::should map unsupported GPT-6 reasoning %s to the lowest supported effort",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2"
+    )]
+    public void Should_map_unsupported_GPT_6_reasoning_to_the_lowest_supported_effort(
+        string reasoning
+    )
+    {
+        var prepared = OpenAIResponsesLanguageModel.Prepare(
+            "gpt-6-astra",
+            new LanguageModelCallOptions
+            {
+                Prompt = OpenAIUpstream.Hello().Prompt,
+                Reasoning = reasoning,
+            },
+            false
+        );
+
+        Assert.Equal("gpt-6-astra", prepared.Body["model"]!.GetValue<string>());
+        Assert.Equal("low", prepared.Body["reasoning"]!["effort"]!.GetValue<string>());
+        var warning = Assert.Single(prepared.Warnings);
+        Assert.Equal("compatibility", warning.Type);
+        Assert.Equal("reasoning", warning.Feature);
+        Assert.Equal(
+            "reasoning \""
+                + reasoning
+                + "\" is not directly supported by this model. mapped to effort \"low\".",
             warning.Details
         );
     }
