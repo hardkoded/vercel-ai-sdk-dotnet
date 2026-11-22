@@ -21,8 +21,10 @@ public sealed class WrapGenerateTests
     private static AiClient Client() =>
         new(GatewayProvider.Create(new GatewayOptions { ApiKey = "test" }));
 
-    private static ILanguageModel Wrap(LanguageModelGenerateResult result) =>
-        new TestLanguageModel { OnGenerate = _ => result }.WrapLanguageModel(new Json());
+    private static ILanguageModel Wrap(
+        LanguageModelGenerateResult result,
+        Func<string, string>? transform = null
+    ) => new TestLanguageModel { OnGenerate = _ => result }.WrapLanguageModel(new Json(transform));
 
     private static LanguageModelGenerateResult Result(
         IReadOnlyList<GeneratedContent> content,
@@ -36,28 +38,46 @@ public sealed class WrapGenerateTests
             structuredOutputText: structuredOutputText
         );
 
-    private static async Task<string> TextOf(string text)
+    private static async Task<string> TextOf(string text, Func<string, string>? transform = null)
     {
         var result = await Client()
             .GenerateTextAsync(
                 new GenerateTextOptions
                 {
-                    Model = Wrap(Result(new GeneratedContent[] { new GeneratedText(text) })),
+                    Model = Wrap(
+                        Result(new GeneratedContent[] { new GeneratedText(text) }),
+                        transform
+                    ),
                     Prompt = "Generate JSON",
                 }
             );
         return result.Text;
     }
 
-    [Fact]
+    public static TheoryData<string, string, bool> StructuredOutputCases =>
+        new()
+        {
+            { "markdown fences", "```json\n{\"value\":\"final\"}\n```", false },
+            { "a custom transform", "PREFIX{\"value\":\"final\"}SUFFIX", true },
+        };
+
+    [Theory]
+    [MemberData(nameof(StructuredOutputCases))]
     [UpstreamTest(
         Id + "should apply $name to structured output text without losing other text",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Covers the markdown fences case. The port has no transform option, and OutputSpec.Object with a schema stands in for Output.json()."
+        Coverage = UpstreamCoverage.Covered,
+        Note = "OutputSpec.Object with a schema stands in for Output.json()."
     )]
-    public async Task Should_apply_markdown_fences_to_structured_output_text_without_losing_other_text()
+    public async Task Should_apply_name_to_structured_output_text_without_losing_other_text(
+        string name,
+        string text,
+        bool custom
+    )
     {
-        const string text = "```json\n{\"value\":\"final\"}\n```";
+        Assert.NotEmpty(name);
+        Func<string, string>? transform = custom
+            ? t => t.Replace("PREFIX", "").Replace("SUFFIX", "")
+            : null;
 
         var result = await Client()
             .GenerateTextAsync(
@@ -71,7 +91,8 @@ public sealed class WrapGenerateTests
                                 new GeneratedText(text),
                             },
                             text
-                        )
+                        ),
+                        transform
                     ),
                     Output = OutputSpec.Object(ValueSchema),
                     Prompt = "Generate JSON",
@@ -126,6 +147,21 @@ public sealed class WrapGenerateTests
     public async Task Should_leave_text_without_fences_unchanged()
     {
         Assert.Equal("{\"value\": \"test\"}", await TextOf("{\"value\": \"test\"}"));
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Id + "should use custom transform function when provided",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_use_custom_transform_function_when_provided()
+    {
+        Assert.Equal(
+            "{\"value\": \"test\"}",
+            await TextOf("PREFIX{\"value\": \"test\"}SUFFIX", text =>
+                text.Replace("PREFIX", "").Replace("SUFFIX", "")
+            )
+        );
     }
 
     [Fact]

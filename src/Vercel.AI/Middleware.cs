@@ -385,6 +385,21 @@ public sealed class ExtractReasoningMiddleware : LanguageModelMiddleware
 /// <summary>Strips markdown JSON fences. Maps to <c>extractJsonMiddleware</c>.</summary>
 public sealed class ExtractJsonMiddleware : LanguageModelMiddleware
 {
+    private readonly Func<string, string> _transform;
+
+    /// <summary>Creates middleware that strips markdown code fences.</summary>
+    public ExtractJsonMiddleware()
+        : this(null) { }
+
+    /// <summary>Creates middleware with an optional custom transform.</summary>
+    /// <param name="transform">
+    /// Custom transform applied to text content and structured output text. Replaces the default markdown fence stripping when set.
+    /// </param>
+    public ExtractJsonMiddleware(Func<string, string>? transform)
+    {
+        _transform = transform ?? StripFence;
+    }
+
     /// <inheritdoc />
     public override async Task<LanguageModelGenerateResult> WrapGenerateAsync(
         LanguageModelCallOptions options,
@@ -398,7 +413,7 @@ public sealed class ExtractJsonMiddleware : LanguageModelMiddleware
         {
             if (part is GeneratedText text)
             {
-                content.Add(new GeneratedText(StripFence(text.Text)));
+                content.Add(new GeneratedText(_transform(text.Text)));
             }
             else
             {
@@ -407,7 +422,7 @@ public sealed class ExtractJsonMiddleware : LanguageModelMiddleware
         }
 
         var structuredOutputText =
-            result.StructuredOutputText == null ? null : StripFence(result.StructuredOutputText);
+            result.StructuredOutputText == null ? null : _transform(result.StructuredOutputText);
         return MiddlewareResults.CopyResult(content, result, structuredOutputText);
     }
 
