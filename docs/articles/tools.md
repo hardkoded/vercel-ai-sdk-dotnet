@@ -392,6 +392,8 @@ var tools = await McpClient.ConnectAsync(transport);
 
 A non-2xx response to the event stream throws an `MCPClientError` with `StatusCode`, `Url`, and `ResponseBody`. Its message is `MCP SSE Transport Error: {status} {reason}: {body}`, plus a hint to use the `http` transport on a 405. A non-2xx response to a `SendAsync` post throws the same error, with the message `MCP SSE Transport Error: POSTing to endpoint (HTTP {status}): {body}`. The `endpoint` event must stay on the origin of the event stream.
 
+`HttpMcpTransport` throws an `MCPClientError` when the server answers a request with a JSON-RPC `error` body, even on a non-2xx response. The error carries `Code`, `Data`, `StatusCode`, `Url` and `ResponseBody`, and its message is the JSON-RPC `error.message`. Upstream also sets `cause` to the error object. The port's `Exception` cause cannot hold it.
+
 The `redirect` option and OAuth (`authProvider`) are not ported ([#585](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/585)). Redirects follow the `HttpClient` handler.
 
 ## Tool result title, metadata and dynamic flag
