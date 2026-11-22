@@ -79,7 +79,10 @@ public sealed class XaiTranscriptionModel : ITranscriptionModel, ITranscriptionC
     )
     {
         serialized = serialized ?? throw new ArgumentNullException(nameof(serialized));
-        var options = new XaiOptions { ApiKey = apiKey is null ? null : Resolvable<string>.From(apiKey) };
+        var options = new XaiOptions
+        {
+            ApiKey = apiKey is null ? null : Resolvable<string>.From(apiKey),
+        };
         if (
             serialized.Config.TryGetValue("baseURL", out var baseUrl)
             && baseUrl is string text
@@ -153,7 +156,17 @@ public sealed class XaiTranscriptionModel : ITranscriptionModel, ITranscriptionC
                 HttpMethod.Post,
                 ApiKeys.Combine(_provider.Options.BaseUrl, "stt"),
                 form,
-                (await _provider.CreateHeadersAsync(call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value), cancellationToken).ConfigureAwait(false)),
+                (
+                    await _provider
+                        .CreateHeadersAsync(
+                            call.Headers.ToDictionary(
+                                pair => pair.Key,
+                                pair => (string?)pair.Value
+                            ),
+                            cancellationToken
+                        )
+                        .ConfigureAwait(false)
+                ),
                 cancellationToken
             )
             .ConfigureAwait(false);
@@ -258,7 +271,7 @@ public sealed class XaiTranscriptionModel : ITranscriptionModel, ITranscriptionC
     }
 
     /// <inheritdoc />
-    public Task<TranscriptionStreamStart?> DoStreamAsync(
+    public async Task<TranscriptionStreamStart?> DoStreamAsync(
         TranscriptionStreamCall call,
         CancellationToken cancellationToken
     )
@@ -306,7 +319,11 @@ public sealed class XaiTranscriptionModel : ITranscriptionModel, ITranscriptionC
         }
 
         var url = BuildXaiStreamingTranscriptionUrl(call.InputAudioFormat, xaiOptions);
-        var headers = (await _provider.CreateHeadersAsync(call.Headers, cancellationToken).ConfigureAwait(false));
+        var headers = (
+            await _provider
+                .CreateHeadersAsync(call.Headers, cancellationToken)
+                .ConfigureAwait(false)
+        );
         var session = new Session(
             call,
             warnings,
@@ -314,12 +331,10 @@ public sealed class XaiTranscriptionModel : ITranscriptionModel, ITranscriptionC
             xaiOptions?.Multichannel == true ? xaiOptions.Channels!.Value : 1
         );
         session.Start(url, headers, (_provider.Options as XaiOptions)?.WebSocket);
-        return Task.FromResult<TranscriptionStreamStart?>(
-            new TranscriptionStreamStart(
-                new ModelPartStream(session.Queue, session.Cancel),
-                new ProviderResponse(timestamp: timestamp.UtcDateTime, modelId: ModelId),
-                new ProviderRequest(url.ToString())
-            )
+        return new TranscriptionStreamStart(
+            new ModelPartStream(session.Queue, session.Cancel),
+            new ProviderResponse(timestamp: timestamp.UtcDateTime, modelId: ModelId),
+            new ProviderRequest(url.ToString())
         );
     }
 

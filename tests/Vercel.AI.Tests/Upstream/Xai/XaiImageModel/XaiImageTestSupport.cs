@@ -33,7 +33,7 @@ internal static class XaiImageTestSupport
     /// <summary>Port of <c>createModel</c>.</summary>
     public static Model CreateModel(
         ParityHandler handler,
-        Func<IReadOnlyDictionary<string, string?>>? headers = null,
+        Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>>? headers = null,
         Func<DateTime>? currentDate = null
     )
     {
@@ -42,7 +42,13 @@ internal static class XaiImageTestSupport
             new XaiImageModelConfig(
                 "xai.image",
                 BaseUrl,
-                headers ?? (() => new Dictionary<string, string?> { ["api-key"] = "test-key" }),
+                headers
+                    ?? (
+                        _ =>
+                            Task.FromResult<IReadOnlyDictionary<string, string?>>(
+                                new Dictionary<string, string?> { ["api-key"] = "test-key" }
+                            )
+                    ),
                 new HttpClient(handler)
             )
             {

@@ -1332,6 +1332,22 @@ Without input images the model posts to `{ImageBaseUrl}/images/generations`. Wit
 
 If MiniMax fails one image of a batch, the other images are returned and a warning `Image N failed: <message>` names the failed one. Usage is returned as the call usage, and `providerMetadata.minimax.images` has one entry per returned image with `size`, `revisedPrompt`, and, when MiniMax reports them, `outputFormat` and `requestId`. The first entry also carries the raw request `usage`. A provider error keeps MiniMax's message.
 
+## Async API keys for Fal, Replicate, Fish Audio, Cartesia, and xAI
+
+`ApiKey` of `FalProvider`, `ReplicateProvider` (the Replicate API token), `FishAudioProvider`, `CartesiaProvider`, and `XaiProvider` is a `Resolvable<string>`: a string, a `Task<string>`, or a callback made with `Resolvable<string>.From(...)`. A callback is called before each request and may be asynchronous. Use it to supply refreshed credentials when keys rotate. A `Task<string>` resolves to the same key each time. Caching and refreshing the credentials is the callback's job. A string and an environment variable work as before.
+
+```csharp
+using Vercel.AI.OpenAICompatible;
+using Vercel.AI.ProviderUtils;
+using Vercel.AI.Xai;
+
+var xai = XaiProvider.Create(
+    new XaiOptions { ApiKey = Resolvable<string>.From(async ct => await tokenStore.GetKeyAsync(ct)) }
+);
+```
+
+xAI files, batches, and the realtime and image models resolve the key the same way, for each request. The header functions of `XaiFiles`, `XaiImageModelConfig`, and `XaiRealtimeModelConfig` take a `CancellationToken` and return a `Task` of the headers.
+
 ## xAI Responses
 
 `XaiProvider.LanguageModel(modelId)` creates a language model for the xAI Responses API (`POST {base}/responses`), as upstream does. `XaiProvider.ResponsesModel(modelId)` creates the same model with its concrete type. The provider id is `xai.responses`. Upstream has no xAI chat model, so `XaiProvider.CreateChatModel(modelId)`, the Chat Completions model, is obsolete and will be removed.

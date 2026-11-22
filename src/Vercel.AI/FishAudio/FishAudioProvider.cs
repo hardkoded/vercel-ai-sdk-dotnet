@@ -108,7 +108,10 @@ public sealed class FishAudioProvider : OpenAICompatibleProvider
     )
     {
         var headers = ProviderExchange.Merge(
-            ProviderExchange.Merge(await CreateHeadersAsync(cancellationToken).ConfigureAwait(false), modelHeaders),
+            ProviderExchange.Merge(
+                await CreateHeadersAsync(cancellationToken).ConfigureAwait(false),
+                modelHeaders
+            ),
             callHeaders
         );
         return await ProviderExchange

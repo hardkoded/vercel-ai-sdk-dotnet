@@ -184,19 +184,25 @@ public sealed class XaiFiles : IFileStore
 
     private readonly HttpClient _httpClient;
     private readonly string _baseUrl;
-    private readonly Func<IReadOnlyDictionary<string, string?>> _headers;
+    private readonly Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>> _headers;
 
     /// <summary>Creates a file client.</summary>
     public XaiFiles(
         HttpClient httpClient,
         string baseUrl,
-        Func<IReadOnlyDictionary<string, string?>>? headers,
+        Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>>? headers,
         string? provider = null
     )
     {
         _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         _baseUrl = string.IsNullOrEmpty(baseUrl) ? XaiProvider.DefaultBaseUrl : baseUrl;
-        _headers = headers ?? (() => new Dictionary<string, string?>());
+        _headers = headers
+            ?? (
+                _ =>
+                    Task.FromResult<IReadOnlyDictionary<string, string?>>(
+                        new Dictionary<string, string?>()
+                    )
+            );
         Provider = string.IsNullOrEmpty(provider) ? "xai.files" : provider!;
     }
 
@@ -284,7 +290,10 @@ public sealed class XaiFiles : IFileStore
             )
         );
         var body = MultipartPart.Encode(parts);
-        var headers = ProviderExchange.Merge(_headers(), upload.Headers);
+        var headers = ProviderExchange.Merge(
+            await _headers(cancellationToken).ConfigureAwait(false),
+            upload.Headers
+        );
         var response = await ProviderExchange
             .SendAsync(
                 _httpClient,
@@ -312,7 +321,7 @@ public sealed class XaiFiles : IFileStore
                 HttpMethod.Get,
                 ApiKeys.Combine(_baseUrl, "/files/" + PathSegments.Encode(id)),
                 null,
-                _headers(),
+                await _headers(cancellationToken).ConfigureAwait(false),
                 cancellationToken,
                 XaiError.FailedResponseHandler
             )
@@ -333,7 +342,7 @@ public sealed class XaiFiles : IFileStore
                 HttpMethod.Get,
                 ApiKeys.Combine(_baseUrl, "/files/" + PathSegments.Encode(id) + "/content"),
                 null,
-                _headers(),
+                await _headers(cancellationToken).ConfigureAwait(false),
                 cancellationToken,
                 XaiError.FailedResponseHandler
             )
@@ -369,7 +378,7 @@ public sealed class XaiFiles : IFileStore
                 HttpMethod.Delete,
                 ApiKeys.Combine(_baseUrl, "/files/" + PathSegments.Encode(id)),
                 null,
-                _headers(),
+                await _headers(cancellationToken).ConfigureAwait(false),
                 cancellationToken,
                 XaiError.FailedResponseHandler
             )
