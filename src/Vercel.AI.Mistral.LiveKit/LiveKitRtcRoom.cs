@@ -137,7 +137,16 @@ internal sealed class LiveKitRtcAudioElement(
                 }
             }
 
-            onError?.Invoke(exception);
+            if (onError is not null)
+            {
+                onError(exception);
+            }
+            else
+            {
+                System.Diagnostics.Trace.TraceError(
+                    "Mistral voice remote audio playback stopped: " + exception
+                );
+            }
         }
         finally
         {

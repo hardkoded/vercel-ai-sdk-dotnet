@@ -33,7 +33,7 @@ public sealed class LiveKitRtcClientOptions
 
     /// <summary>
     /// Called when <see cref="OnRemoteAudioFrame"/> or the audio stream throws. Playback then stops; the transport
-    /// starts it again on the next play. Frames are delivered one at a time, never concurrently.
+    /// starts it again on the next play. When <see langword="null"/> the failure is written to <see cref="System.Diagnostics.Trace"/>. Frames are delivered one at a time, never concurrently.
     /// </summary>
     public Action<Exception>? OnRemoteAudioError { get; init; }
 
