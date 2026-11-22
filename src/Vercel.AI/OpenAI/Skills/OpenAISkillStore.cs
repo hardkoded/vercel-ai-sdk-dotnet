@@ -134,7 +134,9 @@ public sealed class OpenAISkillStore : ISkillStore
                 HttpMethod.Post,
                 ApiKeys.Combine(_provider.Options.BaseUrl, "skills"),
                 content,
-                _provider.CreateOpenAIHeaders(),
+                await _provider
+                    .CreateOpenAIHeadersAsync(null, cancellationToken)
+                    .ConfigureAwait(false),
                 cancellationToken
             )
             .ConfigureAwait(false);

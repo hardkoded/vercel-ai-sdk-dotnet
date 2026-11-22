@@ -130,7 +130,9 @@ public sealed class OpenAIEmbeddingModel : IEmbeddingModel
                 HttpMethod.Post,
                 ApiKeys.Combine(_provider.Options.BaseUrl, "embeddings"),
                 body.ToJsonString(),
-                _provider.CreateOpenAIHeaders(headers),
+                await _provider
+                    .CreateOpenAIHeadersAsync(headers, cancellationToken)
+                    .ConfigureAwait(false),
                 cancellationToken
             )
             .ConfigureAwait(false);
