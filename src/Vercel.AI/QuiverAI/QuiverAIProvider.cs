@@ -4,6 +4,8 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
+using Vercel.AI.OpenResponses;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 
@@ -18,14 +20,32 @@ public sealed class QuiverAIProvider : OpenAICompatibleProvider
     /// <summary>Default API origin.</summary>
     public const string DefaultBaseUrl = "https://api.quiver.ai/v1";
 
+    private readonly OpenResponsesOptions _responsesOptions;
+    private readonly OpenResponsesProvider _responsesProvider;
+
     /// <summary>Creates a provider.</summary>
     public QuiverAIProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)
-        : base(Prepare(options), httpClient) { }
+        : base(Prepare(options), httpClient)
+    {
+        _responsesOptions = CreateResponsesOptions(
+            Options.BaseUrl,
+            Options.ApiKey,
+            Options.Headers
+        );
+        _responsesProvider = new OpenResponsesProvider(httpClient, _responsesOptions);
+        ApplyErrorHandling(_responsesProvider);
+    }
 
-    /// <inheritdoc />
+    /// <summary>QuiverAI caller-executed tools, such as custom tools. Maps to <c>provider.tools</c>.</summary>
+    public OpenResponsesTools Tools => _responsesProvider.Tools;
+
+    /// <summary>Creates a language model for the QuiverAI Responses API. The provider id is <c>quiverai.responses</c>.</summary>
     public override ILanguageModel LanguageModel(string modelId)
     {
-        throw new AiSdkException("QuiverAI does not provide language models.");
+        return new QuiverAILanguageModel(
+            _responsesProvider.LanguageModel(modelId),
+            _responsesOptions
+        );
     }
 
     /// <summary>Creates a provider.</summary>
@@ -50,6 +70,39 @@ public sealed class QuiverAIProvider : OpenAICompatibleProvider
             ?? throw new AiSdkException(
                 "QuiverAI API key is missing. Pass it using the 'apiKey' parameter or the QUIVERAI_API_KEY environment variable."
             );
+    }
+
+    /// <summary>The Open Responses settings of the QuiverAI language model. Maps to <c>responsesConfig</c>.</summary>
+    internal static OpenResponsesOptions CreateResponsesOptions(
+        string? baseUrl,
+        Resolvable<string>? apiKey,
+        IReadOnlyDictionary<string, string>? headers
+    )
+    {
+        return new OpenResponsesOptions
+        {
+            Name = ProviderId,
+            BaseUrl = string.IsNullOrEmpty(baseUrl)
+                ? Environment.GetEnvironmentVariable("QUIVERAI_BASE_URL")?.TrimEnd('/')
+                    ?? DefaultBaseUrl
+                : baseUrl!.TrimEnd('/'),
+            ApiKey = apiKey,
+            ApiKeyEnvironmentVariable = "QUIVERAI_API_KEY",
+            Headers = headers is null
+                ? null
+                : Resolvable<IReadOnlyDictionary<string, string>>.From(headers),
+            GetResponseErrorMetadata = QuiverAIError.GetQuiverAIResponseErrorMetadata,
+            StrictResponseInput = true,
+            CustomToolId = "quiverai.custom",
+            StructuredOutputs = QuiverAIModelCatalog.LanguageStructuredOutputs,
+            UserAgentSuffix = "ai-sdk-quiverai/" + AiSdkVersion.Version,
+        };
+    }
+
+    /// <summary>Applies <c>quiveraiFailedResponseHandler</c> to the Open Responses transport.</summary>
+    internal static void ApplyErrorHandling(OpenResponsesProvider provider)
+    {
+        provider.Http.ErrorToMessage = QuiverAIError.ErrorToMessage;
     }
 
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)

@@ -2521,6 +2521,28 @@ public sealed class LanguageModelGenerateResult
         };
     }
 
+    internal LanguageModelGenerateResult WithWarnings(IReadOnlyList<CallWarning> warnings)
+    {
+        return new LanguageModelGenerateResult(
+            Content,
+            FinishReason,
+            Usage,
+            RawFinishReason,
+            warnings,
+            ResponseId,
+            ProviderMetadata,
+            RawResponse,
+            ResponseModelId,
+            ResponseTimestamp,
+            ResponseHeaders,
+            StructuredOutputText,
+            Request
+        )
+        {
+            RedactRawResponse = RedactRawResponse,
+        };
+    }
+
     internal LanguageModelGenerateResult WithContent(IReadOnlyList<GeneratedContent> content)
     {
         return new LanguageModelGenerateResult(
