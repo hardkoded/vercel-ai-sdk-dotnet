@@ -36,7 +36,7 @@ internal sealed class TestTelemetry : ITelemetry
 
     public Func<GenerateObjectStepEndEvent, CancellationToken, Task>? OnObjectStepEnd { get; init; }
 
-    public Func<GenerateTextResult, CancellationToken, Task>? OnEnd { get; init; }
+    public Func<IOperationEndEvent, CancellationToken, Task>? OnEnd { get; init; }
 
     public Func<
         LanguageModelCallStartEvent,

@@ -366,7 +366,10 @@ public sealed class GenerateObjectStepEndEvent : GenerateObjectEvent
 }
 
 /// <summary>Event sent after the generated object has been parsed and validated.</summary>
-public sealed class GenerateObjectEndEvent<T> : GenerateObjectEvent
+public sealed class GenerateObjectEndEvent<T>
+    : GenerateObjectEvent,
+        IOperationEndEvent,
+        IRecordingFilterableEndEvent
 {
     internal GenerateObjectEndEvent(
         string callId,
@@ -425,7 +428,7 @@ public sealed class GenerateObjectEndEvent<T> : GenerateObjectEvent
     public Exception? Error { get; }
 
     /// <summary>Reasoning returned by the model.</summary>
-    public string? Reasoning { get; }
+    public string? Reasoning { get; init; }
 
     /// <summary>Finish reason.</summary>
     public FinishReason FinishReason { get; }
@@ -444,6 +447,47 @@ public sealed class GenerateObjectEndEvent<T> : GenerateObjectEvent
 
     /// <summary>Provider-specific response metadata.</summary>
     public JsonElement? ProviderMetadata { get; }
+
+    /// <summary>Maps to the object branches of <c>filterTelemetryEvent</c>: a copy without the output, the provider metadata, the error text and the request and response bodies.</summary>
+    IOperationEndEvent IRecordingFilterableEndEvent.FilterTelemetryEvent(
+        bool hideInputs,
+        bool hideOutputs
+    )
+    {
+        return new GenerateObjectEndEvent<T>(
+            CallId,
+            Provider,
+            ModelId,
+            hideOutputs ? default : Object,
+            Error is null ? null : new InvalidOperationException("AI SDK operation failed"),
+            FinishReason,
+            Usage,
+            Warnings,
+            // The bodies can hold either inputs or outputs, so they are always dropped. The messages go with their flag.
+            new LanguageModelRequestMetadata
+            {
+                Url = Request.Url,
+                Messages = hideInputs ? [] : Request.Messages,
+            },
+            new StepResponse(
+                Response.Id,
+                Response.Timestamp,
+                Response.ModelId,
+                Response.Headers,
+                hideOutputs ? [] : Response.Messages
+            ),
+            null
+        )
+        {
+            Reasoning = hideOutputs ? null : Reasoning,
+        };
+    }
+}
+
+/// <summary>Filters an end event on a copy when <c>recordInputs</c> or <c>recordOutputs</c> is <c>false</c>.</summary>
+internal interface IRecordingFilterableEndEvent
+{
+    IOperationEndEvent FilterTelemetryEvent(bool hideInputs, bool hideOutputs);
 }
 
 /// <summary>Result of a <c>generateObject</c> call.</summary>

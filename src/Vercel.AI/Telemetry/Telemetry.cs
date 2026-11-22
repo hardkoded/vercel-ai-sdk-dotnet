@@ -47,8 +47,10 @@ public interface ITelemetry
     /// <summary>Called when an unrecoverable error occurs during the generation. Maps to <c>onError</c>.</summary>
     Func<TelemetryErrorEvent, CancellationToken, Task>? OnError { get; }
 
-    /// <summary>Called when a text generation completes. Maps to <c>onEnd</c>.</summary>
-    Func<GenerateTextResult, CancellationToken, Task>? OnEnd { get; }
+    /// <summary>
+    /// Called when an operation completes. Maps to <c>onEnd</c>. Receives a <see cref="GenerateTextResult"/> or a <see cref="GenerateObjectEndEvent{T}"/>.
+    /// </summary>
+    Func<IOperationEndEvent, CancellationToken, Task>? OnEnd { get; }
 
     /// <summary>Called before each provider model call. Maps to <c>onLanguageModelCallStart</c>.</summary>
     Func<LanguageModelCallStartEvent, CancellationToken, Task>? OnLanguageModelCallStart { get; }
@@ -106,3 +108,9 @@ public interface ITelemetry
 /// <c>telemetry/telemetry.ts</c>, which C# cannot express.
 /// </summary>
 public interface IOperationStartEvent { }
+
+/// <summary>
+/// An event passed to <see cref="ITelemetry.OnEnd"/> when an operation completes. Stands in for the <c>OperationEndEvent</c> union in
+/// <c>telemetry/telemetry.ts</c>, which C# cannot express.
+/// </summary>
+public interface IOperationEndEvent { }

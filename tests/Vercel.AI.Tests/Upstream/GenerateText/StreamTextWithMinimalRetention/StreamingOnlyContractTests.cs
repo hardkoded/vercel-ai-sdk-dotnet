@@ -311,7 +311,7 @@ public sealed class StreamingOnlyContractTests
             {
                 OnEnd = (e, _) =>
                 {
-                    ends.Add(e);
+                    ends.Add((GenerateTextResult)e);
                     return Task.CompletedTask;
                 },
             },

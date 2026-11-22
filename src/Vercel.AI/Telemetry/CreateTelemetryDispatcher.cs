@@ -50,7 +50,7 @@ internal sealed class TelemetryDispatcher
     public Func<GenerateObjectStepEndEvent, CancellationToken, Task>? OnObjectStepEnd { get; init; }
 
     /// <summary>Maps to <c>onEnd</c>. Null when no integration has it.</summary>
-    public Func<GenerateTextResult, CancellationToken, Task>? OnEnd { get; init; }
+    public Func<IOperationEndEvent, CancellationToken, Task>? OnEnd { get; init; }
 
     /// <summary>Maps to <c>onLanguageModelCallStart</c>. Null when no integration has it.</summary>
     public Func<
@@ -152,8 +152,18 @@ internal sealed class TelemetryDispatcher
             HasIntegrations = integrations.Count > 0,
             OnObjectStepStart = Merge(integrations.Select(i => i.OnObjectStepStart)),
             OnObjectStepEnd = Merge(integrations.Select(i => i.OnObjectStepEnd)),
-            OnEnd = Filter<GenerateTextResult>(Merge(integrations.Select(i => i.OnEnd)), result =>
-                AugmentResult(result, telemetry)
+            OnEnd = Filter<IOperationEndEvent>(Merge(integrations.Select(i => i.OnEnd)), e =>
+                e switch
+                {
+                    GenerateTextResult result => AugmentResult(result, telemetry),
+                    IRecordingFilterableEndEvent filterable
+                        when telemetry?.RecordInputs == false
+                            || telemetry?.RecordOutputs == false => filterable.FilterTelemetryEvent(
+                        telemetry.RecordInputs == false,
+                        telemetry.RecordOutputs == false
+                    ),
+                    _ => e,
+                }
             ),
             OnLanguageModelCallStart = Filter<LanguageModelCallStartEvent>(
                 Merge(integrations.Select(i => i.OnLanguageModelCallStart)),
