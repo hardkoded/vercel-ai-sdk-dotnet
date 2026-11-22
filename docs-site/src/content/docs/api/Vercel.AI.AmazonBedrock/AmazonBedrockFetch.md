@@ -24,7 +24,7 @@ POST bodies are signed with SigV4. Caller headers are signed, except values with
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L81)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L83)
 
 ## Fields
 
@@ -42,7 +42,7 @@ SigV4 service name used when none is given.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L84)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L86)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockFetch_UserAgent"></a>
 
@@ -58,7 +58,7 @@ User agent sent on every request. The runtime segment is dotnet.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L87)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L89)
 
 ## Methods
 
@@ -93,7 +93,7 @@ String bodies are left unchanged. Byte bodies are decoded as UTF-8. Other object
 
 **Returns:** [AmazonBedrockPreparedCall](/api/Vercel.AI.AmazonBedrock/AmazonBedrockPreparedCall/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L94)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L96)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockFetch_PrepareApiKey_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockFetch_PrepareApiKey_System_String_System_String_System_String_System_String_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__"></a>
@@ -121,4 +121,4 @@ The API key replaces any caller-supplied `Authorization`.
 
 **Returns:** [AmazonBedrockPreparedCall](/api/Vercel.AI.AmazonBedrock/AmazonBedrockPreparedCall/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L133)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L135)

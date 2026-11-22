@@ -136,7 +136,7 @@ Transcribes audio.
 
 **Returns:** [Task&lt;TranscriptionResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gladia/GladiaProvider.cs#L417)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gladia/GladiaProvider.cs#L420)
 
 <a id="Vercel_AI_Gladia_GladiaProvider_GladiaTranscriptionModel_Serialize_"></a>
 <a id="Vercel_AI_Gladia_GladiaProvider_GladiaTranscriptionModel_Serialize"></a>
@@ -179,4 +179,4 @@ Transcribes audio through upload, pre-recorded init, and result polling.
 
 **Returns:** [Task&lt;GladiaTranscriptionResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gladia/GladiaProvider.cs#L428)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gladia/GladiaProvider.cs#L431)

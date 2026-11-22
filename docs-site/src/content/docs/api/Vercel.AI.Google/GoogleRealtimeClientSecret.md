@@ -23,7 +23,7 @@ An ephemeral Gemini Live auth token and the WebSocket URL it opens.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L304)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L328)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Token expiry as unix seconds, when the provider sent one.
 
 **Value:** [long?](https://learn.microsoft.com/dotnet/api/system.int64)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L320)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L344)
 
 <a id="Vercel_AI_Google_GoogleRealtimeClientSecret_Token_"></a>
 <a id="Vercel_AI_Google_GoogleRealtimeClientSecret_Token"></a>
@@ -59,7 +59,7 @@ Auth token name.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L314)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L338)
 
 <a id="Vercel_AI_Google_GoogleRealtimeClientSecret_Url_"></a>
 <a id="Vercel_AI_Google_GoogleRealtimeClientSecret_Url"></a>
@@ -76,4 +76,4 @@ Constrained Live API WebSocket URL.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L317)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L341)

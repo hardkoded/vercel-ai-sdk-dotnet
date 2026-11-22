@@ -23,7 +23,7 @@ Batch operations. Maps to `startBatch`, `getBatchStatus`, `getBatchResults`, `li
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L878)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L931)
 
 ## Methods
 
@@ -49,7 +49,7 @@ Requests cancellation.
 
 **Returns:** [Task&lt;BatchCancelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L881)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L934)
 
 <a id="Vercel_AI_Operations_Batch_GetAllBatchResultsAsync_"></a>
 <a id="Vercel_AI_Operations_Batch_GetAllBatchResultsAsync_Vercel_AI_Operations_BatchRequestOptions_System_Threading_CancellationToken_"></a>
@@ -73,7 +73,7 @@ Reads every result of `CancellationToken)` into a list.
 
 **Returns:** [Task&lt;IReadOnlyList&lt;BatchItemResult&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L1133)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L1193)
 
 <a id="Vercel_AI_Operations_Batch_GetBatchResults_"></a>
 <a id="Vercel_AI_Operations_Batch_GetBatchResults_Vercel_AI_Operations_BatchRequestOptions_System_Threading_CancellationToken_"></a>
@@ -98,7 +98,7 @@ the caller asks for it. Use `CancellationToken)` to read every result into a lis
 
 **Returns:** [IAsyncEnumerable&lt;BatchItemResult&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L1063)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L1123)
 
 <a id="Vercel_AI_Operations_Batch_GetBatchResults__1_Vercel_AI_Operations_BatchRequestOptions_Vercel_AI_OutputSpec___0__System_Threading_CancellationToken_"></a>
 
@@ -129,7 +129,7 @@ Like `CancellationToken)`, but parses each text result with
 
 **Returns:** [IAsyncEnumerable&lt;BatchItemResult&lt;TOutput&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L1086)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L1146)
 
 <a id="Vercel_AI_Operations_Batch_GetBatchStatusAsync_"></a>
 <a id="Vercel_AI_Operations_Batch_GetBatchStatusAsync_Vercel_AI_Operations_BatchRequestOptions_System_Threading_CancellationToken_"></a>
@@ -153,7 +153,7 @@ Reads the latest status.
 
 **Returns:** [Task&lt;BatchStatus&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L1039)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L1095)
 
 <a id="Vercel_AI_Operations_Batch_ListBatchesAsync_"></a>
 <a id="Vercel_AI_Operations_Batch_ListBatchesAsync_Vercel_AI_Operations_BatchRequestOptions_System_Threading_CancellationToken_"></a>
@@ -177,16 +177,16 @@ Lists one page. `doListBatches` is invoked on the batch API instance.
 
 **Returns:** [Task&lt;BatchListResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L903)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L956)
 
 <a id="Vercel_AI_Operations_Batch_StartBatchAsync_"></a>
-<a id="Vercel_AI_Operations_Batch_StartBatchAsync_Vercel_AI_Operations_BatchRequestOptions_System_Threading_CancellationToken_"></a>
+<a id="Vercel_AI_Operations_Batch_StartBatchAsync_Vercel_AI_Operations_StartBatchOptions_System_Threading_CancellationToken_"></a>
 
-### StartBatchAsync(BatchRequestOptions, CancellationToken)
+### StartBatchAsync(StartBatchOptions, CancellationToken)
 
 
 ```csharp
-public static Task<BatchStartResult> StartBatchAsync(BatchRequestOptions request, CancellationToken cancellationToken = default)
+public static Task<BatchStartResult> StartBatchAsync(StartBatchOptions options, CancellationToken cancellationToken = default)
 ```
 
 
@@ -196,9 +196,9 @@ Validates and starts a batch.
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `request` | [BatchRequestOptions](/api/Vercel.AI.Operations/BatchRequestOptions/) |  |
+| `options` | [StartBatchOptions](/api/Vercel.AI.Operations/StartBatchOptions/) |  |
 | `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
 
 **Returns:** [Task&lt;BatchStartResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L943)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L996)

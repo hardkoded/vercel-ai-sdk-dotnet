@@ -24,7 +24,7 @@ The nested `{ "error": { "message": "...", "code": 429 } }` body is still read.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L31)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L32)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates parsed error data from the flat shape. [Code](#Vercel_AI_AssemblyAI_Asse
 | --- | --- | --- |
 | `message` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L34)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L35)
 
 <a id="Vercel_AI_AssemblyAI_AssemblyAIErrorData__ctor_System_String_System_Int32_"></a>
 
@@ -68,7 +68,7 @@ Creates parsed error data from the nested shape.
 | `message` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `code` | [int](https://learn.microsoft.com/dotnet/api/system.int32) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L40)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L41)
 
 ## Properties
 
@@ -87,7 +87,7 @@ Provider error code. Null for the flat shape, which has none.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L50)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L51)
 
 <a id="Vercel_AI_AssemblyAI_AssemblyAIErrorData_Message_"></a>
 <a id="Vercel_AI_AssemblyAI_AssemblyAIErrorData_Message"></a>
@@ -104,4 +104,4 @@ Provider message. Nested JSON is left as text.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L47)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L48)

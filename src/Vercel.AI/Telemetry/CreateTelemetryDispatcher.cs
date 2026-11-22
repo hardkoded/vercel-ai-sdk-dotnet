@@ -50,7 +50,7 @@ internal sealed class TelemetryDispatcher
     public Func<GenerateObjectStepEndEvent, CancellationToken, Task>? OnObjectStepEnd { get; init; }
 
     /// <summary>Maps to <c>onEnd</c>. Null when no integration has it.</summary>
-    public Func<GenerateTextResult, CancellationToken, Task>? OnEnd { get; init; }
+    public Func<IOperationEndEvent, CancellationToken, Task>? OnEnd { get; init; }
 
     /// <summary>Maps to <c>onLanguageModelCallStart</c>. Null when no integration has it.</summary>
     public Func<
@@ -105,6 +105,39 @@ internal sealed class TelemetryDispatcher
     /// <summary>Maps to <c>experimental_onExtractEnd</c>. Null when no integration has it.</summary>
     public Func<ExtractEndEvent, CancellationToken, Task>? OnExtractEnd { get; init; }
 
+    /// <summary>The telemetry settings of the call. Null when tracing is off. Maps to <c>telemetryMetadata</c>.</summary>
+    internal TelemetryOptions? TracingTelemetry { get; init; }
+
+    /// <summary>Whether the dispatcher publishes tracing channel spans. False when telemetry is explicitly disabled.</summary>
+    internal bool IsTracingEnabled { get; init; }
+
+    /// <summary>
+    /// Runs <paramref name="execute"/> inside a tracing channel span. Maps to <c>runInTracingChannelSpan</c>. A dispatcher without
+    /// tracing runs <paramref name="execute"/> directly.
+    /// </summary>
+    internal async Task<T> RunInTracingChannelSpan<T>(
+        string type,
+        object @event,
+        Func<Task<T>> execute
+    )
+    {
+        if (!IsTracingEnabled)
+        {
+            return await execute().ConfigureAwait(false);
+        }
+
+        // Raw operation results may contain both inputs and outputs.
+        var recordResult =
+            TracingTelemetry?.RecordInputs != false && TracingTelemetry?.RecordOutputs != false;
+        return await TracingChannelPublisher
+            .RunWithTracingChannelSpan(
+                new TelemetryTracingChannelMessage(type, AugmentTracingEvent(@event)),
+                execute,
+                recordResult
+            )
+            .ConfigureAwait(false);
+    }
+
     /// <summary>The integrations a call resolves: the per-call ones, or the global ones. Maps to the lookup in <c>createTelemetryDispatcher</c>.</summary>
     internal static IReadOnlyList<ITelemetry> ResolveIntegrations(TelemetryOptions? telemetry)
     {
@@ -150,10 +183,22 @@ internal sealed class TelemetryDispatcher
         return new TelemetryDispatcher
         {
             HasIntegrations = integrations.Count > 0,
+            IsTracingEnabled = true,
+            TracingTelemetry = telemetry,
             OnObjectStepStart = Merge(integrations.Select(i => i.OnObjectStepStart)),
             OnObjectStepEnd = Merge(integrations.Select(i => i.OnObjectStepEnd)),
-            OnEnd = Filter<GenerateTextResult>(Merge(integrations.Select(i => i.OnEnd)), result =>
-                AugmentResult(result, telemetry)
+            OnEnd = Filter<IOperationEndEvent>(Merge(integrations.Select(i => i.OnEnd)), e =>
+                e switch
+                {
+                    GenerateTextResult result => AugmentResult(result, telemetry),
+                    IRecordingFilterableEndEvent filterable
+                        when telemetry?.RecordInputs == false
+                            || telemetry?.RecordOutputs == false => filterable.FilterTelemetryEvent(
+                        telemetry.RecordInputs == false,
+                        telemetry.RecordOutputs == false
+                    ),
+                    _ => e,
+                }
             ),
             OnLanguageModelCallStart = Filter<LanguageModelCallStartEvent>(
                 Merge(integrations.Select(i => i.OnLanguageModelCallStart)),
@@ -299,6 +344,62 @@ internal sealed class TelemetryDispatcher
             ),
         };
 #pragma warning restore CS0618
+    }
+
+    // Maps to augmentEvent with filterContext: the settings and version, the runtime context filter, then the content filter.
+    private object AugmentTracingEvent(object value)
+    {
+        var telemetry = TracingTelemetry;
+        switch (value)
+        {
+            case ExtractStartEvent extract:
+                return FilterTelemetryEventHelper.FilterTelemetryEvent(
+                    new ExtractStartEvent(
+                        extract.CallId,
+                        FilterIncludedContextHelper.FilterIncludedContext(
+                            extract.RuntimeContext,
+                            telemetry?.IncludeRuntimeContext
+                        ),
+                        extract.Provider,
+                        extract.ModelId,
+                        extract.State,
+                        extract.Fields,
+                        extract.ReferenceDate,
+                        extract.MaxOutputTokens,
+                        extract.Reasoning,
+                        extract.MaxRetries,
+                        extract.Headers,
+                        extract.ProviderOptions
+                    ),
+                    telemetry
+                );
+            case DecideEvent decide:
+                return FilterTelemetryEventHelper.FilterTelemetryEvent(
+                    new DecideEvent(
+                        decide.CallId,
+                        decide.OperationId,
+                        FilterIncludedContextHelper.FilterIncludedContext(
+                            decide.RuntimeContext,
+                            telemetry?.IncludeRuntimeContext
+                        ),
+                        decide.Provider,
+                        decide.ModelId,
+                        decide.State,
+                        decide.Questions,
+                        decide.MaxRetries,
+                        decide.Headers,
+                        decide.ProviderOptions,
+                        decide.Answers,
+                        decide.Usage,
+                        decide.Warnings,
+                        maxOutputTokens: decide.MaxOutputTokens,
+                        reasoning: decide.Reasoning
+                    ),
+                    telemetry
+                );
+            default:
+                return value;
+        }
     }
 
     // Maps a deprecated callback, which takes a subclass of the event, onto the current event type.

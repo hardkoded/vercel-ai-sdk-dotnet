@@ -52,7 +52,7 @@ Creates an Azure OpenAI transcription model for a deployment. Requests go to the
 | `clock` | [Func&lt;DateTimeOffset&gt;](https://learn.microsoft.com/dotnet/api/system.func-1) |  |
 | `webSocket` | [WebSocketFactory](/api/Vercel.AI.ProviderUtils/WebSocketFactory/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L240)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L241)
 
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionModel__ctor_Vercel_AI_OpenAI_OpenAIProvider_System_String_System_Func_System_DateTimeOffset__"></a>
 
@@ -74,7 +74,7 @@ Creates a transcription model. &lt;code class="paramref"&gt;clock&lt;/code&gt; s
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `clock` | [Func&lt;DateTimeOffset&gt;](https://learn.microsoft.com/dotnet/api/system.func-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L205)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L206)
 
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionModel__ctor_Vercel_AI_OpenAI_OpenAIProvider_System_String_System_String_System_Func_System_DateTimeOffset__"></a>
 
@@ -97,7 +97,7 @@ Creates a transcription or translation model for &lt;code class="paramref"&gt;pa
 | `path` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `clock` | [Func&lt;DateTimeOffset&gt;](https://learn.microsoft.com/dotnet/api/system.func-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L213)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L214)
 
 ## Properties
 
@@ -116,7 +116,7 @@ True when `CancellationToken)` is implemented.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L325)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L326)
 
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionModel_ModelId_"></a>
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionModel_ModelId"></a>
@@ -133,7 +133,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L319)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L320)
 
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionModel_Provider_"></a>
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionModel_Provider"></a>
@@ -150,7 +150,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L313)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L314)
 
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionModel_SpecificationVersion"></a>
@@ -167,7 +167,7 @@ Specification version.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L322)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L323)
 
 ## Methods
 
@@ -192,7 +192,7 @@ Builds the multipart body so tests can inspect field names.
 
 **Returns:** [MultipartFormDataContent](https://learn.microsoft.com/dotnet/api/system.net.http.multipartformdatacontent)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L470)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L471)
 
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionModel_DoGenerateAsync_"></a>
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionModel_DoGenerateAsync_Vercel_AI_Operations_TranscriptionModelCall_System_Threading_CancellationToken_"></a>
@@ -216,7 +216,7 @@ Transcribes audio.
 
 **Returns:** [Task&lt;TranscriptionModelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L575)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L576)
 
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionModel_DoStreamAsync_"></a>
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionModel_DoStreamAsync_Vercel_AI_Operations_TranscriptionStreamCall_System_Threading_CancellationToken_"></a>
@@ -240,7 +240,7 @@ Starts a realtime streaming transcription over the OpenAI Realtime WebSocket. Ma
 
 **Returns:** [Task&lt;TranscriptionStreamStart&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L620)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L621)
 
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionModel_DoTranscribeAsync_"></a>
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionModel_DoTranscribeAsync_Vercel_AI_Provider_AudioInput_System_Threading_CancellationToken_"></a>
@@ -264,7 +264,7 @@ Transcribes audio.
 
 **Returns:** [Task&lt;TranscriptionResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L328)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L329)
 
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionModel_TranscribeAsync_"></a>
 <a id="Vercel_AI_OpenAI_OpenAITranscriptionModel_TranscribeAsync_Vercel_AI_OpenAI_OpenAITranscriptionCall_System_Threading_CancellationToken_"></a>
@@ -288,4 +288,4 @@ Transcribes audio and returns segments, language, duration, and response metadat
 
 **Returns:** [Task&lt;OpenAITranscriptionResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L339)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Transcription/OpenAITranscriptionModel.cs#L340)

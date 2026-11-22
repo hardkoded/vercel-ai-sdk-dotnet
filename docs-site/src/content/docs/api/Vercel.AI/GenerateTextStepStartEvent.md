@@ -23,7 +23,7 @@ Passed to [OnStepStart](/api/Vercel.AI/GenerateTextOptions/#Vercel_AI_GenerateTe
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1629)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1815)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Limits which tools are available for this step. Maps to `activeTools`.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1656)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1842)
 
 <a id="Vercel_AI_GenerateTextStepStartEvent_CallId_"></a>
 <a id="Vercel_AI_GenerateTextStepStartEvent_CallId"></a>
@@ -59,7 +59,7 @@ Unique identifier for this generation call, used to correlate events. Maps to `c
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1632)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1818)
 
 <a id="Vercel_AI_GenerateTextStepStartEvent_Instructions_"></a>
 <a id="Vercel_AI_GenerateTextStepStartEvent_Instructions"></a>
@@ -76,7 +76,7 @@ Instructions of the step. Maps to `instructions`.
 
 **Value:** [Instructions](/api/Vercel.AI.Prompt/Instructions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1644)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1830)
 
 <a id="Vercel_AI_GenerateTextStepStartEvent_Messages_"></a>
 <a id="Vercel_AI_GenerateTextStepStartEvent_Messages"></a>
@@ -93,7 +93,7 @@ Messages of the step, without the instructions. Maps to `messages`.
 
 **Value:** [IReadOnlyList&lt;ModelMessage&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1647)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1833)
 
 <a id="Vercel_AI_GenerateTextStepStartEvent_ModelId_"></a>
 <a id="Vercel_AI_GenerateTextStepStartEvent_ModelId"></a>
@@ -110,7 +110,7 @@ The model identifier. Maps to `modelId`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1638)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1824)
 
 <a id="Vercel_AI_GenerateTextStepStartEvent_Output_"></a>
 <a id="Vercel_AI_GenerateTextStepStartEvent_Output"></a>
@@ -127,7 +127,7 @@ The output specification for structured outputs, if configured. Maps to `output`
 
 **Value:** [OutputSpec](/api/Vercel.AI/OutputSpec/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1668)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1860)
 
 <a id="Vercel_AI_GenerateTextStepStartEvent_Provider_"></a>
 <a id="Vercel_AI_GenerateTextStepStartEvent_Provider"></a>
@@ -144,7 +144,7 @@ The provider identifier. Maps to `provider`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1635)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1821)
 
 <a id="Vercel_AI_GenerateTextStepStartEvent_ProviderOptions_"></a>
 <a id="Vercel_AI_GenerateTextStepStartEvent_ProviderOptions"></a>
@@ -161,7 +161,7 @@ Additional provider-specific options for this step. Maps to `providerOptions`.
 
 **Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1665)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1857)
 
 <a id="Vercel_AI_GenerateTextStepStartEvent_RuntimeContext_"></a>
 <a id="Vercel_AI_GenerateTextStepStartEvent_RuntimeContext"></a>
@@ -178,7 +178,7 @@ User-defined runtime context. Maps to `runtimeContext`.
 
 **Value:** [IReadOnlyDictionary&lt;string, object&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1671)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1863)
 
 <a id="Vercel_AI_GenerateTextStepStartEvent_StepNumber_"></a>
 <a id="Vercel_AI_GenerateTextStepStartEvent_StepNumber"></a>
@@ -195,7 +195,7 @@ Zero-based index of the current step. Maps to `stepNumber`.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1641)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1827)
 
 <a id="Vercel_AI_GenerateTextStepStartEvent_Steps_"></a>
 <a id="Vercel_AI_GenerateTextStepStartEvent_Steps"></a>
@@ -212,7 +212,7 @@ Results of the previous steps, empty for the first step. Maps to `steps`.
 
 **Value:** [IReadOnlyList&lt;StepResult&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1662)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1848)
 
 <a id="Vercel_AI_GenerateTextStepStartEvent_ToolChoice_"></a>
 <a id="Vercel_AI_GenerateTextStepStartEvent_ToolChoice"></a>
@@ -229,7 +229,7 @@ The tool choice configuration for this step. Maps to `toolChoice`.
 
 **Value:** [ToolChoice](/api/Vercel.AI.Provider/ToolChoice/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1653)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1839)
 
 <a id="Vercel_AI_GenerateTextStepStartEvent_ToolOrder_"></a>
 <a id="Vercel_AI_GenerateTextStepStartEvent_ToolOrder"></a>
@@ -246,7 +246,7 @@ Controls the order in which tools are sent to the provider for this step. Maps t
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1659)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1845)
 
 <a id="Vercel_AI_GenerateTextStepStartEvent_Tools_"></a>
 <a id="Vercel_AI_GenerateTextStepStartEvent_Tools"></a>
@@ -263,7 +263,7 @@ The tools available for this generation. Maps to `tools`.
 
 **Value:** [IReadOnlyList&lt;Tool&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1650)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1836)
 
 <a id="Vercel_AI_GenerateTextStepStartEvent_ToolsContext_"></a>
 <a id="Vercel_AI_GenerateTextStepStartEvent_ToolsContext"></a>
@@ -280,4 +280,4 @@ Tool context, keyed by tool name. Maps to `toolsContext`.
 
 **Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1674)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1870)

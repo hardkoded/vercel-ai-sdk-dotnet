@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <Description>Generates speech with AssemblyAI assemblyai-tts-1 and saves it to a file.</Description>
+    </PropertyGroup>
+</Project>

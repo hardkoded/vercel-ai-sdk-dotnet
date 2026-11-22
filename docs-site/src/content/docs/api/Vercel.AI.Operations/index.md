@@ -30,13 +30,13 @@ Speech, image, video, embeddings, transcription, and other operations.
 | [BatchModels](/api/Vercel.AI.Operations/BatchModels/) | Default provider used when a batch call omits one. |
 | [BatchModelUsage](/api/Vercel.AI.Operations/BatchModelUsage/) | Provider token usage before it is reshaped. |
 | [BatchOperationCall](/api/Vercel.AI.Operations/BatchOperationCall/) | Arguments for a batch operation. |
-| [BatchReference](/api/Vercel.AI.Operations/BatchReference/) | A version-2 batch reference. |
+| [BatchReference](/api/Vercel.AI.Operations/BatchReference/) | A version-2 batch reference. Upstream BatchReference. |
 | [BatchRequest](/api/Vercel.AI.Operations/BatchRequest/) | One request in a batch. |
 | [BatchRequestCounts](/api/Vercel.AI.Operations/BatchRequestCounts/) | Request counts. |
 | [BatchRequestOptions](/api/Vercel.AI.Operations/BatchRequestOptions/) | Options for batch operations. |
 | [BatchRequestWarning](/api/Vercel.AI.Operations/BatchRequestWarning/) | A warning tied to a request. |
 | [BatchStartResult](/api/Vercel.AI.Operations/BatchStartResult/) | Start acknowledgement. |
-| [BatchStatus](/api/Vercel.AI.Operations/BatchStatus/) | Status fields shared by start, list, and status calls. |
+| [BatchStatus](/api/Vercel.AI.Operations/BatchStatus/) | The latest status of a batch. It is also upstream's Batch (BatchReference & BatchStatus), so the start, list, and status results are all BatchReference values. |
 | [BatchTextGeneration](/api/Vercel.AI.Operations/BatchTextGeneration/) | A provider text generation inside a batch item. |
 | [BatchTool](/api/Vercel.AI.Operations/BatchTool/) | A tool definition forwarded to a batch without being executed. |
 | [BatchUsage](/api/Vercel.AI.Operations/BatchUsage/) | Usage returned to batch callers. |
@@ -187,6 +187,7 @@ Speech, image, video, embeddings, transcription, and other operations.
 | [SpeechTextPart](/api/Vercel.AI.Operations/SpeechTextPart/) | One piece of streamed input text. Consecutive parts are synthesized in order as one continuous script. Maps to SpeechTextPart and SpeechModelV4StreamTextPart. |
 | [SpeechTextStream](/api/Vercel.AI.Operations/SpeechTextStream/) | The text a speech model reads. The provider owns it once doStream is called: it must enumerate it to the end or dispose its enumerator on every terminal path. |
 | [SpeechTranslationModels](/api/Vercel.AI.Operations/SpeechTranslationModels/) | Resolves string speech-translation model ids. |
+| [StartBatchOptions](/api/Vercel.AI.Operations/StartBatchOptions/) | Options for CancellationToken). Upstream StartBatchOptions. Starting a batch never retries, so there is no MaxRetries. |
 | [StartVideo](/api/Vercel.AI.Operations/StartVideo/) | Starts a video generation. Maps to experimentalstartVideo. |
 | [StartVideoResult](/api/Vercel.AI.Operations/StartVideoResult/) | Result of CancellationToken). |
 | [StreamSpeech](/api/Vercel.AI.Operations/StreamSpeech/) | Streams speech audio. Maps to experimentalstreamSpeech. |

@@ -299,7 +299,7 @@ public sealed class ExperimentalStreamTextLowMemoryBehaviorTests
                         {
                             OnEnd = (e, _) =>
                             {
-                                end = e;
+                                end = (GenerateTextResult)e;
                                 return Task.CompletedTask;
                             },
                             OnLanguageModelCallEnd = (e, _) =>

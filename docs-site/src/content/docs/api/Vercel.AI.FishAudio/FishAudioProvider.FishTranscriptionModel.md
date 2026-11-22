@@ -25,7 +25,7 @@ Fish Audio transcription model. Posts multipart audio to `/v1/asr`.
 
 **Implements:** [ITranscriptionModel](/api/Vercel.AI.Provider/ITranscriptionModel/), [ITranscriptionCaller](/api/Vercel.AI.Operations/ITranscriptionCaller/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/FishAudio/FishAudioProvider.cs#L403)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/FishAudio/FishAudioProvider.cs#L408)
 
 ## Constructors
 
@@ -50,7 +50,7 @@ Creates a transcription model. &lt;code class="paramref"&gt;clock&lt;/code&gt; s
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `clock` | [Func&lt;DateTime&gt;](https://learn.microsoft.com/dotnet/api/system.func-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/FishAudio/FishAudioProvider.cs#L409)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/FishAudio/FishAudioProvider.cs#L414)
 
 ## Properties
 
@@ -69,7 +69,7 @@ True when `CancellationToken)` is implemented.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/FishAudio/FishAudioProvider.cs#L430)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/FishAudio/FishAudioProvider.cs#L435)
 
 <a id="Vercel_AI_FishAudio_FishAudioProvider_FishTranscriptionModel_ModelId_"></a>
 <a id="Vercel_AI_FishAudio_FishAudioProvider_FishTranscriptionModel_ModelId"></a>
@@ -86,7 +86,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/FishAudio/FishAudioProvider.cs#L427)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/FishAudio/FishAudioProvider.cs#L432)
 
 <a id="Vercel_AI_FishAudio_FishAudioProvider_FishTranscriptionModel_Provider_"></a>
 <a id="Vercel_AI_FishAudio_FishAudioProvider_FishTranscriptionModel_Provider"></a>
@@ -103,7 +103,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/FishAudio/FishAudioProvider.cs#L424)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/FishAudio/FishAudioProvider.cs#L429)
 
 <a id="Vercel_AI_FishAudio_FishAudioProvider_FishTranscriptionModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_FishAudio_FishAudioProvider_FishTranscriptionModel_SpecificationVersion"></a>
@@ -120,7 +120,7 @@ Specification version.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/FishAudio/FishAudioProvider.cs#L421)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/FishAudio/FishAudioProvider.cs#L426)
 
 ## Methods
 
@@ -146,7 +146,7 @@ Transcribes audio.
 
 **Returns:** [Task&lt;TranscriptionModelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/FishAudio/FishAudioProvider.cs#L455)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/FishAudio/FishAudioProvider.cs#L460)
 
 <a id="Vercel_AI_FishAudio_FishAudioProvider_FishTranscriptionModel_DoStreamAsync_"></a>
 <a id="Vercel_AI_FishAudio_FishAudioProvider_FishTranscriptionModel_DoStreamAsync_Vercel_AI_Operations_TranscriptionStreamCall_System_Threading_CancellationToken_"></a>
@@ -170,7 +170,7 @@ Starts a stream, or null when streaming is unsupported.
 
 **Returns:** [Task&lt;TranscriptionStreamStart&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/FishAudio/FishAudioProvider.cs#L535)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/FishAudio/FishAudioProvider.cs#L540)
 
 <a id="Vercel_AI_FishAudio_FishAudioProvider_FishTranscriptionModel_DoTranscribeAsync_"></a>
 <a id="Vercel_AI_FishAudio_FishAudioProvider_FishTranscriptionModel_DoTranscribeAsync_Vercel_AI_Provider_AudioInput_System_Threading_CancellationToken_"></a>
@@ -194,4 +194,4 @@ Transcribes audio.
 
 **Returns:** [Task&lt;TranscriptionResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/FishAudio/FishAudioProvider.cs#L433)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/FishAudio/FishAudioProvider.cs#L438)

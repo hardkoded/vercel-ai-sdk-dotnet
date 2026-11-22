@@ -153,121 +153,147 @@ public static class Extract
             request.Headers,
             providerOptions
         );
-        await OperationCallbacks.NotifyAsync(startEvent, request.OnStart).ConfigureAwait(false);
-        await telemetryDispatcher.OnStartAsync(startEvent, token).ConfigureAwait(false);
+        return await telemetryDispatcher
+            .RunInTracingChannelSpan(
+                TelemetryTracingEventType.ExperimentalExtract,
+                RestrictedTelemetryDispatcher.ToTelemetryEvent(startEvent),
+                async () =>
+                {
+                    await OperationCallbacks
+                        .NotifyAsync(startEvent, request.OnStart)
+                        .ConfigureAwait(false);
+                    await telemetryDispatcher.OnStartAsync(startEvent, token).ConfigureAwait(false);
 
-        try
-        {
-            var preparedState = await DecisionState
-                .PrepareDecisionStateAsync(request.State!, token, request.Download)
-                .ConfigureAwait(false);
-            var modelCallEvent = new ExtractionModelCallStartEvent(
-                callId,
-                model.Provider,
-                model.ModelId,
-                preparedState,
-                fields,
-                request.ReferenceDate
-            );
-            await telemetryDispatcher
-                .ExperimentalOnExtractionModelCallStartAsync(modelCallEvent, token)
-                .ConfigureAwait(false);
-            var headers = OperationHeaders.WithUserAgent(request.Headers, AiSdkVersion.UserAgent);
-            var result = await OperationRetry
-                .ExecuteAsync(
-                    request.MaxRetries,
-                    token,
-                    request.AbortReason,
-                    async ct =>
+                    try
                     {
-                        OperationRetry.ThrowIfAborted(ct, request.AbortReason);
-                        return await model
-                            .DoExtractAsync(
-                                new ExtractionModelCall(
-                                    preparedState,
-                                    fields,
-                                    providerOptions,
-                                    headers,
-                                    ct,
-                                    request.ReferenceDate,
-                                    request.MaxOutputTokens,
-                                    request.Reasoning
-                                ),
-                                ct
+                        var preparedState = await DecisionState
+                            .PrepareDecisionStateAsync(request.State!, token, request.Download)
+                            .ConfigureAwait(false);
+                        var modelCallEvent = new ExtractionModelCallStartEvent(
+                            callId,
+                            model.Provider,
+                            model.ModelId,
+                            preparedState,
+                            fields,
+                            request.ReferenceDate
+                        );
+                        await telemetryDispatcher
+                            .ExperimentalOnExtractionModelCallStartAsync(modelCallEvent, token)
+                            .ConfigureAwait(false);
+                        var headers = OperationHeaders.WithUserAgent(
+                            request.Headers,
+                            AiSdkVersion.UserAgent
+                        );
+                        var result = await OperationRetry
+                            .ExecuteAsync(
+                                request.MaxRetries,
+                                token,
+                                request.AbortReason,
+                                async ct =>
+                                {
+                                    OperationRetry.ThrowIfAborted(ct, request.AbortReason);
+                                    return await model
+                                        .DoExtractAsync(
+                                            new ExtractionModelCall(
+                                                preparedState,
+                                                fields,
+                                                providerOptions,
+                                                headers,
+                                                ct,
+                                                request.ReferenceDate,
+                                                request.MaxOutputTokens,
+                                                request.Reasoning
+                                            ),
+                                            ct
+                                        )
+                                        .ConfigureAwait(false);
+                                },
+                                null
                             )
                             .ConfigureAwait(false);
-                    },
-                    null
-                )
-                .ConfigureAwait(false);
 
-            OperationRetry.ThrowIfAborted(token, request.AbortReason);
-            var answers = NormalizeAnswers(result.Answers);
-            ValidateExtraction.ValidateExtractionAnswers(fields, preparedState, answers);
-            var refused = fields.Keys.Where(id => answers[id].Type == "refusal").ToArray();
-            if (refused.Length > 0)
-            {
-                throw new ExtractionRefusalError(refused, model.Provider, model.ModelId);
-            }
+                        OperationRetry.ThrowIfAborted(token, request.AbortReason);
+                        var answers = NormalizeAnswers(result.Answers);
+                        ValidateExtraction.ValidateExtractionAnswers(
+                            fields,
+                            preparedState,
+                            answers
+                        );
+                        var refused = fields
+                            .Keys.Where(id => answers[id].Type == "refusal")
+                            .ToArray();
+                        if (refused.Length > 0)
+                        {
+                            throw new ExtractionRefusalError(
+                                refused,
+                                model.Provider,
+                                model.ModelId
+                            );
+                        }
 
-            await telemetryDispatcher
-                .ExperimentalOnExtractionModelCallEndAsync(
-                    new ExtractionModelCallEndEvent(
-                        modelCallEvent,
-                        answers,
-                        result.Usage,
-                        result.Warnings,
-                        result.ProviderMetadata,
-                        result.Response
-                    ),
-                    token
-                )
-                .ConfigureAwait(false);
+                        await telemetryDispatcher
+                            .ExperimentalOnExtractionModelCallEndAsync(
+                                new ExtractionModelCallEndEvent(
+                                    modelCallEvent,
+                                    answers,
+                                    result.Usage,
+                                    result.Warnings,
+                                    result.ProviderMetadata,
+                                    result.Response
+                                ),
+                                token
+                            )
+                            .ConfigureAwait(false);
 
-            WarningLog.Write(result.Warnings, model.Provider, model.ModelId);
-            var input = result.Usage?.InputTokens;
-            var output = result.Usage?.OutputTokens;
-            var usage = new OperationUsage(
-                input,
-                output,
-                input != null && output != null ? input + output : null
-            );
-            var now = request.Now?.Invoke() ?? DateTime.UtcNow;
-            var response = new ProviderResponse(
-                result.Response?.Headers,
-                result.Response?.Body,
-                result.Response?.Id,
-                result.Response?.Timestamp ?? now,
-                result.Response?.ModelId ?? model.ModelId,
-                result.Response?.ProviderMetadata
-            );
-            var extraction = new ExtractionResult(
-                answers,
-                usage,
-                result.Warnings,
-                result.ProviderMetadata,
-                response
-            );
-            var endEvent = new ExtractEndEvent(
-                startEvent,
-                extraction.Answers,
-                extraction.Usage,
-                extraction.Warnings,
-                extraction.ProviderMetadata,
-                extraction.Response
-            );
-            await OperationCallbacks.NotifyAsync(endEvent, request.OnEnd).ConfigureAwait(false);
-            await telemetryDispatcher.OnEndAsync(endEvent, token).ConfigureAwait(false);
-            return extraction;
-        }
-        catch (Exception error)
-        {
-            // The failure being reported may be a cancellation, so delivery ignores the token.
-            await telemetryDispatcher
-                .OnErrorAsync(callId, error, CancellationToken.None)
-                .ConfigureAwait(false);
-            throw;
-        }
+                        WarningLog.Write(result.Warnings, model.Provider, model.ModelId);
+                        var input = result.Usage?.InputTokens;
+                        var output = result.Usage?.OutputTokens;
+                        var usage = new OperationUsage(
+                            input,
+                            output,
+                            input != null && output != null ? input + output : null
+                        );
+                        var now = request.Now?.Invoke() ?? DateTime.UtcNow;
+                        var response = new ProviderResponse(
+                            result.Response?.Headers,
+                            result.Response?.Body,
+                            result.Response?.Id,
+                            result.Response?.Timestamp ?? now,
+                            result.Response?.ModelId ?? model.ModelId,
+                            result.Response?.ProviderMetadata
+                        );
+                        var extraction = new ExtractionResult(
+                            answers,
+                            usage,
+                            result.Warnings,
+                            result.ProviderMetadata,
+                            response
+                        );
+                        var endEvent = new ExtractEndEvent(
+                            startEvent,
+                            extraction.Answers,
+                            extraction.Usage,
+                            extraction.Warnings,
+                            extraction.ProviderMetadata,
+                            extraction.Response
+                        );
+                        await OperationCallbacks
+                            .NotifyAsync(endEvent, request.OnEnd)
+                            .ConfigureAwait(false);
+                        await telemetryDispatcher.OnEndAsync(endEvent, token).ConfigureAwait(false);
+                        return extraction;
+                    }
+                    catch (Exception error)
+                    {
+                        // The failure being reported may be a cancellation, so delivery ignores the token.
+                        await telemetryDispatcher
+                            .OnErrorAsync(callId, error, CancellationToken.None)
+                            .ConfigureAwait(false);
+                        throw;
+                    }
+                }
+            )
+            .ConfigureAwait(false);
     }
 
     // An empty text or an empty list means the state has no value. Refusals pass through unchanged.

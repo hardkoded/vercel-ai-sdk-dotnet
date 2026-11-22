@@ -153,4 +153,4 @@ Reads `detail.error`, then the shared OpenAI-compatible error message.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/DeepInfra/DeepInfraImageModel.cs#L107)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/DeepInfra/DeepInfraImageModel.cs#L115)

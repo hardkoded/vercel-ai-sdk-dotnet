@@ -23,7 +23,7 @@ Metadata returned with a transcription.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L347)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L348)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates response metadata.
 | `headers` | [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2) |  |
 | `body` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L350)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L351)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Raw transcript JSON from the final poll.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L373)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L374)
 
 <a id="Vercel_AI_AssemblyAI_AssemblyAITranscriptionResponse_Headers_"></a>
 <a id="Vercel_AI_AssemblyAI_AssemblyAITranscriptionResponse_Headers"></a>
@@ -85,7 +85,7 @@ Headers from the final transcript poll.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L370)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L371)
 
 <a id="Vercel_AI_AssemblyAI_AssemblyAITranscriptionResponse_ModelId_"></a>
 <a id="Vercel_AI_AssemblyAI_AssemblyAITranscriptionResponse_ModelId"></a>
@@ -102,7 +102,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L367)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L368)
 
 <a id="Vercel_AI_AssemblyAI_AssemblyAITranscriptionResponse_Timestamp_"></a>
 <a id="Vercel_AI_AssemblyAI_AssemblyAITranscriptionResponse_Timestamp"></a>
@@ -119,4 +119,4 @@ Timestamp captured when the call started.
 
 **Value:** [DateTimeOffset](https://learn.microsoft.com/dotnet/api/system.datetimeoffset)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L364)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L365)

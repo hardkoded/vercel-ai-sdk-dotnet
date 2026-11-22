@@ -287,7 +287,7 @@ Reads operation status.
 
 **Returns:** [Task&lt;VideoStatusResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsVideoModel.cs#L247)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsVideoModel.cs#L252)
 
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsVideoModel_HandleWebhookAsync_"></a>
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsVideoModel_HandleWebhookAsync_System_Func_System_Threading_Tasks_Task_Vercel_AI_Operations_VideoWebhook___System_Threading_CancellationToken_"></a>
@@ -311,7 +311,7 @@ Turns a webhook factory into a URL and a received task.
 
 **Returns:** [Task&lt;VideoWebhook&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsVideoModel.cs#L351)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/BlackForestLabs/BlackForestLabsVideoModel.cs#L361)
 
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsVideoModel_ResolveMaxVideosPerCallAsync_"></a>
 <a id="Vercel_AI_BlackForestLabs_BlackForestLabsVideoModel_ResolveMaxVideosPerCallAsync_System_Threading_CancellationToken_"></a>

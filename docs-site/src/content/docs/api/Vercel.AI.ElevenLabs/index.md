@@ -21,6 +21,9 @@ Public types in the `Vercel.AI.ElevenLabs` namespace.
 | [ElevenLabsErrorParseResult](/api/Vercel.AI.ElevenLabs/ElevenLabsErrorParseResult/) | Result of parsing an ElevenLabs error body. |
 | [ElevenLabsFailedResponseHandler](/api/Vercel.AI.ElevenLabs/ElevenLabsFailedResponseHandler/) | Creates .NET API exceptions from ElevenLabs failed JSON responses. |
 | [ElevenLabsLegacyError](/api/Vercel.AI.ElevenLabs/ElevenLabsLegacyError/) | Legacy ElevenLabs error object. |
+| [ElevenLabsMusicResponse](/api/Vercel.AI.ElevenLabs/ElevenLabsMusicResponse/) | Reads the multipart/mixed response of /v1/music/detailed. Maps to elevenlabs-music-response.ts. |
+| [ElevenLabsMusicTimestampsResponse](/api/Vercel.AI.ElevenLabs/ElevenLabsMusicTimestampsResponse/) | Audio and optional lyric word timings from /v1/music/detailed. Maps to ElevenLabsMusicTimestampsResponse. |
+| [ElevenLabsMusicWordTimestamp](/api/Vercel.AI.ElevenLabs/ElevenLabsMusicWordTimestamp/) | One lyric word with its start and end time in milliseconds. |
 | [ElevenLabsOptions](/api/Vercel.AI.ElevenLabs/ElevenLabsOptions/) | ElevenLabs settings. |
 | [ElevenLabsProvider](/api/Vercel.AI.ElevenLabs/ElevenLabsProvider/) | ElevenLabs provider. |
 | [ElevenLabsProvider.ElevenLabsSpeechModel](/api/Vercel.AI.ElevenLabs/ElevenLabsProvider.ElevenLabsSpeechModel/) | ElevenLabs text-to-speech model. |

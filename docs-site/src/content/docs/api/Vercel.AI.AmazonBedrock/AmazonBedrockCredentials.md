@@ -23,7 +23,7 @@ AWS credentials used to sign Amazon Bedrock requests.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L13)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L15)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates credentials.
 | `secretAccessKey` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `sessionToken` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L16)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L18)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Access key id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L33)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L35)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockCredentials_Region_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockCredentials_Region"></a>
@@ -85,7 +85,7 @@ AWS region.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L30)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L32)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockCredentials_SecretAccessKey_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockCredentials_SecretAccessKey"></a>
@@ -102,7 +102,7 @@ Secret access key.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L36)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L38)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockCredentials_SessionToken_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockCredentials_SessionToken"></a>
@@ -119,4 +119,4 @@ Optional session token.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L39)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L41)

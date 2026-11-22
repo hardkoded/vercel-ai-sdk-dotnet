@@ -23,7 +23,7 @@ API-key fetch wrapper. The transport is read when the call is sent, not when the
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L281)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L283)
 
 ## Constructors
 
@@ -38,7 +38,7 @@ public AmazonBedrockApiKeyFetch(string apiKey)
 ```
 
 
-Creates a wrapper for &lt;code class="paramref"&gt;apiKey&lt;/code&gt;.
+Creates a wrapper for the static &lt;code class="paramref"&gt;apiKey&lt;/code&gt;.
 
 **Parameters**
 
@@ -46,7 +46,27 @@ Creates a wrapper for &lt;code class="paramref"&gt;apiKey&lt;/code&gt;.
 | --- | --- | --- |
 | `apiKey` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L286)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L289)
+
+<a id="Vercel_AI_AmazonBedrock_AmazonBedrockApiKeyFetch__ctor_Vercel_AI_ProviderUtils_Resolvable_System_String__"></a>
+
+### `AmazonBedrockApiKeyFetch(Resolvable<string>)`
+
+
+```csharp
+public AmazonBedrockApiKeyFetch(Resolvable<string> apiKey)
+```
+
+
+Creates a wrapper for an API key that is resolved before each request and must resolve to a non-empty key when it is a callback or a task.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `apiKey` | `Resolvable&lt;string&gt;` |  |
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L297)
 
 ## Properties
 
@@ -65,7 +85,7 @@ Optional transport. When unset, the prepared call is returned directly.
 
 **Value:** [Func&lt;AmazonBedrockPreparedCall, AmazonBedrockPreparedCall&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L292)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L303)
 
 ## Methods
 
@@ -80,7 +100,7 @@ public AmazonBedrockPreparedCall Send(string url, string? method, string? body, 
 ```
 
 
-Applies the API key and user-agent, then invokes [Transport](#Vercel_AI_AmazonBedrock_AmazonBedrockApiKeyFetch_Transport) if one is set.
+Applies the static API key and user-agent, then invokes [Transport](#Vercel_AI_AmazonBedrock_AmazonBedrockApiKeyFetch_Transport) if one is set.
 
 **Parameters**
 
@@ -93,4 +113,32 @@ Applies the API key and user-agent, then invokes [Transport](#Vercel_AI_AmazonBe
 
 **Returns:** [AmazonBedrockPreparedCall](/api/Vercel.AI.AmazonBedrock/AmazonBedrockPreparedCall/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L295)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L335)
+
+<a id="Vercel_AI_AmazonBedrock_AmazonBedrockApiKeyFetch_SendAsync_"></a>
+<a id="Vercel_AI_AmazonBedrock_AmazonBedrockApiKeyFetch_SendAsync_System_String_System_String_System_String_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Threading_CancellationToken_"></a>
+
+### `SendAsync(string, string?, string?, IReadOnlyDictionary<string, string?>?, CancellationToken)`
+
+
+```csharp
+public Task<AmazonBedrockPreparedCall> SendAsync(string url, string? method, string? body, IReadOnlyDictionary<string, string?>? headers, CancellationToken cancellationToken = default)
+```
+
+
+Resolves the API key, applies it and the user-agent, then invokes [Transport](#Vercel_AI_AmazonBedrock_AmazonBedrockApiKeyFetch_Transport) if one is set.
+A callback or task that resolves to an empty key throws.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `url` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+| `method` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+| `body` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+| `headers` | [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2) |  |
+| `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
+
+**Returns:** [Task&lt;AmazonBedrockPreparedCall&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L309)

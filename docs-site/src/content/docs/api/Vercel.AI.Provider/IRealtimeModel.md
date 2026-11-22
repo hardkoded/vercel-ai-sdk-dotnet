@@ -21,6 +21,6 @@ public interface IRealtimeModel
 
 Realtime model specification.
 
-**Derived:** [GatewayRealtimeModel](/api/Vercel.AI.Gateway/GatewayRealtimeModel/), [GoogleRealtimeModel](/api/Vercel.AI.Google/GoogleRealtimeModel/), [OpenAIRealtimeModel](/api/Vercel.AI.OpenAI/OpenAIRealtimeModel/), [OpenAIRealtimeModelLive](/api/Vercel.AI.OpenAI/OpenAIRealtimeModelLive/), [XaiRealtimeModel](/api/Vercel.AI.Xai/XaiRealtimeModel/)
+**Derived:** [GatewayRealtimeModel](/api/Vercel.AI.Gateway/GatewayRealtimeModel/), [GatewayRealtimeModelLive](/api/Vercel.AI.Gateway/GatewayRealtimeModelLive/), [GoogleRealtimeModel](/api/Vercel.AI.Google/GoogleRealtimeModel/), [MistralRealtimeModel](/api/Vercel.AI.Mistral/MistralRealtimeModel/), [OpenAIRealtimeModel](/api/Vercel.AI.OpenAI/OpenAIRealtimeModel/), [OpenAIRealtimeModelLive](/api/Vercel.AI.OpenAI/OpenAIRealtimeModelLive/), [XaiRealtimeModel](/api/Vercel.AI.Xai/XaiRealtimeModel/)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L781)

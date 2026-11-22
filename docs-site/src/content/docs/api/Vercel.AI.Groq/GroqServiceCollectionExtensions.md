@@ -23,7 +23,7 @@ Registers [GroqProvider](/api/Vercel.AI.Groq/GroqProvider/).
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Groq/GroqProvider.cs#L85)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Groq/GroqProvider.cs#L149)
 
 ## Methods
 
@@ -49,4 +49,4 @@ Adds the provider.
 
 **Returns:** [IServiceCollection](https://learn.microsoft.com/dotnet/api/microsoft.extensions.dependencyinjection.iservicecollection)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Groq/GroqProvider.cs#L88)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Groq/GroqProvider.cs#L152)

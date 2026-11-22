@@ -34,15 +34,16 @@ Azure OpenAI settings.
 
 
 ```csharp
-public string? ApiKey { get; set; }
+public Resolvable<string>? ApiKey { get; set; }
 ```
 
 
-Explicit key. Falls back to `AZURE_API_KEY`.
+Explicit key: a value, a task, or a synchronous or asynchronous callback that is resolved before each request.
+Falls back to `AZURE_API_KEY`.
 
-**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+**Value:** `Resolvable&lt;string&gt;`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L30)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L33)
 
 <a id="Vercel_AI_Azure_AzureOpenAIOptions_ApiVersion_"></a>
 <a id="Vercel_AI_Azure_AzureOpenAIOptions_ApiVersion"></a>
@@ -59,7 +60,7 @@ API version query parameter. Defaults to `v1`, also when set to null or empty.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L33)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L36)
 
 <a id="Vercel_AI_Azure_AzureOpenAIOptions_BaseUrl_"></a>
 <a id="Vercel_AI_Azure_AzureOpenAIOptions_BaseUrl"></a>
@@ -94,7 +95,7 @@ Headers copied onto every request.
 
 **Value:** [Dictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L72)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L75)
 
 <a id="Vercel_AI_Azure_AzureOpenAIOptions_MaiBaseUrl_"></a>
 <a id="Vercel_AI_Azure_AzureOpenAIOptions_MaiBaseUrl"></a>
@@ -112,7 +113,7 @@ URL prefix for MAI APIs (MAI-Image, MAI-Transcribe-2-Streaming). Defaults to
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L55)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L58)
 
 <a id="Vercel_AI_Azure_AzureOpenAIOptions_ResourceName_"></a>
 <a id="Vercel_AI_Azure_AzureOpenAIOptions_ResourceName"></a>
@@ -150,7 +151,7 @@ URL prefix for Azure Speech (MAI-Transcribe transcription and MAI-Voice speech),
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L49)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L52)
 
 <a id="Vercel_AI_Azure_AzureOpenAIOptions_TokenProvider_"></a>
 <a id="Vercel_AI_Azure_AzureOpenAIOptions_TokenProvider"></a>
@@ -167,7 +168,7 @@ Microsoft Entra token provider. Each call receives a fresh bearer token.
 
 **Value:** [Func&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.func-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L41)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L44)
 
 <a id="Vercel_AI_Azure_AzureOpenAIOptions_UseDeploymentBasedUrls_"></a>
 <a id="Vercel_AI_Azure_AzureOpenAIOptions_UseDeploymentBasedUrls"></a>
@@ -184,7 +185,7 @@ Uses the legacy `/openai/deployments/{deploymentId}{path}` routes instead of `/o
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L38)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L41)
 
 <a id="Vercel_AI_Azure_AzureOpenAIOptions_WebSocket_"></a>
 <a id="Vercel_AI_Azure_AzureOpenAIOptions_WebSocket"></a>
@@ -203,4 +204,4 @@ headers. Maps to `webSocket`.
 
 **Value:** [WebSocketFactory](/api/Vercel.AI.ProviderUtils/WebSocketFactory/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L62)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L65)

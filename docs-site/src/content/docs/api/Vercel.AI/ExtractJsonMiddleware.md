@@ -27,6 +27,43 @@ Strips markdown JSON fences. Maps to `extractJsonMiddleware`.
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L386)
 
+## Constructors
+
+<a id="Vercel_AI_ExtractJsonMiddleware__ctor_"></a>
+<a id="Vercel_AI_ExtractJsonMiddleware__ctor"></a>
+
+### ExtractJsonMiddleware()
+
+
+```csharp
+public ExtractJsonMiddleware()
+```
+
+
+Creates middleware that strips markdown code fences.
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L391)
+
+<a id="Vercel_AI_ExtractJsonMiddleware__ctor_System_Func_System_String_System_String__"></a>
+
+### `ExtractJsonMiddleware(Func<string, string>?)`
+
+
+```csharp
+public ExtractJsonMiddleware(Func<string, string>? transform)
+```
+
+
+Creates middleware with an optional custom transform.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `transform` | [Func&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.func-2) | Custom transform applied to text content and structured output text. Replaces the default markdown fence stripping when set. |
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L398)
+
 ## Methods
 
 <a id="Vercel_AI_ExtractJsonMiddleware_WrapGenerateAsync_"></a>
@@ -52,4 +89,4 @@ Wraps a generate call.
 
 **Returns:** [Task&lt;LanguageModelGenerateResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L389)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L404)

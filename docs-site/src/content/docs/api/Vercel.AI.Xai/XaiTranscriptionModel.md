@@ -172,7 +172,7 @@ Transcribes audio.
 
 **Returns:** [Task&lt;TranscriptionModelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiTranscriptionModel.cs#L124)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiTranscriptionModel.cs#L127)
 
 <a id="Vercel_AI_Xai_XaiTranscriptionModel_DoStreamAsync_"></a>
 <a id="Vercel_AI_Xai_XaiTranscriptionModel_DoStreamAsync_Vercel_AI_Operations_TranscriptionStreamCall_System_Threading_CancellationToken_"></a>
@@ -196,7 +196,7 @@ Starts a stream, or null when streaming is unsupported.
 
 **Returns:** [Task&lt;TranscriptionStreamStart&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiTranscriptionModel.cs#L263)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiTranscriptionModel.cs#L274)
 
 <a id="Vercel_AI_Xai_XaiTranscriptionModel_DoTranscribeAsync_"></a>
 <a id="Vercel_AI_Xai_XaiTranscriptionModel_DoTranscribeAsync_Vercel_AI_Provider_AudioInput_System_Threading_CancellationToken_"></a>
@@ -220,7 +220,7 @@ Transcribes audio.
 
 **Returns:** [Task&lt;TranscriptionResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiTranscriptionModel.cs#L103)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiTranscriptionModel.cs#L106)
 
 <a id="Vercel_AI_Xai_XaiTranscriptionModel_Serialize_"></a>
 <a id="Vercel_AI_Xai_XaiTranscriptionModel_Serialize"></a>

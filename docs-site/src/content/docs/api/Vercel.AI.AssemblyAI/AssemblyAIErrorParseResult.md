@@ -23,7 +23,7 @@ Result of parsing an AssemblyAI error body.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L54)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L55)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates a parse result.
 | `success` | [bool](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 | `value` | [AssemblyAIErrorData](/api/Vercel.AI.AssemblyAI/AssemblyAIErrorData/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L57)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L58)
 
 ## Properties
 
@@ -66,7 +66,7 @@ Same payload as [Value](#Vercel_AI_AssemblyAI_AssemblyAIErrorParseResult_Value).
 
 **Value:** [AssemblyAIErrorData](/api/Vercel.AI.AssemblyAI/AssemblyAIErrorData/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L71)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L72)
 
 <a id="Vercel_AI_AssemblyAI_AssemblyAIErrorParseResult_Success_"></a>
 <a id="Vercel_AI_AssemblyAI_AssemblyAIErrorParseResult_Success"></a>
@@ -83,7 +83,7 @@ True when the body had a flat `error` string, or a nested `error.message` and `e
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L65)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L66)
 
 <a id="Vercel_AI_AssemblyAI_AssemblyAIErrorParseResult_Value_"></a>
 <a id="Vercel_AI_AssemblyAI_AssemblyAIErrorParseResult_Value"></a>
@@ -100,4 +100,4 @@ Parsed error. Keys other than `error`, such as `status`, are dropped.
 
 **Value:** [AssemblyAIErrorData](/api/Vercel.AI.AssemblyAI/AssemblyAIErrorData/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L68)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L69)

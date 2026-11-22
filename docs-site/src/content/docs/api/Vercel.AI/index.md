@@ -145,7 +145,8 @@ Client, text generation, streaming, tools, and agents.
 | [IAiClient](/api/Vercel.AI/IAiClient/) | Core AI SDK client. Maps to the ai package functions. |
 | [IAiTelemetry](/api/Vercel.AI/IAiTelemetry/) | Telemetry hook invoked around generate and stream calls. |
 | [ILanguageModelMiddleware](/api/Vercel.AI/ILanguageModelMiddleware/) | Wraps doGenerate and doStream. Maps to language-model middleware. |
-| [ITelemetry](/api/Vercel.AI/ITelemetry/) | Implement this interface to create custom telemetry integrations. A callback is optional: return null from a property to skip it. Maps to Telemetry in telemetry/telemetry.ts. Only onEnd, onLanguageModelCallStart, onLanguageModelCallEnd, onError and the extract and decide callbacks are ported so far. |
+| [IOperationStartEvent](/api/Vercel.AI/IOperationStartEvent/) | An event passed to OnStart when an operation begins. Stands in for the OperationStartEvent union in telemetry/telemetry.ts, which C# cannot express. |
+| [ITelemetry](/api/Vercel.AI/ITelemetry/) | Implement this interface to create custom telemetry integrations. A callback is optional: return null from a property to skip it. Maps to Telemetry in telemetry/telemetry.ts. Only onStart, onObjectStepStart, onObjectStepEnd and the text generation callbacks ( onStepStart, onLanguageModelCallStart, onLanguageModelCallEnd, onToolExecutionStart, onToolExecutionEnd, onStepEnd, onStepFinish, onEnd, onAbort and onError) and the extract and decide callbacks are ported so far. |
 
 ## Delegates
 

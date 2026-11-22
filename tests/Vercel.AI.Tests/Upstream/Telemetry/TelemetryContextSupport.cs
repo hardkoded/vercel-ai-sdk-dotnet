@@ -33,7 +33,7 @@ internal static class TelemetryContextSupport
             OnStart = (e, _) => Record(contexts, ((GenerateTextStartEvent)e).RuntimeContext),
             OnStepStart = (e, _) => Record(contexts, e.RuntimeContext),
             OnStepEnd = (e, _) => Record(contexts, e.RuntimeContext),
-            OnEnd = (e, _) => Record(contexts, e.RuntimeContext),
+            OnEnd = (e, _) => Record(contexts, ((GenerateTextResult)e).RuntimeContext),
         };
 
     /// <summary>Records the tools context that onStart, onStepStart, onStepEnd and onEnd receive, as JSON.</summary>
@@ -43,7 +43,7 @@ internal static class TelemetryContextSupport
             OnStart = (e, _) => Record(contexts, ((GenerateTextStartEvent)e).ToolsContext),
             OnStepStart = (e, _) => Record(contexts, e.ToolsContext),
             OnStepEnd = (e, _) => Record(contexts, e.ToolsContext),
-            OnEnd = (e, _) => Record(contexts, e.ToolsContext),
+            OnEnd = (e, _) => Record(contexts, ((GenerateTextResult)e).ToolsContext),
         };
 
     private static Task Record(List<string> contexts, object? context)

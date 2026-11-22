@@ -23,7 +23,7 @@ AssemblyAI transcription, including word segments and audio-intelligence metadat
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L377)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L378)
 
 ## Constructors
 
@@ -52,7 +52,7 @@ Creates a transcription result.
 | `providerMetadata` | [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 | `response` | [AssemblyAITranscriptionResponse](/api/Vercel.AI.AssemblyAI/AssemblyAITranscriptionResponse/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L380)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L381)
 
 ## Properties
 
@@ -71,7 +71,7 @@ Audio duration, or the last word end when the duration is missing.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L409)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L410)
 
 <a id="Vercel_AI_AssemblyAI_AssemblyAITranscriptionResult_Language_"></a>
 <a id="Vercel_AI_AssemblyAI_AssemblyAITranscriptionResult_Language"></a>
@@ -88,7 +88,7 @@ Language code reported on the transcript.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L406)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L407)
 
 <a id="Vercel_AI_AssemblyAI_AssemblyAITranscriptionResult_ProviderMetadata_"></a>
 <a id="Vercel_AI_AssemblyAI_AssemblyAITranscriptionResult_ProviderMetadata"></a>
@@ -106,7 +106,7 @@ Timings inside these objects stay in milliseconds, as AssemblyAI returns them.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L418)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L419)
 
 <a id="Vercel_AI_AssemblyAI_AssemblyAITranscriptionResult_Response_"></a>
 <a id="Vercel_AI_AssemblyAI_AssemblyAITranscriptionResult_Response"></a>
@@ -123,7 +123,7 @@ Response metadata.
 
 **Value:** [AssemblyAITranscriptionResponse](/api/Vercel.AI.AssemblyAI/AssemblyAITranscriptionResponse/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L421)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L422)
 
 <a id="Vercel_AI_AssemblyAI_AssemblyAITranscriptionResult_Segments_"></a>
 <a id="Vercel_AI_AssemblyAI_AssemblyAITranscriptionResult_Segments"></a>
@@ -140,7 +140,7 @@ Words with timings in seconds.
 
 **Value:** [IReadOnlyList&lt;AssemblyAITranscriptionSegment&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L403)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L404)
 
 <a id="Vercel_AI_AssemblyAI_AssemblyAITranscriptionResult_Text_"></a>
 <a id="Vercel_AI_AssemblyAI_AssemblyAITranscriptionResult_Text"></a>
@@ -157,7 +157,7 @@ Full transcript.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L400)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L401)
 
 <a id="Vercel_AI_AssemblyAI_AssemblyAITranscriptionResult_Warnings_"></a>
 <a id="Vercel_AI_AssemblyAI_AssemblyAITranscriptionResult_Warnings"></a>
@@ -174,4 +174,4 @@ Warnings produced while building the request.
 
 **Value:** [IReadOnlyList&lt;ModelWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L412)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L413)

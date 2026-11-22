@@ -21,7 +21,7 @@ public enum ToolInputEncoding
 
 Encoding of the deltas that follow a tool-input-start part.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2871)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2893)
 
 ## Fields
 
@@ -39,7 +39,7 @@ The deltas concatenate to JSON text.
 
 **Value:** [ToolInputEncoding](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2874)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2896)
 
 <a id="Vercel_AI_Provider_ToolInputEncoding_Text"></a>
 
@@ -55,4 +55,4 @@ The deltas concatenate to a raw string, such as OpenAI custom-tool code or HTML.
 
 **Value:** [ToolInputEncoding](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2877)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2899)

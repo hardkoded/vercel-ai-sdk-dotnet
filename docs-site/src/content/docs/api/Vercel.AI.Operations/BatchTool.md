@@ -23,7 +23,7 @@ A tool definition forwarded to a batch without being executed.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L13)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L15)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates a tool definition.
 | `description` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `execute` | [Func&lt;JsonElement, CancellationToken, Task&lt;object&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-3) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L16)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L18)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Description.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L36)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L38)
 
 <a id="Vercel_AI_Operations_BatchTool_Execute_"></a>
 <a id="Vercel_AI_Operations_BatchTool_Execute"></a>
@@ -85,7 +85,7 @@ Local execute function. Batch submission does not call it.
 
 **Value:** [Func&lt;JsonElement, CancellationToken, Task&lt;object&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L39)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L41)
 
 <a id="Vercel_AI_Operations_BatchTool_InputSchema_"></a>
 <a id="Vercel_AI_Operations_BatchTool_InputSchema"></a>
@@ -102,7 +102,7 @@ JSON schema.
 
 **Value:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L33)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L35)
 
 <a id="Vercel_AI_Operations_BatchTool_Name_"></a>
 <a id="Vercel_AI_Operations_BatchTool_Name"></a>
@@ -119,4 +119,4 @@ Tool name.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L30)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L32)

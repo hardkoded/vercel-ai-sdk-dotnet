@@ -110,7 +110,7 @@ Chat Completions URL for a model. Azure deployment routes include the model id.
 
 **Returns:** [Uri](https://learn.microsoft.com/dotnet/api/system.uri)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L484)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L510)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_CompletionModel_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_CompletionModel_System_String_"></a>
@@ -156,7 +156,7 @@ Completions URL.
 
 **Returns:** [Uri](https://learn.microsoft.com/dotnet/api/system.uri)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L495)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L521)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_Create_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_Create_Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_System_Net_Http_HttpMessageHandler_"></a>
@@ -205,44 +205,70 @@ Creates a chat model. Providers override this when support differs by model id.
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L45)
 
-<a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_CreateHeaders_"></a>
-<a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_CreateHeaders"></a>
+<a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_CreateHeadersAsync_"></a>
+<a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_CreateHeadersAsync_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Threading_CancellationToken_"></a>
 
-### CreateHeaders()
-
-
-```csharp
-public Dictionary<string, string?> CreateHeaders()
-```
-
-
-Resolves the API key and builds request headers.
-
-**Returns:** [Dictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2)
-
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L98)
-
-<a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_CreateHeaders_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__"></a>
-
-### `CreateHeaders(IReadOnlyDictionary<string, string?>?)`
+### `CreateHeadersAsync(IReadOnlyDictionary<string, string?>?, CancellationToken)`
 
 
 ```csharp
-public Dictionary<string, string?> CreateHeaders(IReadOnlyDictionary<string, string?>? callHeaders)
+public Task<Dictionary<string, string?>> CreateHeadersAsync(IReadOnlyDictionary<string, string?>? callHeaders, CancellationToken cancellationToken = default)
 ```
 
 
-Builds headers and lets &lt;code class="paramref"&gt;callHeaders&lt;/code&gt; override them.
+Resolves the API key for this request and builds headers. &lt;code class="paramref"&gt;callHeaders&lt;/code&gt; override them.
 
 **Parameters**
 
 | Name | Type | Description |
 | --- | --- | --- |
 | `callHeaders` | [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2) |  |
+| `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
+
+**Returns:** [Task&lt;Dictionary&lt;string, string&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L108)
+
+<a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_CreateHeadersAsync_System_Threading_CancellationToken_"></a>
+
+### CreateHeadersAsync(CancellationToken)
+
+
+```csharp
+public Task<Dictionary<string, string?>> CreateHeadersAsync(CancellationToken cancellationToken = default)
+```
+
+
+Resolves the API key and builds request headers.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
+
+**Returns:** [Task&lt;Dictionary&lt;string, string&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L98)
+
+<a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_CreateHeadersForSerialization_"></a>
+<a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_CreateHeadersForSerialization"></a>
+
+### CreateHeadersForSerialization()
+
+
+```csharp
+public Dictionary<string, string?> CreateHeadersForSerialization()
+```
+
+
+Builds the headers for a workflow boundary (`[WORKFLOW_SERIALIZE]`). Upstream resolves with
+`resolveWith`, which keeps a synchronous credential synchronous. A credential that resolves
+asynchronously cannot cross the boundary, so this throws for it.
 
 **Returns:** [Dictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L104)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L175)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_EmbeddingModel_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_EmbeddingModel_System_String_"></a>
@@ -288,7 +314,7 @@ Embeddings URL.
 
 **Returns:** [Uri](https://learn.microsoft.com/dotnet/api/system.uri)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L506)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L532)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_GetBinaryAsync_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_GetBinaryAsync_System_Uri_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Threading_CancellationToken_"></a>
@@ -313,7 +339,7 @@ Downloads raw bytes.
 
 **Returns:** [Task&lt;OpenAICompatibleBinaryResponse&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L307)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L333)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_ImageModel_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_ImageModel_System_String_"></a>
@@ -353,7 +379,7 @@ Image edits URL.
 
 **Returns:** [Uri](https://learn.microsoft.com/dotnet/api/system.uri)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L526)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L552)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_ImagesUri_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_ImagesUri"></a>
@@ -370,7 +396,7 @@ Images URL.
 
 **Returns:** [Uri](https://learn.microsoft.com/dotnet/api/system.uri)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L517)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L543)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_LanguageModel_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_LanguageModel_System_String_"></a>
@@ -419,7 +445,7 @@ Posts JSON and returns the raw response bytes.
 
 **Returns:** [Task&lt;OpenAICompatibleBinaryResponse&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L319)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L345)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_PostJsonAsync_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_PostJsonAsync_System_Uri_System_String_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Threading_CancellationToken_"></a>
@@ -445,7 +471,7 @@ Posts JSON and rewrites the provider error message when one is available.
 
 **Returns:** [Task&lt;ProviderTextResponse&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L204)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L230)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_PostMultipartAsync_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_PostMultipartAsync_System_Uri_System_Net_Http_MultipartFormDataContent_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Threading_CancellationToken_"></a>
@@ -471,7 +497,7 @@ Posts multipart form data and rewrites the provider error message when one is av
 
 **Returns:** [Task&lt;ProviderTextResponse&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L294)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L320)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_PostSseAsync_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_PostSseAsync_System_Uri_System_String_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Threading_CancellationToken_"></a>
@@ -497,7 +523,7 @@ Posts JSON and opens an SSE response. The caller disposes the result.
 
 **Returns:** [Task&lt;OpenAICompatibleSseResponse&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L236)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L262)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_RerankUri_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_RerankUri"></a>
@@ -514,21 +540,27 @@ Rerank URL.
 
 **Returns:** [Uri](https://learn.microsoft.com/dotnet/api/system.uri)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L535)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L561)
 
-<a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_ResolveApiKey_"></a>
-<a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_ResolveApiKey"></a>
+<a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_ResolveApiKeyAsync_"></a>
+<a id="Vercel_AI_OpenAICompatible_OpenAICompatibleProvider_ResolveApiKeyAsync_System_Threading_CancellationToken_"></a>
 
-### ResolveApiKey()
+### ResolveApiKeyAsync(CancellationToken)
 
 
 ```csharp
-protected virtual string? ResolveApiKey()
+protected virtual Task<string?> ResolveApiKeyAsync(CancellationToken cancellationToken)
 ```
 
 
 Resolves the API key. A missing key is omitted unless [RequireApiKey](/api/Vercel.AI.OpenAICompatible/OpenAICompatibleOptions/#Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_RequireApiKey) is set.
 
-**Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+**Parameters**
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L166)
+| Name | Type | Description |
+| --- | --- | --- |
+| `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
+
+**Returns:** [Task&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleProvider.cs#L189)

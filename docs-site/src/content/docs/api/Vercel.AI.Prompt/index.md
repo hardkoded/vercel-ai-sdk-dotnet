@@ -22,6 +22,7 @@ Public types in the `Vercel.AI.Prompt` namespace.
 | [FilePartInput](/api/Vercel.AI.Prompt/FilePartInput/) | A file-part value before it is converted to the v4 provider shape. |
 | [FileParts](/api/Vercel.AI.Prompt/FileParts/) | File-part conversion. Maps to convertToLanguageModelV4FilePart. |
 | [FileToolModelContentPart](/api/Vercel.AI.Prompt/FileToolModelContentPart/) | An inline base64 file part inside a content tool output. |
+| [GatewayErrorWrappers](/api/Vercel.AI.Prompt/GatewayErrorWrappers/) | Replaces a Gateway authentication error with a message that says how to authenticate. Maps to prompt/wrap-gateway-error.ts. |
 | [Instructions](/api/Vercel.AI.Prompt/Instructions/) | Instructions for a call: a string, one system message, or a list of system messages. Maps to Instructions. A single system message is kept as a one-item Messages list. |
 | [InvalidDataContentException](/api/Vercel.AI.Prompt/InvalidDataContentException/) | File content could not be converted. Maps to InvalidDataContentError. |
 | [InvalidPromptException](/api/Vercel.AI.Prompt/InvalidPromptException/) | The prompt input is invalid. Maps to InvalidPromptError. |

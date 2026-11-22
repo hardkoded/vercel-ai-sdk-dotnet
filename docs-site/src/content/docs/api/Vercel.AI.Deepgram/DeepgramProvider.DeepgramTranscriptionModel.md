@@ -25,7 +25,7 @@ Deepgram pre-recorded transcription model.
 
 **Implements:** [ITranscriptionModel](/api/Vercel.AI.Provider/ITranscriptionModel/), [ITranscriptionCaller](/api/Vercel.AI.Operations/ITranscriptionCaller/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L1068)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L1035)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates a transcription model.
 | `provider` | [DeepgramProvider](/api/Vercel.AI.Deepgram/DeepgramProvider/) |  |
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L1095)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L1062)
 
 ## Properties
 
@@ -68,7 +68,7 @@ True when `CancellationToken)` is implemented.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L1111)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L1078)
 
 <a id="Vercel_AI_Deepgram_DeepgramProvider_DeepgramTranscriptionModel_ModelId_"></a>
 <a id="Vercel_AI_Deepgram_DeepgramProvider_DeepgramTranscriptionModel_ModelId"></a>
@@ -85,7 +85,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L1105)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L1072)
 
 <a id="Vercel_AI_Deepgram_DeepgramProvider_DeepgramTranscriptionModel_Provider_"></a>
 <a id="Vercel_AI_Deepgram_DeepgramProvider_DeepgramTranscriptionModel_Provider"></a>
@@ -102,7 +102,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L1102)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L1069)
 
 <a id="Vercel_AI_Deepgram_DeepgramProvider_DeepgramTranscriptionModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_Deepgram_DeepgramProvider_DeepgramTranscriptionModel_SpecificationVersion"></a>
@@ -119,7 +119,7 @@ Specification version.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L1108)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L1075)
 
 ## Methods
 
@@ -145,7 +145,7 @@ Transcribes audio.
 
 **Returns:** [Task&lt;TranscriptionModelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L1114)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L1081)
 
 <a id="Vercel_AI_Deepgram_DeepgramProvider_DeepgramTranscriptionModel_DoStreamAsync_"></a>
 <a id="Vercel_AI_Deepgram_DeepgramProvider_DeepgramTranscriptionModel_DoStreamAsync_Vercel_AI_Operations_TranscriptionStreamCall_System_Threading_CancellationToken_"></a>
@@ -169,7 +169,7 @@ Starts a stream, or null when streaming is unsupported.
 
 **Returns:** [Task&lt;TranscriptionStreamStart&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L1126)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L1093)
 
 <a id="Vercel_AI_Deepgram_DeepgramProvider_DeepgramTranscriptionModel_DoTranscribeAsync_"></a>
 <a id="Vercel_AI_Deepgram_DeepgramProvider_DeepgramTranscriptionModel_DoTranscribeAsync_Vercel_AI_Provider_AudioInput_System_Threading_CancellationToken_"></a>
@@ -193,7 +193,7 @@ Transcribes audio.
 
 **Returns:** [Task&lt;TranscriptionResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L1138)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L1105)
 
 <a id="Vercel_AI_Deepgram_DeepgramProvider_DeepgramTranscriptionModel_TranscribeAsync_"></a>
 <a id="Vercel_AI_Deepgram_DeepgramProvider_DeepgramTranscriptionModel_TranscribeAsync_Vercel_AI_Provider_AudioInput_Vercel_AI_Deepgram_DeepgramTranscriptionRequest_System_Threading_CancellationToken_"></a>
@@ -218,4 +218,4 @@ Posts raw audio to `/v1/listen`. Provider options become query parameters.
 
 **Returns:** [Task&lt;DeepgramTranscriptionResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L1204)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L1171)

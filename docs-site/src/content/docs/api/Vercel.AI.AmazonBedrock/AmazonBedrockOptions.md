@@ -42,7 +42,7 @@ Access key. Falls back to `AWS_ACCESS_KEY_ID`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L43)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L49)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockOptions_AgentRuntimeBaseUrl_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockOptions_AgentRuntimeBaseUrl"></a>
@@ -61,6 +61,24 @@ Agent Runtime origin for rerank. Falls back to `AWS_ENDPOINT_URL_BEDROCK_AGENT_R
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L40)
+
+<a id="Vercel_AI_AmazonBedrock_AmazonBedrockOptions_ApiKey_"></a>
+<a id="Vercel_AI_AmazonBedrock_AmazonBedrockOptions_ApiKey"></a>
+
+### ApiKey
+
+
+```csharp
+public Resolvable<string>? ApiKey { get; set; }
+```
+
+
+Bedrock API key sent as a bearer token. A callback or task is resolved before each request and must resolve
+to a non-empty key. Falls back to `AWS_BEARER_TOKEN_BEDROCK`. When set, it takes precedence over SigV4.
+
+**Value:** `Resolvable&lt;string&gt;`
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L46)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockOptions_BaseUrl_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockOptions_BaseUrl"></a>
@@ -95,7 +113,7 @@ Headers sent with every request. Call headers override them.
 
 **Value:** [Dictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L57)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L63)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockOptions_HeadersProvider_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockOptions_HeadersProvider"></a>
@@ -113,7 +131,7 @@ Resolves extra headers on every call, like upstream's resolvable `headers`. Its 
 
 **Value:** [Func&lt;CancellationToken, Task&lt;IReadOnlyDictionary&lt;string, string&gt;&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L63)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L69)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockOptions_Region_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockOptions_Region"></a>
@@ -147,7 +165,7 @@ Secret key. Falls back to `AWS_SECRET_ACCESS_KEY`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L46)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L52)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockOptions_SessionToken_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockOptions_SessionToken"></a>
@@ -164,7 +182,7 @@ Session token. Falls back to `AWS_SESSION_TOKEN`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L49)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L55)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockOptions_UtcNow_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockOptions_UtcNow"></a>
@@ -181,4 +199,4 @@ Clock used for signing. Tests can pin this.
 
 **Value:** [Func&lt;DateTimeOffset&gt;](https://learn.microsoft.com/dotnet/api/system.func-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L52)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L58)

@@ -21,6 +21,10 @@ internal static class GenerateObjectTestSupportFacade
             StreamSupport.Model(StreamSupport.TextStream("{ \"content\": \"Hello, world!\" }"))
         );
 
+    public static StreamObjectOptions<StreamSupport.ContentResult> FailingStreamOptions(
+        Exception error
+    ) => StreamSupport.ObjectOptions(StreamSupport.ThrowingModel(error));
+
     public static async Task CollectAsync(
         StreamObjectOptions<StreamSupport.ContentResult> options
     ) =>

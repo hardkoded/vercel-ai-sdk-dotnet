@@ -34,13 +34,13 @@ Cohere settings. The default origin is `https://api.cohere.com/v2`.
 
 
 ```csharp
-public string? ApiKey { get; set; }
+public Resolvable<string>? ApiKey { get; set; }
 ```
 
 
-Explicit key.
+Explicit key. A callback is resolved before each request.
 
-**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+**Value:** `Resolvable&lt;string&gt;`
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Cohere/CohereProvider.cs#L20)
 

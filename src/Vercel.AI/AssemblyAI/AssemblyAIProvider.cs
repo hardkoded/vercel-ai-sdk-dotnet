@@ -529,17 +529,6 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
             ["pt"] = "portuguese",
         };
 
-        private static readonly string[] Encodings =
-        {
-            "pcm_s16le",
-            "pcm_mulaw",
-            "pcm_alaw",
-            "mp3",
-        };
-        private static readonly string[] Containers = { "raw", "wav" };
-        private static readonly int[] SampleRates = { 8000, 16000, 22050, 24000, 44100, 48000 };
-        private static readonly int[] BitRates = { 32000, 48000, 64000, 96000, 128000 };
-
         private readonly AssemblyAIProvider _provider;
 
         /// <summary>Creates a speech model.</summary>
@@ -728,61 +717,10 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
             }
         }
 
-        private static string? OptionString(JsonElement? options, string name, string[] allowed)
-        {
-            if (
-                options is { } source
-                && source.TryGetProperty(name, out var value)
-                && value.ValueKind != JsonValueKind.Null
-            )
-            {
-                var text = value.ValueKind == JsonValueKind.String ? value.GetString() : null;
-                if (text == null || Array.IndexOf(allowed, text) < 0)
-                {
-                    throw new InvalidArgumentException(
-                        "providerOptions.assemblyai." + name,
-                        value.ToString(),
-                        "Expected one of: " + string.Join(", ", allowed) + "."
-                    );
-                }
-
-                return text;
-            }
-
-            return null;
-        }
-
-        private static int? OptionNumber(JsonElement? options, string name, int[] allowed)
-        {
-            if (
-                options is { } source
-                && source.TryGetProperty(name, out var value)
-                && value.ValueKind != JsonValueKind.Null
-            )
-            {
-                if (
-                    value.ValueKind != JsonValueKind.Number
-                    || !value.TryGetInt32(out var number)
-                    || Array.IndexOf(allowed, number) < 0
-                )
-                {
-                    throw new InvalidArgumentException(
-                        "providerOptions.assemblyai." + name,
-                        value.ToString(),
-                        "Expected one of: " + string.Join(", ", allowed) + "."
-                    );
-                }
-
-                return number;
-            }
-
-            return null;
-        }
-
         private (JsonObject Body, List<ModelWarning> Warnings) Args(AssemblyAISpeechRequest request)
         {
             var warnings = new List<ModelWarning>();
-            var assemblyai = AssemblyAIObject(request.ProviderOptions);
+            var assemblyai = AssemblyAISpeechModelOptions.Parse(request.ProviderOptions);
             var outputFormat = request.OutputFormat ?? "mp3";
             if (!OutputFormats.TryGetValue(outputFormat.ToLowerInvariant(), out var format))
             {
@@ -797,7 +735,7 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
                 format = OutputFormats["mp3"];
             }
 
-            var encoding = OptionString(assemblyai, "encoding", Encodings) ?? format.Encoding;
+            var encoding = assemblyai?.Encoding ?? format.Encoding;
             // Container and sample rate implied by outputFormat only apply to the encoding they were derived for.
             var formatApplies = encoding == format.Encoding;
             var body = new JsonObject
@@ -813,8 +751,7 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
                 body["voice_id"] = request.Voice;
             }
 
-            var container = OptionString(assemblyai, "container", Containers)
-                ?? (formatApplies ? format.Container : null);
+            var container = assemblyai?.Container ?? (formatApplies ? format.Container : null);
             if (container != null)
             {
                 if (encoding == "mp3")
@@ -832,14 +769,13 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
                 }
             }
 
-            var sampleRate = OptionNumber(assemblyai, "sampleRate", SampleRates)
-                ?? (formatApplies ? format.SampleRate : null);
+            var sampleRate = assemblyai?.SampleRate ?? (formatApplies ? format.SampleRate : null);
             if (sampleRate != null)
             {
                 body["sample_rate"] = sampleRate;
             }
 
-            if (OptionNumber(assemblyai, "bitRate", BitRates) is { } bitRate)
+            if (assemblyai?.BitRate is { } bitRate)
             {
                 if (encoding == "mp3")
                 {
@@ -1220,23 +1156,26 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
 
             // Every model id, including ones AssemblyAI no longer accepts, goes in speech_models unchanged.
             body["speech_models"] = new JsonArray(ModelId);
-            if (ModelId == "universal-3-5-pro")
+            var requestConfig = AssemblyAIModelCatalog
+                .GetAssemblyAITranscriptionModelEntry(ModelId)
+                .RequestConfig!.Transcription!;
+            if (requestConfig.Deprecated)
             {
                 warnings.Add(
                     new DeprecatedWarning(
-                        "model 'universal-3-5-pro'",
-                        "AssemblyAI has deprecated 'universal-3-5-pro'. Use 'assemblyai-stt-3-7' instead. See documentation: "
+                        "model '" + ModelId + "'",
+                        "AssemblyAI has deprecated '"
+                            + ModelId
+                            + "'. Use 'assemblyai-stt-3-7' instead. See documentation: "
                             + SpeechModelDocs
                     )
                 );
             }
-            else if (ModelId == "universal-2")
+
+            if (requestConfig.ReplacementWarning != null)
             {
                 warnings.Add(
-                    new OtherWarning(
-                        "'assemblyai-stt-3-7' is AssemblyAI's latest flagship model; 'universal-2' remains available for languages it does not support. See "
-                            + SpeechModelDocs
-                    )
+                    new OtherWarning(requestConfig.ReplacementWarning + " See " + SpeechModelDocs)
                 );
             }
 

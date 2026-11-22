@@ -23,7 +23,7 @@ One AssemblyAI text-to-speech call.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L222)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L223)
 
 ## Constructors
 
@@ -46,7 +46,7 @@ Creates a speech request.
 | --- | --- | --- |
 | `text` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L225)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L226)
 
 ## Properties
 
@@ -65,7 +65,7 @@ Headers merged over the provider headers for this call.
 
 **Value:** [IDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.idictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L252)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L253)
 
 <a id="Vercel_AI_AssemblyAI_AssemblyAISpeechRequest_Instructions_"></a>
 <a id="Vercel_AI_AssemblyAI_AssemblyAISpeechRequest_Instructions"></a>
@@ -82,7 +82,7 @@ Ignored. AssemblyAI does not accept instructions; a warning is returned.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L240)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L241)
 
 <a id="Vercel_AI_AssemblyAI_AssemblyAISpeechRequest_Language_"></a>
 <a id="Vercel_AI_AssemblyAI_AssemblyAISpeechRequest_Language"></a>
@@ -99,7 +99,7 @@ ISO 639-1 code (`de`, `en`, `es`, `fr`, `it`, `pt`) or the full language name.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L246)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L247)
 
 <a id="Vercel_AI_AssemblyAI_AssemblyAISpeechRequest_OutputFormat_"></a>
 <a id="Vercel_AI_AssemblyAI_AssemblyAISpeechRequest_OutputFormat"></a>
@@ -116,7 +116,7 @@ Output format: `mp3` (default), `wav`, `pcm`, `mulaw`, or `alaw`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L237)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L238)
 
 <a id="Vercel_AI_AssemblyAI_AssemblyAISpeechRequest_ProviderOptions_"></a>
 <a id="Vercel_AI_AssemblyAI_AssemblyAISpeechRequest_ProviderOptions"></a>
@@ -133,7 +133,7 @@ Provider options. The `assemblyai` object is read: `encoding`, `container`, `sam
 
 **Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L249)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L250)
 
 <a id="Vercel_AI_AssemblyAI_AssemblyAISpeechRequest_Speed_"></a>
 <a id="Vercel_AI_AssemblyAI_AssemblyAISpeechRequest_Speed"></a>
@@ -150,7 +150,7 @@ Speaking rate. Only the default speed is supported; another value returns a warn
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L243)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L244)
 
 <a id="Vercel_AI_AssemblyAI_AssemblyAISpeechRequest_Text_"></a>
 <a id="Vercel_AI_AssemblyAI_AssemblyAISpeechRequest_Text"></a>
@@ -167,7 +167,7 @@ Text to speak.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L231)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L232)
 
 <a id="Vercel_AI_AssemblyAI_AssemblyAISpeechRequest_Voice_"></a>
 <a id="Vercel_AI_AssemblyAI_AssemblyAISpeechRequest_Voice"></a>
@@ -184,4 +184,4 @@ Voice id, sent as `voice_id`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L234)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L235)

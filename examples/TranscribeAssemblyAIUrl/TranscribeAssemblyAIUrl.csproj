@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <Description>Transcribes audio from a URL with AssemblyAI assemblyai-stt-3-7.</Description>
+    </PropertyGroup>
+</Project>

@@ -23,7 +23,7 @@ Usage returned to batch callers.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L193)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L204)
 
 ## Constructors
 
@@ -54,7 +54,7 @@ Creates caller usage.
 | `totalTokens` | [int?](https://learn.microsoft.com/dotnet/api/system.int32) |  |
 | `raw` | [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L196)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L207)
 
 ## Properties
 
@@ -73,7 +73,7 @@ Cache-read tokens.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L226)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L237)
 
 <a id="Vercel_AI_Operations_BatchUsage_CacheWriteTokens_"></a>
 <a id="Vercel_AI_Operations_BatchUsage_CacheWriteTokens"></a>
@@ -90,7 +90,7 @@ Cache-write tokens.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L229)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L240)
 
 <a id="Vercel_AI_Operations_BatchUsage_InputTokens_"></a>
 <a id="Vercel_AI_Operations_BatchUsage_InputTokens"></a>
@@ -107,7 +107,7 @@ Input tokens.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L220)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L231)
 
 <a id="Vercel_AI_Operations_BatchUsage_NoCacheTokens_"></a>
 <a id="Vercel_AI_Operations_BatchUsage_NoCacheTokens"></a>
@@ -124,7 +124,7 @@ Uncached input tokens.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L223)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L234)
 
 <a id="Vercel_AI_Operations_BatchUsage_OutputTokens_"></a>
 <a id="Vercel_AI_Operations_BatchUsage_OutputTokens"></a>
@@ -141,7 +141,7 @@ Output tokens.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L232)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L243)
 
 <a id="Vercel_AI_Operations_BatchUsage_Raw_"></a>
 <a id="Vercel_AI_Operations_BatchUsage_Raw"></a>
@@ -158,7 +158,7 @@ Raw usage.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L244)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L255)
 
 <a id="Vercel_AI_Operations_BatchUsage_ReasoningTokens_"></a>
 <a id="Vercel_AI_Operations_BatchUsage_ReasoningTokens"></a>
@@ -175,7 +175,7 @@ Reasoning tokens.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L238)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L249)
 
 <a id="Vercel_AI_Operations_BatchUsage_TextTokens_"></a>
 <a id="Vercel_AI_Operations_BatchUsage_TextTokens"></a>
@@ -192,7 +192,7 @@ Text tokens.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L235)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L246)
 
 <a id="Vercel_AI_Operations_BatchUsage_TotalTokens_"></a>
 <a id="Vercel_AI_Operations_BatchUsage_TotalTokens"></a>
@@ -209,7 +209,7 @@ Input plus output when both totals are known.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L241)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L252)
 
 ## Methods
 
@@ -234,4 +234,4 @@ Maps provider usage the way `asLanguageModelUsage` does.
 
 **Returns:** [BatchUsage](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L247)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L258)
