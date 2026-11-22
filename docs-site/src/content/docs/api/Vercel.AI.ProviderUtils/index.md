@@ -59,6 +59,7 @@ Public types in the `Vercel.AI.ProviderUtils` namespace.
 | [ProviderValues.BatchRequestCounts](/api/Vercel.AI.ProviderUtils/ProviderValues.BatchRequestCounts/) | Complete batch request counts. |
 | [ProviderValues.RuntimeProbe](/api/Vercel.AI.ProviderUtils/ProviderValues.RuntimeProbe/) | Inputs for GetRuntimeEnvironmentUserAgent(RuntimeProbe). |
 | [ReasoningMap](/api/Vercel.AI.ProviderUtils/ReasoningMap/) | Maps reasoning levels onto provider effort and token budgets. |
+| [Resolvable&lt;T&gt;](/api/Vercel.AI.ProviderUtils/Resolvable-1/) | A value, a task, or a synchronous or asynchronous callback that produces the value. Maps to the upstream Resolvable<T> of @ai-sdk/provider-utils. A callback is called every time the value is resolved, so a provider setting such as an API key is resolved per request. |
 | [ResolvedProviderOptions&lt;T&gt;](/api/Vercel.AI.ProviderUtils/ResolvedProviderOptions-1/) | Result of Func%7b%60%600%2c%60%600%2c%60%600%7d). |
 | [ResponseBodies](/api/Vercel.AI.ProviderUtils/ResponseBodies/) | Reads and releases HTTP response bodies. |
 | [ResponseHandlerResult&lt;T&gt;](/api/Vercel.AI.ProviderUtils/ResponseHandlerResult-1/) | A handled response value with the response headers. |

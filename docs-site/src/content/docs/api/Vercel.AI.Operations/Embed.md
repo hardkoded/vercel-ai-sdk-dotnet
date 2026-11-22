@@ -23,7 +23,7 @@ Embeds one value. Maps to `embed`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L466)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L498)
 
 ## Methods
 
@@ -49,7 +49,7 @@ Embeds [Value](/api/Vercel.AI.Operations/EmbedRequest/#Vercel_AI_Operations_Embe
 
 **Returns:** [Task&lt;EmbedResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L469)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L501)
 
 <a id="Vercel_AI_Operations_Embed_ValidateEmbeddingDimensions_"></a>
 <a id="Vercel_AI_Operations_Embed_ValidateEmbeddingDimensions_System_Nullable_System_Double__"></a>
@@ -70,4 +70,4 @@ Throws when &lt;code class="paramref"&gt;dimensions&lt;/code&gt; is set and is n
 | --- | --- | --- |
 | `dimensions` | [double?](https://learn.microsoft.com/dotnet/api/system.double) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L625)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L647)

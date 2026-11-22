@@ -107,6 +107,22 @@ public const string OpenaiGptLive1 = "openai/gpt-live-1"
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayRealtimeModelSettings.cs#L24)
 
+<a id="Vercel_AI_Gateway_GatewayRealtimeModelId_OpenaiGptLive11"></a>
+
+### OpenaiGptLive11
+
+
+```csharp
+public const string OpenaiGptLive11 = "openai/gpt-live-1.1"
+```
+
+
+`openai/gpt-live-1.1`.
+
+**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayRealtimeModelSettings.cs#L27)
+
 <a id="Vercel_AI_Gateway_GatewayRealtimeModelId_OpenaiGptRealtime15"></a>
 
 ### OpenaiGptRealtime15
@@ -121,7 +137,7 @@ public const string OpenaiGptRealtime15 = "openai/gpt-realtime-1.5"
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayRealtimeModelSettings.cs#L27)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayRealtimeModelSettings.cs#L30)
 
 <a id="Vercel_AI_Gateway_GatewayRealtimeModelId_OpenaiGptRealtime2"></a>
 
@@ -137,7 +153,7 @@ public const string OpenaiGptRealtime2 = "openai/gpt-realtime-2"
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayRealtimeModelSettings.cs#L30)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayRealtimeModelSettings.cs#L33)
 
 <a id="Vercel_AI_Gateway_GatewayRealtimeModelId_OpenaiGptRealtime21"></a>
 
@@ -153,7 +169,7 @@ public const string OpenaiGptRealtime21 = "openai/gpt-realtime-2.1"
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayRealtimeModelSettings.cs#L33)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayRealtimeModelSettings.cs#L36)
 
 <a id="Vercel_AI_Gateway_GatewayRealtimeModelId_OpenaiGptRealtimeMini"></a>
 
@@ -169,7 +185,7 @@ public const string OpenaiGptRealtimeMini = "openai/gpt-realtime-mini"
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayRealtimeModelSettings.cs#L36)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayRealtimeModelSettings.cs#L39)
 
 <a id="Vercel_AI_Gateway_GatewayRealtimeModelId_SpacexaiGrokVoice30"></a>
 
@@ -185,4 +201,4 @@ public const string SpacexaiGrokVoice30 = "spacexai/grok-voice-3.0"
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayRealtimeModelSettings.cs#L39)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayRealtimeModelSettings.cs#L42)

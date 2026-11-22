@@ -589,24 +589,20 @@ internal static class Generation
                         .ConfigureAwait(false);
                 }
 
-                if (
-                    TelemetryDispatcher.Create(options).OnLanguageModelCallStart is
-                    { } telemetryCallStart
-                )
+                var modelCallStartEvent = new LanguageModelCallStartEvent
                 {
-                    await telemetryCallStart(
-                            new LanguageModelCallStartEvent
-                            {
-                                CallId = callId,
-                                Provider = current.Provider,
-                                ModelId = current.ModelId,
-                                Instructions = instructions,
-                                Messages = messages.Skip(instructionCount).ToArray(),
-                                Tools = callOptions.Tools,
-                                CallOptions = callOptions,
-                            },
-                            cancellationToken
-                        )
+                    CallId = callId,
+                    Provider = current.Provider,
+                    ModelId = current.ModelId,
+                    Instructions = instructions,
+                    Messages = messages.Skip(instructionCount).ToArray(),
+                    Tools = callOptions.Tools,
+                    CallOptions = callOptions,
+                };
+                var modelCallDispatcher = TelemetryDispatcher.Create(options);
+                if (modelCallDispatcher.OnLanguageModelCallStart is { } telemetryCallStart)
+                {
+                    await telemetryCallStart(modelCallStartEvent, cancellationToken)
                         .ConfigureAwait(false);
                 }
 
@@ -624,8 +620,13 @@ internal static class Generation
                         callOptions.AbortSignal = interrupt.Signal;
                     }
 
-                    modelResponse = await current
-                        .DoGenerateAsync(callOptions, interrupt?.Token ?? cancellationToken)
+                    var modelCallToken = interrupt?.Token ?? cancellationToken;
+                    modelResponse = await modelCallDispatcher
+                        .ExecuteLanguageModelCallAsync(
+                            modelCallStartEvent,
+                            () => current.DoGenerateAsync(callOptions, modelCallToken),
+                            modelCallToken
+                        )
                         .ConfigureAwait(false);
                 }
                 catch (Exception)
@@ -2882,7 +2883,11 @@ internal static class Generation
                                 options.ExperimentalSandbox,
                                 onPreliminaryToolResult,
                                 ToolExecutionCallbacks.Start(options),
-                                ToolExecutionCallbacks.End(options)
+                                ToolExecutionCallbacks.End(options),
+                                ToolExecutionCallbacks.ExecuteInTelemetryContext(
+                                    options,
+                                    cancellationToken
+                                )
                             )
                             .ConfigureAwait(false);
                         return result;
@@ -3767,7 +3772,11 @@ internal static class Generation
                                 ? null
                                 : preliminary => emit(new ToolResultPart(preliminary)),
                             ToolExecutionCallbacks.Start(options),
-                            ToolExecutionCallbacks.End(options)
+                            ToolExecutionCallbacks.End(options),
+                            ToolExecutionCallbacks.ExecuteInTelemetryContext(
+                                options,
+                                cancellationToken
+                            )
                         )
                         .ConfigureAwait(false);
                     if (result == null)

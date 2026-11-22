@@ -4,6 +4,7 @@
 
 using System.Text.Json;
 using Vercel.AI.Operations;
+using Vercel.AI.Tests.Upstream.Telemetry;
 
 namespace Vercel.AI.Tests;
 
@@ -333,13 +334,19 @@ public sealed class EmbedTests
                     user = item;
                     return Task.CompletedTask;
                 },
-                Telemetry = new EmbedTelemetry
+                Telemetry = new TelemetryOptions
                 {
-                    OnStart = item =>
-                    {
-                        telemetry = item;
-                        return Task.CompletedTask;
-                    },
+                    Integrations =
+                    [
+                        new TestTelemetry
+                        {
+                            OnStart = (item, _) =>
+                            {
+                                telemetry = (EmbedStartEvent)item;
+                                return Task.CompletedTask;
+                            },
+                        },
+                    ],
                 },
             }
         );
@@ -361,13 +368,19 @@ public sealed class EmbedTests
             {
                 Model = new EmbedFake(),
                 Value = "value",
-                ExperimentalTelemetry = new EmbedTelemetry
+                ExperimentalTelemetry = new TelemetryOptions
                 {
-                    OnStart = _ =>
-                    {
-                        called = true;
-                        return Task.CompletedTask;
-                    },
+                    Integrations =
+                    [
+                        new TestTelemetry
+                        {
+                            OnStart = (_, _) =>
+                            {
+                                called = true;
+                                return Task.CompletedTask;
+                            },
+                        },
+                    ],
                 },
             }
         );
@@ -1473,13 +1486,19 @@ public sealed class EmbedTests
                 Model = new EmbedFake(),
                 Values = new[] { "a" },
                 RuntimeContext = new Dictionary<string, object?> { ["secret"] = "s" },
-                Telemetry = new EmbedTelemetry
+                Telemetry = new TelemetryOptions
                 {
-                    OnStart = item =>
-                    {
-                        telemetry = item;
-                        return Task.CompletedTask;
-                    },
+                    Integrations =
+                    [
+                        new TestTelemetry
+                        {
+                            OnStart = (item, _) =>
+                            {
+                                telemetry = (EmbedStartEvent)item;
+                                return Task.CompletedTask;
+                            },
+                        },
+                    ],
                 },
             }
         );
@@ -1500,13 +1519,19 @@ public sealed class EmbedTests
             {
                 Model = new EmbedFake(),
                 Values = new[] { "a" },
-                ExperimentalTelemetry = new EmbedTelemetry
+                ExperimentalTelemetry = new TelemetryOptions
                 {
-                    OnStart = _ =>
-                    {
-                        called = true;
-                        return Task.CompletedTask;
-                    },
+                    Integrations =
+                    [
+                        new TestTelemetry
+                        {
+                            OnStart = (_, _) =>
+                            {
+                                called = true;
+                                return Task.CompletedTask;
+                            },
+                        },
+                    ],
                 },
             }
         );

@@ -15,13 +15,15 @@ Namespace: [Vercel.AI.Operations](/api/Vercel.AI.Operations/)
 
 
 ```csharp
-public sealed class TranscriptionStartEvent
+public sealed class TranscriptionStartEvent : IOperationStartEvent
 ```
 
 
 Event passed to telemetry when `CancellationToken)` begins. Maps to `TranscriptionStartEvent`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
+
+**Implements:** [IOperationStartEvent](/api/Vercel.AI/IOperationStartEvent/)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L396)
 
@@ -60,6 +62,23 @@ Creates the event.
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L399)
 
 ## Properties
+
+<a id="Vercel_AI_Operations_TranscriptionStartEvent_AiVersion_"></a>
+<a id="Vercel_AI_Operations_TranscriptionStartEvent_AiVersion"></a>
+
+### AiVersion
+
+
+```csharp
+public string? AiVersion { get; init; }
+```
+
+
+The version of the SDK that emitted the event. Set only on events sent to telemetry integrations. Maps to `aiVersion`.
+
+**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L468)
 
 <a id="Vercel_AI_Operations_TranscriptionStartEvent_Audio_"></a>
 <a id="Vercel_AI_Operations_TranscriptionStartEvent_Audio"></a>
@@ -106,7 +125,7 @@ public string? FunctionId { get; }
 ```
 
 
-Copied from [FunctionId](/api/Vercel.AI.Operations/TranscribeTelemetry/#Vercel_AI_Operations_TranscribeTelemetry_FunctionId).
+Copied from [FunctionId](/api/Vercel.AI/TelemetryOptions/#Vercel_AI_TelemetryOptions_FunctionId).
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
@@ -242,7 +261,7 @@ public bool? RecordInputs { get; }
 ```
 
 
-Copied from [RecordInputs](/api/Vercel.AI.Operations/TranscribeTelemetry/#Vercel_AI_Operations_TranscribeTelemetry_RecordInputs).
+Copied from [RecordInputs](/api/Vercel.AI/TelemetryOptions/#Vercel_AI_TelemetryOptions_RecordInputs).
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
@@ -259,7 +278,7 @@ public bool? RecordOutputs { get; }
 ```
 
 
-Copied from [RecordOutputs](/api/Vercel.AI.Operations/TranscribeTelemetry/#Vercel_AI_Operations_TranscribeTelemetry_RecordOutputs).
+Copied from [RecordOutputs](/api/Vercel.AI/TelemetryOptions/#Vercel_AI_TelemetryOptions_RecordOutputs).
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 

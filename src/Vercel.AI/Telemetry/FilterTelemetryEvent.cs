@@ -338,6 +338,372 @@ internal static class FilterTelemetryEventHelper
         };
     }
 
+    /// <summary>Filters the start event of <c>embed</c> and <c>embedMany</c>.</summary>
+    internal static EmbedStartEvent FilterTelemetryEvent(
+        EmbedStartEvent source,
+        TelemetryOptions? telemetry
+    )
+    {
+        var hideInputs = telemetry?.RecordInputs == false;
+        return new EmbedStartEvent(
+            source.CallId,
+            source.OperationId,
+            source.RuntimeContext,
+            source.Provider,
+            source.ModelId,
+            hideInputs ? EmptyValue(source.Value) : source.Value,
+            source.MaxRetries,
+            source.Headers,
+            hideInputs ? OperationJson.Parse("{}") : source.ProviderOptions,
+            source.Dimensions
+        )
+        {
+            AiVersion = AiSdkVersion.Version,
+            RecordInputs = telemetry?.RecordInputs,
+            RecordOutputs = telemetry?.RecordOutputs,
+            FunctionId = telemetry?.FunctionId,
+        };
+    }
+
+    /// <summary>Filters the end event of <c>embed</c> and <c>embedMany</c>.</summary>
+    internal static EmbedEndEvent FilterTelemetryEvent(
+        EmbedEndEvent source,
+        TelemetryOptions? telemetry
+    )
+    {
+        var hideInputs = telemetry?.RecordInputs == false;
+        var hideOutputs = telemetry?.RecordOutputs == false;
+        var hidden = hideInputs || hideOutputs;
+        return new EmbedEndEvent(
+            source.CallId,
+            source.OperationId,
+            source.RuntimeContext,
+            source.Provider,
+            source.ModelId,
+            hideInputs ? EmptyValue(source.Value) : source.Value,
+            hideOutputs
+                ? source.Embedding.IsMany
+                    ? EmbedEventValue<double[], IReadOnlyList<double[]>>.FromMany([])
+                    : EmbedEventValue<double[], IReadOnlyList<double[]>>.FromOne([])
+                : source.Embedding,
+            source.Usage,
+            source.Warnings,
+            hidden ? null : source.ProviderMetadata,
+            hidden ? WithoutBody(source.Response) : source.Response
+        )
+        {
+            AiVersion = AiSdkVersion.Version,
+            RecordInputs = telemetry?.RecordInputs,
+            RecordOutputs = telemetry?.RecordOutputs,
+            FunctionId = telemetry?.FunctionId,
+        };
+    }
+
+    /// <summary>Filters the start event of a <c>doEmbed</c> call.</summary>
+    internal static EmbeddingModelCallStartEvent FilterTelemetryEvent(
+        EmbeddingModelCallStartEvent source,
+        TelemetryOptions? telemetry
+    )
+    {
+        return new EmbeddingModelCallStartEvent(
+            source.CallId,
+            source.EmbedCallId,
+            source.OperationId,
+            source.Provider,
+            source.ModelId,
+            telemetry?.RecordInputs == false ? [] : source.Values,
+            source.Dimensions
+        )
+        {
+            AiVersion = AiSdkVersion.Version,
+            RecordInputs = telemetry?.RecordInputs,
+            RecordOutputs = telemetry?.RecordOutputs,
+            FunctionId = telemetry?.FunctionId,
+        };
+    }
+
+    /// <summary>Filters the end event of a <c>doEmbed</c> call.</summary>
+    internal static EmbeddingModelCallEndEvent FilterTelemetryEvent(
+        EmbeddingModelCallEndEvent source,
+        TelemetryOptions? telemetry
+    )
+    {
+        return new EmbeddingModelCallEndEvent(
+            source.CallId,
+            source.EmbedCallId,
+            source.OperationId,
+            source.Provider,
+            source.ModelId,
+            telemetry?.RecordInputs == false ? [] : source.Values,
+            telemetry?.RecordOutputs == false ? [] : source.Embeddings,
+            source.Usage,
+            source.Dimensions
+        )
+        {
+            AiVersion = AiSdkVersion.Version,
+            RecordInputs = telemetry?.RecordInputs,
+            RecordOutputs = telemetry?.RecordOutputs,
+            FunctionId = telemetry?.FunctionId,
+        };
+    }
+
+    /// <summary>Filters the start event of <c>rerank</c>.</summary>
+    internal static RerankStartEvent FilterTelemetryEvent(
+        RerankStartEvent source,
+        TelemetryOptions? telemetry
+    )
+    {
+        var hideInputs = telemetry?.RecordInputs == false;
+        return new RerankStartEvent(
+            source.CallId,
+            source.OperationId,
+            source.RuntimeContext,
+            source.Provider,
+            source.ModelId,
+            hideInputs ? [] : source.Documents,
+            hideInputs ? string.Empty : source.Query,
+            source.TopN,
+            source.MaxRetries,
+            source.Headers,
+            hideInputs ? OperationJson.Parse("{}") : source.ProviderOptions
+        )
+        {
+            AiVersion = AiSdkVersion.Version,
+            RecordInputs = telemetry?.RecordInputs,
+            RecordOutputs = telemetry?.RecordOutputs,
+            FunctionId = telemetry?.FunctionId,
+        };
+    }
+
+    /// <summary>Filters the end event of <c>rerank</c>.</summary>
+    internal static RerankEndEvent FilterTelemetryEvent(
+        RerankEndEvent source,
+        TelemetryOptions? telemetry
+    )
+    {
+        var hideInputs = telemetry?.RecordInputs == false;
+        var hideOutputs = telemetry?.RecordOutputs == false;
+        var hidden = hideInputs || hideOutputs;
+        return new RerankEndEvent(
+            source.CallId,
+            source.OperationId,
+            source.RuntimeContext,
+            source.Provider,
+            source.ModelId,
+            hideInputs ? [] : source.Documents,
+            hideInputs ? string.Empty : source.Query,
+            hideOutputs ? []
+                : hideInputs
+                    ? source
+                        .Ranking.Select(entry => new RankedDocument(
+                            entry.OriginalIndex,
+                            entry.Score,
+                            entry.Document is string
+                                ? string.Empty
+                                : new Dictionary<string, object?>()
+                        ))
+                        .ToList()
+                : source.Ranking,
+            source.Warnings,
+            hidden ? null : source.ProviderMetadata,
+            hidden
+                ? new RerankResponseInfo(
+                    source.Response.Id,
+                    source.Response.Timestamp,
+                    source.Response.ModelId,
+                    source.Response.Headers,
+                    null
+                )
+                : source.Response
+        )
+        {
+            AiVersion = AiSdkVersion.Version,
+            RecordInputs = telemetry?.RecordInputs,
+            RecordOutputs = telemetry?.RecordOutputs,
+            FunctionId = telemetry?.FunctionId,
+        };
+    }
+
+    /// <summary>Filters the start event of a <c>doRerank</c> call.</summary>
+    internal static RerankingModelCallStartEvent FilterTelemetryEvent(
+        RerankingModelCallStartEvent source,
+        TelemetryOptions? telemetry
+    )
+    {
+        var hideInputs = telemetry?.RecordInputs == false;
+        return new RerankingModelCallStartEvent(
+            source.CallId,
+            source.OperationId,
+            source.Provider,
+            source.ModelId,
+            hideInputs ? [] : source.Documents,
+            source.DocumentsType,
+            hideInputs ? string.Empty : source.Query,
+            source.TopN
+        )
+        {
+            AiVersion = AiSdkVersion.Version,
+            RecordInputs = telemetry?.RecordInputs,
+            RecordOutputs = telemetry?.RecordOutputs,
+            FunctionId = telemetry?.FunctionId,
+        };
+    }
+
+    /// <summary>Filters the end event of a <c>doRerank</c> call.</summary>
+    internal static RerankingModelCallEndEvent FilterTelemetryEvent(
+        RerankingModelCallEndEvent source,
+        TelemetryOptions? telemetry
+    )
+    {
+        return new RerankingModelCallEndEvent(
+            source.CallId,
+            source.OperationId,
+            source.Provider,
+            source.ModelId,
+            source.DocumentsType,
+            telemetry?.RecordOutputs == false ? [] : source.Ranking
+        )
+        {
+            AiVersion = AiSdkVersion.Version,
+            RecordInputs = telemetry?.RecordInputs,
+            RecordOutputs = telemetry?.RecordOutputs,
+            FunctionId = telemetry?.FunctionId,
+        };
+    }
+
+    /// <summary>Filters the start event of <c>transcribe</c>.</summary>
+    internal static TranscriptionStartEvent FilterTelemetryEvent(
+        TranscriptionStartEvent source,
+        TelemetryOptions? telemetry
+    )
+    {
+        return new TranscriptionStartEvent(
+            source.CallId,
+            source.Provider,
+            source.ModelId,
+            source.Audio,
+            source.MaxRetries,
+            source.Headers,
+            telemetry?.RecordInputs == false ? OperationJson.Parse("{}") : source.ProviderOptions,
+            source.TimestampGranularities,
+            source.InputAudioFormat,
+            telemetry?.RecordInputs,
+            telemetry?.RecordOutputs,
+            telemetry?.FunctionId
+        )
+        {
+            AiVersion = AiSdkVersion.Version,
+        };
+    }
+
+    /// <summary>Filters the end event of <c>transcribe</c>.</summary>
+    internal static TranscriptionEndEvent FilterTelemetryEvent(
+        TranscriptionEndEvent source,
+        TelemetryOptions? telemetry
+    )
+    {
+        var hideOutputs = telemetry?.RecordOutputs == false;
+        var hidden = hideOutputs || telemetry?.RecordInputs == false;
+        return new TranscriptionEndEvent(
+            source.CallId,
+            source.Provider,
+            source.ModelId,
+            source.Audio,
+            hideOutputs ? string.Empty : source.Text,
+            hideOutputs ? [] : source.Segments,
+            hideOutputs ? [] : source.Words,
+            source.Language,
+            source.DurationInSeconds,
+            source.Usage,
+            source.Warnings,
+            // Raw provider metadata can contain inputs or outputs, so any hidden side hides it.
+            hidden ? null : source.ProviderMetadata,
+            hidden ? WithoutBody(source.Response)! : source.Response,
+            telemetry?.RecordInputs,
+            telemetry?.RecordOutputs,
+            telemetry?.FunctionId
+        )
+        {
+            AiVersion = AiSdkVersion.Version,
+        };
+    }
+
+    /// <summary>Filters the start event of <c>streamTranscribe</c>.</summary>
+    internal static StreamTranscriptionStartEvent FilterTelemetryEvent(
+        StreamTranscriptionStartEvent source,
+        TelemetryOptions? telemetry
+    )
+    {
+        return new StreamTranscriptionStartEvent(
+            source.CallId,
+            source.Provider,
+            source.ModelId,
+            source.Audio,
+            source.InputAudioFormat,
+            source.MaxRetries,
+            source.Headers,
+            telemetry?.RecordInputs == false ? OperationJson.Parse("{}") : source.ProviderOptions
+        )
+        {
+            AiVersion = AiSdkVersion.Version,
+            RecordInputs = telemetry?.RecordInputs,
+            RecordOutputs = telemetry?.RecordOutputs,
+            FunctionId = telemetry?.FunctionId,
+        };
+    }
+
+    /// <summary>Filters the end event of <c>streamTranscribe</c>.</summary>
+    internal static StreamTranscriptionEndEvent FilterTelemetryEvent(
+        StreamTranscriptionEndEvent source,
+        TelemetryOptions? telemetry
+    )
+    {
+        var hideOutputs = telemetry?.RecordOutputs == false;
+        var hidden = hideOutputs || telemetry?.RecordInputs == false;
+        return new StreamTranscriptionEndEvent(
+            source.CallId,
+            source.Provider,
+            source.ModelId,
+            source.Audio,
+            hideOutputs ? string.Empty : source.Text,
+            hideOutputs ? [] : source.Segments,
+            source.Language,
+            source.DurationInSeconds,
+            source.Usage,
+            source.Warnings,
+            hidden ? null : source.ProviderMetadata,
+            hidden ? WithoutBody(source.Response)! : source.Response
+        )
+        {
+            AiVersion = AiSdkVersion.Version,
+            RecordInputs = telemetry?.RecordInputs,
+            RecordOutputs = telemetry?.RecordOutputs,
+            FunctionId = telemetry?.FunctionId,
+        };
+    }
+
+    private static EmbedEventValue<string, IReadOnlyList<string>> EmptyValue(
+        EmbedEventValue<string, IReadOnlyList<string>> value
+    )
+    {
+        return value.IsMany
+            ? EmbedEventValue<string, IReadOnlyList<string>>.FromMany([])
+            : EmbedEventValue<string, IReadOnlyList<string>>.FromOne(string.Empty);
+    }
+
+    private static EmbedEventValue<ProviderResponse?, IReadOnlyList<ProviderResponse?>> WithoutBody(
+        EmbedEventValue<ProviderResponse?, IReadOnlyList<ProviderResponse?>> value
+    )
+    {
+        return value.IsMany
+            ? EmbedEventValue<ProviderResponse?, IReadOnlyList<ProviderResponse?>>.FromMany(
+                value.Many!.Select(WithoutBody).ToList()
+            )
+            : EmbedEventValue<ProviderResponse?, IReadOnlyList<ProviderResponse?>>.FromOne(
+                WithoutBody(value.One)
+            );
+    }
+
     // The state keeps its shape: text stays text, parts stay parts and a JSON object stays an object.
     private static DecisionState? EmptyLike(DecisionState? state)
     {

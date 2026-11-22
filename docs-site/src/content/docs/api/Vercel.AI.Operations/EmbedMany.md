@@ -23,7 +23,7 @@ Embeds many values, splitting on count and UTF-8 byte limits. Maps to `embedMany
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L752)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L700)
 
 ## Methods
 
@@ -49,7 +49,7 @@ Embeds [Values](/api/Vercel.AI.Operations/EmbedManyRequest/#Vercel_AI_Operations
 
 **Returns:** [Task&lt;EmbedManyResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L755)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L703)
 
 <a id="Vercel_AI_Operations_EmbedMany_SplitByLimits_"></a>
 <a id="Vercel_AI_Operations_EmbedMany_SplitByLimits_System_Collections_Generic_IReadOnlyList_System_String__System_Int32_System_Double_"></a>
@@ -74,7 +74,7 @@ Splits values by embedding count and UTF-8 byte budget.
 
 **Returns:** [IReadOnlyList&lt;IReadOnlyList&lt;string&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L1084)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L1018)
 
 <a id="Vercel_AI_Operations_EmbedMany_Wrap_"></a>
 <a id="Vercel_AI_Operations_EmbedMany_Wrap_Vercel_AI_Operations_IEmbeddingCaller_System_Func_Vercel_AI_Operations_EmbeddingModelCall_Vercel_AI_Operations_IEmbeddingCaller_System_Threading_CancellationToken_System_Threading_Tasks_Task_Vercel_AI_Operations_EmbeddingModelCall___"></a>
@@ -98,4 +98,4 @@ Wraps a model so middleware can rewrite each `doEmbed` call.
 
 **Returns:** [IEmbeddingCaller](/api/Vercel.AI.Operations/IEmbeddingCaller/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L938)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L878)

@@ -393,7 +393,7 @@ public sealed class TranscriptionAudioInfo
 }
 
 /// <summary>Event passed to telemetry when <see cref="Transcribe.TranscribeAsync"/> begins. Maps to <c>TranscriptionStartEvent</c>.</summary>
-public sealed class TranscriptionStartEvent
+public sealed class TranscriptionStartEvent : IOperationStartEvent
 {
     /// <summary>Creates the event.</summary>
     public TranscriptionStartEvent(
@@ -455,18 +455,21 @@ public sealed class TranscriptionStartEvent
     /// <summary>Requested shared timing granularities, when specified.</summary>
     public IReadOnlyList<string>? TimestampGranularities { get; }
 
-    /// <summary>Copied from <see cref="TranscribeTelemetry.RecordInputs"/>.</summary>
+    /// <summary>Copied from <see cref="TelemetryOptions.RecordInputs"/>.</summary>
     public bool? RecordInputs { get; }
 
-    /// <summary>Copied from <see cref="TranscribeTelemetry.RecordOutputs"/>.</summary>
+    /// <summary>Copied from <see cref="TelemetryOptions.RecordOutputs"/>.</summary>
     public bool? RecordOutputs { get; }
 
-    /// <summary>Copied from <see cref="TranscribeTelemetry.FunctionId"/>.</summary>
+    /// <summary>Copied from <see cref="TelemetryOptions.FunctionId"/>.</summary>
     public string? FunctionId { get; }
+
+    /// <summary>The version of the SDK that emitted the event. Set only on events sent to telemetry integrations. Maps to <c>aiVersion</c>.</summary>
+    public string? AiVersion { get; init; }
 }
 
 /// <summary>Event passed to telemetry when <see cref="Transcribe.TranscribeAsync"/> completes. Raw audio is not included. Maps to <c>TranscriptionEndEvent</c>.</summary>
-public sealed class TranscriptionEndEvent
+public sealed class TranscriptionEndEvent : IOperationEndEvent
 {
     /// <summary>Creates the event.</summary>
     public TranscriptionEndEvent(
@@ -548,39 +551,167 @@ public sealed class TranscriptionEndEvent
     /// <summary>Response metadata.</summary>
     public ProviderResponse Response { get; }
 
-    /// <summary>Copied from <see cref="TranscribeTelemetry.RecordInputs"/>.</summary>
+    /// <summary>Copied from <see cref="TelemetryOptions.RecordInputs"/>.</summary>
     public bool? RecordInputs { get; }
 
-    /// <summary>Copied from <see cref="TranscribeTelemetry.RecordOutputs"/>.</summary>
+    /// <summary>Copied from <see cref="TelemetryOptions.RecordOutputs"/>.</summary>
     public bool? RecordOutputs { get; }
 
-    /// <summary>Copied from <see cref="TranscribeTelemetry.FunctionId"/>.</summary>
+    /// <summary>Copied from <see cref="TelemetryOptions.FunctionId"/>.</summary>
     public string? FunctionId { get; }
+
+    /// <summary>The version of the SDK that emitted the event. Set only on events sent to telemetry integrations. Maps to <c>aiVersion</c>.</summary>
+    public string? AiVersion { get; init; }
 }
 
-/// <summary>Telemetry callbacks for <see cref="Transcribe.TranscribeAsync"/>.</summary>
-public sealed class TranscribeTelemetry
+/// <summary>Event passed to telemetry when <see cref="StreamTranscribe.Start"/> begins. Maps to <c>StreamTranscriptionStartEvent</c>.</summary>
+public sealed class StreamTranscriptionStartEvent
 {
-    /// <summary>Called when the operation starts.</summary>
-    public Func<TranscriptionStartEvent, Task>? OnStart { get; set; }
+    /// <summary>Creates the event.</summary>
+    public StreamTranscriptionStartEvent(
+        string callId,
+        string provider,
+        string modelId,
+        TranscriptionAudioInfo audio,
+        AudioFormat? inputAudioFormat,
+        int? maxRetries,
+        IReadOnlyDictionary<string, string>? headers,
+        JsonElement providerOptions
+    )
+    {
+        CallId = callId;
+        Provider = provider;
+        ModelId = modelId;
+        Audio = audio;
+        InputAudioFormat = inputAudioFormat;
+        MaxRetries = maxRetries;
+        Headers = headers;
+        ProviderOptions = providerOptions;
+    }
 
-    /// <summary>Called when the operation ends.</summary>
-    public Func<TranscriptionEndEvent, Task>? OnEnd { get; set; }
+    /// <summary>Unique identifier for this call.</summary>
+    public string CallId { get; }
 
-    /// <summary>Called with the call id when the operation fails.</summary>
-    public Func<string, Exception, Task>? OnError { get; set; }
+    /// <summary><c>ai.streamTranscribe</c>.</summary>
+    public string OperationId => "ai.streamTranscribe";
 
-    /// <summary>When false, input fields such as provider options are hidden from events.</summary>
-    public bool? RecordInputs { get; set; }
+    /// <summary>Provider id.</summary>
+    public string Provider { get; }
 
-    /// <summary>When false, <c>text</c>, <c>segments</c> and <c>words</c> are hidden from events.</summary>
-    public bool? RecordOutputs { get; set; }
+    /// <summary>Model id.</summary>
+    public string ModelId { get; }
 
-    /// <summary>Identifies the call in telemetry.</summary>
-    public string? FunctionId { get; set; }
+    /// <summary>Input audio metadata.</summary>
+    public TranscriptionAudioInfo Audio { get; }
 
-    /// <summary>When false, telemetry callbacks are skipped.</summary>
-    public bool IsEnabled { get; set; } = true;
+    /// <summary>Raw input format of the audio stream.</summary>
+    public AudioFormat? InputAudioFormat { get; }
+
+    /// <summary>Resolved retry limit.</summary>
+    public int? MaxRetries { get; }
+
+    /// <summary>Caller headers, without the user-agent suffix.</summary>
+    public IReadOnlyDictionary<string, string>? Headers { get; }
+
+    /// <summary>Provider options.</summary>
+    public JsonElement ProviderOptions { get; }
+
+    /// <summary>Copied from <see cref="TelemetryOptions.RecordInputs"/>. Set only on events sent to telemetry integrations.</summary>
+    public bool? RecordInputs { get; init; }
+
+    /// <summary>Copied from <see cref="TelemetryOptions.RecordOutputs"/>. Set only on events sent to telemetry integrations.</summary>
+    public bool? RecordOutputs { get; init; }
+
+    /// <summary>Copied from <see cref="TelemetryOptions.FunctionId"/>. Set only on events sent to telemetry integrations.</summary>
+    public string? FunctionId { get; init; }
+
+    /// <summary>The version of the SDK that emitted the event. Set only on events sent to telemetry integrations. Maps to <c>aiVersion</c>.</summary>
+    public string? AiVersion { get; init; }
+}
+
+/// <summary>Event passed to telemetry when <see cref="StreamTranscribe.Start"/> completes. Maps to <c>StreamTranscriptionEndEvent</c>.</summary>
+public sealed class StreamTranscriptionEndEvent
+{
+    /// <summary>Creates the event.</summary>
+    public StreamTranscriptionEndEvent(
+        string callId,
+        string provider,
+        string modelId,
+        TranscriptionAudioInfo audio,
+        string text,
+        IReadOnlyList<TranscriptSegment> segments,
+        string? language,
+        double? durationInSeconds,
+        JsonElement? usage,
+        IReadOnlyList<OperationWarning> warnings,
+        JsonElement? providerMetadata,
+        ProviderResponse response
+    )
+    {
+        CallId = callId;
+        Provider = provider;
+        ModelId = modelId;
+        Audio = audio;
+        Text = text;
+        Segments = segments;
+        Language = language;
+        DurationInSeconds = durationInSeconds;
+        Usage = usage;
+        Warnings = warnings;
+        ProviderMetadata = providerMetadata;
+        Response = response;
+    }
+
+    /// <summary>Unique identifier for this call.</summary>
+    public string CallId { get; }
+
+    /// <summary><c>ai.streamTranscribe</c>.</summary>
+    public string OperationId => "ai.streamTranscribe";
+
+    /// <summary>Provider id.</summary>
+    public string Provider { get; }
+
+    /// <summary>Model id.</summary>
+    public string ModelId { get; }
+
+    /// <summary>Input audio metadata.</summary>
+    public TranscriptionAudioInfo Audio { get; }
+
+    /// <summary>The complete transcript.</summary>
+    public string Text { get; }
+
+    /// <summary>Segments with timing information.</summary>
+    public IReadOnlyList<TranscriptSegment> Segments { get; }
+
+    /// <summary>Detected language.</summary>
+    public string? Language { get; }
+
+    /// <summary>Duration of the input audio, when available.</summary>
+    public double? DurationInSeconds { get; }
+
+    /// <summary>Usage reported by the provider, when available.</summary>
+    public JsonElement? Usage { get; }
+
+    /// <summary>Warnings from the transcription model.</summary>
+    public IReadOnlyList<OperationWarning> Warnings { get; }
+
+    /// <summary>Provider metadata. Hidden when inputs or outputs are not recorded.</summary>
+    public JsonElement? ProviderMetadata { get; }
+
+    /// <summary>Response metadata.</summary>
+    public ProviderResponse Response { get; }
+
+    /// <summary>Copied from <see cref="TelemetryOptions.RecordInputs"/>. Set only on events sent to telemetry integrations.</summary>
+    public bool? RecordInputs { get; init; }
+
+    /// <summary>Copied from <see cref="TelemetryOptions.RecordOutputs"/>. Set only on events sent to telemetry integrations.</summary>
+    public bool? RecordOutputs { get; init; }
+
+    /// <summary>Copied from <see cref="TelemetryOptions.FunctionId"/>. Set only on events sent to telemetry integrations.</summary>
+    public string? FunctionId { get; init; }
+
+    /// <summary>The version of the SDK that emitted the event. Set only on events sent to telemetry integrations. Maps to <c>aiVersion</c>.</summary>
+    public string? AiVersion { get; init; }
 }
 
 /// <summary>Options for <see cref="Transcribe.TranscribeAsync"/>.</summary>
@@ -605,7 +736,7 @@ public sealed class TranscribeRequest : OperationRequest
     public IReadOnlyList<string>? TimestampGranularities { get; set; }
 
     /// <summary>Telemetry callbacks.</summary>
-    public TranscribeTelemetry? Telemetry { get; set; }
+    public TelemetryOptions? Telemetry { get; set; }
 }
 
 /// <summary>Options for <see cref="StreamTranscribe.Start"/>.</summary>
@@ -1040,11 +1171,10 @@ public static class Transcribe
         var providerOptions = request.ProviderOptions ?? OperationJson.Parse("{}");
         var maxRetries = OperationRetry.ResolveMaxRetries(request.MaxRetries);
         var callId = (request.GenerateCallId ?? (() => "call-" + Guid.NewGuid().ToString("N")))();
-        var telemetry = request.Telemetry is { IsEnabled: true } ? request.Telemetry : null;
+        var telemetry = TelemetryDispatcher.Create(request.Telemetry);
 
         TranscriptionStartEvent CreateStartEvent(int? byteLength, string? startMediaType)
         {
-            var hideInputs = telemetry?.RecordInputs == false;
             return new TranscriptionStartEvent(
                 callId,
                 model.Provider,
@@ -1052,12 +1182,8 @@ public static class Transcribe
                 new TranscriptionAudioInfo(byteLength, startMediaType),
                 maxRetries,
                 request.Headers,
-                hideInputs ? OperationJson.Parse("{}") : providerOptions,
-                request.TimestampGranularities,
-                null,
-                telemetry?.RecordInputs,
-                telemetry?.RecordOutputs,
-                telemetry?.FunctionId
+                providerOptions,
+                request.TimestampGranularities
             );
         }
 
@@ -1100,8 +1226,10 @@ public static class Transcribe
         catch (Exception preparationError)
         {
             // Upstream still reports a start event, with unknown audio metadata, before the error.
-            await NotifyStartAsync(telemetry, CreateStartEvent(null, null)).ConfigureAwait(false);
-            await NotifyErrorAsync(telemetry, callId, preparationError).ConfigureAwait(false);
+            await NotifyStartAsync(telemetry, CreateStartEvent(null, null), token)
+                .ConfigureAwait(false);
+            await NotifyErrorAsync(telemetry, callId, preparationError, token)
+                .ConfigureAwait(false);
             throw;
         }
 
@@ -1114,7 +1242,7 @@ public static class Transcribe
 
         int? byteLength = nativeUrl is null ? audio.Length : null;
         string? startMediaType = nativeUrl is null ? mediaType : null;
-        await NotifyStartAsync(telemetry, CreateStartEvent(byteLength, startMediaType))
+        await NotifyStartAsync(telemetry, CreateStartEvent(byteLength, startMediaType), token)
             .ConfigureAwait(false);
         try
         {
@@ -1211,11 +1339,9 @@ public static class Transcribe
                         result.Usage,
                         result.Warnings,
                         result.ProviderMetadata,
-                        result.Response,
-                        telemetry?.RecordInputs,
-                        telemetry?.RecordOutputs,
-                        telemetry?.FunctionId
-                    )
+                        result.Response
+                    ),
+                    token
                 )
                 .ConfigureAwait(false);
             return new TranscribeResult(
@@ -1231,78 +1357,38 @@ public static class Transcribe
         }
         catch (Exception error)
         {
-            await NotifyErrorAsync(telemetry, callId, error).ConfigureAwait(false);
+            await NotifyErrorAsync(telemetry, callId, error, token).ConfigureAwait(false);
             throw;
         }
     }
 
     private static Task NotifyStartAsync(
-        TranscribeTelemetry? telemetry,
-        TranscriptionStartEvent payload
+        TelemetryDispatcher telemetry,
+        TranscriptionStartEvent payload,
+        CancellationToken cancellationToken
     )
     {
-        return telemetry?.OnStart is null
-            ? Task.CompletedTask
-            : OperationCallbacks.NotifyAsync(payload, telemetry.OnStart);
+        return telemetry.OnStart?.Invoke(payload, cancellationToken) ?? Task.CompletedTask;
     }
 
     private static Task NotifyEndAsync(
-        TranscribeTelemetry? telemetry,
-        TranscriptionEndEvent payload
+        TelemetryDispatcher telemetry,
+        TranscriptionEndEvent payload,
+        CancellationToken cancellationToken
     )
     {
-        if (telemetry?.OnEnd is null)
-        {
-            return Task.CompletedTask;
-        }
-
-        // Raw provider metadata can contain inputs or outputs, so any hidden side hides it.
-        var hideInputs = telemetry.RecordInputs == false;
-        var hideOutputs = telemetry.RecordOutputs == false;
-        if (hideInputs || hideOutputs)
-        {
-            payload = new TranscriptionEndEvent(
-                payload.CallId,
-                payload.Provider,
-                payload.ModelId,
-                payload.Audio,
-                hideOutputs ? string.Empty : payload.Text,
-                hideOutputs ? Array.Empty<TranscriptSegment>() : payload.Segments,
-                hideOutputs ? Array.Empty<TranscriptSegment>() : payload.Words,
-                payload.Language,
-                payload.DurationInSeconds,
-                payload.Usage,
-                payload.Warnings,
-                null,
-                payload.Response,
-                payload.RecordInputs,
-                payload.RecordOutputs,
-                payload.FunctionId
-            );
-        }
-
-        return OperationCallbacks.NotifyAsync(payload, telemetry.OnEnd);
+        return telemetry.OnEnd?.Invoke(payload, cancellationToken) ?? Task.CompletedTask;
     }
 
-    private static async Task NotifyErrorAsync(
-        TranscribeTelemetry? telemetry,
+    private static Task NotifyErrorAsync(
+        TelemetryDispatcher telemetry,
         string callId,
-        Exception error
+        Exception error,
+        CancellationToken cancellationToken
     )
     {
-        if (telemetry?.OnError is null)
-        {
-            return;
-        }
-
-        try
-        {
-            await telemetry.OnError(callId, error).ConfigureAwait(false);
-        }
-        catch (Exception)
-        {
-            // Callback failures are isolated.
-        }
+        return telemetry.OnError?.Invoke(new TelemetryErrorEvent(callId, error), cancellationToken)
+            ?? Task.CompletedTask;
     }
 
     /// <summary>

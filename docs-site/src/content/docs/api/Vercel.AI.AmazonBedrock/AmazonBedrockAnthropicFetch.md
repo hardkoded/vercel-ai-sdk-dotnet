@@ -25,7 +25,7 @@ Maps to `createAmazonBedrockAnthropicFetch`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockHandlers.cs#L139)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockHandlers.cs#L176)
 
 ## Methods
 
@@ -50,4 +50,4 @@ Wraps &lt;code class="paramref"&gt;baseHandler&lt;/code&gt;. Disposing the resul
 
 **Returns:** [DelegatingHandler](https://learn.microsoft.com/dotnet/api/system.net.http.delegatinghandler)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockHandlers.cs#L142)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockHandlers.cs#L179)

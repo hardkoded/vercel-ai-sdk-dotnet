@@ -20,6 +20,7 @@ Vercel AI Gateway provider.
 | [DeepSeekSearchResponse](/api/Vercel.AI.Gateway/DeepSeekSearchResponse/) | Output of the DeepSeek Search tool. Maps to DeepSeekSearchResponse. |
 | [DeepSeekSearchResult](/api/Vercel.AI.Gateway/DeepSeekSearchResult/) | One DeepSeek search result. Maps to DeepSeekSearchResult. |
 | [GatewayAccessPolicyDeniedError](/api/Vercel.AI.Gateway/GatewayAccessPolicyDeniedError/) | An AI Gateway access policy that applies to the request does not allow the requested model or provider. |
+| [GatewayAsyncJobMetadata](/api/Vercel.AI.Gateway/GatewayAsyncJobMetadata/) | Metadata for an asynchronous AI Gateway job. Maps to GatewayAsyncJobMetadata. |
 | [GatewayAuthenticationError](/api/Vercel.AI.Gateway/GatewayAuthenticationError/) | Authentication failed. |
 | [GatewayBatchApi](/api/Vercel.AI.Gateway/GatewayBatchApi/) | AI Gateway batch API. Downloads the JSONL results of a batch. |
 | [GatewayConfig](/api/Vercel.AI.Gateway/GatewayConfig/) | Configuration shared by Gateway fetchers (GatewayConfig). |
@@ -47,6 +48,7 @@ Vercel AI Gateway provider.
 | [GatewayImageModelId](/api/Vercel.AI.Gateway/GatewayImageModelId/) | Known AI Gateway model ids. Maps to GatewayImageModelId; any other string is accepted too. |
 | [GatewayInternalServerError](/api/Vercel.AI.Gateway/GatewayInternalServerError/) | The Gateway failed internally. |
 | [GatewayInvalidRequestError](/api/Vercel.AI.Gateway/GatewayInvalidRequestError/) | The Gateway rejected the request. |
+| [GatewayKnownLiveModelId](/api/Vercel.AI.Gateway/GatewayKnownLiveModelId/) | Realtime model ids that use the continuous Live API by default. Maps to gatewayLiveModelIds and GatewayKnownLiveModelId. Other ids use the realtime API unless Live is passed. |
 | [GatewayLanguageModel](/api/Vercel.AI.Gateway/GatewayLanguageModel/) | Gateway language model. The request body is the V4 call options. |
 | [GatewayLanguageModelEntry](/api/Vercel.AI.Gateway/GatewayLanguageModelEntry/) | A model the Gateway offers. Maps to GatewayLanguageModelEntry. |
 | [GatewayLanguageModelSpecification](/api/Vercel.AI.Gateway/GatewayLanguageModelSpecification/) | The AI SDK specification of a Gateway model. Maps to GatewayLanguageModelSpecification. |
@@ -57,13 +59,18 @@ Vercel AI Gateway provider.
 | [GatewayNotFoundError](/api/Vercel.AI.Gateway/GatewayNotFoundError/) | A Gateway resource was not found. |
 | [GatewayOptions](/api/Vercel.AI.Gateway/GatewayOptions/) | AI Gateway settings. The default base URL is https://ai-gateway.vercel.sh/v4/ai. |
 | [GatewayProvider](/api/Vercel.AI.Gateway/GatewayProvider/) | Vercel AI Gateway provider. Language, embedding, image, and video calls use the Gateway V4 routes (/language-model, /embedding-model, /image-model, /video-model). |
+| [GatewayProviderMetadata](/api/Vercel.AI.Gateway/GatewayProviderMetadata/) | Shape of the inner providerMetadata.gateway object returned by AI Gateway operations. Maps to GatewayProviderMetadata. Additional fields may be added without a package update. |
 | [GatewayRateLimitError](/api/Vercel.AI.Gateway/GatewayRateLimitError/) | A Gateway rate limit. |
 | [GatewayRealtimeAuth](/api/Vercel.AI.Gateway/GatewayRealtimeAuth/) | Shared WebSocket subprotocol contract for AI Gateway realtime, streaming transcription, and streaming speech auth. Maps to gateway-realtime-auth.ts. The Gateway auth (bearer) token travels through the Sec-WebSocket-Protocol handshake because a browser WebSocket cannot set request headers. |
 | [GatewayRealtimeClientSecret](/api/Vercel.AI.Gateway/GatewayRealtimeClientSecret/) | A client secret together with the WebSocket URL to open. Maps to RealtimeModelV4ClientSecretResult. |
 | [GatewayRealtimeModel](/api/Vercel.AI.Gateway/GatewayRealtimeModel/) | Realtime model backed by the AI Gateway. The Gateway normalizes realtime like every other modality, so this model is a thin identity codec over the normalized protocol; only the connection and authentication are Gateway-specific. |
 | [GatewayRealtimeModelConfig](/api/Vercel.AI.Gateway/GatewayRealtimeModelConfig/) | Configuration of a GatewayRealtimeModel. Maps to GatewayRealtimeModelConfig. |
 | [GatewayRealtimeModelId](/api/Vercel.AI.Gateway/GatewayRealtimeModelId/) | Known AI Gateway model ids. Maps to GatewayRealtimeModelId; any other string is accepted too. |
+| [GatewayRealtimeModelLive](/api/Vercel.AI.Gateway/GatewayRealtimeModelLive/) | Live model backed by the AI Gateway. Live is a continuous conversation API: one session-start opens the session, PCM audio streams in both directions, and session-close ends it with final usage. The client speaks the Gateway's normalized Live protocol on /live-model, and the Gateway runs the provider mapping server-side, so server events arrive already normalized. Maps to GatewayRealtimeModelLive. |
+| [GatewayRealtimeModelLiveConfig](/api/Vercel.AI.Gateway/GatewayRealtimeModelLiveConfig/) | Configuration of a GatewayRealtimeModelLive. Maps to GatewayRealtimeModelLiveConfig. |
+| [GatewayRealtimeOptions](/api/Vercel.AI.Gateway/GatewayRealtimeOptions/) | Maps to GatewayRealtimeOptions. |
 | [GatewayRealtimeWebSocketConfig](/api/Vercel.AI.Gateway/GatewayRealtimeWebSocketConfig/) | URL and subprotocols a client opens a WebSocket with. Maps to the result of getWebSocketConfig. |
+| [GatewayRerankingModel](/api/Vercel.AI.Gateway/GatewayRerankingModel/) | Reranks documents through the Gateway /reranking-model route. Maps to GatewayRerankingModel. |
 | [GatewayRerankingModelId](/api/Vercel.AI.Gateway/GatewayRerankingModelId/) | Known AI Gateway model ids. Maps to GatewayRerankingModelId; any other string is accepted too. |
 | [GatewayResponseError](/api/Vercel.AI.Gateway/GatewayResponseError/) | The Gateway error body could not be read. |
 | [GatewayServiceCollectionExtensions](/api/Vercel.AI.Gateway/GatewayServiceCollectionExtensions/) | Registers the Gateway provider. |
@@ -121,5 +128,6 @@ Vercel AI Gateway provider.
 | Type | Summary |
 | --- | --- |
 | [GatewayCredentialType](/api/Vercel.AI.Gateway/GatewayCredentialType/) | The kind of credentials a request used. |
+| [GatewayRealtimeApi](/api/Vercel.AI.Gateway/GatewayRealtimeApi/) | The Gateway API a realtime model id is routed to. Maps to GatewayRealtimeOptions.api. |
 | [GatewaySpendReportDatePart](/api/Vercel.AI.Gateway/GatewaySpendReportDatePart/) | The time granularity of a spend report grouped by day. |
 | [GatewaySpendReportGroupBy](/api/Vercel.AI.Gateway/GatewaySpendReportGroupBy/) | The primary aggregation dimension of a spend report. |

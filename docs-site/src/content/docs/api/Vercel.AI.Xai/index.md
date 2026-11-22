@@ -25,6 +25,7 @@ xAI provider.
 | [XaiFileUpload](/api/Vercel.AI.Xai/XaiFileUpload/) | Bytes, base64, or a stream uploaded to xAI. |
 | [XaiImageGenerationOptions](/api/Vercel.AI.Xai/XaiImageGenerationOptions/) | Arguments of String). Maps to imageGenerationArgsSchema. |
 | [XaiImageModel](/api/Vercel.AI.Xai/XaiImageModel/) | xAI image model, over /images/generations and /images/edits. Maps to XaiImageModel. |
+| [XaiImageModelConfig](/api/Vercel.AI.Xai/XaiImageModelConfig/) | Settings of XaiImageModel. Maps to XaiImageModelConfig. |
 | [XaiMcpServerOptions](/api/Vercel.AI.Xai/XaiMcpServerOptions/) | Arguments of String). Maps to mcpServerArgsSchema. |
 | [XaiOptions](/api/Vercel.AI.Xai/XaiOptions/) | xAI settings. Maps to XaiProviderSettings. |
 | [XaiProvider](/api/Vercel.AI.Xai/XaiProvider/) | xAI provider at https://api.x.ai/v1. LanguageModel(string) returns the Responses API model, as upstream does. |

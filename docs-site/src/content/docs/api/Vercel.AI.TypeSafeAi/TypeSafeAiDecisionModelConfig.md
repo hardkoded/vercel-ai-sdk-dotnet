@@ -53,14 +53,14 @@ API base URL, without a trailing slash.
 
 
 ```csharp
-public Func<IReadOnlyDictionary<string, string>>? Headers { get; set; }
+public Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>>? Headers { get; set; }
 ```
 
 
 Provider headers, resolved on every call. When null, the model sends a bearer token read from
 `TYPESAFE_AI_API_KEY` at call time.
 
-**Value:** [Func&lt;IReadOnlyDictionary&lt;string, string&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-1)
+**Value:** [Func&lt;CancellationToken, Task&lt;IReadOnlyDictionary&lt;string, string&gt;&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiDecisionModel.cs#L28)
 
@@ -79,7 +79,7 @@ HTTP client. Not serialized.
 
 **Value:** [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiDecisionModel.cs#L31)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiDecisionModel.cs#L34)
 
 <a id="Vercel_AI_TypeSafeAi_TypeSafeAiDecisionModelConfig_Provider_"></a>
 <a id="Vercel_AI_TypeSafeAi_TypeSafeAiDecisionModelConfig_Provider"></a>

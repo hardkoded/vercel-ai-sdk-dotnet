@@ -416,7 +416,7 @@ Returns a realtime model.
 
 **Returns:** [IRealtimeModel](/api/Vercel.AI.Provider/IRealtimeModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L242)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L254)
 
 <a id="Vercel_AI_Google_GoogleProvider_SpeechModel_"></a>
 <a id="Vercel_AI_Google_GoogleProvider_SpeechModel_System_String_"></a>
@@ -439,7 +439,7 @@ Returns a speech model.
 
 **Returns:** [ISpeechModel](/api/Vercel.AI.Provider/ISpeechModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L230)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L242)
 
 <a id="Vercel_AI_Google_GoogleProvider_TranscriptionModel_"></a>
 <a id="Vercel_AI_Google_GoogleProvider_TranscriptionModel_System_String_"></a>
@@ -462,4 +462,50 @@ Returns a transcription model.
 
 **Returns:** [ITranscriptionModel](/api/Vercel.AI.Provider/ITranscriptionModel/)
 
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L248)
+
+<a id="Vercel_AI_Google_GoogleProvider_Video_"></a>
+<a id="Vercel_AI_Google_GoogleProvider_Video_System_String_"></a>
+
+### Video(string)
+
+
+```csharp
+public IVideoModel Video(string modelId)
+```
+
+
+Creates a video model. Same as [VideoModel(string)](#Vercel_AI_Google_GoogleProvider_VideoModel_System_String_).
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+
+**Returns:** [IVideoModel](/api/Vercel.AI.Provider/IVideoModel/)
+
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L236)
+
+<a id="Vercel_AI_Google_GoogleProvider_VideoModel_"></a>
+<a id="Vercel_AI_Google_GoogleProvider_VideoModel_System_String_"></a>
+
+### VideoModel(string)
+
+
+```csharp
+public override IVideoModel VideoModel(string modelId)
+```
+
+
+Returns a video model.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+
+**Returns:** [IVideoModel](/api/Vercel.AI.Provider/IVideoModel/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L230)

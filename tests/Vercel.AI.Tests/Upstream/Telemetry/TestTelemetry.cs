@@ -36,7 +36,47 @@ internal sealed class TestTelemetry : ITelemetry
 
     public Func<GenerateObjectStepEndEvent, CancellationToken, Task>? OnObjectStepEnd { get; init; }
 
+    public Func<GenerateTextStepErrorEvent, CancellationToken, Task>? OnStepError { get; init; }
+
+    /// <summary>Receives the end event of a text generation.</summary>
     public Func<GenerateTextResult, CancellationToken, Task>? OnEnd { get; init; }
+
+    /// <summary>Receives the end event of every other operation (embed, rerank, transcribe).</summary>
+    public Func<IOperationEndEvent, CancellationToken, Task>? OnOperationEnd { get; init; }
+
+    Func<IOperationEndEvent, CancellationToken, Task>? ITelemetry.OnEnd =>
+        OnEnd is null && OnOperationEnd is null
+            ? null
+            : (e, cancellationToken) =>
+                e is GenerateTextResult result && OnEnd is not null
+                    ? OnEnd(result, cancellationToken)
+                : e is not GenerateTextResult && OnOperationEnd is not null
+                    ? OnOperationEnd(e, cancellationToken)
+                : Task.CompletedTask;
+
+    public Func<EmbeddingModelCallStartEvent, CancellationToken, Task>? OnEmbedStart { get; init; }
+
+    public Func<EmbeddingModelCallEndEvent, CancellationToken, Task>? OnEmbedEnd { get; init; }
+
+    public Func<RerankingModelCallStartEvent, CancellationToken, Task>? OnRerankStart { get; init; }
+
+    public Func<RerankingModelCallEndEvent, CancellationToken, Task>? OnRerankEnd { get; init; }
+
+    public Func<
+        StreamTranscriptionStartEvent,
+        CancellationToken,
+        Task
+    >? OnStreamTranscriptionStart { get; init; }
+
+    public Func<
+        StreamTranscriptionEndEvent,
+        CancellationToken,
+        Task
+    >? OnStreamTranscriptionEnd { get; init; }
+
+    public IExecuteLanguageModelCall? ExecuteLanguageModelCall { get; init; }
+
+    public IExecuteTool? ExecuteTool { get; init; }
 
     public Func<
         LanguageModelCallStartEvent,

@@ -31,7 +31,7 @@ belongs in `Capabilities`, including provider-specific features.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L433)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L439)
 
 ## Properties
 
@@ -50,7 +50,7 @@ Upstream `capabilities`.
 
 **Value:** [ModelCapabilities](/api/Vercel.AI/ModelCapabilities/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L437)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L443)
 
 <a id="Vercel_AI_ModelEntry_1_ProviderOptions_"></a>
 <a id="Vercel_AI_ModelEntry_1_ProviderOptions"></a>
@@ -67,7 +67,7 @@ Omitted sections or options are undeclared, not explicitly unsupported.
 
 **Value:** [ModelProviderOptions](/api/Vercel.AI/ModelProviderOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L440)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L446)
 
 <a id="Vercel_AI_ModelEntry_1_RequestConfig_"></a>
 <a id="Vercel_AI_ModelEntry_1_RequestConfig"></a>
@@ -84,4 +84,4 @@ Upstream `requestConfig`.
 
 **Value:** `TRequestConfig`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L443)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L449)

@@ -23,7 +23,7 @@ The result of minting a streaming speech client secret. Maps to `GatewaySpeechFa
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L772)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L853)
 
 ## Constructors
 
@@ -48,7 +48,7 @@ Creates a result.
 | `url` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `expiresAt` | [long?](https://learn.microsoft.com/dotnet/api/system.int64) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L775)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L856)
 
 ## Properties
 
@@ -67,7 +67,7 @@ Token expiry, epoch seconds.
 
 **Value:** [long?](https://learn.microsoft.com/dotnet/api/system.int64)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L789)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L870)
 
 <a id="Vercel_AI_Gateway_GatewaySpeechFactoryGetTokenResult_Token_"></a>
 <a id="Vercel_AI_Gateway_GatewaySpeechFactoryGetTokenResult_Token"></a>
@@ -84,7 +84,7 @@ The minted `vcst_` client secret.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L783)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L864)
 
 <a id="Vercel_AI_Gateway_GatewaySpeechFactoryGetTokenResult_Url_"></a>
 <a id="Vercel_AI_Gateway_GatewaySpeechFactoryGetTokenResult_Url"></a>
@@ -101,4 +101,4 @@ WebSocket URL of the streaming speech surface for this model.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L786)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L867)

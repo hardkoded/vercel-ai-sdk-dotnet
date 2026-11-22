@@ -25,18 +25,18 @@ Bedrock Converse language model.
 
 **Implements:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L220)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L226)
 
 ## Constructors
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockLanguageModel__ctor_"></a>
-<a id="Vercel_AI_AmazonBedrock_AmazonBedrockLanguageModel__ctor_Vercel_AI_AmazonBedrock_AmazonBedrockProvider_System_String_"></a>
+<a id="Vercel_AI_AmazonBedrock_AmazonBedrockLanguageModel__ctor_Vercel_AI_AmazonBedrock_AmazonBedrockProvider_System_String_Vercel_AI_AmazonBedrock_AmazonBedrockChatModelSettings_"></a>
 
-### AmazonBedrockLanguageModel(AmazonBedrockProvider, string)
+### AmazonBedrockLanguageModel(AmazonBedrockProvider, string, AmazonBedrockChatModelSettings?)
 
 
 ```csharp
-public AmazonBedrockLanguageModel(AmazonBedrockProvider provider, string modelId)
+public AmazonBedrockLanguageModel(AmazonBedrockProvider provider, string modelId, AmazonBedrockChatModelSettings? settings = null)
 ```
 
 
@@ -48,8 +48,9 @@ Creates a model.
 | --- | --- | --- |
 | `provider` | [AmazonBedrockProvider](/api/Vercel.AI.AmazonBedrock/AmazonBedrockProvider/) |  |
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+| `settings` | [AmazonBedrockChatModelSettings](/api/Vercel.AI.AmazonBedrock/AmazonBedrockChatModelSettings/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L227)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L234)
 
 ## Properties
 
@@ -68,7 +69,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L244)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L256)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockLanguageModel_Provider_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockLanguageModel_Provider"></a>
@@ -85,7 +86,7 @@ Provider id, such as `openai`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L241)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L253)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockLanguageModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockLanguageModel_SpecificationVersion"></a>
@@ -102,7 +103,7 @@ Always `V4`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L234)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L246)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockLanguageModel_SupportedUrls_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockLanguageModel_SupportedUrls"></a>
@@ -120,7 +121,7 @@ must match. Prompt file URLs that match are passed through. All others are downl
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L237)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L249)
 
 ## Methods
 
@@ -146,7 +147,7 @@ Generates a complete result.
 
 **Returns:** [Task&lt;LanguageModelGenerateResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L258)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L270)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockLanguageModel_DoStreamAsync_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockLanguageModel_DoStreamAsync_Vercel_AI_Provider_LanguageModelCallOptions_System_Threading_CancellationToken_"></a>
@@ -170,4 +171,4 @@ Streams partial results. The result carries the stream with the request and resp
 
 **Returns:** [Task&lt;LanguageModelStreamResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L293)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L305)

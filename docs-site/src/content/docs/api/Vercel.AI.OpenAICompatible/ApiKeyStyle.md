@@ -21,7 +21,7 @@ public enum ApiKeyStyle
 
 How the API key is sent.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L12)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L13)
 
 ## Fields
 
@@ -39,7 +39,7 @@ A custom header such as `api-key`.
 
 **Value:** [ApiKeyStyle](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L18)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L19)
 
 <a id="Vercel_AI_OpenAICompatible_ApiKeyStyle_Bearer"></a>
 
@@ -55,7 +55,7 @@ Bearer = 0
 
 **Value:** [ApiKeyStyle](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L15)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L16)
 
 <a id="Vercel_AI_OpenAICompatible_ApiKeyStyle_CustomHeader"></a>
 
@@ -71,7 +71,7 @@ A named header whose value is the raw key.
 
 **Value:** [ApiKeyStyle](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L30)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L31)
 
 <a id="Vercel_AI_OpenAICompatible_ApiKeyStyle_Key"></a>
 
@@ -87,7 +87,7 @@ Key = 3
 
 **Value:** [ApiKeyStyle](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L24)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L25)
 
 <a id="Vercel_AI_OpenAICompatible_ApiKeyStyle_RawAuthorization"></a>
 
@@ -103,7 +103,7 @@ The raw key as the `Authorization` value.
 
 **Value:** [ApiKeyStyle](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L27)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L28)
 
 <a id="Vercel_AI_OpenAICompatible_ApiKeyStyle_Token"></a>
 
@@ -119,4 +119,4 @@ Token = 2
 
 **Value:** [ApiKeyStyle](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L21)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L22)

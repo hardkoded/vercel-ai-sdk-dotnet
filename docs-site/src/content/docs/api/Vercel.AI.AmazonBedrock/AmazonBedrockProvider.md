@@ -216,7 +216,7 @@ Creates an embedding model with &lt;code class="paramref"&gt;settings&lt;/code&g
 
 **Returns:** [AmazonBedrockEmbeddingModel](/api/Vercel.AI.AmazonBedrock/AmazonBedrockEmbeddingModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L202)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L208)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockProvider_LanguageModel_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockProvider_LanguageModel_System_String_"></a>
@@ -240,6 +240,29 @@ Returns a language model.
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L190)
+
+<a id="Vercel_AI_AmazonBedrock_AmazonBedrockProvider_LanguageModel_System_String_Vercel_AI_AmazonBedrock_AmazonBedrockChatModelSettings_"></a>
+
+### LanguageModel(string, AmazonBedrockChatModelSettings?)
+
+
+```csharp
+public AmazonBedrockLanguageModel LanguageModel(string modelId, AmazonBedrockChatModelSettings? settings)
+```
+
+
+Creates a language model with &lt;code class="paramref"&gt;settings&lt;/code&gt;.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+| `settings` | [AmazonBedrockChatModelSettings](/api/Vercel.AI.AmazonBedrock/AmazonBedrockChatModelSettings/) |  |
+
+**Returns:** [AmazonBedrockLanguageModel](/api/Vercel.AI.AmazonBedrock/AmazonBedrockLanguageModel/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L202)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockProvider_RerankingModel_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockProvider_RerankingModel_System_String_"></a>

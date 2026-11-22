@@ -30,7 +30,7 @@ Normalized batch item whose parsed output has the type of the `OutputSpec%601` p
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [BatchItemResult](/api/Vercel.AI.Operations/BatchItemResult/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L514)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L525)
 
 ## Properties
 
@@ -50,4 +50,4 @@ Maps to `output`.
 
 **Value:** `TOutput`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L520)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L531)

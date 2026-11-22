@@ -158,7 +158,7 @@ Creates a provider. Pass a handler from tests.
 
 **Returns:** [TogetherAIProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TogetherAI/TogetherAIProvider.cs#L113)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TogetherAI/TogetherAIProvider.cs#L116)
 
 <a id="Vercel_AI_TogetherAI_TogetherAIProvider_CreateChatModel_"></a>
 <a id="Vercel_AI_TogetherAI_TogetherAIProvider_CreateChatModel_System_String_"></a>
@@ -229,20 +229,26 @@ Returns a reranking model.
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TogetherAI/TogetherAIProvider.cs#L69)
 
-<a id="Vercel_AI_TogetherAI_TogetherAIProvider_ResolveApiKey_"></a>
-<a id="Vercel_AI_TogetherAI_TogetherAIProvider_ResolveApiKey"></a>
+<a id="Vercel_AI_TogetherAI_TogetherAIProvider_ResolveApiKeyAsync_"></a>
+<a id="Vercel_AI_TogetherAI_TogetherAIProvider_ResolveApiKeyAsync_System_Threading_CancellationToken_"></a>
 
-### ResolveApiKey()
+### ResolveApiKeyAsync(CancellationToken)
 
 
 ```csharp
-protected override string? ResolveApiKey()
+protected override Task<string?> ResolveApiKeyAsync(CancellationToken cancellationToken)
 ```
 
 
 Resolves the API key. A missing key is omitted unless [RequireApiKey](/api/Vercel.AI.OpenAICompatible/OpenAICompatibleOptions/#Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_RequireApiKey) is set.
 
-**Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
+
+**Returns:** [Task&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TogetherAI/TogetherAIProvider.cs#L75)
 

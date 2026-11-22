@@ -34,13 +34,13 @@ TypeSafe provider settings.
 
 
 ```csharp
-public string? ApiKey { get; set; }
+public Resolvable<string>? ApiKey { get; set; }
 ```
 
 
-API key. Falls back to `TYPESAFE_AI_API_KEY` at call time.
+API key. Falls back to `TYPESAFE_AI_API_KEY` at call time. A callback is resolved before each request.
 
-**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+**Value:** `Resolvable&lt;string&gt;`
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiProvider.cs#L16)
 

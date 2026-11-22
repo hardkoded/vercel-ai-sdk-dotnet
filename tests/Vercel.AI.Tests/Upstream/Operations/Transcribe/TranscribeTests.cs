@@ -5,6 +5,7 @@
 using System.Text.Json;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
+using Vercel.AI.Tests.Upstream.Telemetry;
 using Vercel.AI.Util;
 using static Vercel.AI.Tests.Upstream.Operations.Transcribe.TranscribeSupport;
 using StreamTranscribeOperation = Vercel.AI.Operations.StreamTranscribe;
@@ -40,18 +41,26 @@ public sealed class TranscribeTests
         var result = await TranscribeOperation.TranscribeAsync(
             new TranscribeRequest
             {
-                Telemetry = new TranscribeTelemetry
+                Telemetry = new TelemetryOptions
                 {
-                    OnStart = e =>
-                    {
-                        events.Add(e.Audio);
-                        return Task.CompletedTask;
-                    },
-                    OnEnd = e =>
-                    {
-                        events.Add(e.Audio);
-                        return Task.CompletedTask;
-                    },
+                    Integrations =
+                    [
+                        new TestTelemetry
+                        {
+                            OnStart = (eEvent, _) =>
+                            {
+                                var e = (TranscriptionStartEvent)eEvent;
+                                events.Add(e.Audio);
+                                return Task.CompletedTask;
+                            },
+                            OnOperationEnd = (eEvent, _) =>
+                            {
+                                var e = (TranscriptionEndEvent)eEvent;
+                                events.Add(e.Audio);
+                                return Task.CompletedTask;
+                            },
+                        },
+                    ],
                 },
                 Model = model,
                 AudioUrl = url.AbsoluteUri,
@@ -127,13 +136,20 @@ public sealed class TranscribeTests
                     AudioUrl = "https://example.com/redirect",
                     MaxRetries = 1,
                     TimestampGranularities = Array.Empty<string>(),
-                    Telemetry = new TranscribeTelemetry
+                    Telemetry = new TelemetryOptions
                     {
-                        OnEnd = e =>
-                        {
-                            end = e;
-                            return Task.CompletedTask;
-                        },
+                        Integrations =
+                        [
+                            new TestTelemetry
+                            {
+                                OnOperationEnd = (eEvent, _) =>
+                                {
+                                    var e = (TranscriptionEndEvent)eEvent;
+                                    end = e;
+                                    return Task.CompletedTask;
+                                },
+                            },
+                        ],
                     },
                 }
             );
@@ -531,23 +547,32 @@ public sealed class TranscribeTests
                     AudioUrl = "https://example.com/audio.mp3",
                     MaxRetries = 0,
                     GenerateCallId = () => "url-error",
-                    Telemetry = new TranscribeTelemetry
+                    Telemetry = new TelemetryOptions
                     {
-                        OnStart = e =>
-                        {
-                            starts.Add(e);
-                            return Task.CompletedTask;
-                        },
-                        OnEnd = _ =>
-                        {
-                            ends++;
-                            return Task.CompletedTask;
-                        },
-                        OnError = (id, e) =>
-                        {
-                            errors.Add((id, e));
-                            return Task.CompletedTask;
-                        },
+                        Integrations =
+                        [
+                            new TestTelemetry
+                            {
+                                OnStart = (eEvent, _) =>
+                                {
+                                    var e = (TranscriptionStartEvent)eEvent;
+                                    starts.Add(e);
+                                    return Task.CompletedTask;
+                                },
+                                OnOperationEnd = (_, _) =>
+                                {
+                                    ends++;
+                                    return Task.CompletedTask;
+                                },
+                                OnError = (errorEvent, _) =>
+                                {
+                                    var id = errorEvent.CallId!;
+                                    var e = errorEvent.Error;
+                                    errors.Add((id, e));
+                                    return Task.CompletedTask;
+                                },
+                            },
+                        ],
                     },
                 }
             )
@@ -578,18 +603,26 @@ public sealed class TranscribeTests
                 Download = (_, _) =>
                     Task.FromResult(new DownloadedMedia(new byte[] { 1, 2, 3, 4 }, "audio/mpeg")),
                 GenerateCallId = () => "call-url",
-                Telemetry = new TranscribeTelemetry
+                Telemetry = new TelemetryOptions
                 {
-                    OnStart = e =>
-                    {
-                        start = e;
-                        return Task.CompletedTask;
-                    },
-                    OnEnd = e =>
-                    {
-                        end = e;
-                        return Task.CompletedTask;
-                    },
+                    Integrations =
+                    [
+                        new TestTelemetry
+                        {
+                            OnStart = (eEvent, _) =>
+                            {
+                                var e = (TranscriptionStartEvent)eEvent;
+                                start = e;
+                                return Task.CompletedTask;
+                            },
+                            OnOperationEnd = (eEvent, _) =>
+                            {
+                                var e = (TranscriptionEndEvent)eEvent;
+                                end = e;
+                                return Task.CompletedTask;
+                            },
+                        },
+                    ],
                 },
             }
         );
@@ -626,14 +659,21 @@ public sealed class TranscribeTests
                     Words = words,
                 },
                 Audio = new byte[] { 1, 2, 3, 4 },
-                Telemetry = new TranscribeTelemetry
+                Telemetry = new TelemetryOptions
                 {
-                    OnEnd = e =>
-                    {
-                        end = e;
-                        return Task.CompletedTask;
-                    },
                     RecordOutputs = false,
+                    Integrations =
+                    [
+                        new TestTelemetry
+                        {
+                            OnOperationEnd = (eEvent, _) =>
+                            {
+                                var e = (TranscriptionEndEvent)eEvent;
+                                end = e;
+                                return Task.CompletedTask;
+                            },
+                        },
+                    ],
                 },
             }
         );
@@ -663,20 +703,28 @@ public sealed class TranscribeTests
                 },
                 Audio = new byte[] { 1, 2, 3, 4 },
                 GenerateCallId = () => "call-1",
-                Telemetry = new TranscribeTelemetry
+                Telemetry = new TelemetryOptions
                 {
                     FunctionId = "transcribe-audio",
                     RecordInputs = false,
-                    OnStart = e =>
-                    {
-                        events.Add(e);
-                        return Task.CompletedTask;
-                    },
-                    OnEnd = e =>
-                    {
-                        events.Add(e);
-                        return Task.CompletedTask;
-                    },
+                    Integrations =
+                    [
+                        new TestTelemetry
+                        {
+                            OnStart = (eEvent, _) =>
+                            {
+                                var e = (TranscriptionStartEvent)eEvent;
+                                events.Add(e);
+                                return Task.CompletedTask;
+                            },
+                            OnOperationEnd = (eEvent, _) =>
+                            {
+                                var e = (TranscriptionEndEvent)eEvent;
+                                events.Add(e);
+                                return Task.CompletedTask;
+                            },
+                        },
+                    ],
                 },
             }
         );
@@ -725,13 +773,20 @@ public sealed class TranscribeTests
                 Model = new TranscriptFake(),
                 Audio = new byte[] { 1, 2, 3, 4 },
                 TimestampGranularities = granularities,
-                Telemetry = new TranscribeTelemetry
+                Telemetry = new TelemetryOptions
                 {
-                    OnStart = e =>
-                    {
-                        events.Add(e);
-                        return Task.CompletedTask;
-                    },
+                    Integrations =
+                    [
+                        new TestTelemetry
+                        {
+                            OnStart = (eEvent, _) =>
+                            {
+                                var e = (TranscriptionStartEvent)eEvent;
+                                events.Add(e);
+                                return Task.CompletedTask;
+                            },
+                        },
+                    ],
                 },
             }
         );
@@ -762,13 +817,20 @@ public sealed class TranscribeTests
             {
                 Model = new TranscriptFake { Words = words },
                 Audio = new byte[] { 1, 2, 3, 4 },
-                Telemetry = new TranscribeTelemetry
+                Telemetry = new TelemetryOptions
                 {
-                    OnEnd = e =>
-                    {
-                        events.Add(e);
-                        return Task.CompletedTask;
-                    },
+                    Integrations =
+                    [
+                        new TestTelemetry
+                        {
+                            OnOperationEnd = (eEvent, _) =>
+                            {
+                                var e = (TranscriptionEndEvent)eEvent;
+                                events.Add(e);
+                                return Task.CompletedTask;
+                            },
+                        },
+                    ],
                 },
             }
         );
@@ -794,13 +856,21 @@ public sealed class TranscribeTests
                     Audio = new byte[] { 1, 2, 3, 4 },
                     MaxRetries = 0,
                     GenerateCallId = () => "call-1",
-                    Telemetry = new TranscribeTelemetry
+                    Telemetry = new TelemetryOptions
                     {
-                        OnError = (id, e) =>
-                        {
-                            errors.Add((id, e));
-                            return Task.CompletedTask;
-                        },
+                        Integrations =
+                        [
+                            new TestTelemetry
+                            {
+                                OnError = (errorEvent, _) =>
+                                {
+                                    var id = errorEvent.CallId!;
+                                    var e = errorEvent.Error;
+                                    errors.Add((id, e));
+                                    return Task.CompletedTask;
+                                },
+                            },
+                        ],
                     },
                 }
             )

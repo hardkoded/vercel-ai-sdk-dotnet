@@ -38,6 +38,8 @@ Client, text generation, streaming, tools, and agents.
 | [ErrorPart](/api/Vercel.AI/ErrorPart/) | The stream failed. |
 | [EvaluateOptions](/api/Vercel.AI/EvaluateOptions/) | Evaluation options. |
 | [ExecutedTool](/api/Vercel.AI/ExecutedTool/) | The result of executing a tool. |
+| [ExecuteLanguageModelCallOptions&lt;T&gt;](/api/Vercel.AI/ExecuteLanguageModelCallOptions-1/) | The options of ExecuteLanguageModelCall: the model-call start event as context, the call id and the function that performs the model call. Maps to Partial<LanguageModelCallStartEvent> & { callId, execute }. |
+| [ExecuteToolOptions&lt;T&gt;](/api/Vercel.AI/ExecuteToolOptions-1/) | The options of ExecuteTool: the tool-execution start event as context, the ids and the function that runs the tool. Maps to Partial<ToolExecutionStartEvent> & { callId, toolCallId, execute }. |
 | [ExtractJsonMiddleware](/api/Vercel.AI/ExtractJsonMiddleware/) | Strips markdown JSON fences. Maps to extractJsonMiddleware. |
 | [ExtractReasoningMiddleware](/api/Vercel.AI/ExtractReasoningMiddleware/) | Splits delimited reasoning, such as <think>...</think>, out of text. Maps to extractReasoningMiddleware. |
 | [FilePart](/api/Vercel.AI/FilePart/) | A file the model generated. A URL has been downloaded by the time this part is emitted. Maps to the file stream part. |
@@ -48,6 +50,7 @@ Client, text generation, streaming, tools, and agents.
 | [GenerateTextResult](/api/Vercel.AI/GenerateTextResult/) | Result of generateText. |
 | [GenerateTextResult&lt;TOutput&gt;](/api/Vercel.AI/GenerateTextResult-1/) | Result of generateText whose parsed output has the type of the OutputSpec%601 of the call. Maps to GenerateTextResult<TOOLS, OUTPUT>. |
 | [GenerateTextStartEvent](/api/Vercel.AI/GenerateTextStartEvent/) | Passed to OnStart when the generation begins, before any model call. Maps to GenerateTextStartEvent. |
+| [GenerateTextStepErrorEvent](/api/Vercel.AI/GenerateTextStepErrorEvent/) | Passed to OnStepError when a step that started fails before it produces a step result. Carries the step start event of the failed step and the error. Maps to GenerateTextStepErrorEvent. |
 | [GenerateTextStepStartEvent](/api/Vercel.AI/GenerateTextStepStartEvent/) | Passed to OnStepStart when a step begins, before the provider is called. Maps to GenerateTextStepStartEvent. |
 | [GenerateVideoOptions](/api/Vercel.AI/GenerateVideoOptions/) | Video options. |
 | [ImageCapabilities](/api/Vercel.AI/ImageCapabilities/) | Upstream ModelCapabilities.image. |
@@ -144,8 +147,12 @@ Client, text generation, streaming, tools, and agents.
 | [IAgent&lt;TCallOptions&gt;](/api/Vercel.AI/IAgent-1/) | An agent that streams a reply to model messages and takes call options. Maps to the Agent interface with a CALLOPTIONS type. |
 | [IAiClient](/api/Vercel.AI/IAiClient/) | Core AI SDK client. Maps to the ai package functions. |
 | [IAiTelemetry](/api/Vercel.AI/IAiTelemetry/) | Telemetry hook invoked around generate and stream calls. |
+| [IExecuteLanguageModelCall](/api/Vercel.AI/IExecuteLanguageModelCall/) | The wrapper an integration provides as ExecuteLanguageModelCall. Upstream types it as a generic function, which a C# delegate property cannot express. |
+| [IExecuteTool](/api/Vercel.AI/IExecuteTool/) | The wrapper an integration provides as ExecuteTool. Upstream types it as a generic function, which a C# delegate property cannot express. |
 | [ILanguageModelMiddleware](/api/Vercel.AI/ILanguageModelMiddleware/) | Wraps doGenerate and doStream. Maps to language-model middleware. |
-| [ITelemetry](/api/Vercel.AI/ITelemetry/) | Implement this interface to create custom telemetry integrations. A callback is optional: return null from a property to skip it. Maps to Telemetry in telemetry/telemetry.ts. Only onEnd, onLanguageModelCallStart, onLanguageModelCallEnd, onError and the extract and decide callbacks are ported so far. |
+| [IOperationEndEvent](/api/Vercel.AI/IOperationEndEvent/) | An event passed to OnEnd when an operation completes. Stands in for the OperationEndEvent union in telemetry/telemetry.ts, which C# cannot express. |
+| [IOperationStartEvent](/api/Vercel.AI/IOperationStartEvent/) | An event passed to OnStart when an operation begins. Stands in for the OperationStartEvent union in telemetry/telemetry.ts, which C# cannot express. |
+| [ITelemetry](/api/Vercel.AI/ITelemetry/) | Implement this interface to create custom telemetry integrations. A callback is optional: return null from a property to skip it. Maps to Telemetry in telemetry/telemetry.ts. Only onStart, onObjectStepStart, onObjectStepEnd and the text generation callbacks ( onStepStart, onLanguageModelCallStart, onLanguageModelCallEnd, onToolExecutionStart, onToolExecutionEnd, onStepEnd, onStepFinish, onEnd, onAbort and onError) and the extract and decide callbacks are ported so far. |
 
 ## Delegates
 

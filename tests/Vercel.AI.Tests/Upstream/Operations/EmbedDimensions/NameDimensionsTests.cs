@@ -4,6 +4,7 @@
 
 using System.Text.Json;
 using Vercel.AI.Operations;
+using Vercel.AI.Tests.Upstream.Telemetry;
 using static Vercel.AI.Tests.Upstream.Operations.EmbedDimensions.EmbedDimensionsSupport;
 
 namespace Vercel.AI.Tests.Upstream.Operations.EmbedDimensions;
@@ -32,7 +33,7 @@ public sealed class NameDimensionsTests
         );
         var starts = new List<EmbedStartEvent>();
         var telemetryStarts = new List<EmbedStartEvent>();
-        var embedStarts = new List<EmbeddingModelCallEvent>();
+        var embedStarts = new List<EmbeddingModelCallStartEvent>();
 
         await Run(
             name,
@@ -44,23 +45,28 @@ public sealed class NameDimensionsTests
                 starts.Add(e);
                 return Task.CompletedTask;
             },
-            telemetry: new EmbedTelemetry
+            telemetry: new TelemetryOptions
             {
-                IncludeRuntimeContext = new Dictionary<string, bool>(),
-                OnStart = e =>
-                {
-                    telemetryStarts.Add(e);
-                    return Task.CompletedTask;
-                },
-                OnEmbedStart = e =>
-                {
-                    lock (embedStarts)
+                Integrations =
+                [
+                    new TestTelemetry
                     {
-                        embedStarts.Add(e);
-                    }
+                        OnStart = (e, _) =>
+                        {
+                            telemetryStarts.Add((EmbedStartEvent)e);
+                            return Task.CompletedTask;
+                        },
+                        OnEmbedStart = (e, _) =>
+                        {
+                            lock (embedStarts)
+                            {
+                                embedStarts.Add(e);
+                            }
 
-                    return Task.CompletedTask;
-                },
+                            return Task.CompletedTask;
+                        },
+                    },
+                ],
             }
         );
 

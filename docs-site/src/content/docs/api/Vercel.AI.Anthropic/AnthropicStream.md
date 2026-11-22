@@ -47,7 +47,7 @@ Creates a stream reader.
 | `includeRawChunks` | [bool](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 | `usesJsonResponseTool` | [bool](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicStream.cs#L52)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicStream.cs#L61)
 
 <a id="Vercel_AI_Anthropic_AnthropicStream__ctor_System_Boolean_System_Boolean_System_String_System_Boolean_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__"></a>
 
@@ -71,7 +71,7 @@ Creates a stream reader that mirrors the finish metadata under a custom provider
 | `usedCustomProviderKey` | [bool](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 | `toolNames` | [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicStream.cs#L56)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicStream.cs#L65)
 
 ## Properties
 
@@ -163,7 +163,7 @@ gets no finish part so the existing no-output and error paths apply.
 
 **Returns:** [IEnumerable&lt;LanguageModelStreamPart&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ienumerable-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicStream.cs#L545)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicStream.cs#L628)
 
 <a id="Vercel_AI_Anthropic_AnthropicStream_Push_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicStream_Push_System_String_"></a>
@@ -186,4 +186,4 @@ Reads one SSE data payload.
 
 **Returns:** [IEnumerable&lt;LanguageModelStreamPart&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ienumerable-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicStream.cs#L77)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicStream.cs#L86)

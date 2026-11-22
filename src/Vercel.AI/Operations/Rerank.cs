@@ -236,7 +236,7 @@ public sealed class RerankResult
 }
 
 /// <summary>Start event for rerank.</summary>
-public sealed class RerankStartEvent
+public sealed class RerankStartEvent : IOperationStartEvent
 {
     /// <summary>Creates a start event.</summary>
     public RerankStartEvent(
@@ -298,10 +298,22 @@ public sealed class RerankStartEvent
 
     /// <summary>Provider options.</summary>
     public JsonElement? ProviderOptions { get; }
+
+    /// <summary>The version of the SDK that emitted the event. Set only on events sent to telemetry integrations. Maps to <c>aiVersion</c>.</summary>
+    public string? AiVersion { get; init; }
+
+    /// <summary>Copied from <see cref="TelemetryOptions.RecordInputs"/>. Set only on events sent to telemetry integrations.</summary>
+    public bool? RecordInputs { get; init; }
+
+    /// <summary>Copied from <see cref="TelemetryOptions.RecordOutputs"/>. Set only on events sent to telemetry integrations.</summary>
+    public bool? RecordOutputs { get; init; }
+
+    /// <summary>Copied from <see cref="TelemetryOptions.FunctionId"/>. Set only on events sent to telemetry integrations.</summary>
+    public string? FunctionId { get; init; }
 }
 
 /// <summary>End event for rerank.</summary>
-public sealed class RerankEndEvent
+public sealed class RerankEndEvent : IOperationEndEvent
 {
     /// <summary>Creates an end event.</summary>
     public RerankEndEvent(
@@ -363,41 +375,93 @@ public sealed class RerankEndEvent
 
     /// <summary>Response metadata.</summary>
     public RerankResponseInfo Response { get; }
+
+    /// <summary>The version of the SDK that emitted the event. Set only on events sent to telemetry integrations. Maps to <c>aiVersion</c>.</summary>
+    public string? AiVersion { get; init; }
+
+    /// <summary>Copied from <see cref="TelemetryOptions.RecordInputs"/>. Set only on events sent to telemetry integrations.</summary>
+    public bool? RecordInputs { get; init; }
+
+    /// <summary>Copied from <see cref="TelemetryOptions.RecordOutputs"/>. Set only on events sent to telemetry integrations.</summary>
+    public bool? RecordOutputs { get; init; }
+
+    /// <summary>Copied from <see cref="TelemetryOptions.FunctionId"/>. Set only on events sent to telemetry integrations.</summary>
+    public string? FunctionId { get; init; }
 }
 
-/// <summary>Telemetry callbacks for rerank.</summary>
-public sealed class RerankTelemetry
-{
-    /// <summary>Operation start.</summary>
-    public Func<RerankStartEvent, Task>? OnStart { get; set; }
-
-    /// <summary>Operation end.</summary>
-    public Func<RerankEndEvent, Task>? OnEnd { get; set; }
-
-    /// <summary>Inner <c>doRerank</c> start.</summary>
-    public Func<RerankModelCallEvent, Task>? OnRerankStart { get; set; }
-
-    /// <summary>Inner <c>doRerank</c> end.</summary>
-    public Func<RerankModelCallEvent, Task>? OnRerankEnd { get; set; }
-
-    /// <summary>Failure callback.</summary>
-    public Func<string, Exception, Task>? OnError { get; set; }
-
-    /// <summary>Runtime context keys included in telemetry.</summary>
-    public IReadOnlyDictionary<string, bool>? IncludeRuntimeContext { get; set; }
-}
-
-/// <summary>Inner rerank telemetry event.</summary>
-public sealed class RerankModelCallEvent
+/// <summary>Event fired before the <c>doRerank</c> call. Maps to <c>RerankingModelCallStartEvent</c>.</summary>
+public class RerankingModelCallStartEvent
 {
     /// <summary>Creates the event.</summary>
-    public RerankModelCallEvent(
+    public RerankingModelCallStartEvent(
         string callId,
         string operationId,
         string provider,
         string modelId,
-        string? documentsType,
-        IReadOnlyList<RerankModelRank>? ranking
+        IReadOnlyList<object?> documents,
+        string documentsType,
+        string query,
+        int? topN
+    )
+    {
+        CallId = callId;
+        OperationId = operationId;
+        Provider = provider;
+        ModelId = modelId;
+        Documents = documents;
+        DocumentsType = documentsType;
+        Query = query;
+        TopN = topN;
+    }
+
+    /// <summary>Call id.</summary>
+    public string CallId { get; }
+
+    /// <summary><c>ai.rerank.doRerank</c>.</summary>
+    public string OperationId { get; }
+
+    /// <summary>Provider id.</summary>
+    public string Provider { get; }
+
+    /// <summary>Model id.</summary>
+    public string ModelId { get; }
+
+    /// <summary>Documents sent to the model.</summary>
+    public IReadOnlyList<object?> Documents { get; }
+
+    /// <summary><c>text</c> or <c>object</c>.</summary>
+    public string DocumentsType { get; }
+
+    /// <summary>Query.</summary>
+    public string Query { get; }
+
+    /// <summary>Maximum results.</summary>
+    public int? TopN { get; }
+
+    /// <summary>The version of the SDK that emitted the event. Set only on events sent to telemetry integrations. Maps to <c>aiVersion</c>.</summary>
+    public string? AiVersion { get; init; }
+
+    /// <summary>Copied from <see cref="TelemetryOptions.RecordInputs"/>. Set only on events sent to telemetry integrations.</summary>
+    public bool? RecordInputs { get; init; }
+
+    /// <summary>Copied from <see cref="TelemetryOptions.RecordOutputs"/>. Set only on events sent to telemetry integrations.</summary>
+    public bool? RecordOutputs { get; init; }
+
+    /// <summary>Copied from <see cref="TelemetryOptions.FunctionId"/>. Set only on events sent to telemetry integrations.</summary>
+    public string? FunctionId { get; init; }
+}
+
+/// <summary>Event fired after the <c>doRerank</c> call. Maps to <c>RerankingModelCallEndEvent</c>.</summary>
+public sealed class RerankingModelCallEndEvent
+{
+    /// <summary>Creates the event.</summary>
+    public RerankingModelCallEndEvent(
+        string callId,
+        string operationId,
+        string provider,
+        string modelId,
+        string documentsType,
+        IReadOnlyList<RerankModelRank> ranking
     )
     {
         CallId = callId;
@@ -421,10 +485,22 @@ public sealed class RerankModelCallEvent
     public string ModelId { get; }
 
     /// <summary><c>text</c> or <c>object</c>.</summary>
-    public string? DocumentsType { get; }
+    public string DocumentsType { get; }
 
-    /// <summary>Ranking, on the end event.</summary>
-    public IReadOnlyList<RerankModelRank>? Ranking { get; }
+    /// <summary>Ranking returned by the model.</summary>
+    public IReadOnlyList<RerankModelRank> Ranking { get; }
+
+    /// <summary>The version of the SDK that emitted the event. Set only on events sent to telemetry integrations. Maps to <c>aiVersion</c>.</summary>
+    public string? AiVersion { get; init; }
+
+    /// <summary>Copied from <see cref="TelemetryOptions.RecordInputs"/>. Set only on events sent to telemetry integrations.</summary>
+    public bool? RecordInputs { get; init; }
+
+    /// <summary>Copied from <see cref="TelemetryOptions.RecordOutputs"/>. Set only on events sent to telemetry integrations.</summary>
+    public bool? RecordOutputs { get; init; }
+
+    /// <summary>Copied from <see cref="TelemetryOptions.FunctionId"/>. Set only on events sent to telemetry integrations.</summary>
+    public string? FunctionId { get; init; }
 }
 
 /// <summary>Options for <see cref="Rerank.RerankAsync"/>.</summary>
@@ -455,10 +531,10 @@ public sealed class RerankRequest : OperationRequest
     public Func<RerankEndEvent, Task>? ExperimentalOnEnd { get; set; }
 
     /// <summary>Telemetry callbacks.</summary>
-    public RerankTelemetry? Telemetry { get; set; }
+    public TelemetryOptions? Telemetry { get; set; }
 
     /// <summary>Deprecated alias of <see cref="Telemetry"/>.</summary>
-    public RerankTelemetry? ExperimentalTelemetry { get; set; }
+    public TelemetryOptions? ExperimentalTelemetry { get; set; }
 }
 
 /// <summary>Reranks documents. Maps to <c>rerank</c>.</summary>
@@ -480,10 +556,15 @@ public static class Rerank
         var documents = request.Documents ?? Array.Empty<object?>();
         var callId = (request.GenerateCallId ?? Embed.DefaultCallId)();
         var telemetry = request.Telemetry ?? request.ExperimentalTelemetry;
+        var telemetryDispatcher =
+            RerankRestrictedTelemetryDispatcher.CreateRestrictedTelemetryDispatcher(telemetry);
         var context = request.RuntimeContext ?? Embed.EmptyContext;
         var onStart = request.OnStart ?? request.ExperimentalOnStart;
         var onEnd = request.OnEnd ?? request.ExperimentalOnEnd;
         var now = request.Now ?? (() => DateTime.UtcNow);
+        var token = request.CancellationToken.CanBeCanceled
+            ? request.CancellationToken
+            : cancellationToken;
         if (documents.Count == 0)
         {
             var emptyRetries = request.MaxRetries ?? 2;
@@ -500,7 +581,8 @@ public static class Rerank
                 request.Headers,
                 request.ProviderOptions
             );
-            await NotifyStartAsync(emptyStart, onStart, telemetry).ConfigureAwait(false);
+            await NotifyStartAsync(emptyStart, onStart, telemetryDispatcher, token)
+                .ConfigureAwait(false);
             var emptyResponse = new RerankResponseInfo(null, now(), model.ModelId, null, null);
             var emptyRanking = Array.Empty<RankedDocument>();
             var emptyEnd = new RerankEndEvent(
@@ -516,13 +598,10 @@ public static class Rerank
                 null,
                 emptyResponse
             );
-            await NotifyEndAsync(emptyEnd, onEnd, telemetry).ConfigureAwait(false);
+            await NotifyEndAsync(emptyEnd, onEnd, telemetryDispatcher, token).ConfigureAwait(false);
             return new RerankResult(Array.Empty<object?>(), emptyRanking, null, emptyResponse);
         }
 
-        var token = request.CancellationToken.CanBeCanceled
-            ? request.CancellationToken
-            : cancellationToken;
         var maxRetries = OperationRetry.ResolveMaxRetries(request.MaxRetries);
         var text = documents[0] is string;
         var sent = new RerankModelDocuments(text ? "text" : "object", documents);
@@ -539,7 +618,7 @@ public static class Rerank
             request.Headers,
             request.ProviderOptions
         );
-        await NotifyStartAsync(start, onStart, telemetry).ConfigureAwait(false);
+        await NotifyStartAsync(start, onStart, telemetryDispatcher, token).ConfigureAwait(false);
         try
         {
             var outcome = await OperationRetry
@@ -549,21 +628,21 @@ public static class Rerank
                     request.AbortReason,
                     async ct =>
                     {
-                        if (telemetry?.OnRerankStart != null)
-                        {
-                            await telemetry
-                                .OnRerankStart(
-                                    new RerankModelCallEvent(
-                                        callId,
-                                        "ai.rerank.doRerank",
-                                        model.Provider,
-                                        model.ModelId,
-                                        sent.Type,
-                                        null
-                                    )
-                                )
-                                .ConfigureAwait(false);
-                        }
+                        await telemetryDispatcher
+                            .OnRerankStartAsync(
+                                new RerankingModelCallStartEvent(
+                                    callId,
+                                    "ai.rerank.doRerank",
+                                    model.Provider,
+                                    model.ModelId,
+                                    documents,
+                                    sent.Type,
+                                    request.Query,
+                                    request.TopN
+                                ),
+                                ct
+                            )
+                            .ConfigureAwait(false);
 
                         var response = await model
                             .DoRerankAsync(
@@ -578,21 +657,19 @@ public static class Rerank
                                 ct
                             )
                             .ConfigureAwait(false);
-                        if (telemetry?.OnRerankEnd != null)
-                        {
-                            await telemetry
-                                .OnRerankEnd(
-                                    new RerankModelCallEvent(
-                                        callId,
-                                        "ai.rerank.doRerank",
-                                        model.Provider,
-                                        model.ModelId,
-                                        sent.Type,
-                                        response.Ranking
-                                    )
-                                )
-                                .ConfigureAwait(false);
-                        }
+                        await telemetryDispatcher
+                            .OnRerankEndAsync(
+                                new RerankingModelCallEndEvent(
+                                    callId,
+                                    "ai.rerank.doRerank",
+                                    model.Provider,
+                                    model.ModelId,
+                                    sent.Type,
+                                    response.Ranking
+                                ),
+                                ct
+                            )
+                            .ConfigureAwait(false);
 
                         return response;
                     },
@@ -631,22 +708,12 @@ public static class Rerank
                 outcome.ProviderMetadata,
                 responseInfo
             );
-            await NotifyEndAsync(end, onEnd, telemetry).ConfigureAwait(false);
+            await NotifyEndAsync(end, onEnd, telemetryDispatcher, token).ConfigureAwait(false);
             return new RerankResult(documents, ranking, outcome.ProviderMetadata, responseInfo);
         }
         catch (Exception error)
         {
-            if (telemetry?.OnError != null)
-            {
-                try
-                {
-                    await telemetry.OnError(callId, error).ConfigureAwait(false);
-                }
-                catch (Exception)
-                {
-                    // Callback failures are isolated.
-                }
-            }
+            await telemetryDispatcher.OnErrorAsync(callId, error, token).ConfigureAwait(false);
 
             throw;
         }
@@ -678,68 +745,24 @@ public static class Rerank
     private static Task NotifyStartAsync(
         RerankStartEvent payload,
         Func<RerankStartEvent, Task>? onStart,
-        RerankTelemetry? telemetry
+        RerankRestrictedTelemetryDispatcher telemetryDispatcher,
+        CancellationToken cancellationToken
     )
     {
-        Func<RerankStartEvent, Task>? telemetryStart = null;
-        if (telemetry != null && telemetry.OnStart != null)
-        {
-            var current = telemetry;
-            var callback = telemetry.OnStart;
-            telemetryStart = filtered => callback(WithContext(filtered, current));
-        }
-
-        return OperationCallbacks.NotifyAsync(payload, onStart, telemetryStart);
+        return OperationCallbacks.NotifyAsync(payload, onStart, e =>
+            telemetryDispatcher.OnStartAsync(e, cancellationToken)
+        );
     }
 
     private static Task NotifyEndAsync(
         RerankEndEvent payload,
         Func<RerankEndEvent, Task>? onEnd,
-        RerankTelemetry? telemetry
+        RerankRestrictedTelemetryDispatcher telemetryDispatcher,
+        CancellationToken cancellationToken
     )
     {
-        Func<RerankEndEvent, Task>? telemetryEnd = null;
-        if (telemetry != null && telemetry.OnEnd != null)
-        {
-            var current = telemetry;
-            var callback = telemetry.OnEnd;
-            telemetryEnd = filtered => callback(WithContext(filtered, current));
-        }
-
-        return OperationCallbacks.NotifyAsync(payload, onEnd, telemetryEnd);
-    }
-
-    private static RerankStartEvent WithContext(RerankStartEvent source, RerankTelemetry telemetry)
-    {
-        return new RerankStartEvent(
-            source.CallId,
-            source.OperationId,
-            Embed.FilterContext(source.RuntimeContext, telemetry.IncludeRuntimeContext),
-            source.Provider,
-            source.ModelId,
-            source.Documents,
-            source.Query,
-            source.TopN,
-            source.MaxRetries,
-            source.Headers,
-            source.ProviderOptions
-        );
-    }
-
-    private static RerankEndEvent WithContext(RerankEndEvent source, RerankTelemetry telemetry)
-    {
-        return new RerankEndEvent(
-            source.CallId,
-            source.OperationId,
-            Embed.FilterContext(source.RuntimeContext, telemetry.IncludeRuntimeContext),
-            source.Provider,
-            source.ModelId,
-            source.Documents,
-            source.Query,
-            source.Ranking,
-            source.Warnings,
-            source.ProviderMetadata,
-            source.Response
+        return OperationCallbacks.NotifyAsync(payload, onEnd, e =>
+            telemetryDispatcher.OnEndAsync(e, cancellationToken)
         );
     }
 }

@@ -34,13 +34,13 @@ MiniMax provider settings.
 
 
 ```csharp
-public string? ApiKey { get; set; }
+public Resolvable<string>? ApiKey { get; set; }
 ```
 
 
-MiniMax API key. Defaults to the `MINIMAX_API_KEY` environment variable.
+MiniMax API key. Defaults to the `MINIMAX_API_KEY` environment variable. A callback is resolved before each request.
 
-**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+**Value:** `Resolvable&lt;string&gt;`
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxProvider.cs#L16)
 

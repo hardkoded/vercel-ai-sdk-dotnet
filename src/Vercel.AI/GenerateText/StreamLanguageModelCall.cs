@@ -295,7 +295,9 @@ internal static class LanguageModelCallStreaming
         var streamResult = await (
             options.ExecuteLanguageModelCallInTelemetryContext is { } wrap
                 ? wrap(new ExecuteLanguageModelCallInTelemetryContextParams(startEvent, Execute))
-                : Execute()
+                : TelemetryDispatcher
+                    .Create(options)
+                    .ExecuteLanguageModelCallAsync(startEvent, Execute, cancellationToken)
         ).ConfigureAwait(false);
 
         IAsyncEnumerator<LanguageModelStreamPart> enumerator;

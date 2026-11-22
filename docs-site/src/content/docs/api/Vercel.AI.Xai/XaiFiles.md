@@ -30,13 +30,13 @@ xAI Files API at `{base}/files`.
 ## Constructors
 
 <a id="Vercel_AI_Xai_XaiFiles__ctor_"></a>
-<a id="Vercel_AI_Xai_XaiFiles__ctor_System_Net_Http_HttpClient_System_String_System_Func_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String___System_String_"></a>
+<a id="Vercel_AI_Xai_XaiFiles__ctor_System_Net_Http_HttpClient_System_String_System_Func_System_Threading_CancellationToken_System_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String____System_String_"></a>
 
-### `XaiFiles(HttpClient, string, Func<IReadOnlyDictionary<string, string?>>?, string?)`
+### `XaiFiles(HttpClient, string, Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>>?, string?)`
 
 
 ```csharp
-public XaiFiles(HttpClient httpClient, string baseUrl, Func<IReadOnlyDictionary<string, string?>>? headers, string? provider = null)
+public XaiFiles(HttpClient httpClient, string baseUrl, Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>>? headers, string? provider = null)
 ```
 
 
@@ -48,7 +48,7 @@ Creates a file client.
 | --- | --- | --- |
 | `httpClient` | [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient) |  |
 | `baseUrl` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
-| `headers` | [Func&lt;IReadOnlyDictionary&lt;string, string&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-1) |  |
+| `headers` | [Func&lt;CancellationToken, Task&lt;IReadOnlyDictionary&lt;string, string&gt;&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-2) |  |
 | `provider` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L190)
@@ -104,7 +104,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L210)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L216)
 
 <a id="Vercel_AI_Xai_XaiFiles_SpecificationVersion_"></a>
 <a id="Vercel_AI_Xai_XaiFiles_SpecificationVersion"></a>
@@ -121,7 +121,7 @@ Specification version.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L204)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L210)
 
 ## Methods
 
@@ -147,7 +147,7 @@ Deletes a file.
 
 **Returns:** [Task&lt;XaiFileDeleteResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L360)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L369)
 
 <a id="Vercel_AI_Xai_XaiFiles_DownloadAsync_"></a>
 <a id="Vercel_AI_Xai_XaiFiles_DownloadAsync_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Threading_CancellationToken_"></a>
@@ -171,7 +171,7 @@ Downloads file bytes.
 
 **Returns:** [Task&lt;XaiFileDownload&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L324)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L333)
 
 <a id="Vercel_AI_Xai_XaiFiles_GetMetadataAsync_"></a>
 <a id="Vercel_AI_Xai_XaiFiles_GetMetadataAsync_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Threading_CancellationToken_"></a>
@@ -195,7 +195,7 @@ Reads file metadata.
 
 **Returns:** [Task&lt;XaiFileResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L303)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L312)
 
 <a id="Vercel_AI_Xai_XaiFiles_UploadAsync_"></a>
 <a id="Vercel_AI_Xai_XaiFiles_UploadAsync_Vercel_AI_Xai_XaiFileUpload_System_Threading_CancellationToken_"></a>
@@ -219,7 +219,7 @@ Posts multipart file contents to `/files`.
 
 **Returns:** [Task&lt;XaiFileResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L236)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L242)
 
 <a id="Vercel_AI_Xai_XaiFiles_UploadFileAsync_"></a>
 <a id="Vercel_AI_Xai_XaiFiles_UploadFileAsync_System_String_System_Byte___System_String_System_Threading_CancellationToken_"></a>
@@ -245,4 +245,4 @@ Uploads a file.
 
 **Returns:** [Task&lt;UploadedFile&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L213)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiFiles.cs#L219)
