@@ -324,7 +324,7 @@ public sealed class AnthropicAwsApiKeyFetch
     }
 
     /// <summary>
-    /// Creates a wrapper for an API key that is resolved before each request and must resolve to a non-empty key.
+    /// Creates a wrapper for an API key that is resolved before each request and must resolve to a non-empty key when it is a callback or a task.
     /// </summary>
     public AnthropicAwsApiKeyFetch(Resolvable<string> apiKey)
     {
@@ -336,7 +336,7 @@ public sealed class AnthropicAwsApiKeyFetch
 
     /// <summary>
     /// Resolves the API key, applies it and the user-agent, then invokes <see cref="Transport"/> if one is set.
-    /// A resolved key that is empty throws.
+    /// A callback or task that resolves to an empty key throws.
     /// </summary>
     public async Task<AnthropicAwsPreparedCall> SendAsync(
         string url,
@@ -349,16 +349,18 @@ public sealed class AnthropicAwsApiKeyFetch
         var apiKey = _apiKey;
         if (_resolvableApiKey is not null)
         {
-            apiKey = (
-                await _resolvableApiKey.ResolveAsync(cancellationToken).ConfigureAwait(false)
-            )?.Trim();
-            if (string.IsNullOrEmpty(apiKey))
+            apiKey = await _resolvableApiKey.ResolveAsync(cancellationToken).ConfigureAwait(false);
+            if (_resolvableApiKey.IsDynamic)
             {
-                throw new AiSdkException("Anthropic AWS API key must be a non-empty string.");
+                apiKey = apiKey?.Trim();
+                if (string.IsNullOrEmpty(apiKey))
+                {
+                    throw new AiSdkException("Anthropic AWS API key must be a non-empty string.");
+                }
             }
         }
 
-        return Send(url, method, body, headers, apiKey!);
+        return Send(url, method, body, headers, apiKey ?? string.Empty);
     }
 
     /// <summary>Applies the static API key and user-agent, then invokes <see cref="Transport"/> if one is set.</summary>

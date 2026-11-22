@@ -58,7 +58,7 @@ public AnthropicAwsApiKeyFetch(Resolvable<string> apiKey)
 ```
 
 
-Creates a wrapper for an API key that is resolved before each request and must resolve to a non-empty key.
+Creates a wrapper for an API key that is resolved before each request and must resolve to a non-empty key when it is a callback or a task.
 
 **Parameters**
 
@@ -113,7 +113,7 @@ Applies the static API key and user-agent, then invokes [Transport](#Vercel_AI_A
 
 **Returns:** [AnthropicAwsPreparedCall](/api/Vercel.AI.Anthropic/AnthropicAwsPreparedCall/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicAwsFetch.cs#L365)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicAwsFetch.cs#L367)
 
 <a id="Vercel_AI_Anthropic_AnthropicAwsApiKeyFetch_SendAsync_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicAwsApiKeyFetch_SendAsync_System_String_System_String_System_String_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Threading_CancellationToken_"></a>
@@ -127,7 +127,7 @@ public Task<AnthropicAwsPreparedCall> SendAsync(string url, string? method, stri
 
 
 Resolves the API key, applies it and the user-agent, then invokes [Transport](#Vercel_AI_Anthropic_AnthropicAwsApiKeyFetch_Transport) if one is set.
-A resolved key that is empty throws.
+A callback or task that resolves to an empty key throws.
 
 **Parameters**
 

@@ -54,7 +54,7 @@ public sealed class AbortSignalBasicAbortTests
                                 },
                                 OnEnd = (e, _) =>
                                 {
-                                    telemetryCalls.Add(("onEnd", e.Steps));
+                                    telemetryCalls.Add(("onEnd", ((GenerateTextResult)e).Steps));
                                     return Task.CompletedTask;
                                 },
                                 OnError = (_, _) =>

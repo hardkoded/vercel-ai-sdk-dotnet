@@ -204,23 +204,70 @@ public sealed class AiClient : IAiClient
         var model = ResolveLanguage(options.Model, options.ModelId);
         var callId = options.GenerateId?.Invoke() ?? ProviderUtils.JsonValues.GenerateId("aiobj-");
         var telemetryDispatcher = TelemetryDispatcher.Create(options);
-        if (options.OnStart != null || telemetryDispatcher.OnStart != null)
+        try
         {
-            var startEvent = new GenerateObjectStartEvent(
-                callId,
-                model.Provider,
-                model.ModelId,
-                options.Prompt,
-                options.Messages
-            )
+            if (options.OnStart != null || telemetryDispatcher.OnStart != null)
             {
-                OperationId = "ai.generateObject",
-                System = options.Instructions
-                    ?? (
-                        options.System != null
-                            ? Vercel.AI.Prompt.Instructions.From(options.System)
-                            : null
+                var startEvent = new GenerateObjectStartEvent(
+                    callId,
+                    model.Provider,
+                    model.ModelId,
+                    options.Prompt,
+                    options.Messages
+                )
+                {
+                    OperationId = "ai.generateObject",
+                    System = options.Instructions
+                        ?? (
+                            options.System != null
+                                ? Vercel.AI.Prompt.Instructions.From(options.System)
+                                : null
+                        ),
+                    MaxOutputTokens = options.MaxOutputTokens,
+                    Temperature = options.Temperature,
+                    TopP = options.TopP,
+                    TopK = options.TopK,
+                    PresencePenalty = options.PresencePenalty,
+                    FrequencyPenalty = options.FrequencyPenalty,
+                    Seed = options.Seed,
+                    MaxRetries = Vercel.AI.Operations.OperationRetry.ResolveMaxRetries(
+                        options.MaxRetries
                     ),
+                    Headers = Generation.WithUserAgentHeader(options.Headers),
+                    ProviderOptions = options.ProviderOptions,
+                    Output = "object",
+                    Schema = ParseSchema(options.Schema),
+                    SchemaName = options.SchemaName,
+                    SchemaDescription = options.SchemaDescription,
+                };
+                if (options.OnStart != null)
+                {
+                    await NotifyCallbackAsync(
+                            () => options.OnStart(startEvent, cancellationToken),
+                            cancellationToken
+                        )
+                        .ConfigureAwait(false);
+                }
+
+                if (telemetryDispatcher.OnStart is { } telemetryOnStart)
+                {
+                    await telemetryOnStart(startEvent, cancellationToken).ConfigureAwait(false);
+                }
+            }
+
+            var generateOptions = new GenerateTextOptions
+            {
+                Model = options.Model,
+                ModelId = options.ModelId,
+                System = options.System,
+                Instructions = options.Instructions,
+                Prompt = options.Prompt,
+                Messages = options.Messages,
+                Output = OutputSpec.Object(
+                    options.Schema,
+                    options.SchemaName,
+                    options.SchemaDescription
+                ),
                 MaxOutputTokens = options.MaxOutputTokens,
                 Temperature = options.Temperature,
                 TopP = options.TopP,
@@ -228,176 +275,149 @@ public sealed class AiClient : IAiClient
                 PresencePenalty = options.PresencePenalty,
                 FrequencyPenalty = options.FrequencyPenalty,
                 Seed = options.Seed,
-                MaxRetries = Vercel.AI.Operations.OperationRetry.ResolveMaxRetries(
-                    options.MaxRetries
-                ),
-                Headers = Generation.WithUserAgentHeader(options.Headers),
+                Reasoning = options.Reasoning,
+                MaxRetries = options.MaxRetries,
+                Timeout = options.Timeout,
+                Headers = options.Headers,
                 ProviderOptions = options.ProviderOptions,
-                Output = "object",
-                Schema = ParseSchema(options.Schema),
-                SchemaName = options.SchemaName,
-                SchemaDescription = options.SchemaDescription,
+                RepairOutput = (options.RepairText ?? options.ExperimentalRepairText)
+                    is { } repairText
+                    ? (text, error, token) =>
+                        repairText(new GenerateObjectRepairContext(text, error), token)
+                    : null,
+                GenerateObjectMode = true,
             };
-            if (options.OnStart != null)
+            if (options.OnStepEnd != null || telemetryDispatcher.OnObjectStepEnd != null)
             {
-                await NotifyCallbackAsync(
-                        () => options.OnStart(startEvent, cancellationToken),
-                        cancellationToken
+                generateOptions.OnStepEnd = async (step, token) =>
+                {
+                    var stepEndEvent = new GenerateObjectStepEndEvent(
+                        callId,
+                        model.Provider,
+                        model.ModelId,
+                        step
+                    );
+                    if (options.OnStepEnd != null)
+                    {
+                        await NotifyCallbackAsync(
+                                () => options.OnStepEnd(stepEndEvent, token),
+                                token
+                            )
+                            .ConfigureAwait(false);
+                    }
+
+                    if (telemetryDispatcher.OnObjectStepEnd is { } telemetryOnStepEnd)
+                    {
+                        await telemetryOnStepEnd(stepEndEvent, token).ConfigureAwait(false);
+                    }
+                };
+            }
+
+            if (options.OnStepStart != null || telemetryDispatcher.OnObjectStepStart != null)
+            {
+                var promptMessages = await Vercel
+                    .AI.Prompt.LanguageModelPrompts.ConvertToLanguageModelPromptAsync(
+                        Generation.BuildPrompt(generateOptions),
+                        model.SupportedUrls,
+                        null,
+                        cancellationToken,
+                        model.Provider.Split('.')[0]
                     )
                     .ConfigureAwait(false);
-            }
-
-            if (telemetryDispatcher.OnStart is { } telemetryOnStart)
-            {
-                await telemetryOnStart(startEvent, cancellationToken).ConfigureAwait(false);
-            }
-        }
-
-        var generateOptions = new GenerateTextOptions
-        {
-            Model = options.Model,
-            ModelId = options.ModelId,
-            System = options.System,
-            Instructions = options.Instructions,
-            Prompt = options.Prompt,
-            Messages = options.Messages,
-            Output = OutputSpec.Object(
-                options.Schema,
-                options.SchemaName,
-                options.SchemaDescription
-            ),
-            MaxOutputTokens = options.MaxOutputTokens,
-            Temperature = options.Temperature,
-            TopP = options.TopP,
-            TopK = options.TopK,
-            PresencePenalty = options.PresencePenalty,
-            FrequencyPenalty = options.FrequencyPenalty,
-            Seed = options.Seed,
-            Reasoning = options.Reasoning,
-            MaxRetries = options.MaxRetries,
-            Timeout = options.Timeout,
-            Headers = options.Headers,
-            ProviderOptions = options.ProviderOptions,
-            RepairOutput = (options.RepairText ?? options.ExperimentalRepairText) is { } repairText
-                ? (text, error, token) =>
-                    repairText(new GenerateObjectRepairContext(text, error), token)
-                : null,
-            GenerateObjectMode = true,
-        };
-        if (options.OnStepEnd != null || telemetryDispatcher.OnObjectStepEnd != null)
-        {
-            generateOptions.OnStepEnd = async (step, token) =>
-            {
-                var stepEndEvent = new GenerateObjectStepEndEvent(
+                var stepStartEvent = new GenerateObjectStepStartEvent(
                     callId,
                     model.Provider,
-                    model.ModelId,
-                    step
-                );
-                if (options.OnStepEnd != null)
+                    model.ModelId
+                )
                 {
-                    await NotifyCallbackAsync(() => options.OnStepEnd(stepEndEvent, token), token)
+                    ProviderOptions = options.ProviderOptions,
+                    Headers = Generation.WithUserAgentHeader(options.Headers),
+                    PromptMessages = promptMessages,
+                };
+                if (options.OnStepStart != null)
+                {
+                    await NotifyCallbackAsync(
+                            () => options.OnStepStart(stepStartEvent, cancellationToken),
+                            cancellationToken
+                        )
                         .ConfigureAwait(false);
                 }
 
-                if (telemetryDispatcher.OnObjectStepEnd is { } telemetryOnStepEnd)
+                if (telemetryDispatcher.OnObjectStepStart is { } telemetryOnStepStart)
                 {
-                    await telemetryOnStepEnd(stepEndEvent, token).ConfigureAwait(false);
+                    await telemetryOnStepStart(stepStartEvent, cancellationToken)
+                        .ConfigureAwait(false);
                 }
-            };
-        }
+            }
 
-        if (options.OnStepStart != null || telemetryDispatcher.OnObjectStepStart != null)
-        {
-            var promptMessages = await Vercel
-                .AI.Prompt.LanguageModelPrompts.ConvertToLanguageModelPromptAsync(
-                    Generation.BuildPrompt(generateOptions),
-                    model.SupportedUrls,
-                    null,
-                    cancellationToken,
-                    model.Provider.Split('.')[0]
-                )
+            var generated = await Generation
+                .GenerateAsync(model, generateOptions, _telemetry, cancellationToken)
                 .ConfigureAwait(false);
-            var stepStartEvent = new GenerateObjectStepStartEvent(
+            T? value;
+            try
+            {
+                value = JsonSerializer.Deserialize<T>(
+                    generated.Output!.Value.GetRawText(),
+                    options.SerializerOptions
+                );
+            }
+            catch (Exception error) when (error is JsonException or NotSupportedException)
+            {
+                throw new NoObjectGeneratedException(
+                    "No object generated: response did not match schema.",
+                    error,
+                    generated.FinalStep.StructuredOutputText ?? generated.Text,
+                    generated.Response,
+                    generated.Usage,
+                    generated.FinishReason
+                );
+            }
+
+            if (value is null)
+            {
+                throw new NoObjectGeneratedException(
+                    "No object generated: response did not match schema.",
+                    null,
+                    generated.FinalStep.StructuredOutputText ?? generated.Text,
+                    generated.Response,
+                    generated.Usage,
+                    generated.FinishReason
+                );
+            }
+
+            var result = new GenerateObjectResult<T>(value, generated);
+            var endEvent = new GenerateObjectEndEvent<T>(
                 callId,
                 model.Provider,
-                model.ModelId
-            )
-            {
-                ProviderOptions = options.ProviderOptions,
-                Headers = Generation.WithUserAgentHeader(options.Headers),
-                PromptMessages = promptMessages,
-            };
-            if (options.OnStepStart != null)
+                model.ModelId,
+                result
+            );
+            if (options.OnFinish != null)
             {
                 await NotifyCallbackAsync(
-                        () => options.OnStepStart(stepStartEvent, cancellationToken),
+                        () => options.OnFinish(endEvent, cancellationToken),
                         cancellationToken
                     )
                     .ConfigureAwait(false);
             }
 
-            if (telemetryDispatcher.OnObjectStepStart is { } telemetryOnStepStart)
+            if (telemetryDispatcher.OnEnd is { } telemetryOnEnd)
             {
-                await telemetryOnStepStart(stepStartEvent, cancellationToken).ConfigureAwait(false);
+                await telemetryOnEnd(endEvent, cancellationToken).ConfigureAwait(false);
             }
-        }
 
-        var generated = await Generation
-            .GenerateAsync(model, generateOptions, _telemetry, cancellationToken)
-            .ConfigureAwait(false);
-        T? value;
-        try
-        {
-            value = JsonSerializer.Deserialize<T>(
-                generated.Output!.Value.GetRawText(),
-                options.SerializerOptions
-            );
+            return result;
         }
-        catch (Exception error) when (error is JsonException or NotSupportedException)
+        catch (Exception error) when (!cancellationToken.IsCancellationRequested)
         {
-            throw new NoObjectGeneratedException(
-                "No object generated: response did not match schema.",
-                error,
-                generated.FinalStep.StructuredOutputText ?? generated.Text,
-                generated.Response,
-                generated.Usage,
-                generated.FinishReason
-            );
-        }
+            if (telemetryDispatcher.OnError is { } telemetryOnError)
+            {
+                await telemetryOnError(new TelemetryErrorEvent(callId, error), cancellationToken)
+                    .ConfigureAwait(false);
+            }
 
-        if (value is null)
-        {
-            throw new NoObjectGeneratedException(
-                "No object generated: response did not match schema.",
-                null,
-                generated.FinalStep.StructuredOutputText ?? generated.Text,
-                generated.Response,
-                generated.Usage,
-                generated.FinishReason
-            );
+            throw;
         }
-
-        var result = new GenerateObjectResult<T>(value, generated);
-        if (options.OnFinish != null)
-        {
-            await NotifyCallbackAsync(
-                    () =>
-                        options.OnFinish(
-                            new GenerateObjectEndEvent<T>(
-                                callId,
-                                model.Provider,
-                                model.ModelId,
-                                result
-                            ),
-                            cancellationToken
-                        ),
-                    cancellationToken
-                )
-                .ConfigureAwait(false);
-        }
-
-        return result;
     }
 
     /// <inheritdoc />

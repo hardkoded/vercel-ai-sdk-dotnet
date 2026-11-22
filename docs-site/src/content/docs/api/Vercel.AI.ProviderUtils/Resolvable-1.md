@@ -75,7 +75,7 @@ Wraps an asynchronous callback that receives the request's cancellation token.
 
 **Returns:** [Resolvable&lt;T&gt;](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/Resolvable.cs#L65)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/Resolvable.cs#L68)
 
 <a id="Vercel_AI_ProviderUtils_Resolvable_1_From_System_Func_System_Threading_Tasks_Task__0___"></a>
 
@@ -97,7 +97,7 @@ Wraps an asynchronous callback, called every time the value is resolved.
 
 **Returns:** [Resolvable&lt;T&gt;](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/Resolvable.cs#L54)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/Resolvable.cs#L57)
 
 <a id="Vercel_AI_ProviderUtils_Resolvable_1_From_System_Func__0__"></a>
 
@@ -119,7 +119,7 @@ Wraps a synchronous callback, called every time the value is resolved.
 
 **Returns:** [Resolvable&lt;T&gt;](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/Resolvable.cs#L43)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/Resolvable.cs#L46)
 
 <a id="Vercel_AI_ProviderUtils_Resolvable_1_From_System_Threading_Tasks_Task__0__"></a>
 
@@ -141,7 +141,7 @@ Wraps a task, awaited every time the value is resolved.
 
 **Returns:** [Resolvable&lt;T&gt;](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/Resolvable.cs#L39)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/Resolvable.cs#L42)
 
 <a id="Vercel_AI_ProviderUtils_Resolvable_1_From__0_"></a>
 
@@ -163,7 +163,7 @@ Wraps a value.
 
 **Returns:** [Resolvable&lt;T&gt;](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/Resolvable.cs#L36)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/Resolvable.cs#L39)
 
 <a id="Vercel_AI_ProviderUtils_Resolvable_1_ResolveAsync_"></a>
 <a id="Vercel_AI_ProviderUtils_Resolvable_1_ResolveAsync_System_Threading_CancellationToken_"></a>
@@ -186,7 +186,7 @@ Resolves the value. Maps to `resolve`.
 
 **Returns:** [Task&lt;T&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/Resolvable.cs#L69)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/Resolvable.cs#L72)
 
 <a id="Vercel_AI_ProviderUtils_Resolvable_1_ResolveWithAsync_"></a>
 <a id="Vercel_AI_ProviderUtils_Resolvable_1_ResolveWithAsync__1_System_Func__0___0__System_Threading_CancellationToken_"></a>
@@ -216,7 +216,7 @@ Resolves the value and transforms it. Maps to `resolveWith`.
 
 **Returns:** [Task&lt;TResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/Resolvable.cs#L85)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/Resolvable.cs#L88)
 
 ## Operators
 
@@ -241,7 +241,7 @@ Wraps a task.
 
 **Returns:** [Resolvable&lt;T&gt;](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/Resolvable.cs#L33)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/Resolvable.cs#L36)
 
 <a id="Vercel_AI_ProviderUtils_Resolvable_1_op_Implicit__0__Vercel_AI_ProviderUtils_Resolvable__0_"></a>
 
@@ -263,4 +263,4 @@ Wraps a value.
 
 **Returns:** [Resolvable&lt;T&gt;](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/Resolvable.cs#L30)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/Resolvable.cs#L33)

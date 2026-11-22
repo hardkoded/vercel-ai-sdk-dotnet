@@ -58,7 +58,7 @@ public sealed class CredentialRedactionTests
                 {
                     OnEnd = (r, _) =>
                     {
-                        delivered = r;
+                        delivered = (GenerateTextResult)r;
                         return Task.CompletedTask;
                     },
                 },

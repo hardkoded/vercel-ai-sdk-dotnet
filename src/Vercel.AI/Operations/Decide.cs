@@ -587,135 +587,151 @@ public static class Decide
             maxOutputTokens: request.MaxOutputTokens,
             reasoning: request.Reasoning
         );
-        await OperationCallbacks.NotifyAsync(userStart, request.OnStart).ConfigureAwait(false);
-        await telemetryDispatcher.OnStartAsync(userStart, token).ConfigureAwait(false);
+        return await telemetryDispatcher
+            .RunInTracingChannelSpan(
+                TelemetryTracingEventType.ExperimentalDecide,
+                userStart,
+                async () =>
+                {
+                    await OperationCallbacks
+                        .NotifyAsync(userStart, request.OnStart)
+                        .ConfigureAwait(false);
+                    await telemetryDispatcher.OnStartAsync(userStart, token).ConfigureAwait(false);
 
-        try
-        {
-            var preparedState = await DecisionState
-                .PrepareDecisionStateAsync(request.State!, token, request.Download)
-                .ConfigureAwait(false);
-            var modelEvent = new DecisionModelEvent(
-                callId,
-                "ai.decide.doDecide",
-                model.Provider,
-                model.ModelId,
-                preparedState,
-                questions
-            );
-            await telemetryDispatcher
-                .ExperimentalOnDecisionModelCallStartAsync(modelEvent, token)
-                .ConfigureAwait(false);
-
-            var headers = OperationHeaders.WithUserAgent(request.Headers, AiSdkVersion.UserAgent);
-            var result = await OperationRetry
-                .ExecuteAsync(
-                    request.MaxRetries,
-                    token,
-                    request.AbortReason,
-                    async ct =>
+                    try
                     {
-                        OperationRetry.ThrowIfAborted(ct, request.AbortReason);
-                        return await model
-                            .DoDecideAsync(
-                                new DecisionModelCall(
-                                    preparedState,
-                                    questions,
-                                    providerOptions,
-                                    headers,
-                                    ct,
-                                    request.MaxOutputTokens,
-                                    request.Reasoning
-                                ),
-                                ct
+                        var preparedState = await DecisionState
+                            .PrepareDecisionStateAsync(request.State!, token, request.Download)
+                            .ConfigureAwait(false);
+                        var modelEvent = new DecisionModelEvent(
+                            callId,
+                            "ai.decide.doDecide",
+                            model.Provider,
+                            model.ModelId,
+                            preparedState,
+                            questions
+                        );
+                        await telemetryDispatcher
+                            .ExperimentalOnDecisionModelCallStartAsync(modelEvent, token)
+                            .ConfigureAwait(false);
+
+                        var headers = OperationHeaders.WithUserAgent(
+                            request.Headers,
+                            AiSdkVersion.UserAgent
+                        );
+                        var result = await OperationRetry
+                            .ExecuteAsync(
+                                request.MaxRetries,
+                                token,
+                                request.AbortReason,
+                                async ct =>
+                                {
+                                    OperationRetry.ThrowIfAborted(ct, request.AbortReason);
+                                    return await model
+                                        .DoDecideAsync(
+                                            new DecisionModelCall(
+                                                preparedState,
+                                                questions,
+                                                providerOptions,
+                                                headers,
+                                                ct,
+                                                request.MaxOutputTokens,
+                                                request.Reasoning
+                                            ),
+                                            ct
+                                        )
+                                        .ConfigureAwait(false);
+                                },
+                                null
                             )
                             .ConfigureAwait(false);
-                    },
-                    null
-                )
-                .ConfigureAwait(false);
-            OperationRetry.ThrowIfAborted(token, request.AbortReason);
-            ValidateAnswers(questions, result.Answers, result.Rounding);
-            var refused = questions
-                .Keys.Where(id => result.Answers[id].Type == "refusal")
-                .ToArray();
-            if (refused.Length > 0)
-            {
-                throw new DecisionRefusalError(refused, model.Provider, model.ModelId);
-            }
+                        OperationRetry.ThrowIfAborted(token, request.AbortReason);
+                        ValidateAnswers(questions, result.Answers, result.Rounding);
+                        var refused = questions
+                            .Keys.Where(id => result.Answers[id].Type == "refusal")
+                            .ToArray();
+                        if (refused.Length > 0)
+                        {
+                            throw new DecisionRefusalError(refused, model.Provider, model.ModelId);
+                        }
 
-            await telemetryDispatcher
-                .ExperimentalOnDecisionModelCallEndAsync(
-                    new DecisionModelEvent(
-                        callId,
-                        "ai.decide.doDecide",
-                        model.Provider,
-                        model.ModelId,
-                        preparedState,
-                        questions,
-                        result.Answers,
-                        result.Usage
-                    ),
-                    token
-                )
-                .ConfigureAwait(false);
+                        await telemetryDispatcher
+                            .ExperimentalOnDecisionModelCallEndAsync(
+                                new DecisionModelEvent(
+                                    callId,
+                                    "ai.decide.doDecide",
+                                    model.Provider,
+                                    model.ModelId,
+                                    preparedState,
+                                    questions,
+                                    result.Answers,
+                                    result.Usage
+                                ),
+                                token
+                            )
+                            .ConfigureAwait(false);
 
-            WarningLog.Write(result.Warnings, model.Provider, model.ModelId);
-            var input = result.Usage?.InputTokens;
-            var output = result.Usage?.OutputTokens;
-            var usage = new OperationUsage(
-                input,
-                output,
-                input != null && output != null ? input + output : null
-            );
-            var now = request.Now?.Invoke() ?? DateTime.UtcNow;
-            var response = new ProviderResponse(
-                result.Response?.Headers,
-                result.Response?.Body,
-                result.Response?.Id,
-                result.Response?.Timestamp ?? now,
-                result.Response?.ModelId ?? model.ModelId,
-                result.Response?.ProviderMetadata
-            );
-            var decision = new DecisionResult(
-                result.Answers,
-                usage,
-                result.Warnings,
-                result.Rounding,
-                result.ProviderMetadata,
-                response
-            );
-            var end = new DecideEvent(
-                callId,
-                "ai.decide",
-                context,
-                model.Provider,
-                model.ModelId,
-                request.State,
-                questions,
-                maxRetries,
-                request.Headers,
-                providerOptions,
-                result.Answers,
-                usage,
-                result.Warnings,
-                maxOutputTokens: request.MaxOutputTokens,
-                reasoning: request.Reasoning
-            );
-            await OperationCallbacks.NotifyAsync(end, request.OnEnd).ConfigureAwait(false);
-            await telemetryDispatcher.OnEndAsync(end, token).ConfigureAwait(false);
+                        WarningLog.Write(result.Warnings, model.Provider, model.ModelId);
+                        var input = result.Usage?.InputTokens;
+                        var output = result.Usage?.OutputTokens;
+                        var usage = new OperationUsage(
+                            input,
+                            output,
+                            input != null && output != null ? input + output : null
+                        );
+                        var now = request.Now?.Invoke() ?? DateTime.UtcNow;
+                        var response = new ProviderResponse(
+                            result.Response?.Headers,
+                            result.Response?.Body,
+                            result.Response?.Id,
+                            result.Response?.Timestamp ?? now,
+                            result.Response?.ModelId ?? model.ModelId,
+                            result.Response?.ProviderMetadata
+                        );
+                        var decision = new DecisionResult(
+                            result.Answers,
+                            usage,
+                            result.Warnings,
+                            result.Rounding,
+                            result.ProviderMetadata,
+                            response
+                        );
+                        var end = new DecideEvent(
+                            callId,
+                            "ai.decide",
+                            context,
+                            model.Provider,
+                            model.ModelId,
+                            request.State,
+                            questions,
+                            maxRetries,
+                            request.Headers,
+                            providerOptions,
+                            result.Answers,
+                            usage,
+                            result.Warnings,
+                            maxOutputTokens: request.MaxOutputTokens,
+                            reasoning: request.Reasoning
+                        );
+                        await OperationCallbacks
+                            .NotifyAsync(end, request.OnEnd)
+                            .ConfigureAwait(false);
+                        await telemetryDispatcher.OnEndAsync(end, token).ConfigureAwait(false);
 
-            return decision;
-        }
-        catch (Exception error)
-        {
-            // The failure being reported may be a cancellation, so delivery ignores the token.
-            await telemetryDispatcher
-                .OnErrorAsync(callId, error, CancellationToken.None)
-                .ConfigureAwait(false);
+                        return decision;
+                    }
+                    catch (Exception error)
+                    {
+                        // The failure being reported may be a cancellation, so delivery ignores the token.
+                        await telemetryDispatcher
+                            .OnErrorAsync(callId, error, CancellationToken.None)
+                            .ConfigureAwait(false);
 
-            throw;
-        }
+                        throw;
+                    }
+                }
+            )
+            .ConfigureAwait(false);
     }
 
     /// <summary>Validates state and questions before any model call.</summary>

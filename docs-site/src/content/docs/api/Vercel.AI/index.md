@@ -114,6 +114,8 @@ Client, text generation, streaming, tools, and agents.
 | [TelemetryErrorEvent](/api/Vercel.AI/TelemetryErrorEvent/) | The event an integration receives in OnError. Upstream passes the plain object { callId, error, aiVersion } to onError; the port needs a type for it. |
 | [TelemetryOptions](/api/Vercel.AI/TelemetryOptions/) | Telemetry configuration. Maps to TelemetryOptions in telemetry/telemetry-options.ts. |
 | [TelemetryRegistry](/api/Vercel.AI/TelemetryRegistry/) | Globally registered telemetry integrations. Maps to telemetry-registry.ts and globalThis.AISDKTELEMETRYINTEGRATIONS. |
+| [TelemetryTracingChannelMessage](/api/Vercel.AI/TelemetryTracingChannelMessage/) | The value a tracing channel subscriber receives. Maps to TelemetryTracingChannelMessage. Result and Error are set before the asyncEnd and error events, like the context object of a Node tracing channel. |
+| [TelemetryTracingEventType](/api/Vercel.AI/TelemetryTracingEventType/) | The kinds of span the tracing channel publishes. Maps to TelemetryTracingEventType. |
 | [TextDeltaPart](/api/Vercel.AI/TextDeltaPart/) | Text delta. Maps to text-delta. |
 | [TextEndPart](/api/Vercel.AI/TextEndPart/) | A text block ended. Maps to text-end. |
 | [TextStartPart](/api/Vercel.AI/TextStartPart/) | A text block started. Maps to text-start. |
@@ -133,6 +135,7 @@ Client, text generation, streaming, tools, and agents.
 | [ToolInputStartPart](/api/Vercel.AI/ToolInputStartPart/) | The model started streaming tool input. |
 | [ToolOutputDeniedPart](/api/Vercel.AI/ToolOutputDeniedPart/) | A tool call was denied, so its tool did not run. Maps to the tool-output-denied stream part. |
 | [ToolResultPart](/api/Vercel.AI/ToolResultPart/) | A tool result. |
+| [TracingChannel](/api/Vercel.AI/TracingChannel/) | The telemetry tracing channel. Maps to telemetry/tracing-channel.ts. Upstream publishes on a Node diagnosticschannel tracing channel. The port publishes on a DiagnosticListener with the same name, one event per sub-channel of the tracing channel: start, end, asyncStart, asyncEnd and error. Each event value is a TelemetryTracingChannelMessage. |
 | [TranscribeOptions](/api/Vercel.AI/TranscribeOptions/) | Transcription options. |
 | [TranscriptionCapabilities](/api/Vercel.AI/TranscriptionCapabilities/) | Upstream ModelCapabilities.transcription. |
 | [TranslateOptions](/api/Vercel.AI/TranslateOptions/) | Speech translation options. |

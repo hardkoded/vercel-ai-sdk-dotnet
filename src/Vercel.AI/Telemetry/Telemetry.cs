@@ -51,8 +51,8 @@ public interface ITelemetry
     Func<GenerateTextStepErrorEvent, CancellationToken, Task>? OnStepError { get; }
 
     /// <summary>
-    /// Called when an operation completes. Receives a <see cref="GenerateTextResult"/>, an <see cref="EmbedEndEvent"/>, a <see cref="RerankEndEvent"/>
-    /// or a <see cref="TranscriptionEndEvent"/>. Maps to <c>onEnd</c>.
+    /// Called when an operation completes. Maps to <c>onEnd</c>. Receives a <see cref="GenerateTextResult"/>, a <see cref="GenerateObjectEndEvent{T}"/>,
+    /// an <see cref="EmbedEndEvent"/>, a <see cref="RerankEndEvent"/> or a <see cref="TranscriptionEndEvent"/>.
     /// </summary>
     Func<IOperationEndEvent, CancellationToken, Task>? OnEnd { get; }
 
@@ -142,12 +142,6 @@ public interface ITelemetry
 }
 
 /// <summary>
-/// An event passed to <see cref="ITelemetry.OnEnd"/> when an operation completes. Stands in for the <c>OperationEndEvent</c> union in
-/// <c>telemetry/telemetry.ts</c>, which C# cannot express.
-/// </summary>
-public interface IOperationEndEvent { }
-
-/// <summary>
 /// The wrapper an integration provides as <see cref="ITelemetry.ExecuteLanguageModelCall"/>. Upstream types it as a generic function,
 /// which a C# delegate property cannot express.
 /// </summary>
@@ -227,3 +221,9 @@ public sealed class ExecuteToolOptions<T>
 /// <c>telemetry/telemetry.ts</c>, which C# cannot express.
 /// </summary>
 public interface IOperationStartEvent { }
+
+/// <summary>
+/// An event passed to <see cref="ITelemetry.OnEnd"/> when an operation completes. Stands in for the <c>OperationEndEvent</c> union in
+/// <c>telemetry/telemetry.ts</c>, which C# cannot express.
+/// </summary>
+public interface IOperationEndEvent { }

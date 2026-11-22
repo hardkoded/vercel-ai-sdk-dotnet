@@ -53,7 +53,7 @@ public sealed class TranscribeTests
                                 events.Add(e.Audio);
                                 return Task.CompletedTask;
                             },
-                            OnOperationEnd = (eEvent, _) =>
+                            OnEnd = (eEvent, _) =>
                             {
                                 var e = (TranscriptionEndEvent)eEvent;
                                 events.Add(e.Audio);
@@ -142,7 +142,7 @@ public sealed class TranscribeTests
                         [
                             new TestTelemetry
                             {
-                                OnOperationEnd = (eEvent, _) =>
+                                OnEnd = (eEvent, _) =>
                                 {
                                     var e = (TranscriptionEndEvent)eEvent;
                                     end = e;
@@ -559,7 +559,7 @@ public sealed class TranscribeTests
                                     starts.Add(e);
                                     return Task.CompletedTask;
                                 },
-                                OnOperationEnd = (_, _) =>
+                                OnEnd = (_, _) =>
                                 {
                                     ends++;
                                     return Task.CompletedTask;
@@ -615,7 +615,7 @@ public sealed class TranscribeTests
                                 start = e;
                                 return Task.CompletedTask;
                             },
-                            OnOperationEnd = (eEvent, _) =>
+                            OnEnd = (eEvent, _) =>
                             {
                                 var e = (TranscriptionEndEvent)eEvent;
                                 end = e;
@@ -666,7 +666,7 @@ public sealed class TranscribeTests
                     [
                         new TestTelemetry
                         {
-                            OnOperationEnd = (eEvent, _) =>
+                            OnEnd = (eEvent, _) =>
                             {
                                 var e = (TranscriptionEndEvent)eEvent;
                                 end = e;
@@ -717,7 +717,7 @@ public sealed class TranscribeTests
                                 events.Add(e);
                                 return Task.CompletedTask;
                             },
-                            OnOperationEnd = (eEvent, _) =>
+                            OnEnd = (eEvent, _) =>
                             {
                                 var e = (TranscriptionEndEvent)eEvent;
                                 events.Add(e);
@@ -823,7 +823,7 @@ public sealed class TranscribeTests
                     [
                         new TestTelemetry
                         {
-                            OnOperationEnd = (eEvent, _) =>
+                            OnEnd = (eEvent, _) =>
                             {
                                 var e = (TranscriptionEndEvent)eEvent;
                                 events.Add(e);

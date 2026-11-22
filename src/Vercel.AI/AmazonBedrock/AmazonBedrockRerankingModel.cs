@@ -188,29 +188,7 @@ public sealed class AmazonBedrockRerankingModel : IRerankingModel, Operations.IR
             .ConfigureAwait(false);
 
         var payload = Encoding.UTF8.GetBytes(json);
-        var accessKey = _provider.Options.AccessKeyId
-            ?? Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID");
-        var secret = _provider.Options.SecretAccessKey
-            ?? Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY");
-        if (string.IsNullOrEmpty(accessKey) || string.IsNullOrEmpty(secret))
-        {
-            throw new AiSdkException(
-                "AWS credentials are required. Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY."
-            );
-        }
-
-        var token = _provider.Options.SessionToken
-            ?? Environment.GetEnvironmentVariable("AWS_SESSION_TOKEN");
-        AwsSigV4.Sign(
-            request,
-            payload,
-            _provider.Options.Region,
-            "bedrock",
-            accessKey!,
-            secret!,
-            token,
-            _provider.Options.UtcNow?.Invoke() ?? DateTimeOffset.UtcNow
-        );
+        await _provider.AuthorizeAsync(request, payload, cancellationToken).ConfigureAwait(false);
         using var response = await _provider
             .HttpClient.SendAsync(request, cancellationToken)
             .ConfigureAwait(false);

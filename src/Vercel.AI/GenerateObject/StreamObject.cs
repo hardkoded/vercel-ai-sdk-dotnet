@@ -720,6 +720,7 @@ internal static class StreamObject
     )
     {
         private CancellationToken _cancellationToken;
+        private string? _callId;
         private readonly TelemetryDispatcher _telemetryDispatcher = TelemetryDispatcher.Create(
             options
         );
@@ -734,6 +735,18 @@ internal static class StreamObject
             catch (Exception error)
             {
                 result.RejectResultPromises(GatewayErrorWrappers.WrapGatewayError(error));
+                if (
+                    !_cancellationToken.IsCancellationRequested
+                    && _telemetryDispatcher.OnError is { } telemetryOnError
+                )
+                {
+                    await telemetryOnError(
+                            new TelemetryErrorEvent(_callId, error),
+                            _cancellationToken
+                        )
+                        .ConfigureAwait(false);
+                }
+
                 await EmitAsync(new ObjectStreamErrorPart(error)).ConfigureAwait(false);
             }
             finally
@@ -764,7 +777,7 @@ internal static class StreamObject
         private async Task StreamAsync()
         {
             using var scope = telemetry?.Begin("streamObject", model.ModelId);
-            var callId = options.GenerateId?.Invoke()
+            var callId = _callId = options.GenerateId?.Invoke()
                 ?? ProviderUtils.JsonValues.GenerateId("aiobj-");
             var jsonSchema = outputStrategy.JsonSchema;
 
@@ -1215,30 +1228,35 @@ internal static class StreamObject
                     }
                 }
 
-                if (options.OnFinish != null)
+                if (options.OnFinish != null || _telemetryDispatcher.OnEnd != null)
                 {
-                    await Generation
-                        .NotifyAsync(
-                            () =>
-                                options.OnFinish(
-                                    new GenerateObjectEndEvent<T>(
-                                        callId,
-                                        model.Provider,
-                                        model.ModelId,
-                                        value,
-                                        error,
-                                        finishReason ?? FinishReason.Other,
-                                        usage,
-                                        warnings ?? [],
-                                        request,
-                                        ResponseWithHeaders(),
-                                        providerMetadata
-                                    ),
-                                    _cancellationToken
-                                ),
-                            _cancellationToken
-                        )
-                        .ConfigureAwait(false);
+                    var endEvent = new GenerateObjectEndEvent<T>(
+                        callId,
+                        model.Provider,
+                        model.ModelId,
+                        value,
+                        error,
+                        finishReason ?? FinishReason.Other,
+                        usage,
+                        warnings ?? [],
+                        request,
+                        ResponseWithHeaders(),
+                        providerMetadata
+                    );
+                    if (options.OnFinish != null)
+                    {
+                        await Generation
+                            .NotifyAsync(
+                                () => options.OnFinish(endEvent, _cancellationToken),
+                                _cancellationToken
+                            )
+                            .ConfigureAwait(false);
+                    }
+
+                    if (_telemetryDispatcher.OnEnd is { } telemetryOnEnd)
+                    {
+                        await telemetryOnEnd(endEvent, _cancellationToken).ConfigureAwait(false);
+                    }
                 }
             }
             catch (Exception flushError) when (!_cancellationToken.IsCancellationRequested)

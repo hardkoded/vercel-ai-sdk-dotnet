@@ -2,6 +2,8 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using Vercel.AI.Tests.Upstream.GenerateObject.GenerateObject;
+
 namespace Vercel.AI.Tests.Upstream.Telemetry.CreateTelemetryDispatcher;
 
 /// <summary>Port of <c>create-telemetry-dispatcher.test.ts</c> &gt; <c>createTelemetryDispatcher &gt; isEnabled filter</c>.</summary>
@@ -101,6 +103,28 @@ public sealed class CreateTelemetryDispatcherIsEnabledFilterTests
             Integrations = [integration],
         };
         await GenerateObjectTestSupportFacade.CollectAsync(streamOptions);
+
+        var failingGenerate = GenerateObjectTestSupportFacade.GenerateOptions();
+        ((GenerateObjectTestModel)failingGenerate.Model!).OnGenerate = () =>
+            throw new InvalidOperationException("boom");
+        failingGenerate.Telemetry = new TelemetryOptions
+        {
+            IsEnabled = false,
+            Integrations = [integration],
+        };
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            GenerateObjectTestSupportFacade.Client().GenerateObjectAsync(failingGenerate)
+        );
+
+        var failingStream = GenerateObjectTestSupportFacade.FailingStreamOptions(
+            new InvalidOperationException("boom")
+        );
+        failingStream.Telemetry = new TelemetryOptions
+        {
+            IsEnabled = false,
+            Integrations = [integration],
+        };
+        await GenerateObjectTestSupportFacade.CollectAsync(failingStream);
 
         Assert.Empty(events);
     }

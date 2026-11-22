@@ -5,6 +5,7 @@
 using Vercel.AI.GenerateObject;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
+using Vercel.AI.Tests.Upstream.GenerateObject.GenerateObject;
 
 namespace Vercel.AI.Tests.Upstream.Telemetry.CreateTelemetryDispatcher;
 
@@ -334,7 +335,7 @@ public sealed class CreateTelemetryDispatcherTests
             OnStreamTranscriptionEnd = Record<StreamTranscriptionEndEvent>(
                 "experimental_onStreamTranscriptionEnd"
             ),
-            OnEnd = Record<GenerateTextResult>("onEnd"),
+            OnEnd = Record<IOperationEndEvent>("onEnd"),
             OnAbort = Record<StreamAbortContext>("onAbort"),
             OnError = Record<TelemetryErrorEvent>("onError"),
             OnStepError = Record<GenerateTextStepErrorEvent>("onStepError"),
@@ -472,13 +473,37 @@ public sealed class CreateTelemetryDispatcherTests
         var generateOptions = GenerateObjectTestSupportFacade.GenerateOptions();
         generateOptions.Telemetry = new TelemetryOptions { Integrations = [integration] };
         await GenerateObjectTestSupportFacade.Client().GenerateObjectAsync(generateOptions);
-        Assert.Equal(["onStart:ai.generateObject", "onObjectStepStart", "onObjectStepEnd"], events);
+        Assert.Equal(
+            ["onStart:ai.generateObject", "onObjectStepStart", "onObjectStepEnd", "onEnd"],
+            events
+        );
 
         events.Clear();
         var streamOptions = GenerateObjectTestSupportFacade.StreamOptions();
         streamOptions.Telemetry = new TelemetryOptions { Integrations = [integration] };
         await GenerateObjectTestSupportFacade.CollectAsync(streamOptions);
-        Assert.Equal(["onStart:ai.streamObject", "onObjectStepStart", "onObjectStepEnd"], events);
+        Assert.Equal(
+            ["onStart:ai.streamObject", "onObjectStepStart", "onObjectStepEnd", "onEnd"],
+            events
+        );
+
+        events.Clear();
+        var failingGenerate = GenerateObjectTestSupportFacade.GenerateOptions();
+        ((GenerateObjectTestModel)failingGenerate.Model!).OnGenerate = () =>
+            throw new InvalidOperationException("boom");
+        failingGenerate.Telemetry = new TelemetryOptions { Integrations = [integration] };
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            GenerateObjectTestSupportFacade.Client().GenerateObjectAsync(failingGenerate)
+        );
+        Assert.Equal(["onStart:ai.generateObject", "onObjectStepStart", "onError"], events);
+
+        events.Clear();
+        var failingStream = GenerateObjectTestSupportFacade.FailingStreamOptions(
+            new InvalidOperationException("boom")
+        );
+        failingStream.Telemetry = new TelemetryOptions { Integrations = [integration] };
+        await GenerateObjectTestSupportFacade.CollectAsync(failingStream);
+        Assert.Contains("onError", events);
     }
 
     [Fact]
@@ -522,6 +547,17 @@ public sealed class CreateTelemetryDispatcherTests
             OnObjectStepEnd = (_, _) =>
             {
                 events.Add("onObjectStepEnd");
+                return Task.CompletedTask;
+            },
+            OnEnd = (e, _) =>
+            {
+                Assert.StartsWith("GenerateObjectEndEvent", e.GetType().Name);
+                events.Add("onEnd");
+                return Task.CompletedTask;
+            },
+            OnError = (_, _) =>
+            {
+                events.Add("onError");
                 return Task.CompletedTask;
             },
         };

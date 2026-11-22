@@ -26,6 +26,9 @@ public sealed class Resolvable<T>
     /// <summary>True when the value comes from a callback rather than a static value or a task.</summary>
     public bool IsCallback => _callback is not null;
 
+    // Upstream checks `typeof apiKey !== 'string'`: only a task or callback is held to the non-empty rule.
+    internal bool IsDynamic => _callback is not null || _task is not null;
+
     /// <summary>Wraps a value.</summary>
     public static implicit operator Resolvable<T>(T value) => From(value);
 
