@@ -427,7 +427,7 @@ public class AgentOptions
     /// <summary>User-defined context that is passed to the approval functions. See <see cref="GenerateTextOptions.RuntimeContext"/>. <see cref="PrepareCall"/> can replace it. Maps to <c>runtimeContext</c>.</summary>
     public IReadOnlyDictionary<string, object?>? RuntimeContext { get; set; }
 
-    /// <summary>Secret for HMAC-signing tool approval requests. See <see cref="GenerateTextOptions.ExperimentalToolApprovalSecret"/>. Maps to <c>experimental_toolApprovalSecret</c>.</summary>
+    /// <summary>Secret for HMAC-signing tool approval requests. Approval requests of automatically denied tool calls are not signed. See <see cref="GenerateTextOptions.ExperimentalToolApprovalSecret"/>. Maps to <c>experimental_toolApprovalSecret</c>.</summary>
     public string? ExperimentalToolApprovalSecret { get; set; }
 
     /// <summary>The same secret as <see cref="ExperimentalToolApprovalSecret"/>, given as bytes. See <see cref="GenerateTextOptions.ExperimentalToolApprovalSecretBytes"/>.</summary>
