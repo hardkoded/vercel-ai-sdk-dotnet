@@ -147,9 +147,36 @@ public sealed class RecordInputsRecordOutputsFilteringTests
 
         var delivered = await Start(new TelemetryOptions { RecordInputs = false }, original);
 
+        var originalToolCall = new GeneratedToolCall("tc-1", "search", "{\"q\":\"secret\"}");
+        ToolExecutionStartEvent? deliveredTool = null;
+        var toolDispatcher = Vercel.AI.TelemetryDispatcher.Create(
+            new TelemetryOptions
+            {
+                RecordInputs = false,
+                Integrations =
+                [
+                    new TestTelemetry
+                    {
+                        OnToolExecutionStart = (d, _) =>
+                        {
+                            deliveredTool = d;
+                            return Task.CompletedTask;
+                        },
+                    },
+                ],
+            }
+        );
+        await toolDispatcher.OnToolExecutionStart!(
+            new ToolExecutionStartEvent(originalToolCall, []),
+            CancellationToken.None
+        );
+
         Assert.Equal("secret instructions", original.Instructions!.Text);
         Assert.Single(original.Messages);
         Assert.Null(delivered.Instructions);
+        Assert.Equal("{\"q\":\"secret\"}", originalToolCall.ArgumentsJson);
+        Assert.Equal("{}", deliveredTool!.ToolCall.ArgumentsJson);
+        Assert.Equal("search", deliveredTool.ToolCall.ToolName);
     }
 
     [Fact]
