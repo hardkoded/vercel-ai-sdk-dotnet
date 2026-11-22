@@ -7,8 +7,8 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
-using Vercel.AI.Operations;
 using Vercel.AI.OpenAICompatible;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 using Vercel.AI.Util;
@@ -529,7 +529,13 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
             ["pt"] = "portuguese",
         };
 
-        private static readonly string[] Encodings = { "pcm_s16le", "pcm_mulaw", "pcm_alaw", "mp3" };
+        private static readonly string[] Encodings =
+        {
+            "pcm_s16le",
+            "pcm_mulaw",
+            "pcm_alaw",
+            "mp3",
+        };
         private static readonly string[] Containers = { "raw", "wav" };
         private static readonly int[] SampleRates = { 8000, 16000, 22050, 24000, 44100, 48000 };
         private static readonly int[] BitRates = { 32000, 48000, 64000, 96000, 128000 };
@@ -674,7 +680,10 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
             );
         }
 
-        private static double? HeaderNumber(IReadOnlyDictionary<string, string> headers, string name)
+        private static double? HeaderNumber(
+            IReadOnlyDictionary<string, string> headers,
+            string name
+        )
         {
             foreach (var header in headers)
             {
@@ -799,8 +808,7 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
                 body["voice_id"] = request.Voice;
             }
 
-            var container =
-                OptionString(assemblyai, "container", Containers)
+            var container = OptionString(assemblyai, "container", Containers)
                 ?? (formatApplies ? format.Container : null);
             if (container != null)
             {
@@ -819,8 +827,7 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
                 }
             }
 
-            var sampleRate =
-                OptionNumber(assemblyai, "sampleRate", SampleRates)
+            var sampleRate = OptionNumber(assemblyai, "sampleRate", SampleRates)
                 ?? (formatApplies ? format.SampleRate : null);
             if (sampleRate != null)
             {

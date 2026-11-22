@@ -258,7 +258,10 @@ public sealed class DoGenerateTests
 
         Assert.False(Body(handler, 0).TryGetProperty("container", out _));
         Assert.False(Body(handler, 1).TryGetProperty("bit_rate", out _));
-        var warnings = mp3Result.Warnings.Concat(wavResult.Warnings).Cast<UnsupportedWarning>().ToList();
+        var warnings = mp3Result
+            .Warnings.Concat(wavResult.Warnings)
+            .Cast<UnsupportedWarning>()
+            .ToList();
         Assert.Equal(2, warnings.Count);
         Assert.Equal("providerOptions.assemblyai.container", warnings[0].Feature);
         Assert.Equal(
@@ -297,12 +300,10 @@ public sealed class DoGenerateTests
         Assert.False(body.TryGetProperty("speed", out _));
         Assert.Equal(3, result.Warnings.Count);
         Assert.All(result.Warnings, warning => Assert.IsType<UnsupportedWarning>(warning));
-        Assert.Contains(
-            result.Warnings.Cast<UnsupportedWarning>(),
-            warning =>
-                warning.Feature == "language"
-                && warning.Details
-                    == "AssemblyAI text-to-speech does not support language \"ja\" (supported: de, en, es, fr, it, pt). The language option was ignored."
+        Assert.Contains(result.Warnings.Cast<UnsupportedWarning>(), warning =>
+            warning.Feature == "language"
+            && warning.Details
+                == "AssemblyAI text-to-speech does not support language \"ja\" (supported: de, en, es, fr, it, pt). The language option was ignored."
         );
     }
 
@@ -402,7 +403,9 @@ public sealed class DoGenerateTests
     )]
     public async Task Should_surface_API_errors()
     {
-        var handler = new ParityHandler(_ => new HttpResponseMessage(HttpStatusCode.UnprocessableEntity)
+        var handler = new ParityHandler(_ => new HttpResponseMessage(
+            HttpStatusCode.UnprocessableEntity
+        )
         {
             Content = new StringContent(
                 "{\"code\":\"voice_not_found\",\"message\":\"voice_id: no voice with this ID or slug\",\"param\":\"voice_id\",\"request_id\":\"test-request-id\",\"errors\":null,\"retryable\":false,\"retry_after_seconds\":null,\"error\":\"voice_id: no voice with this ID or slug\"}",
@@ -466,6 +469,9 @@ public sealed class DoGenerateTests
         using var right = JsonDocument.Parse(actual);
         var l = left.RootElement.EnumerateObject().OrderBy(p => p.Name, StringComparer.Ordinal);
         var r = right.RootElement.EnumerateObject().OrderBy(p => p.Name, StringComparer.Ordinal);
-        Assert.Equal(l.Select(p => p.Name + "=" + p.Value.GetRawText()), r.Select(p => p.Name + "=" + p.Value.GetRawText()));
+        Assert.Equal(
+            l.Select(p => p.Name + "=" + p.Value.GetRawText()),
+            r.Select(p => p.Name + "=" + p.Value.GetRawText())
+        );
     }
 }
