@@ -30,7 +30,7 @@ internal static class TelemetryContextSupport
     internal static TestTelemetry RuntimeContextIntegration(List<string> contexts) =>
         new()
         {
-            OnStart = (e, _) => Record(contexts, e.RuntimeContext),
+            OnStart = (e, _) => Record(contexts, ((GenerateTextStartEvent)e).RuntimeContext),
             OnStepStart = (e, _) => Record(contexts, e.RuntimeContext),
             OnStepEnd = (e, _) => Record(contexts, e.RuntimeContext),
             OnEnd = (e, _) => Record(contexts, e.RuntimeContext),
@@ -40,7 +40,7 @@ internal static class TelemetryContextSupport
     internal static TestTelemetry ToolsContextIntegration(List<string> contexts) =>
         new()
         {
-            OnStart = (e, _) => Record(contexts, e.ToolsContext),
+            OnStart = (e, _) => Record(contexts, ((GenerateTextStartEvent)e).ToolsContext),
             OnStepStart = (e, _) => Record(contexts, e.ToolsContext),
             OnStepEnd = (e, _) => Record(contexts, e.ToolsContext),
             OnEnd = (e, _) => Record(contexts, e.ToolsContext),

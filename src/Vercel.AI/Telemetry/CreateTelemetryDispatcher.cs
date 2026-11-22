@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
+using Vercel.AI.GenerateObject;
 
 namespace Vercel.AI;
 
@@ -16,7 +17,7 @@ internal sealed class TelemetryDispatcher
     public bool HasIntegrations { get; init; }
 
     /// <summary>Maps to <c>onStart</c>. Null when no integration has it.</summary>
-    public Func<GenerateTextStartEvent, CancellationToken, Task>? OnStart { get; init; }
+    public Func<IOperationStartEvent, CancellationToken, Task>? OnStart { get; init; }
 
     /// <summary>Maps to <c>onStepStart</c>. Null when no integration has it.</summary>
     public Func<GenerateTextStepStartEvent, CancellationToken, Task>? OnStepStart { get; init; }
@@ -39,6 +40,16 @@ internal sealed class TelemetryDispatcher
 
     /// <summary>Maps to <c>onError</c>. Null when no integration has it.</summary>
     public Func<Exception, CancellationToken, Task>? OnError { get; init; }
+
+    /// <summary>Maps to <c>onObjectStepStart</c>. Null when no integration has it.</summary>
+    public Func<
+        GenerateObjectStepStartEvent,
+        CancellationToken,
+        Task
+    >? OnObjectStepStart { get; init; }
+
+    /// <summary>Maps to <c>onObjectStepEnd</c>. Null when no integration has it.</summary>
+    public Func<GenerateObjectStepEndEvent, CancellationToken, Task>? OnObjectStepEnd { get; init; }
 
     /// <summary>Maps to <c>onEnd</c>. Null when no integration has it.</summary>
     public Func<GenerateTextResult, CancellationToken, Task>? OnEnd { get; init; }
@@ -72,6 +83,22 @@ internal sealed class TelemetryDispatcher
 #pragma warning restore CS0618
     }
 
+    /// <summary>Creates the dispatcher of an object generation call.</summary>
+    internal static TelemetryDispatcher Create<T>(GenerateObjectOptions<T> options)
+    {
+#pragma warning disable CS0618 // the deprecated alias is read like its replacement
+        return Create(options.Telemetry ?? options.ExperimentalTelemetry);
+#pragma warning restore CS0618
+    }
+
+    /// <summary>Creates the dispatcher of an object streaming call.</summary>
+    internal static TelemetryDispatcher Create<T>(StreamObjectOptions<T> options)
+    {
+#pragma warning disable CS0618 // the deprecated alias is read like its replacement
+        return Create(options.Telemetry ?? options.ExperimentalTelemetry);
+#pragma warning restore CS0618
+    }
+
     /// <summary>Creates the dispatcher of a call. Maps to <c>createTelemetryDispatcher</c>.</summary>
     internal static TelemetryDispatcher Create(TelemetryOptions? telemetry)
     {
@@ -85,6 +112,8 @@ internal sealed class TelemetryDispatcher
         return new TelemetryDispatcher
         {
             HasIntegrations = integrations.Count > 0,
+            OnObjectStepStart = Merge(integrations.Select(i => i.OnObjectStepStart)),
+            OnObjectStepEnd = Merge(integrations.Select(i => i.OnObjectStepEnd)),
             OnEnd = Filter<GenerateTextResult>(Merge(integrations.Select(i => i.OnEnd)), result =>
                 AugmentResult(result, telemetry)
             ),
@@ -96,19 +125,19 @@ internal sealed class TelemetryDispatcher
                 Merge(integrations.Select(i => i.OnLanguageModelCallEnd)),
                 e => AugmentEvent(e, telemetry)
             ),
-            OnStart = Filter<GenerateTextStartEvent>(
-                Merge(integrations.Select(i => i.OnStart)),
-                e =>
-                    e.WithContexts(
+            OnStart = Filter<IOperationStartEvent>(Merge(integrations.Select(i => i.OnStart)), e =>
+                e is GenerateTextStartEvent textStart
+                    ? textStart.WithContexts(
                         FilterIncludedContextHelper.FilterIncludedContext(
-                            e.RuntimeContext,
+                            textStart.RuntimeContext,
                             telemetry?.IncludeRuntimeContext
                         ),
                         FilterIncludedContextHelper.FilterToolsContext(
-                            e.ToolsContext,
+                            textStart.ToolsContext,
                             telemetry?.IncludeToolsContext
                         )
                     )
+                    : e
             ),
             OnStepStart = Filter<GenerateTextStepStartEvent>(
                 Merge(integrations.Select(i => i.OnStepStart)),
