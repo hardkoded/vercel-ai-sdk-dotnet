@@ -272,7 +272,10 @@ public sealed class EvaluateEvent : DecideEvent
                 e.FunctionId,
                 e.MaxOutputTokens,
                 e.Reasoning
-            );
+            )
+            {
+                AiVersion = e.AiVersion,
+            };
     }
 }
 
@@ -323,13 +326,12 @@ public sealed class EvaluateModelEvent : DecisionModelEvent
                 e.RecordInputs,
                 e.RecordOutputs,
                 e.FunctionId
-            );
+            )
+            {
+                AiVersion = e.AiVersion,
+            };
     }
 }
-
-/// <summary>Deprecated alias of <see cref="DecideTelemetry"/>.</summary>
-[Obsolete("Use DecideTelemetry instead.")]
-public sealed class EvaluateTelemetry : DecideTelemetry { }
 
 /// <summary>Deprecated alias of <see cref="DecisionResult"/>.</summary>
 [Obsolete("Use DecisionResult instead.")]
@@ -379,7 +381,7 @@ public sealed class EvaluateRequest : OperationRequest
     public Func<EvaluateEvent, Task>? OnEnd { get; set; }
 
     /// <summary>Telemetry.</summary>
-    public EvaluateTelemetry? Telemetry { get; set; }
+    public TelemetryOptions? Telemetry { get; set; }
 }
 
 /// <summary>Deprecated alias of <see cref="Decide"/>.</summary>

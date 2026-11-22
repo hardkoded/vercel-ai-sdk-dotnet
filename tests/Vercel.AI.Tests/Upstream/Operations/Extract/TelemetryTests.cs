@@ -5,6 +5,7 @@
 using System.Text.Json;
 using Vercel.AI.Operations;
 using Vercel.AI.Prompt;
+using Vercel.AI.Tests.Upstream.Telemetry;
 using Vercel.AI.Util;
 using static Vercel.AI.Tests.DecisionFixtures;
 using static Vercel.AI.Tests.Upstream.Operations.Extract.ExtractSupport;
@@ -22,7 +23,7 @@ public sealed class TelemetryTests
     [UpstreamTest(
         "packages/ai/src/extract/extract.test.ts::telemetry::emits operation and model-call lifecycle events",
         Coverage = UpstreamCoverage.Partial,
-        Note = "The port has no telemetry integrations: ExtractTelemetry holds the callbacks, so the stable onStart/onEnd check and aiVersion do not apply.",
+        Note = "ITelemetry has no generic OnStart, and its OnEnd takes a GenerateTextResult, so the check that the stable onStart and onEnd are not called does not apply.",
         Commit = UpstreamCommit
     )]
     public async Task Emits_operation_and_model_call_lifecycle_events()
@@ -62,17 +63,24 @@ public sealed class TelemetryTests
                 GenerateCallId = () => "test-call-id",
                 OnStart = item => Record("extractOnStart", item),
                 OnEnd = item => Record("extractOnEnd", item),
-                Telemetry = new ExtractTelemetry
+                Telemetry = new TelemetryOptions
                 {
                     FunctionId = "extract-test",
                     RecordInputs = false,
                     RecordOutputs = true,
-                    OnExtractStart = item => Record("experimental_onExtractStart", item),
-                    OnExtractionModelCallStart = item =>
-                        Record("experimental_onExtractionModelCallStart", item),
-                    OnExtractionModelCallEnd = item =>
-                        Record("experimental_onExtractionModelCallEnd", item),
-                    OnExtractEnd = item => Record("experimental_onExtractEnd", item),
+                    Integrations =
+                    [
+                        new TestTelemetry
+                        {
+                            OnExtractStart = (item, _) =>
+                                Record("experimental_onExtractStart", item),
+                            OnExtractionModelCallStart = (item, _) =>
+                                Record("experimental_onExtractionModelCallStart", item),
+                            OnExtractionModelCallEnd = (item, _) =>
+                                Record("experimental_onExtractionModelCallEnd", item),
+                            OnExtractEnd = (item, _) => Record("experimental_onExtractEnd", item),
+                        },
+                    ],
                 },
             }
         );
@@ -100,6 +108,7 @@ public sealed class TelemetryTests
         Assert.False(start.RecordInputs);
         Assert.True(start.RecordOutputs);
         Assert.Equal("extract-test", start.FunctionId);
+        Assert.Equal(AiSdkVersion.Version, start.AiVersion);
 
         var modelStart = (ExtractionModelCallStartEvent)
             calls["experimental_onExtractionModelCallStart"];
@@ -174,19 +183,25 @@ public sealed class TelemetryTests
                     userEnd = item;
                     return Task.CompletedTask;
                 },
-                Telemetry = new ExtractTelemetry
+                Telemetry = new TelemetryOptions
                 {
                     RecordOutputs = false,
-                    OnExtractionModelCallEnd = item =>
-                    {
-                        modelEnd = item;
-                        return Task.CompletedTask;
-                    },
-                    OnExtractEnd = item =>
-                    {
-                        telemetryEnd = item;
-                        return Task.CompletedTask;
-                    },
+                    Integrations =
+                    [
+                        new TestTelemetry
+                        {
+                            OnExtractionModelCallEnd = (item, _) =>
+                            {
+                                modelEnd = item;
+                                return Task.CompletedTask;
+                            },
+                            OnExtractEnd = (item, _) =>
+                            {
+                                telemetryEnd = item;
+                                return Task.CompletedTask;
+                            },
+                        },
+                    ],
                 },
             }
         );
@@ -217,7 +232,7 @@ public sealed class TelemetryTests
             "{\"gateway\":{\"byok\":{\"openai\":[{\"apiKey\":\"secret-key\"}]}}}"
         );
         ExtractStartEvent? userStart = null;
-        Task Collect(ExtractStartEvent item)
+        Task Collect(ExtractStartEvent item, CancellationToken _)
         {
             seen.Add(item);
             return Task.CompletedTask;
@@ -236,11 +251,17 @@ public sealed class TelemetryTests
                     userStart = item;
                     return Task.CompletedTask;
                 },
-                Telemetry = new ExtractTelemetry
+                Telemetry = new TelemetryOptions
                 {
                     RecordInputs = recordInputs,
-                    OnExtractStart = Collect,
-                    OnExtractEnd = Collect,
+                    Integrations =
+                    [
+                        new TestTelemetry
+                        {
+                            OnExtractStart = Collect,
+                            OnExtractEnd = (item, token) => Collect(item, token),
+                        },
+                    ],
                 },
             }
         );
@@ -306,13 +327,19 @@ public sealed class TelemetryTests
                     userStart = item;
                     return Task.CompletedTask;
                 },
-                Telemetry = new ExtractTelemetry
+                Telemetry = new TelemetryOptions
                 {
-                    OnExtractStart = item =>
-                    {
-                        telemetryStart = item;
-                        return Task.CompletedTask;
-                    },
+                    Integrations =
+                    [
+                        new TestTelemetry
+                        {
+                            OnExtractStart = (item, _) =>
+                            {
+                                telemetryStart = item;
+                                return Task.CompletedTask;
+                            },
+                        },
+                    ],
                 },
             }
         );
@@ -362,13 +389,19 @@ public sealed class TelemetryTests
                             url,
                             "Download of " + url + " exceeded maximum size of 10 bytes."
                         ),
-                    Telemetry = new ExtractTelemetry
+                    Telemetry = new TelemetryOptions
                     {
-                        OnError = (_, exception) =>
-                        {
-                            delivered = exception;
-                            return Task.CompletedTask;
-                        },
+                        Integrations =
+                        [
+                            new TestTelemetry
+                            {
+                                OnError = (item, _) =>
+                                {
+                                    delivered = item.Error;
+                                    return Task.CompletedTask;
+                                },
+                            },
+                        ],
                     },
                 }
             )
@@ -404,19 +437,25 @@ public sealed class TelemetryTests
                     ["requestId"] = "request-1",
                     ["secret"] = "hidden",
                 },
-                Telemetry = new ExtractTelemetry
+                Telemetry = new TelemetryOptions
                 {
                     IncludeRuntimeContext = new Dictionary<string, bool> { ["requestId"] = true },
-                    OnExtractStart = item =>
-                    {
-                        seen.Add(item.RuntimeContext);
-                        return Task.CompletedTask;
-                    },
-                    OnExtractEnd = item =>
-                    {
-                        seen.Add(item.RuntimeContext);
-                        return Task.CompletedTask;
-                    },
+                    Integrations =
+                    [
+                        new TestTelemetry
+                        {
+                            OnExtractStart = (item, _) =>
+                            {
+                                seen.Add(item.RuntimeContext);
+                                return Task.CompletedTask;
+                            },
+                            OnExtractEnd = (item, _) =>
+                            {
+                                seen.Add(item.RuntimeContext);
+                                return Task.CompletedTask;
+                            },
+                        },
+                    ],
                 },
             }
         );
@@ -433,7 +472,6 @@ public sealed class TelemetryTests
     [UpstreamTest(
         "packages/ai/src/extract/extract.test.ts::telemetry::emits an error event when extraction fails",
         Coverage = UpstreamCoverage.Covered,
-        Note = "aiVersion is not on the port's error callback.",
         Commit = UpstreamCommit
     )]
     public async Task Emits_an_error_event_when_extraction_fails()
@@ -441,6 +479,7 @@ public sealed class TelemetryTests
         var failure = new InvalidOperationException("extraction failed");
         string? callId = null;
         Exception? seen = null;
+        string? aiVersion = null;
         var ended = 0;
         var model = Setup();
         model.OnExtract = _ => throw failure;
@@ -454,19 +493,26 @@ public sealed class TelemetryTests
                     Fields = Fields(),
                     MaxRetries = 0,
                     GenerateCallId = () => "test-call-id",
-                    Telemetry = new ExtractTelemetry
+                    Telemetry = new TelemetryOptions
                     {
-                        OnError = (id, exception) =>
-                        {
-                            callId = id;
-                            seen = exception;
-                            return Task.CompletedTask;
-                        },
-                        OnExtractEnd = _ =>
-                        {
-                            ended++;
-                            return Task.CompletedTask;
-                        },
+                        Integrations =
+                        [
+                            new TestTelemetry
+                            {
+                                OnError = (item, _) =>
+                                {
+                                    callId = item.CallId;
+                                    seen = item.Error;
+                                    aiVersion = item.AiVersion;
+                                    return Task.CompletedTask;
+                                },
+                                OnExtractEnd = (_, _) =>
+                                {
+                                    ended++;
+                                    return Task.CompletedTask;
+                                },
+                            },
+                        ],
                     },
                 }
             )
@@ -475,6 +521,7 @@ public sealed class TelemetryTests
         Assert.Same(failure, error);
         Assert.Equal("test-call-id", callId);
         Assert.Same(failure, seen);
+        Assert.Equal(AiSdkVersion.Version, aiVersion);
         Assert.Equal(0, ended);
     }
 
@@ -506,23 +553,29 @@ public sealed class TelemetryTests
                         ended++;
                         return Task.CompletedTask;
                     },
-                    Telemetry = new ExtractTelemetry
+                    Telemetry = new TelemetryOptions
                     {
-                        OnError = (id, _) =>
-                        {
-                            callId = id;
-                            return Task.CompletedTask;
-                        },
-                        OnExtractionModelCallEnd = _ =>
-                        {
-                            ended++;
-                            return Task.CompletedTask;
-                        },
-                        OnExtractEnd = _ =>
-                        {
-                            ended++;
-                            return Task.CompletedTask;
-                        },
+                        Integrations =
+                        [
+                            new TestTelemetry
+                            {
+                                OnError = (item, _) =>
+                                {
+                                    callId = item.CallId;
+                                    return Task.CompletedTask;
+                                },
+                                OnExtractionModelCallEnd = (_, _) =>
+                                {
+                                    ended++;
+                                    return Task.CompletedTask;
+                                },
+                                OnExtractEnd = (_, _) =>
+                                {
+                                    ended++;
+                                    return Task.CompletedTask;
+                                },
+                            },
+                        ],
                     },
                 }
             )
@@ -555,10 +608,16 @@ public sealed class TelemetryTests
                     State = State,
                     Fields = Fields(),
                     OnStart = Count,
-                    Telemetry = new ExtractTelemetry
+                    Telemetry = new TelemetryOptions
                     {
-                        OnError = (_, _) => Count(0),
-                        OnExtractStart = Count,
+                        Integrations =
+                        [
+                            new TestTelemetry
+                            {
+                                OnError = (_, _) => Count(0),
+                                OnExtractStart = (item, _) => Count(item),
+                            },
+                        ],
                     },
                 }
             )

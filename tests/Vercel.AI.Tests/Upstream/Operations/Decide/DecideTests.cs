@@ -4,6 +4,7 @@
 
 using Vercel.AI.Operations;
 using Vercel.AI.Prompt;
+using Vercel.AI.Tests.Upstream.Telemetry;
 using Vercel.AI.Util;
 using static Vercel.AI.Tests.DecisionFixtures;
 using static Vercel.AI.Tests.Upstream.Operations.Decide.DecideSupport;
@@ -195,18 +196,24 @@ public sealed class DecideTests
                 State = "text",
                 Questions = SampleQuestions(),
                 MaxRetries = 1,
-                Telemetry = new DecideTelemetry
+                Telemetry = new TelemetryOptions
                 {
-                    OnDecisionModelCallStart = _ =>
-                    {
-                        starts++;
-                        return Task.CompletedTask;
-                    },
-                    OnDecisionModelCallEnd = _ =>
-                    {
-                        ends++;
-                        return Task.CompletedTask;
-                    },
+                    Integrations =
+                    [
+                        new TestTelemetry
+                        {
+                            OnDecisionModelCallStart = (_, _) =>
+                            {
+                                starts++;
+                                return Task.CompletedTask;
+                            },
+                            OnDecisionModelCallEnd = (_, _) =>
+                            {
+                                ends++;
+                                return Task.CompletedTask;
+                            },
+                        },
+                    ],
                 },
             }
         );
@@ -651,13 +658,19 @@ public sealed class DecideTests
                     started.Add(item);
                     return Task.CompletedTask;
                 },
-                Telemetry = new DecideTelemetry
+                Telemetry = new TelemetryOptions
                 {
-                    OnDecisionModelCallStart = item =>
-                    {
-                        modelStarted.Add(item);
-                        return Task.CompletedTask;
-                    },
+                    Integrations =
+                    [
+                        new TestTelemetry
+                        {
+                            OnDecisionModelCallStart = (item, _) =>
+                            {
+                                modelStarted.Add(item);
+                                return Task.CompletedTask;
+                            },
+                        },
+                    ],
                 },
             }
         );
@@ -706,18 +719,24 @@ public sealed class DecideTests
                     seen.Add(item.Questions);
                     return Task.CompletedTask;
                 },
-                Telemetry = new DecideTelemetry
+                Telemetry = new TelemetryOptions
                 {
-                    OnDecisionModelCallStart = item =>
-                    {
-                        seen.Add(item.Questions);
-                        return Task.CompletedTask;
-                    },
-                    OnDecisionModelCallEnd = item =>
-                    {
-                        seen.Add(item.Questions);
-                        return Task.CompletedTask;
-                    },
+                    Integrations =
+                    [
+                        new TestTelemetry
+                        {
+                            OnDecisionModelCallStart = (item, _) =>
+                            {
+                                seen.Add(item.Questions);
+                                return Task.CompletedTask;
+                            },
+                            OnDecisionModelCallEnd = (item, _) =>
+                            {
+                                seen.Add(item.Questions);
+                                return Task.CompletedTask;
+                            },
+                        },
+                    ],
                 },
             }
         );

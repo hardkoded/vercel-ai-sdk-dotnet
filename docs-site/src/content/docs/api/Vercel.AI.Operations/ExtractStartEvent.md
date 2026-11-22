@@ -67,6 +67,23 @@ Creates an event.
 
 ## Properties
 
+<a id="Vercel_AI_Operations_ExtractStartEvent_AiVersion_"></a>
+<a id="Vercel_AI_Operations_ExtractStartEvent_AiVersion"></a>
+
+### AiVersion
+
+
+```csharp
+public string? AiVersion { get; init; }
+```
+
+
+The version of the AI SDK that emitted this event. Present only on telemetry events.
+
+**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L91)
+
 <a id="Vercel_AI_Operations_ExtractStartEvent_CallId_"></a>
 <a id="Vercel_AI_Operations_ExtractStartEvent_CallId"></a>
 
@@ -116,7 +133,7 @@ Present only on telemetry events.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L97)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L100)
 
 <a id="Vercel_AI_Operations_ExtractStartEvent_Headers_"></a>
 <a id="Vercel_AI_Operations_ExtractStartEvent_Headers"></a>
@@ -269,7 +286,7 @@ Present only on telemetry events.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L91)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L94)
 
 <a id="Vercel_AI_Operations_ExtractStartEvent_RecordOutputs_"></a>
 <a id="Vercel_AI_Operations_ExtractStartEvent_RecordOutputs"></a>
@@ -286,7 +303,7 @@ Present only on telemetry events.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L94)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L97)
 
 <a id="Vercel_AI_Operations_ExtractStartEvent_ReferenceDate_"></a>
 <a id="Vercel_AI_Operations_ExtractStartEvent_ReferenceDate"></a>

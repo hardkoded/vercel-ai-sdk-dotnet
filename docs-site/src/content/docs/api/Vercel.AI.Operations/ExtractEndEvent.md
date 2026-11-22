@@ -24,7 +24,7 @@ Called when the operation completes successfully.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [ExtractStartEvent](/api/Vercel.AI.Operations/ExtractStartEvent/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L104)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L107)
 
 ## Constructors
 
@@ -52,7 +52,7 @@ Creates an event.
 | `providerMetadata` | [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 | `response` | [ProviderResponse](/api/Vercel.AI.Operations/ProviderResponse/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L107)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L110)
 
 ## Properties
 
@@ -71,7 +71,7 @@ Exactly one typed answer per field id. Telemetry receives an empty map when outp
 
 **Value:** [IReadOnlyDictionary&lt;string, ExtractionAnswer&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L141)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L145)
 
 <a id="Vercel_AI_Operations_ExtractEndEvent_ProviderMetadata_"></a>
 <a id="Vercel_AI_Operations_ExtractEndEvent_ProviderMetadata"></a>
@@ -88,7 +88,7 @@ Optional provider-specific metadata.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L150)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L154)
 
 <a id="Vercel_AI_Operations_ExtractEndEvent_Response_"></a>
 <a id="Vercel_AI_Operations_ExtractEndEvent_Response"></a>
@@ -105,7 +105,7 @@ Response metadata, including the resolved model id and timestamp.
 
 **Value:** [ProviderResponse](/api/Vercel.AI.Operations/ProviderResponse/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L153)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L157)
 
 <a id="Vercel_AI_Operations_ExtractEndEvent_Usage_"></a>
 <a id="Vercel_AI_Operations_ExtractEndEvent_Usage"></a>
@@ -122,7 +122,7 @@ Token usage for the extraction operation.
 
 **Value:** [OperationUsage](/api/Vercel.AI.Operations/OperationUsage/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L144)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L148)
 
 <a id="Vercel_AI_Operations_ExtractEndEvent_Warnings_"></a>
 <a id="Vercel_AI_Operations_ExtractEndEvent_Warnings"></a>
@@ -139,4 +139,4 @@ Warnings from the extraction model.
 
 **Value:** [IReadOnlyList&lt;OperationWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L147)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L151)

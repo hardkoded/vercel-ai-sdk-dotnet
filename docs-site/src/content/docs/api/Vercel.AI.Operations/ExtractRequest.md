@@ -208,12 +208,12 @@ Wrap it in an object or in a [DecisionJsonPart](/api/Vercel.AI.Operations/Decisi
 
 
 ```csharp
-public ExtractTelemetry? Telemetry { get; set; }
+public TelemetryOptions? Telemetry { get; set; }
 ```
 
 
-Telemetry callbacks. Request headers and provider options never reach them.
+Telemetry configuration. Request headers and provider options never reach integrations.
 
-**Value:** [ExtractTelemetry](/api/Vercel.AI.Operations/ExtractTelemetry/)
+**Value:** [TelemetryOptions](/api/Vercel.AI/TelemetryOptions/)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Extract.cs#L92)

@@ -26,7 +26,7 @@ The logical model call includes any provider retries.
 
 **Derived:** [ExtractionModelCallEndEvent](/api/Vercel.AI.Operations/ExtractionModelCallEndEvent/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L160)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L164)
 
 ## Constructors
 
@@ -57,9 +57,26 @@ Creates an event.
 | `recordOutputs` | [bool?](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 | `functionId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L163)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L167)
 
 ## Properties
+
+<a id="Vercel_AI_Operations_ExtractionModelCallStartEvent_AiVersion_"></a>
+<a id="Vercel_AI_Operations_ExtractionModelCallStartEvent_AiVersion"></a>
+
+### AiVersion
+
+
+```csharp
+public string? AiVersion { get; init; }
+```
+
+
+The version of the AI SDK that emitted this event. Present only on telemetry events.
+
+**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L212)
 
 <a id="Vercel_AI_Operations_ExtractionModelCallStartEvent_CallId_"></a>
 <a id="Vercel_AI_Operations_ExtractionModelCallStartEvent_CallId"></a>
@@ -76,7 +93,7 @@ Unique identifier for the outer extraction call.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L187)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L191)
 
 <a id="Vercel_AI_Operations_ExtractionModelCallStartEvent_Fields_"></a>
 <a id="Vercel_AI_Operations_ExtractionModelCallStartEvent_Fields"></a>
@@ -93,7 +110,7 @@ The fields to extract from the shared state.
 
 **Value:** [IReadOnlyDictionary&lt;string, ExtractionField&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L202)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L206)
 
 <a id="Vercel_AI_Operations_ExtractionModelCallStartEvent_FunctionId_"></a>
 <a id="Vercel_AI_Operations_ExtractionModelCallStartEvent_FunctionId"></a>
@@ -110,7 +127,7 @@ Present only on telemetry events.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L214)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L221)
 
 <a id="Vercel_AI_Operations_ExtractionModelCallStartEvent_ModelId_"></a>
 <a id="Vercel_AI_Operations_ExtractionModelCallStartEvent_ModelId"></a>
@@ -127,7 +144,7 @@ The extraction model identifier.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L196)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L200)
 
 <a id="Vercel_AI_Operations_ExtractionModelCallStartEvent_OperationId_"></a>
 <a id="Vercel_AI_Operations_ExtractionModelCallStartEvent_OperationId"></a>
@@ -144,7 +161,7 @@ Identifies the inner operation: `ai.extract.doExtract`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L190)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L194)
 
 <a id="Vercel_AI_Operations_ExtractionModelCallStartEvent_Provider_"></a>
 <a id="Vercel_AI_Operations_ExtractionModelCallStartEvent_Provider"></a>
@@ -161,7 +178,7 @@ The provider identifier.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L193)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L197)
 
 <a id="Vercel_AI_Operations_ExtractionModelCallStartEvent_RecordInputs_"></a>
 <a id="Vercel_AI_Operations_ExtractionModelCallStartEvent_RecordInputs"></a>
@@ -178,7 +195,7 @@ Present only on telemetry events.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L208)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L215)
 
 <a id="Vercel_AI_Operations_ExtractionModelCallStartEvent_RecordOutputs_"></a>
 <a id="Vercel_AI_Operations_ExtractionModelCallStartEvent_RecordOutputs"></a>
@@ -195,7 +212,7 @@ Present only on telemetry events.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L211)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L218)
 
 <a id="Vercel_AI_Operations_ExtractionModelCallStartEvent_ReferenceDate_"></a>
 <a id="Vercel_AI_Operations_ExtractionModelCallStartEvent_ReferenceDate"></a>
@@ -212,7 +229,7 @@ public string? ReferenceDate { get; }
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L205)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L209)
 
 <a id="Vercel_AI_Operations_ExtractionModelCallStartEvent_State_"></a>
 <a id="Vercel_AI_Operations_ExtractionModelCallStartEvent_State"></a>
@@ -229,4 +246,4 @@ The normalized list of state parts the model receives.
 
 **Value:** [IReadOnlyList&lt;DecisionModelStatePart&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L199)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractEvents.cs#L203)

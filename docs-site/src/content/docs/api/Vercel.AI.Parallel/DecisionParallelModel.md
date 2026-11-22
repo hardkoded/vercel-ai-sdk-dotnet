@@ -170,7 +170,7 @@ Decides every question in one call.
 
 **Returns:** [Task&lt;DecisionModelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Parallel/DecisionParallelModel.cs#L141)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Parallel/DecisionParallelModel.cs#L138)
 
 <a id="Vercel_AI_Parallel_DecisionParallelModel_Serialize_"></a>
 <a id="Vercel_AI_Parallel_DecisionParallelModel_Serialize"></a>

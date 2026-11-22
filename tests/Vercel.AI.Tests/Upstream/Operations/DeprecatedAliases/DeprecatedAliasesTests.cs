@@ -7,6 +7,7 @@
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.Testing;
+using Vercel.AI.Tests.Upstream.Telemetry;
 using static Vercel.AI.Tests.DecisionFixtures;
 using DecideModel = Vercel.AI.Tests.Upstream.Operations.Decide.DecideModel;
 using DecideOperation = Vercel.AI.Operations.Decide;
@@ -180,28 +181,34 @@ public sealed class DeprecatedAliasesTests
                 Model = new LegacyModel(),
                 State = "message",
                 Questions = Questions,
-                Telemetry = new EvaluateTelemetry
+                Telemetry = new TelemetryOptions
                 {
-                    OnEvaluateStart = e =>
-                    {
-                        calls["OnEvaluateStart"].Add(e.OperationId);
-                        return Task.CompletedTask;
-                    },
-                    OnModelStart = e =>
-                    {
-                        calls["OnModelStart"].Add(e.OperationId);
-                        return Task.CompletedTask;
-                    },
-                    OnModelEnd = e =>
-                    {
-                        calls["OnModelEnd"].Add(e.OperationId);
-                        return Task.CompletedTask;
-                    },
-                    OnEvaluateEnd = e =>
-                    {
-                        calls["OnEvaluateEnd"].Add(e.OperationId);
-                        return Task.CompletedTask;
-                    },
+                    Integrations =
+                    [
+                        new TestTelemetry
+                        {
+                            OnEvaluateStart = (e, _) =>
+                            {
+                                calls["OnEvaluateStart"].Add(e.OperationId);
+                                return Task.CompletedTask;
+                            },
+                            OnEvaluationModelCallStart = (e, _) =>
+                            {
+                                calls["OnModelStart"].Add(e.OperationId);
+                                return Task.CompletedTask;
+                            },
+                            OnEvaluationModelCallEnd = (e, _) =>
+                            {
+                                calls["OnModelEnd"].Add(e.OperationId);
+                                return Task.CompletedTask;
+                            },
+                            OnEvaluateEnd = (e, _) =>
+                            {
+                                calls["OnEvaluateEnd"].Add(e.OperationId);
+                                return Task.CompletedTask;
+                            },
+                        },
+                    ],
                 },
             }
         );
@@ -223,13 +230,13 @@ public sealed class DeprecatedAliasesTests
     {
         var deprecated = 0;
         var current = 0;
-        Task Current<T>(T _)
+        Task Current<T>(T _, CancellationToken __)
         {
             current++;
             return Task.CompletedTask;
         }
 
-        Task Deprecated<T>(T _)
+        Task Deprecated<T>(T _, CancellationToken __)
         {
             deprecated++;
             return Task.CompletedTask;
@@ -241,16 +248,22 @@ public sealed class DeprecatedAliasesTests
                 Model = new LegacyModel(),
                 State = "message",
                 Questions = Questions,
-                Telemetry = new EvaluateTelemetry
+                Telemetry = new TelemetryOptions
                 {
-                    OnDecideStart = Current,
-                    OnEvaluateStart = Deprecated,
-                    OnDecisionModelCallStart = Current,
-                    OnModelStart = Deprecated,
-                    OnDecisionModelCallEnd = Current,
-                    OnModelEnd = Deprecated,
-                    OnDecideEnd = Current,
-                    OnEvaluateEnd = Deprecated,
+                    Integrations =
+                    [
+                        new TestTelemetry
+                        {
+                            OnDecideStart = Current,
+                            OnEvaluateStart = Deprecated,
+                            OnDecisionModelCallStart = Current,
+                            OnEvaluationModelCallStart = Deprecated,
+                            OnDecisionModelCallEnd = Current,
+                            OnEvaluationModelCallEnd = Deprecated,
+                            OnDecideEnd = Current,
+                            OnEvaluateEnd = Deprecated,
+                        },
+                    ],
                 },
             }
         );

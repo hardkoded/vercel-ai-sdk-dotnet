@@ -87,6 +87,9 @@ public class ExtractStartEvent
     /// <summary>Additional provider-specific options.</summary>
     public JsonElement ProviderOptions { get; }
 
+    /// <summary>The version of the AI SDK that emitted this event. Present only on telemetry events.</summary>
+    public string? AiVersion { get; init; }
+
     /// <summary>Present only on telemetry events.</summary>
     public bool? RecordInputs { get; }
 
@@ -130,6 +133,7 @@ public sealed class ExtractEndEvent : ExtractStartEvent
             start.FunctionId
         )
     {
+        AiVersion = start.AiVersion;
         Answers = answers;
         Usage = usage;
         Warnings = warnings;
@@ -204,6 +208,9 @@ public class ExtractionModelCallStartEvent
     /// <summary><c>YYYY-MM-DD</c> date that anchors relative dates and dates without a year.</summary>
     public string? ReferenceDate { get; }
 
+    /// <summary>The version of the AI SDK that emitted this event. Present only on telemetry events.</summary>
+    public string? AiVersion { get; init; }
+
     /// <summary>Present only on telemetry events.</summary>
     public bool? RecordInputs { get; }
 
@@ -241,6 +248,7 @@ public sealed class ExtractionModelCallEndEvent : ExtractionModelCallStartEvent
             start.FunctionId
         )
     {
+        AiVersion = start.AiVersion;
         Answers = answers;
         Usage = usage;
         Warnings = warnings;

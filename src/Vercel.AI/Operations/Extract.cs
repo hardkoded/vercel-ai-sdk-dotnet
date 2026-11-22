@@ -88,44 +88,8 @@ public sealed class ExtractRequest : OperationRequest
     /// <summary>Called when the extraction completes. Receives the full runtime context, headers, and provider options.</summary>
     public Func<ExtractEndEvent, Task>? OnEnd { get; set; }
 
-    /// <summary>Telemetry callbacks. Request headers and provider options never reach them.</summary>
-    public ExtractTelemetry? Telemetry { get; set; }
-}
-
-/// <summary>
-/// Telemetry callbacks for <see cref="Extract.ExtractAsync"/>. Generic operation callbacks on an integration are not called.
-/// </summary>
-public sealed class ExtractTelemetry
-{
-    /// <summary><c>experimental_onExtractStart</c>.</summary>
-    public Func<ExtractStartEvent, Task>? OnExtractStart { get; set; }
-
-    /// <summary><c>experimental_onExtractionModelCallStart</c>.</summary>
-    public Func<ExtractionModelCallStartEvent, Task>? OnExtractionModelCallStart { get; set; }
-
-    /// <summary><c>experimental_onExtractionModelCallEnd</c>.</summary>
-    public Func<ExtractionModelCallEndEvent, Task>? OnExtractionModelCallEnd { get; set; }
-
-    /// <summary><c>experimental_onExtractEnd</c>.</summary>
-    public Func<ExtractEndEvent, Task>? OnExtractEnd { get; set; }
-
-    /// <summary><c>onError</c>. A download error arrives without its URL.</summary>
-    public Func<string, Exception, Task>? OnError { get; set; }
-
-    /// <summary>Keys copied into telemetry runtime context. Null yields an empty context.</summary>
-    public IReadOnlyDictionary<string, bool>? IncludeRuntimeContext { get; set; }
-
-    /// <summary>When false, telemetry events carry no state, fields, or reference date.</summary>
-    public bool? RecordInputs { get; set; }
-
-    /// <summary>When false, telemetry end events carry no answers.</summary>
-    public bool? RecordOutputs { get; set; }
-
-    /// <summary>Copied onto telemetry events.</summary>
-    public string? FunctionId { get; set; }
-
-    /// <summary>When false, telemetry callbacks are skipped.</summary>
-    public bool IsEnabled { get; set; } = true;
+    /// <summary>Telemetry configuration. Request headers and provider options never reach integrations.</summary>
+    public TelemetryOptions? Telemetry { get; set; }
 }
 
 /// <summary>Extracts typed field values from one shared state. Maps to <c>experimental_extract</c>.</summary>
@@ -190,7 +154,7 @@ public static class Extract
             providerOptions
         );
         await OperationCallbacks.NotifyAsync(startEvent, request.OnStart).ConfigureAwait(false);
-        await telemetryDispatcher.OnStartAsync(startEvent).ConfigureAwait(false);
+        await telemetryDispatcher.OnStartAsync(startEvent, token).ConfigureAwait(false);
 
         try
         {
@@ -206,7 +170,7 @@ public static class Extract
                 request.ReferenceDate
             );
             await telemetryDispatcher
-                .ExperimentalOnExtractionModelCallStartAsync(modelCallEvent)
+                .ExperimentalOnExtractionModelCallStartAsync(modelCallEvent, token)
                 .ConfigureAwait(false);
             var headers = OperationHeaders.WithUserAgent(request.Headers, AiSdkVersion.UserAgent);
             var result = await OperationRetry
@@ -255,7 +219,8 @@ public static class Extract
                         result.Warnings,
                         result.ProviderMetadata,
                         result.Response
-                    )
+                    ),
+                    token
                 )
                 .ConfigureAwait(false);
 
@@ -292,12 +257,15 @@ public static class Extract
                 extraction.Response
             );
             await OperationCallbacks.NotifyAsync(endEvent, request.OnEnd).ConfigureAwait(false);
-            await telemetryDispatcher.OnEndAsync(endEvent).ConfigureAwait(false);
+            await telemetryDispatcher.OnEndAsync(endEvent, token).ConfigureAwait(false);
             return extraction;
         }
         catch (Exception error)
         {
-            await telemetryDispatcher.OnErrorAsync(callId, error).ConfigureAwait(false);
+            // The failure being reported may be a cancellation, so delivery ignores the token.
+            await telemetryDispatcher
+                .OnErrorAsync(callId, error, CancellationToken.None)
+                .ConfigureAwait(false);
             throw;
         }
     }
