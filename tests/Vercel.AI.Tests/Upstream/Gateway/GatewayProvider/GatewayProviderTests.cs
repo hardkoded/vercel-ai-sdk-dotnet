@@ -392,7 +392,9 @@ public sealed class GatewayProviderTests
             new UpstreamRecordingHandler("{}")
         );
 
-        var model = provider.Reranking("cohere/rerank-v3.5");
+        var model = Assert.IsType<Vercel.AI.Gateway.GatewayRerankingModel>(
+            provider.Reranking("cohere/rerank-v3.5")
+        );
         var request = new RerankRequest { Model = model };
         Assert.Same(model, request.Model);
     }

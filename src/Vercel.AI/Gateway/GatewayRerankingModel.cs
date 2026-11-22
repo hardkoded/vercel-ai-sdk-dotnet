@@ -93,6 +93,19 @@ public sealed class GatewayRerankingModel : IRerankingModel, IRerankCaller
         {
             foreach (var pair in call.Headers)
             {
+                // Upstream applies the model headers after the caller headers, so a caller cannot override them.
+                if (
+                    string.Equals(pair.Key, "ai-model-id", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(
+                        pair.Key,
+                        "ai-reranking-model-specification-version",
+                        StringComparison.OrdinalIgnoreCase
+                    )
+                )
+                {
+                    continue;
+                }
+
                 headers[pair.Key] = pair.Value;
             }
         }
@@ -123,6 +136,10 @@ public sealed class GatewayRerankingModel : IRerankingModel, IRerankCaller
             throw GatewayProvider.MapFailure(exception);
         }
         catch (ApiTimeoutException exception)
+        {
+            throw GatewayProvider.MapFailure(exception);
+        }
+        catch (ApiConnectionException exception)
         {
             throw GatewayProvider.MapFailure(exception);
         }
