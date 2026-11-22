@@ -10,64 +10,6 @@ namespace Vercel.AI.OpenAICompatible;
 /// <summary>Request-body transforms used by thin OpenAI-compatible providers.</summary>
 public static class OpenAICompatibleTransforms
 {
-    /// <summary>
-    /// Maps Groq reasoning levels. <c>none</c> is kept only for <c>qwen/qwen3.6-27b</c>.
-    /// <c>minimal</c> becomes <c>low</c> and <c>xhigh</c> and <c>max</c> become <c>high</c>.
-    /// </summary>
-    public static JsonObject Groq(JsonObject body, IList<CallWarning> warnings)
-    {
-        var effort = Text(body["reasoning_effort"]);
-        var model = Text(body["model"]);
-        if (effort == null)
-        {
-            return body;
-        }
-
-        if (effort == "none")
-        {
-            if (model != "qwen/qwen3.6-27b")
-            {
-                body.Remove("reasoning_effort");
-                warnings.Add(
-                    new CallWarning(
-                        "unsupported",
-                        "reasoning",
-                        "reasoning \"none\" is not supported by this model."
-                    )
-                );
-            }
-
-            return body;
-        }
-
-        if (effort == "minimal")
-        {
-            body["reasoning_effort"] = "low";
-            warnings.Add(
-                new CallWarning(
-                    "compatibility",
-                    "reasoning",
-                    "reasoning \"minimal\" is not directly supported by this model. mapped to effort \"low\"."
-                )
-            );
-        }
-        else if (effort == "xhigh" || effort == "max")
-        {
-            body["reasoning_effort"] = "high";
-            warnings.Add(
-                new CallWarning(
-                    "compatibility",
-                    "reasoning",
-                    "reasoning \""
-                        + effort
-                        + "\" is not directly supported by this model. mapped to effort \"high\"."
-                )
-            );
-        }
-
-        return body;
-    }
-
     /// <summary>Maps Cerebras field names and assistant <c>reasoning_content</c> onto <c>reasoning</c>.</summary>
     public static JsonObject Cerebras(JsonObject body, IList<CallWarning> warnings)
     {

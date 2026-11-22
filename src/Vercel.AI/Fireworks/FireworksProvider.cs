@@ -44,26 +44,15 @@ public sealed class FireworksProvider : OpenAICompatibleProvider
         return new FireworksProvider(client, options);
     }
 
-    private static string? ResolveReasoningEffort(
+    private static string? MapReasoning(
         string modelId,
-        string? reasoning,
-        string? providerEffort,
+        string reasoning,
         IList<CallWarning> warnings
     )
     {
-        if (providerEffort != null)
-        {
-            return providerEffort;
-        }
-
-        if (!ReasoningMap.IsCustomReasoning(reasoning))
-        {
-            return null;
-        }
-
         var mappingWarnings = new List<ModelWarning>();
         var effort = ReasoningMap.MapReasoningToProviderEffort(
-            reasoning!,
+            reasoning,
             FireworksModelCatalog.GetFireworksReasoningEffortMap(modelId),
             mappingWarnings
         );
@@ -108,7 +97,7 @@ public sealed class FireworksProvider : OpenAICompatibleProvider
         }
         options.IncludeUsage = true;
         options.SupportsStructuredOutputs = true;
-        options.ResolveReasoningEffort ??= ResolveReasoningEffort;
+        options.MapReasoning ??= MapReasoning;
         options.TransformRequestBody = OpenAICompatibleTransforms.Fireworks;
         return options;
     }

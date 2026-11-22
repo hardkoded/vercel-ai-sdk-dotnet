@@ -43,6 +43,35 @@ public sealed class DoGenerateTests
 
     [Fact]
     [UpstreamTest(
+        "packages/perplexity/src/perplexity-language-model.test.ts::doGenerate::maps top-level none reasoning to the lowest effort with a warning",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2"
+    )]
+    public async Task Maps_top_level_none_reasoning_to_the_lowest_effort_with_a_warning()
+    {
+        var capture = new UpstreamCapture { ResponseBody = AgentResponse };
+        var model = PerplexityProvider
+            .Create(new OpenAICompatibleOptions { ApiKey = "secret" }, capture)
+            .LanguageModel("low");
+        var options = UpstreamChat.Prompt();
+        options.Reasoning = "none";
+
+        var result = await model.DoGenerateAsync(options, CancellationToken.None);
+
+        Assert.Equal(
+            "minimal",
+            UpstreamChat.Body(capture)["reasoning"]!["effort"]!.GetValue<string>()
+        );
+        Assert.Contains(result.Warnings, warning =>
+            warning.Type == "compatibility"
+            && warning.Feature == "reasoning"
+            && warning.Message
+                == "reasoning \"none\" is not directly supported by this model. mapped to effort \"minimal\"."
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
         "packages/perplexity/src/perplexity-language-model.test.ts::doGenerate::passes request and provider headers and exposes response headers",
         Coverage = UpstreamCoverage.Covered
     )]

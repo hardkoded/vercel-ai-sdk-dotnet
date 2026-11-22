@@ -318,10 +318,7 @@ internal static class AlibabaChatRequest
         }
 
         result.Add(new KeyValuePair<string, JsonNode?>("enable_thinking", true));
-        if (thinkingBudget is { } value)
-        {
-            result.Add(new KeyValuePair<string, JsonNode?>("thinking_budget", value));
-        }
+        result.Add(new KeyValuePair<string, JsonNode?>("thinking_budget", thinkingBudget));
 
         return result;
     }

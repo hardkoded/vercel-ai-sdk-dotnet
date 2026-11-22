@@ -23,7 +23,7 @@ Maps SDK reasoning levels onto Anthropic thinking and effort.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicReasoning.cs#L38)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicReasoning.cs#L41)
 
 ## Methods
 
@@ -48,7 +48,7 @@ True when reasoning asks for a concrete mode rather than the provider default.
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicReasoning.cs#L41)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicReasoning.cs#L44)
 
 <a id="Vercel_AI_Anthropic_AnthropicReasoning_MapBudget_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicReasoning_MapBudget_System_String_System_Int32_System_Collections_Generic_IList_Vercel_AI_Anthropic_AnthropicWarning__"></a>
@@ -57,7 +57,7 @@ True when reasoning asks for a concrete mode rather than the provider default.
 
 
 ```csharp
-public static int? MapBudget(string reasoning, int maxOutputTokens, IList<AnthropicWarning> warnings)
+public static int MapBudget(string reasoning, int maxOutputTokens, IList<AnthropicWarning> warnings)
 ```
 
 
@@ -71,9 +71,9 @@ Token budget for budget-based thinking. Clamped to at least 1024.
 | `maxOutputTokens` | [int](https://learn.microsoft.com/dotnet/api/system.int32) |  |
 | `warnings` | [IList&lt;AnthropicWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ilist-1) |  |
 
-**Returns:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
+**Returns:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicReasoning.cs#L155)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicReasoning.cs#L139)
 
 <a id="Vercel_AI_Anthropic_AnthropicReasoning_Resolve_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicReasoning_Resolve_System_String_System_String_Vercel_AI_Anthropic_AnthropicModelCapabilities_System_Collections_Generic_IList_Vercel_AI_Anthropic_AnthropicWarning__"></a>
@@ -99,4 +99,4 @@ Maps a reasoning level. Returns null for `provider-default`.
 
 **Returns:** [AnthropicReasoningConfig](/api/Vercel.AI.Anthropic/AnthropicReasoningConfig/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicReasoning.cs#L47)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicReasoning.cs#L50)

@@ -1956,12 +1956,18 @@ internal static class AnthropicAssertions
         Assert.Equal("high", prepared.Body["output_config"]!["effort"]!.GetValue<string>());
     }
 
-    public static void ReasoningXhighMapsToMax()
+    public static void ReasoningXhighMapsToHigh()
     {
         var options = AnthropicParity.Hello();
         options.Reasoning = "xhigh";
         var prepared = AnthropicParity.Prepare("claude-sonnet-4-6", options);
-        Assert.Equal("max", prepared.Body["output_config"]!["effort"]!.GetValue<string>());
+        Assert.Equal("high", prepared.Body["output_config"]!["effort"]!.GetValue<string>());
+        Assert.Contains(prepared.Warnings, warning =>
+            warning.Type == "compatibility"
+            && warning.Feature == "reasoning"
+            && warning.Details
+                == "reasoning \"xhigh\" is not directly supported by this model. mapped to effort \"high\"."
+        );
     }
 
     public static void ReasoningMinimalWarning()

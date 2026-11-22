@@ -2,6 +2,8 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using Vercel.AI.Provider;
+
 namespace Vercel.AI.Tests.OpenAICompatibleChatLanguageModelTests;
 
 /// <summary>Port of <c>openai-compatible-chat-language-model.test.ts</c> &gt; <c>doGenerate &gt; response format</c>.</summary>
@@ -67,6 +69,66 @@ public sealed class DoGenerateResponseFormatTests
         var body = UpstreamChat.Body(capture);
         Assert.True(body.ContainsKey("reasoning_effort"));
         Assert.Null(body["reasoning_effort"]);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/openai-compatible/src/chat/openai-compatible-chat-language-model.test.ts::doGenerate > response format::should map top-level reasoning with mapReasoning",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2"
+    )]
+    public async Task Should_map_top_level_reasoning_with_mapReasoning()
+    {
+        var capture = new UpstreamCapture();
+        var options = UpstreamChat.Prompt();
+        options.Reasoning = "xhigh";
+
+        var result = await UpstreamChat
+            .Model(capture, "test-provider", "gpt-5", configure: settings => settings.MapReasoning =
+                    (_, reasoning, warnings) =>
+                    {
+                        warnings.Add(new CallWarning("compatibility", "reasoning", null));
+                        return "mapped-" + reasoning;
+                    })
+            .DoGenerateAsync(options, CancellationToken.None);
+
+        Assert.Equal(
+            "mapped-xhigh",
+            UpstreamChat.Body(capture)["reasoning_effort"]!.GetValue<string>()
+        );
+        Assert.Contains(result.Warnings, warning =>
+            warning.Type == "compatibility" && warning.Feature == "reasoning"
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/openai-compatible/src/chat/openai-compatible-chat-language-model.test.ts::doGenerate > response format::should not apply mapReasoning to providerOptions reasoningEffort",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2"
+    )]
+    public async Task Should_not_apply_mapReasoning_to_providerOptions_reasoningEffort()
+    {
+        var capture = new UpstreamCapture();
+        var options = UpstreamChat.Prompt();
+        options.Reasoning = "medium";
+        options.ProviderOptions = UpstreamChat.Bag(
+            "test-provider",
+            "{\"reasoningEffort\":\"max\"}"
+        );
+        var calls = 0;
+
+        await UpstreamChat
+            .Model(capture, "test-provider", "gpt-5", configure: settings => settings.MapReasoning =
+                    (_, _, _) =>
+                    {
+                        calls++;
+                        return "mapped";
+                    })
+            .DoGenerateAsync(options, CancellationToken.None);
+
+        Assert.Equal("max", UpstreamChat.Body(capture)["reasoning_effort"]!.GetValue<string>());
+        Assert.Equal(0, calls);
     }
 
     [Fact]
