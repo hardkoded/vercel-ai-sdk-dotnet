@@ -1770,10 +1770,33 @@ public sealed class GenerateTextStartEvent
     public OutputSpec? Output { get; init; }
 
     /// <summary>Tool context, keyed by tool name. Maps to <c>toolsContext</c>.</summary>
-    public IReadOnlyDictionary<string, JsonElement>? ToolsContext { get; init; }
+    public IReadOnlyDictionary<string, JsonElement>? ToolsContext
+    {
+        get => _toolsContext;
+        init => _toolsContext = value;
+    }
 
     /// <summary>User-defined runtime context. Maps to <c>runtimeContext</c>.</summary>
-    public IReadOnlyDictionary<string, object?>? RuntimeContext { get; init; }
+    public IReadOnlyDictionary<string, object?>? RuntimeContext
+    {
+        get => _runtimeContext;
+        init => _runtimeContext = value;
+    }
+
+    private IReadOnlyDictionary<string, JsonElement>? _toolsContext;
+    private IReadOnlyDictionary<string, object?>? _runtimeContext;
+
+    // A copy of the event with other contexts. Telemetry hands integrations the filtered contexts and leaves the original event alone.
+    internal GenerateTextStartEvent WithContexts(
+        IReadOnlyDictionary<string, object?> runtimeContext,
+        IReadOnlyDictionary<string, JsonElement> toolsContext
+    )
+    {
+        var copy = (GenerateTextStartEvent)MemberwiseClone();
+        copy._runtimeContext = runtimeContext;
+        copy._toolsContext = toolsContext;
+        return copy;
+    }
 }
 
 /// <summary>Passed to <see cref="GenerateTextOptions.OnStepStart"/> when a step begins, before the provider is called. Maps to <c>GenerateTextStepStartEvent</c>.</summary>
@@ -1819,10 +1842,33 @@ public sealed class GenerateTextStepStartEvent
     public OutputSpec? Output { get; init; }
 
     /// <summary>User-defined runtime context. Maps to <c>runtimeContext</c>.</summary>
-    public IReadOnlyDictionary<string, object?>? RuntimeContext { get; init; }
+    public IReadOnlyDictionary<string, object?>? RuntimeContext
+    {
+        get => _runtimeContext;
+        init => _runtimeContext = value;
+    }
 
     /// <summary>Tool context, keyed by tool name. Maps to <c>toolsContext</c>.</summary>
-    public IReadOnlyDictionary<string, JsonElement>? ToolsContext { get; init; }
+    public IReadOnlyDictionary<string, JsonElement>? ToolsContext
+    {
+        get => _toolsContext;
+        init => _toolsContext = value;
+    }
+
+    private IReadOnlyDictionary<string, object?>? _runtimeContext;
+    private IReadOnlyDictionary<string, JsonElement>? _toolsContext;
+
+    // A copy of the event with other contexts. Telemetry hands integrations the filtered contexts and leaves the original event alone.
+    internal GenerateTextStepStartEvent WithContexts(
+        IReadOnlyDictionary<string, object?> runtimeContext,
+        IReadOnlyDictionary<string, JsonElement> toolsContext
+    )
+    {
+        var copy = (GenerateTextStepStartEvent)MemberwiseClone();
+        copy._runtimeContext = runtimeContext;
+        copy._toolsContext = toolsContext;
+        return copy;
+    }
 }
 
 /// <summary>Passed to <see cref="GenerateTextOptions.OnLanguageModelCallStart"/> before the model is called.</summary>

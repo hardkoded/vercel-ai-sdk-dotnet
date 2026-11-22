@@ -265,11 +265,41 @@ internal static class ToolExecutionCallbacks
 {
     internal static IReadOnlyList<Func<ToolExecutionStartEvent, CancellationToken, Task>>? Start(
         GenerateTextOptions options
-    ) => options.OnToolExecutionStart == null ? null : [options.OnToolExecutionStart];
+    ) =>
+        Combine(
+            options.OnToolExecutionStart,
+            TelemetryDispatcher.Create(options).OnToolExecutionStart
+        );
 
     internal static IReadOnlyList<Func<ToolExecutionEndEvent, CancellationToken, Task>>? End(
         GenerateTextOptions options
-    ) => options.OnToolExecutionEnd == null ? null : [options.OnToolExecutionEnd];
+    ) =>
+        Combine(options.OnToolExecutionEnd, TelemetryDispatcher.Create(options).OnToolExecutionEnd);
+
+    // Maps to `callbacks: [onToolExecutionStart, telemetryDispatcher.onToolExecutionStart]`.
+    private static IReadOnlyList<Func<TEvent, CancellationToken, Task>>? Combine<TEvent>(
+        Func<TEvent, CancellationToken, Task>? user,
+        Func<TEvent, CancellationToken, Task>? telemetry
+    )
+    {
+        if (user == null && telemetry == null)
+        {
+            return null;
+        }
+
+        var list = new List<Func<TEvent, CancellationToken, Task>>();
+        if (user != null)
+        {
+            list.Add(user);
+        }
+
+        if (telemetry != null)
+        {
+            list.Add(telemetry);
+        }
+
+        return list;
+    }
 }
 
 /// <summary>

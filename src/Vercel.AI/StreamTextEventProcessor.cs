@@ -166,7 +166,7 @@ internal sealed class StreamTextEventProcessor
             _usageSource.TrySetException(exception);
             _stepsSource.TrySetException(exception);
             var streamError = exception;
-            if (_options.OnError != null || _options.OnErrorRetry != null)
+            if (HasOnError(_options))
             {
                 try
                 {
@@ -356,9 +356,14 @@ internal sealed class StreamTextEventProcessor
         }
     }
 
+    private static bool HasOnError(StreamTextOptions options) =>
+        options.OnError != null
+        || options.OnErrorRetry != null
+        || TelemetryDispatcher.Create(options).OnError != null;
+
     private async Task NotifyErrorAsync(ErrorPart error)
     {
-        if (_options.OnError == null && _options.OnErrorRetry == null)
+        if (!HasOnError(_options))
         {
             return;
         }
@@ -559,6 +564,11 @@ internal sealed class StreamTextEventProcessor
         if (Generation.ResolveOnStepEnd(_options) is { } onStepEnd)
         {
             await onStepEnd(step, Token).ConfigureAwait(false);
+        }
+
+        if (TelemetryDispatcher.Create(_options).OnStepEnd is { } telemetryOnStepEnd)
+        {
+            await telemetryOnStepEnd(step, Token).ConfigureAwait(false);
         }
 
         LogWarnings.Log(

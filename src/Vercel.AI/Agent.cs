@@ -136,7 +136,9 @@ public sealed class Agent : IAgent
         prepared.Headers = AgentHeaders(prepared.Headers);
         prepared.Timeout = timeout ?? prepared.Timeout;
         prepared.ExperimentalSteering = experimentalSteering ?? prepared.ExperimentalSteering;
-        prepared.OnStepEnd = MergeStepEnd(Options.OnStepEnd, prepared.OnStepEnd);
+        prepared.OnStepEnd = MergeCallbacks(Options.OnStepEnd, prepared.OnStepEnd);
+        prepared.OnStart = MergeCallbacks(Options.OnStart, prepared.OnStart);
+        prepared.OnEnd = MergeCallbacks(Options.OnEnd, prepared.OnEnd);
 
         return await _client.GenerateTextAsync(prepared, cancellationToken).ConfigureAwait(false);
     }
@@ -277,8 +279,11 @@ public sealed class Agent : IAgent
                 PrepareStep = prepared.PrepareStep,
                 ExperimentalSteering = experimentalSteering ?? prepared.ExperimentalSteering,
                 ExperimentalSandbox = prepared.ExperimentalSandbox,
-                OnStepEnd = MergeStepEnd(Options.OnStepEnd, onStepEnd ?? prepared.OnStepEnd),
-                OnEnd = prepared.OnEnd,
+                OnStepEnd = MergeCallbacks(Options.OnStepEnd, onStepEnd ?? prepared.OnStepEnd),
+                OnStart = MergeCallbacks(Options.OnStart, prepared.OnStart),
+                OnEnd = MergeCallbacks(Options.OnEnd, prepared.OnEnd),
+                Telemetry = prepared.Telemetry,
+                ExperimentalTelemetry = prepared.ExperimentalTelemetry,
 #pragma warning disable CS0618 // OnFinish is the deprecated alias of OnEnd
                 OnFinish = prepared.OnFinish,
 #pragma warning restore CS0618
@@ -308,9 +313,9 @@ public sealed class Agent : IAgent
             .WithUserAgentSuffix(headers, "ai-sdk-agent/tool-loop")
             .ToDictionary(pair => pair.Key, pair => (string?)pair.Value);
 
-    private static Func<StepResult, CancellationToken, Task>? MergeStepEnd(
-        Func<StepResult, CancellationToken, Task>? settings,
-        Func<StepResult, CancellationToken, Task>? call
+    private static Func<TEvent, CancellationToken, Task>? MergeCallbacks<TEvent>(
+        Func<TEvent, CancellationToken, Task>? settings,
+        Func<TEvent, CancellationToken, Task>? call
     )
     {
         if (settings is null || call is null)
@@ -328,8 +333,8 @@ public sealed class Agent : IAgent
         };
 
         static async Task Settle(
-            Func<StepResult, CancellationToken, Task> callback,
-            StepResult result,
+            Func<TEvent, CancellationToken, Task> callback,
+            TEvent result,
             CancellationToken cancellationToken
         )
         {
@@ -379,6 +384,7 @@ public sealed class Agent : IAgent
             ToolApproval = Options.ToolApproval,
             ToolsContext = Options.ToolsContext,
             RuntimeContext = Options.RuntimeContext,
+            Telemetry = Options.Telemetry,
             ExperimentalToolApprovalSecret = Options.ExperimentalToolApprovalSecret,
             ExperimentalToolApprovalSecretBytes = Options.ExperimentalToolApprovalSecretBytes,
             ExperimentalSandbox = experimentalSandbox,
@@ -414,6 +420,21 @@ public class AgentOptions
     /// Maps to <c>onStepEnd</c> of the <c>ToolLoopAgent</c> settings.
     /// </summary>
     public Func<StepResult, CancellationToken, Task>? OnStepEnd { get; set; }
+
+    /// <summary>Telemetry configuration of every call. See <see cref="GenerateTextOptions.Telemetry"/>. <see cref="PrepareCall"/> can replace it. Maps to <c>telemetry</c>.</summary>
+    public TelemetryOptions? Telemetry { get; set; }
+
+    /// <summary>
+    /// Called when a generation begins. It runs together with the callback of the call, and a failure of one does not stop the other.
+    /// Maps to <c>onStart</c> of the <c>ToolLoopAgent</c> settings.
+    /// </summary>
+    public Func<GenerateTextStartEvent, CancellationToken, Task>? OnStart { get; set; }
+
+    /// <summary>
+    /// Called when a generation completes. It runs together with the callback of the call, and a failure of one does not stop the other.
+    /// Maps to <c>onFinish</c> of the <c>ToolLoopAgent</c> settings.
+    /// </summary>
+    public Func<GenerateTextResult, CancellationToken, Task>? OnEnd { get; set; }
 
     /// <summary>
     /// Configures whether tools require approval before they run. See <see cref="GenerateTextOptions.ToolApproval"/>.
