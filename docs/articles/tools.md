@@ -427,3 +427,28 @@ var prepared = PromptTools.PrepareTools(tools, experimentalSandbox: session);
 ```
 
 **Breaking change:** `ToolDescriptionContext.SandboxDescription` and the `sandboxDescription` parameter of `PromptTools.PrepareTools` are removed. Pass the session as `experimentalSandbox` and read `context.ExperimentalSandbox?.Description`.
+
+## Gateway DeepSeek search and fetch tools
+
+`GatewayDeepSeekSearch.Create(config)` and `GatewayDeepSeekFetch.Create(config)` declare the AI Gateway's DeepSeek Search and Fetch tools. They are provider-defined tools (`gateway.deepseek_search` and `gateway.deepseek_fetch`) that the Gateway executes for any model, separate from native model web search. Search runs a web search through DeepSeek's standalone Search API. Fetch returns a page as Markdown.
+
+```csharp
+var search = GatewayDeepSeekSearch.Create(new GatewayDeepSeekSearchConfig { Count = 5, NeedContent = true });
+var fetch = GatewayDeepSeekFetch.Create(new GatewayDeepSeekFetchConfig { Url = "https://example.com" });
+```
+
+`GatewayDeepSeekSearchConfig` is developer-only: the model can't see or set it, except where it pins an input.
+
+- **Query** _string?_ - Pin the query instead of letting the model choose it.
+- **Count** _int?_ - Maximum number of results, 1-50 (default 10).
+- **NeedContent** _bool?_ - Include available page content (default `false`).
+- **OriQuestion** _string?_ - Original question, 1-128 Unicode characters. Set `OriQuestionNull` to send `null` (no question).
+- **Localization** _string?_ - IP address used to localize results. It is developer-only and not in the tool input schema.
+
+`GatewayDeepSeekFetchConfig.Url` pins the target URL instead of letting the model choose it.
+
+The model fills the input schema. Search takes `query`, `count`, `need_content` and `ori_question` in snake_case. Fetch takes `url` (at most 8192 characters, HTTP(S) only, no username or password). The Gateway validates the values, so the schemas do not limit them.
+
+Deserialize a tool output into `DeepSeekSearchOutput` or `DeepSeekFetchOutput`. Each holds a `Response` (`DeepSeekSearchResponse` with `Results`, or `DeepSeekFetchResponse` with `Title` and Markdown `Content`) or an `Error` (`GatewayToolError`). Fields the schema does not declare stay in `AdditionalProperties`.
+
+Search queries support the operators `site:`, `-site:`, `lang:`, `after:`, `before:` and quoted phrases, and must be 1-128 Unicode characters and not all whitespace. An empty `Results` list is a successful search with no matches. Result metadata (`Date`, `SiteName`, `SiteIcon` and so on) can be `null`. A tool failure comes back as a `tool-error` part in the step content, not in the tool results.
