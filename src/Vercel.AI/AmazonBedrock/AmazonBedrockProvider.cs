@@ -1060,10 +1060,12 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
 
             if (
                 (
-                    (thinkingType == "disabled" && capabilities.RejectsThinkingDisabledAboveHighEffort)
+                    (
+                        thinkingType == "disabled"
+                        && capabilities.RejectsThinkingDisabledAboveHighEffort
+                    )
                     || thinkingType == "between_tools"
-                )
-                && (effort == "xhigh" || effort == "max")
+                ) && (effort == "xhigh" || effort == "max")
             )
             {
                 warnings.Add(
@@ -1552,7 +1554,8 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
 
     private static string? ReadAdditionalOutputConfigEffort(JsonObject? additional)
     {
-        return additional?["output_config"] is JsonObject outputConfig
+        return
+            additional?["output_config"] is JsonObject outputConfig
             && outputConfig["effort"] is JsonValue effort
             && effort.TryGetValue<string>(out var value)
             ? value

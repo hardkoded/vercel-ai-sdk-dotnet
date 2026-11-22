@@ -133,7 +133,8 @@ public sealed class DisabledAnthropicThinkingTests
     [InlineData(Sonnet55ModelId, "between_tools")]
     [InlineData(Opus55ModelId, "adaptive")]
     [UpstreamTest(
-        Prefix + "should warn and preserve effort when explicit disabled thinking is rejected on %s",
+        Prefix
+            + "should warn and preserve effort when explicit disabled thinking is rejected on %s",
         Coverage = UpstreamCoverage.Covered,
         Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2"
     )]
@@ -153,7 +154,9 @@ public sealed class DisabledAnthropicThinkingTests
         );
 
         AssertEqual(
-            "{\"thinking\":{\"type\":\"" + thinkingType + "\"},\"output_config\":{\"effort\":\"high\"}}",
+            "{\"thinking\":{\"type\":\""
+                + thinkingType
+                + "\"},\"output_config\":{\"effort\":\"high\"}}",
             Fields(body)!.Value
         );
         var warning = Assert.Single(result.Warnings);
@@ -185,7 +188,9 @@ public sealed class DisabledAnthropicThinkingTests
                     "{\"amazonBedrock\":{"
                         + (
                             typedEffort != null
-                                ? "\"reasoningConfig\":{\"maxReasoningEffort\":\"" + typedEffort + "\"},"
+                                ? "\"reasoningConfig\":{\"maxReasoningEffort\":\""
+                                    + typedEffort
+                                    + "\"},"
                                 : ""
                         )
                         + "\"additionalModelRequestFields\":{\"output_config\":{\"effort\":\"max\"}}}}"
@@ -225,11 +230,7 @@ public sealed class DisabledAnthropicThinkingTests
             {
                 ProviderOptions = Options(
                     "{\"amazonBedrock\":{\"reasoningConfig\":{\"type\":\"disabled\""
-                        + (
-                            source == "typed"
-                                ? ",\"maxReasoningEffort\":\"" + effort + "\""
-                                : ""
-                        )
+                        + (source == "typed" ? ",\"maxReasoningEffort\":\"" + effort + "\"" : "")
                         + "},\"additionalModelRequestFields\":{\"custom\":\"preserved\",\"output_config\":{\"custom\":\"also-preserved\""
                         + (source == "raw" ? ",\"effort\":\"" + effort + "\"" : "")
                         + "}}}}"
@@ -243,16 +244,14 @@ public sealed class DisabledAnthropicThinkingTests
                 + "\"},\"output_config\":{\"custom\":\"also-preserved\",\"effort\":\"high\"}}",
             Fields(body)!.Value
         );
-        Assert.Contains(
-            result.Warnings,
-            warning =>
-                warning.Type == "unsupported"
-                && warning.Feature
-                    == (
-                        source == "typed"
-                            ? "providerOptions.amazonBedrock.reasoningConfig.maxReasoningEffort"
-                            : "providerOptions.amazonBedrock.additionalModelRequestFields.output_config.effort"
-                    )
+        Assert.Contains(result.Warnings, warning =>
+            warning.Type == "unsupported"
+            && warning.Feature
+                == (
+                    source == "typed"
+                        ? "providerOptions.amazonBedrock.reasoningConfig.maxReasoningEffort"
+                        : "providerOptions.amazonBedrock.additionalModelRequestFields.output_config.effort"
+                )
         );
     }
 
