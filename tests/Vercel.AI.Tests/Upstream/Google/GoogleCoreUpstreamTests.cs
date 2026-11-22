@@ -217,7 +217,37 @@ public sealed class GoogleCoreUpstreamTests
         var accumulator = new GoogleJsonAccumulator();
         accumulator.Process(new[] { Arg("$.location", "Boston", willContinue: true) });
         var update = accumulator.Process(new[] { Arg("$.location", ", MA") });
-        AssertUpdate(update, "{\"location\":\"Boston, MA\"}", ", MA");
+        AssertUpdate(update, "{\"location\":\"Boston, MA\"}", ", MA\"");
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/google/src/google-json-accumulator.test.ts::GoogleJSONAccumulator > flat paths::should close a continued string on its final chunk",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "9f108f8a570c80fde8a72059a2d35c707c39b639"
+    )]
+    public void Closes_a_continued_string_on_its_final_chunk()
+    {
+        var accumulator = new GoogleJsonAccumulator();
+        accumulator.Process(new[] { Arg("$.location", "Bos", willContinue: true) });
+        var finalChunk = accumulator.Process(new[] { Arg("$.location", "ton") });
+        Assert.Equal("ton\"", finalChunk.TextDelta);
+        Assert.Equal("}", accumulator.Finalize().ClosingDelta);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/google/src/google-json-accumulator.test.ts::GoogleJSONAccumulator > flat paths::should close a continued string on an empty final chunk",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "9f108f8a570c80fde8a72059a2d35c707c39b639"
+    )]
+    public void Closes_a_continued_string_on_an_empty_final_chunk()
+    {
+        var accumulator = new GoogleJsonAccumulator();
+        accumulator.Process(new[] { Arg("$.location", "Boston", willContinue: true) });
+        var finalChunk = accumulator.Process(new[] { Arg("$.location", string.Empty) });
+        Assert.Equal("\"", finalChunk.TextDelta);
+        Assert.Equal("}", accumulator.Finalize().ClosingDelta);
     }
 
     [Fact]
@@ -318,7 +348,7 @@ public sealed class GoogleCoreUpstreamTests
         var accumulator = new GoogleJsonAccumulator();
         accumulator.Process(new[] { Arg("$.query", "Boston \"Lo", willContinue: true) });
         var update = accumulator.Process(new[] { Arg("$.query", "gan\"") });
-        AssertUpdate(update, "{\"query\":\"Boston \\\"Logan\\\"\"}", "gan\\\"");
+        AssertUpdate(update, "{\"query\":\"Boston \\\"Logan\\\"\"}", "gan\\\"\"");
     }
 
     [Fact]
@@ -471,7 +501,7 @@ public sealed class GoogleCoreUpstreamTests
         AssertUpdate(
             update,
             "{\"recipe\":{\"steps\":[\"Preheat oven to 375\u00b0F.\"]}}",
-            " to 375\u00b0F."
+            " to 375\u00b0F.\""
         );
     }
 
@@ -588,7 +618,7 @@ public sealed class GoogleCoreUpstreamTests
         accumulator.Process(new[] { Arg("$.location", "Boston", willContinue: true) });
         accumulator.Process(new[] { Arg("$.location", ", MA") });
         var final = accumulator.Finalize();
-        Assert.Equal("\"}", final.ClosingDelta);
+        Assert.Equal("}", final.ClosingDelta);
         Assert.Equal("{\"location\":\"Boston, MA\"}", final.FinalJson);
     }
 
