@@ -405,11 +405,11 @@ public sealed class GoogleVertexVideoModel : IVideoModel, IVideoCaller
                 parameters["gcsOutputDirectory"] = googleVertexOptions.GcsOutputDirectory;
             }
 
-            foreach (var (key, value) in googleVertexOptions.AdditionalProperties)
+            foreach (var entry in googleVertexOptions.AdditionalProperties)
             {
-                if (!HandledOptions.Contains(key))
+                if (!HandledOptions.Contains(entry.Key))
                 {
-                    parameters[key] = JsonNode.Parse(value.GetRawText());
+                    parameters[entry.Key] = JsonNode.Parse(entry.Value.GetRawText());
                 }
             }
         }
