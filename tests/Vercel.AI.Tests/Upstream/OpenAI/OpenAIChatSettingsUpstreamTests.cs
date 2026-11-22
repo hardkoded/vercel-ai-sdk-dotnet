@@ -321,26 +321,83 @@ public sealed class OpenAIChatSettingsUpstreamTests
         }
     }
 
-    [Fact]
+    [Theory]
+    [InlineData("none")]
+    [InlineData("minimal")]
     [UpstreamTest(
-        Reasoning + "should omit unsupported GPT-6 reasoning effort %s",
+        Reasoning + "should map unsupported GPT-6 reasoning %s to the lowest supported effort",
         Coverage = UpstreamCoverage.Covered
     )]
-    public void OmitsUnsupportedGpt6Efforts()
+    public void MapsUnsupportedGpt6ReasoningToTheLowestSupportedEffort(string reasoning)
     {
-        foreach (var effort in new[] { "none", "minimal" })
-        {
-            var prepared = OpenAIChatLanguageModel.Prepare(
-                "gpt-6-astra",
-                Call("{\"reasoningEffort\":\"" + effort + "\"}")
-            );
-            Assert.Null(prepared.Body["reasoning_effort"]);
-            Assert.Equal("reasoningEffort", prepared.Warnings[0].Feature);
-            Assert.Equal(
-                "gpt-6-astra only supports the following reasoning efforts: low, medium, high, xhigh, max",
-                prepared.Warnings[0].Details
-            );
-        }
+        var prepared = OpenAIChatLanguageModel.Prepare(
+            "gpt-6-astra",
+            new LanguageModelCallOptions
+            {
+                Prompt = OpenAIUpstream.Hello().Prompt,
+                Reasoning = reasoning,
+            }
+        );
+        Assert.Equal("low", prepared.Body["reasoning_effort"]!.GetValue<string>());
+        var warning = Assert.Single(prepared.Warnings);
+        Assert.Equal("compatibility", warning.Type);
+        Assert.Equal("reasoning", warning.Feature);
+        Assert.Equal(
+            "reasoning \""
+                + reasoning
+                + "\" is not directly supported by this model. mapped to effort \"low\".",
+            warning.Details
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Generate + "should map unsupported top-level reasoning for GPT-5 models",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void Should_map_unsupported_top_level_reasoning_for_GPT_5_models()
+    {
+        var prepared = OpenAIChatLanguageModel.Prepare(
+            "gpt-5.5",
+            new LanguageModelCallOptions
+            {
+                Prompt = OpenAIUpstream.Hello().Prompt,
+                Reasoning = "minimal",
+            }
+        );
+        Assert.Equal("low", prepared.Body["reasoning_effort"]!.GetValue<string>());
+        var warning = Assert.Single(prepared.Warnings);
+        Assert.Equal("compatibility", warning.Type);
+        Assert.Equal("reasoning", warning.Feature);
+        Assert.Equal(
+            "reasoning \"minimal\" is not directly supported by this model. mapped to effort \"low\".",
+            warning.Details
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Generate + "should map max reasoning to xhigh for GPT-6 models",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void Should_map_max_reasoning_to_xhigh_for_GPT_6_models()
+    {
+        var prepared = OpenAIChatLanguageModel.Prepare(
+            "gpt-6-sol",
+            new LanguageModelCallOptions
+            {
+                Prompt = OpenAIUpstream.Hello().Prompt,
+                Reasoning = "max",
+            }
+        );
+        Assert.Equal("xhigh", prepared.Body["reasoning_effort"]!.GetValue<string>());
+        var warning = Assert.Single(prepared.Warnings);
+        Assert.Equal("compatibility", warning.Type);
+        Assert.Equal("reasoning", warning.Feature);
+        Assert.Equal(
+            "reasoning \"max\" is not directly supported by this model. mapped to effort \"xhigh\".",
+            warning.Details
+        );
     }
 
     [Fact]

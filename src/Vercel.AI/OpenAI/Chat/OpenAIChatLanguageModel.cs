@@ -136,7 +136,7 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
             providerOptionsNames.ToArray()
         );
         var capabilities = OpenAILanguageModelCapabilities.ForModel(modelId);
-        var effort = ResolveEffort(openai, options.Reasoning, capabilities, modelId, warnings);
+        var effort = ResolveEffort(openai, options.Reasoning, capabilities, warnings);
         var reasoning = OpenAIJson.Bool(openai, "forceReasoning") ?? capabilities.IsReasoningModel;
         if (options.TopK != null)
         {
@@ -238,10 +238,7 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
         Copy(body, "prompt_cache_retention", OpenAIJson.String(openai, "promptCacheRetention"));
         Copy(body, "safety_identifier", OpenAIJson.String(openai, "safetyIdentifier"));
 
-        if (
-            capabilities.SupportedReasoningEfforts != null
-            && body["prompt_cache_retention"] != null
-        )
+        if (capabilities.SupportsConfigurationUpdate && body["prompt_cache_retention"] != null)
         {
             body.Remove("prompt_cache_retention");
             warnings.Add(
@@ -730,35 +727,19 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
         JsonElement? openai,
         string? reasoning,
         OpenAILanguageModelCapabilities capabilities,
-        string modelId,
         List<OpenAICallWarning> warnings
     )
     {
-        var effort = OpenAIJson.String(openai, "reasoningEffort");
-        if (effort == null && !string.IsNullOrEmpty(reasoning) && reasoning != "provider-default")
-        {
-            effort = reasoning;
-        }
-
-        if (
-            effort != null
-            && capabilities.SupportedReasoningEfforts != null
-            && !Contains(capabilities.SupportedReasoningEfforts, effort)
-        )
-        {
-            warnings.Add(
-                new OpenAICallWarning(
-                    "unsupported",
-                    "reasoningEffort",
-                    modelId
-                        + " only supports the following reasoning efforts: "
-                        + string.Join(", ", capabilities.SupportedReasoningEfforts)
-                )
-            );
-            return null;
-        }
-
-        return effort;
+        // Only the Responses API supports `max`.
+        var supported = capabilities
+            .SupportedReasoningEfforts?.Where(effort => effort != "max")
+            .ToList();
+        return OpenAIReasoningEffortResolver.ResolveOpenAIReasoningEffort(
+            OpenAIJson.String(openai, "reasoningEffort"),
+            reasoning,
+            supported,
+            warnings
+        );
     }
 
     private static bool Contains(IReadOnlyList<string> values, string effort)
