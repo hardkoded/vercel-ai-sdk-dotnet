@@ -2,6 +2,8 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using Vercel.AI.GenerateObject;
+
 namespace Vercel.AI;
 
 /// <summary>
@@ -12,6 +14,19 @@ internal sealed class TelemetryDispatcher
 {
     /// <summary>Whether the call has an enabled integration, which needs the content of the generation.</summary>
     public bool HasIntegrations { get; init; }
+
+    /// <summary>Maps to <c>onStart</c>. Null when no integration has it.</summary>
+    public Func<IOperationStartEvent, CancellationToken, Task>? OnStart { get; init; }
+
+    /// <summary>Maps to <c>onObjectStepStart</c>. Null when no integration has it.</summary>
+    public Func<
+        GenerateObjectStepStartEvent,
+        CancellationToken,
+        Task
+    >? OnObjectStepStart { get; init; }
+
+    /// <summary>Maps to <c>onObjectStepEnd</c>. Null when no integration has it.</summary>
+    public Func<GenerateObjectStepEndEvent, CancellationToken, Task>? OnObjectStepEnd { get; init; }
 
     /// <summary>Maps to <c>onEnd</c>. Null when no integration has it.</summary>
     public Func<GenerateTextResult, CancellationToken, Task>? OnEnd { get; init; }
@@ -45,6 +60,22 @@ internal sealed class TelemetryDispatcher
 #pragma warning restore CS0618
     }
 
+    /// <summary>Creates the dispatcher of an object generation call.</summary>
+    internal static TelemetryDispatcher Create<T>(GenerateObjectOptions<T> options)
+    {
+#pragma warning disable CS0618 // the deprecated alias is read like its replacement
+        return Create(options.Telemetry ?? options.ExperimentalTelemetry);
+#pragma warning restore CS0618
+    }
+
+    /// <summary>Creates the dispatcher of an object streaming call.</summary>
+    internal static TelemetryDispatcher Create<T>(StreamObjectOptions<T> options)
+    {
+#pragma warning disable CS0618 // the deprecated alias is read like its replacement
+        return Create(options.Telemetry ?? options.ExperimentalTelemetry);
+#pragma warning restore CS0618
+    }
+
     /// <summary>Creates the dispatcher of a call. Maps to <c>createTelemetryDispatcher</c>.</summary>
     internal static TelemetryDispatcher Create(TelemetryOptions? telemetry)
     {
@@ -58,6 +89,9 @@ internal sealed class TelemetryDispatcher
         return new TelemetryDispatcher
         {
             HasIntegrations = integrations.Count > 0,
+            OnStart = Merge(integrations.Select(i => i.OnStart)),
+            OnObjectStepStart = Merge(integrations.Select(i => i.OnObjectStepStart)),
+            OnObjectStepEnd = Merge(integrations.Select(i => i.OnObjectStepEnd)),
             OnEnd = Filter<GenerateTextResult>(Merge(integrations.Select(i => i.OnEnd)), result =>
                 FilterResult(result, telemetry)
             ),
