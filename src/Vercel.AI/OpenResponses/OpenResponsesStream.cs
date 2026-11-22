@@ -22,6 +22,11 @@ internal static class OpenResponsesResults
             "input_tokens_details",
             "cached_tokens"
         );
+        var cacheWriteTokens = OpenAIJson.NestedInt(
+            usage,
+            "input_tokens_details",
+            "cache_write_tokens"
+        );
         var outputTokens = OpenAIJson.Int(usage, "output_tokens");
         var reasoningTokens = OpenAIJson.NestedInt(
             usage,
@@ -33,9 +38,12 @@ internal static class OpenResponsesResults
             outputTokens,
             null,
             cacheReadTokens: cachedInputTokens,
+            cacheWriteTokens: cacheWriteTokens,
             reasoningTokens: reasoningTokens,
             raw: usage.Clone(),
-            noCacheInputTokens: (inputTokens ?? 0) - (cachedInputTokens ?? 0),
+            noCacheInputTokens: (inputTokens ?? 0)
+                - (cachedInputTokens ?? 0)
+                - (cacheWriteTokens ?? 0),
             textTokens: (outputTokens ?? 0) - (reasoningTokens ?? 0)
         );
     }
@@ -168,7 +176,7 @@ internal static class OpenResponsesResults
 /// <summary>Turns Open Responses stream events into language-model stream parts.</summary>
 internal sealed class OpenResponsesStream
 {
-    private static readonly JsonSerializerOptions s_relaxedJson = new()
+    internal static readonly JsonSerializerOptions RelaxedJson = new()
     {
         Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
@@ -319,7 +327,7 @@ internal sealed class OpenResponsesStream
                     new ToolCallStreamPart(
                         customDoneCallId,
                         customCall?.ToolName ?? OpenAIJson.String(item, "name") ?? string.Empty,
-                        JsonSerializer.Serialize(completeInput, s_relaxedJson),
+                        JsonSerializer.Serialize(completeInput, RelaxedJson),
                         OpenResponsesResults.ItemMetadata(_providerOptionsName, itemId)
                     )
                 );

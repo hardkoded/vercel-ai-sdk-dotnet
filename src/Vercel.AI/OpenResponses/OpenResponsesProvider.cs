@@ -40,6 +40,17 @@ public sealed class OpenResponsesOptions
     /// </summary>
     public string CustomToolId { get; set; } = "open-responses.custom";
 
+    /// <summary>
+    /// Whether the endpoint supports structured outputs (<c>text.format</c>). When false, a JSON response format is omitted
+    /// and reported as an unsupported <c>responseFormat</c> warning. Maps to <c>structuredOutputs</c>.
+    /// </summary>
+    public bool StructuredOutputs { get; set; } = true;
+
+    /// <summary>
+    /// Suffix appended to the <c>User-Agent</c> header. Defaults to <c>ai-sdk-open-responses/{version}</c>. Maps to <c>userAgentSuffix</c>.
+    /// </summary>
+    public string? UserAgentSuffix { get; set; }
+
     /// <summary>Extra headers sent with every request. A callback is resolved before each request.</summary>
     public Resolvable<IReadOnlyDictionary<string, string>>? Headers { get; set; }
 
@@ -332,7 +343,15 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
                 _provider.Options.CustomToolId
             )
         );
-        if (
+        var isJson =
+            options.JsonResponse
+            || options.JsonSchema
+                is { ValueKind: not JsonValueKind.Undefined and not JsonValueKind.Null };
+        if (isJson && !_provider.Options.StructuredOutputs)
+        {
+            warnings.Add(new CallWarning("unsupported", "responseFormat", null));
+        }
+        else if (
             options.JsonSchema is
             { ValueKind: not JsonValueKind.Undefined and not JsonValueKind.Null } schema
         )
@@ -742,7 +761,10 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
                         new GeneratedToolCall(
                             OpenAIJson.String(part, "call_id") ?? string.Empty,
                             OpenAIJson.String(part, "name") ?? string.Empty,
-                            JsonSerializer.Serialize(OpenAIJson.Child(part, "input")),
+                            JsonSerializer.Serialize(
+                                OpenAIJson.Child(part, "input"),
+                                OpenResponsesStream.RelaxedJson
+                            ),
                             OpenResponsesResults.ItemMetadata(
                                 _provider.Name,
                                 OpenAIJson.String(part, "id")
@@ -846,7 +868,17 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
             }
         }
 
-        return headers;
+        return ProviderValues
+            .WithUserAgentSuffix(
+                headers,
+                _provider.Options.UserAgentSuffix
+                    ?? "ai-sdk-open-responses/" + Operations.AiSdkVersion.Version
+            )
+            .ToDictionary(
+                pair => pair.Key,
+                pair => (string?)pair.Value,
+                StringComparer.OrdinalIgnoreCase
+            );
     }
 }
 

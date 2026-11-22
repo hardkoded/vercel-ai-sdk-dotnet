@@ -405,12 +405,13 @@ public sealed class QuiverAIParityTests
     [UpstreamTest(
         Provider + "creates language models and throws for unsupported embedding models",
         Coverage = UpstreamCoverage.Partial,
-        Note = "Both factories throw AiSdkException. The port has no NoSuchModelError or textEmbeddingModel alias."
+        Note = "The factory throws AiSdkException. The port has no NoSuchModelError or textEmbeddingModel alias."
     )]
-    public void ThrowsForUnsupportedModels()
+    public void CreatesLanguageModelsAndThrowsForUnsupportedEmbeddingModels()
     {
         var provider = CreateProvider(Handler());
-        Assert.Throws<AiSdkException>(() => provider.LanguageModel("chat-model"));
+        Assert.Equal("arrow-2", provider.LanguageModel("arrow-2").ModelId);
+        Assert.Equal("quiverai.responses", provider.LanguageModel("arrow-2-telos").Provider);
         Assert.Throws<AiSdkException>(() => provider.EmbeddingModel("embed-model"));
     }
 
