@@ -129,7 +129,7 @@ public sealed class BatchTests
         var api = new BatchFake();
         var error = await Assert.ThrowsAsync<InvalidArgumentException>(() =>
             Batch.StartBatchAsync(
-                new BatchRequestOptions
+                new StartBatchOptions
                 {
                     Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(api),
                     Requests = new[] { new BatchRequest("a", "audio", "model") },
@@ -158,7 +158,7 @@ public sealed class BatchTests
             Seed = 4,
         };
         await Batch.StartBatchAsync(
-            new BatchRequestOptions
+            new StartBatchOptions
             {
                 Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(api),
                 Requests = new[] { request },
@@ -185,7 +185,7 @@ public sealed class BatchTests
         try
         {
             var started = await Batch.StartBatchAsync(
-                new BatchRequestOptions
+                new StartBatchOptions
                 {
                     Requests = new[]
                     {
@@ -212,7 +212,7 @@ public sealed class BatchTests
     {
         var api = new BatchFake();
         await Batch.StartBatchAsync(
-            new BatchRequestOptions
+            new StartBatchOptions
             {
                 Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromProvider(
                     new BatchProvider(api)
@@ -240,7 +240,7 @@ public sealed class BatchTests
             Seed = 3,
         };
         var started = await Batch.StartBatchAsync(
-            new BatchRequestOptions
+            new StartBatchOptions
             {
                 Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(api),
                 Requests = new[] { request },
@@ -275,7 +275,7 @@ public sealed class BatchTests
     {
         var empty = await Assert.ThrowsAsync<InvalidArgumentException>(() =>
             Batch.StartBatchAsync(
-                new BatchRequestOptions
+                new StartBatchOptions
                 {
                     Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(new BatchFake()),
                     Requests = Array.Empty<BatchRequest>(),
@@ -285,7 +285,7 @@ public sealed class BatchTests
         Assert.Contains("requests must not be empty", empty.Message);
         var blank = await Assert.ThrowsAsync<InvalidArgumentException>(() =>
             Batch.StartBatchAsync(
-                new BatchRequestOptions
+                new StartBatchOptions
                 {
                     Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(new BatchFake()),
                     Requests = new[] { new BatchRequest("  ", "text", "model") },
@@ -295,7 +295,7 @@ public sealed class BatchTests
         Assert.Contains("request IDs must not be empty", blank.Message);
         var duplicate = await Assert.ThrowsAsync<InvalidArgumentException>(() =>
             Batch.StartBatchAsync(
-                new BatchRequestOptions
+                new StartBatchOptions
                 {
                     Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(new BatchFake()),
                     Requests = new[]
@@ -318,7 +318,7 @@ public sealed class BatchTests
     {
         var error = await Assert.ThrowsAsync<UnsupportedFunctionalityException>(() =>
             Batch.StartBatchAsync(
-                new BatchRequestOptions
+                new StartBatchOptions
                 {
                     Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromProvider(
                         new BatchProvider(null)
@@ -339,7 +339,7 @@ public sealed class BatchTests
     {
         var api = new BatchFake();
         await Batch.StartBatchAsync(
-            new BatchRequestOptions
+            new StartBatchOptions
             {
                 Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(api),
                 WebhookUrl = "https://example.com/hook",
@@ -368,7 +368,7 @@ public sealed class BatchTests
                 },
             };
             await Batch.StartBatchAsync(
-                new BatchRequestOptions
+                new StartBatchOptions
                 {
                     Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(api),
                     Requests = new[]
@@ -407,7 +407,7 @@ public sealed class BatchTests
         );
         var api = new BatchFake();
         await Batch.StartBatchAsync(
-            new BatchRequestOptions
+            new StartBatchOptions
             {
                 Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(api),
                 Requests = new[]
@@ -457,7 +457,7 @@ public sealed class BatchTests
         };
         var error = await Assert.ThrowsAsync<InvalidArgumentException>(() =>
             Batch.StartBatchAsync(
-                new BatchRequestOptions
+                new StartBatchOptions
                 {
                     Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(new BatchFake()),
                     Requests = new[] { first, second },
