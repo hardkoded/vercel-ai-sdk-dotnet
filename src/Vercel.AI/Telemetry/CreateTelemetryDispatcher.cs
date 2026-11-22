@@ -159,6 +159,7 @@ internal sealed class TelemetryDispatcher
                     IRecordingFilterableEndEvent filterable
                         when telemetry?.RecordInputs == false
                             || telemetry?.RecordOutputs == false => filterable.FilterTelemetryEvent(
+                        telemetry.RecordInputs == false,
                         telemetry.RecordOutputs == false
                     ),
                     _ => e,

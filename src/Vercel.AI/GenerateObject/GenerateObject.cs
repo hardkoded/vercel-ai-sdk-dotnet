@@ -448,8 +448,11 @@ public sealed class GenerateObjectEndEvent<T>
     /// <summary>Provider-specific response metadata.</summary>
     public JsonElement? ProviderMetadata { get; }
 
-    /// <summary>Maps to the object branches of <c>filterTelemetryEvent</c>: a copy without the output, the provider metadata and the error text.</summary>
-    IOperationEndEvent IRecordingFilterableEndEvent.FilterTelemetryEvent(bool hideOutputs)
+    /// <summary>Maps to the object branches of <c>filterTelemetryEvent</c>: a copy without the output, the provider metadata, the error text and the request and response bodies.</summary>
+    IOperationEndEvent IRecordingFilterableEndEvent.FilterTelemetryEvent(
+        bool hideInputs,
+        bool hideOutputs
+    )
     {
         return new GenerateObjectEndEvent<T>(
             CallId,
@@ -460,8 +463,19 @@ public sealed class GenerateObjectEndEvent<T>
             FinishReason,
             Usage,
             Warnings,
-            Request,
-            Response,
+            // The bodies can hold either inputs or outputs, so they are always dropped. The messages go with their flag.
+            new LanguageModelRequestMetadata
+            {
+                Url = Request.Url,
+                Messages = hideInputs ? [] : Request.Messages,
+            },
+            new StepResponse(
+                Response.Id,
+                Response.Timestamp,
+                Response.ModelId,
+                Response.Headers,
+                hideOutputs ? [] : Response.Messages
+            ),
             null
         )
         {
@@ -473,7 +487,7 @@ public sealed class GenerateObjectEndEvent<T>
 /// <summary>Filters an end event on a copy when <c>recordInputs</c> or <c>recordOutputs</c> is <c>false</c>.</summary>
 internal interface IRecordingFilterableEndEvent
 {
-    IOperationEndEvent FilterTelemetryEvent(bool hideOutputs);
+    IOperationEndEvent FilterTelemetryEvent(bool hideInputs, bool hideOutputs);
 }
 
 /// <summary>Result of a <c>generateObject</c> call.</summary>
