@@ -210,16 +210,18 @@ internal sealed class TelemetryDispatcher
             ),
             OnStart = Filter<IOperationStartEvent>(Merge(integrations.Select(i => i.OnStart)), e =>
                 e is GenerateTextStartEvent textStart
-                    ? textStart.WithContexts(
-                        FilterIncludedContextHelper.FilterIncludedContext(
-                            textStart.RuntimeContext,
-                            telemetry?.IncludeRuntimeContext
-                        ),
-                        FilterIncludedContextHelper.FilterToolsContext(
-                            textStart.ToolsContext,
-                            telemetry?.IncludeToolsContext
+                    ? textStart
+                        .WithContexts(
+                            FilterIncludedContextHelper.FilterIncludedContext(
+                                textStart.RuntimeContext,
+                                telemetry?.IncludeRuntimeContext
+                            ),
+                            FilterIncludedContextHelper.FilterToolsContext(
+                                textStart.ToolsContext,
+                                telemetry?.IncludeToolsContext
+                            )
                         )
-                    )
+                        .WithTelemetry(telemetry)
                     : e
             ),
             OnStepStart = Filter<GenerateTextStepStartEvent>(

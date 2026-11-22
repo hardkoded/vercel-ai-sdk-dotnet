@@ -1798,6 +1798,29 @@ public sealed class GenerateTextStartEvent : IOperationStartEvent
     private IReadOnlyDictionary<string, JsonElement>? _toolsContext;
     private IReadOnlyDictionary<string, object?>? _runtimeContext;
 
+    // Whether input recording was enabled for the call, as TelemetryOptions.RecordInputs set it. Set only on events sent to telemetry integrations. Maps to recordInputs.
+    internal bool? RecordInputs { get; private set; }
+
+    // Whether output recording was enabled for the call, as TelemetryOptions.RecordOutputs set it. Set only on events sent to telemetry integrations. Maps to recordOutputs.
+    internal bool? RecordOutputs { get; private set; }
+
+    // The TelemetryOptions.FunctionId of the call. Set only on events sent to telemetry integrations. Maps to functionId.
+    internal string? FunctionId { get; private set; }
+
+    // The version of the SDK that emitted the event. Set only on events sent to telemetry integrations. Maps to aiVersion.
+    internal string? AiVersion { get; private set; }
+
+    // A copy of the event with the recording flags of the call. Telemetry hands integrations the flags and leaves the original event alone.
+    internal GenerateTextStartEvent WithTelemetry(TelemetryOptions? telemetry)
+    {
+        var copy = (GenerateTextStartEvent)MemberwiseClone();
+        copy.RecordInputs = telemetry?.RecordInputs;
+        copy.RecordOutputs = telemetry?.RecordOutputs;
+        copy.FunctionId = telemetry?.FunctionId;
+        copy.AiVersion = Operations.AiSdkVersion.Version;
+        return copy;
+    }
+
     // A copy of the event with other contexts. Telemetry hands integrations the filtered contexts and leaves the original event alone.
     internal GenerateTextStartEvent WithContexts(
         IReadOnlyDictionary<string, object?> runtimeContext,
