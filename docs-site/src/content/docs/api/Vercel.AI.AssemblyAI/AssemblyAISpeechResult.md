@@ -23,7 +23,7 @@ Synthesized AssemblyAI audio.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L281)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L282)
 
 ## Constructors
 
@@ -52,7 +52,7 @@ Creates a speech result.
 | `providerMetadata` | [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 | `response` | [AssemblyAISpeechResponse](/api/Vercel.AI.AssemblyAI/AssemblyAISpeechResponse/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L284)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L285)
 
 ## Properties
 
@@ -71,7 +71,7 @@ Audio bytes.
 
 **Value:** [byte\[\]](https://learn.microsoft.com/dotnet/api/system.byte)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L304)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L305)
 
 <a id="Vercel_AI_AssemblyAI_AssemblyAISpeechResult_MediaType_"></a>
 <a id="Vercel_AI_AssemblyAI_AssemblyAISpeechResult_MediaType"></a>
@@ -88,7 +88,7 @@ Response media type.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L307)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L308)
 
 <a id="Vercel_AI_AssemblyAI_AssemblyAISpeechResult_ProviderMetadata_"></a>
 <a id="Vercel_AI_AssemblyAI_AssemblyAISpeechResult_ProviderMetadata"></a>
@@ -105,7 +105,7 @@ Response details under `assemblyai`: request id, model, voice, language, encodin
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L319)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L320)
 
 <a id="Vercel_AI_AssemblyAI_AssemblyAISpeechResult_RequestBody_"></a>
 <a id="Vercel_AI_AssemblyAI_AssemblyAISpeechResult_RequestBody"></a>
@@ -122,7 +122,7 @@ JSON request body.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L313)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L314)
 
 <a id="Vercel_AI_AssemblyAI_AssemblyAISpeechResult_Response_"></a>
 <a id="Vercel_AI_AssemblyAI_AssemblyAISpeechResult_Response"></a>
@@ -139,7 +139,7 @@ Response metadata.
 
 **Value:** [AssemblyAISpeechResponse](/api/Vercel.AI.AssemblyAI/AssemblyAISpeechResponse/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L322)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L323)
 
 <a id="Vercel_AI_AssemblyAI_AssemblyAISpeechResult_Usage_"></a>
 <a id="Vercel_AI_AssemblyAI_AssemblyAISpeechResult_Usage"></a>
@@ -156,7 +156,7 @@ Billed characters, when the response reports them.
 
 **Value:** [AudioUsage](/api/Vercel.AI.Provider/AudioUsage/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L316)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L317)
 
 <a id="Vercel_AI_AssemblyAI_AssemblyAISpeechResult_Warnings_"></a>
 <a id="Vercel_AI_AssemblyAI_AssemblyAISpeechResult_Warnings"></a>
@@ -173,4 +173,4 @@ Warnings for ignored settings.
 
 **Value:** [IReadOnlyList&lt;ModelWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L310)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L311)

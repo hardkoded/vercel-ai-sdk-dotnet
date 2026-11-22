@@ -23,7 +23,7 @@ AssemblyAI provider.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [ProviderBase](/api/Vercel.AI.Provider/ProviderBase/) → [OpenAICompatibleProvider](/api/Vercel.AI.OpenAICompatible/OpenAICompatibleProvider/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L425)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L426)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates a provider.
 | `httpClient` | [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient) |  |
 | `options` | [OpenAICompatibleOptions](/api/Vercel.AI.OpenAICompatible/OpenAICompatibleOptions/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L439)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L440)
 
 ## Fields
 
@@ -65,7 +65,7 @@ Default API origin.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L431)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L432)
 
 <a id="Vercel_AI_AssemblyAI_AssemblyAIProvider_DefaultSpeechBaseUrl"></a>
 
@@ -81,7 +81,7 @@ Default text-to-speech API origin.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L434)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L435)
 
 <a id="Vercel_AI_AssemblyAI_AssemblyAIProvider_ProviderId"></a>
 
@@ -97,7 +97,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L428)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L429)
 
 ## Methods
 
@@ -123,7 +123,7 @@ Creates a provider.
 
 **Returns:** [AssemblyAIProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L452)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L453)
 
 <a id="Vercel_AI_AssemblyAI_AssemblyAIProvider_LanguageModel_"></a>
 <a id="Vercel_AI_AssemblyAI_AssemblyAIProvider_LanguageModel_System_String_"></a>
@@ -146,7 +146,7 @@ Returns a language model.
 
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L446)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L447)
 
 <a id="Vercel_AI_AssemblyAI_AssemblyAIProvider_Speech_"></a>
 <a id="Vercel_AI_AssemblyAI_AssemblyAIProvider_Speech_System_String_"></a>
@@ -169,7 +169,7 @@ Creates the typed speech model.
 
 **Returns:** [AssemblyAIProvider.AssemblyAISpeechModel](/api/Vercel.AI.AssemblyAI/AssemblyAIProvider.AssemblyAISpeechModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L499)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L500)
 
 <a id="Vercel_AI_AssemblyAI_AssemblyAIProvider_SpeechModel_"></a>
 <a id="Vercel_AI_AssemblyAI_AssemblyAIProvider_SpeechModel_System_String_"></a>
@@ -192,7 +192,7 @@ Returns a speech model.
 
 **Returns:** [ISpeechModel](/api/Vercel.AI.Provider/ISpeechModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L496)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L497)
 
 <a id="Vercel_AI_AssemblyAI_AssemblyAIProvider_Transcription_"></a>
 <a id="Vercel_AI_AssemblyAI_AssemblyAIProvider_Transcription_System_String_"></a>
@@ -215,7 +215,7 @@ Creates the typed transcription model.
 
 **Returns:** [AssemblyAIProvider.AssemblyAITranscriptionModel](/api/Vercel.AI.AssemblyAI/AssemblyAIProvider.AssemblyAITranscriptionModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L502)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L503)
 
 <a id="Vercel_AI_AssemblyAI_AssemblyAIProvider_TranscriptionModel_"></a>
 <a id="Vercel_AI_AssemblyAI_AssemblyAIProvider_TranscriptionModel_System_String_"></a>
@@ -238,4 +238,4 @@ Returns a transcription model.
 
 **Returns:** [ITranscriptionModel](/api/Vercel.AI.Provider/ITranscriptionModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L480)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L481)
