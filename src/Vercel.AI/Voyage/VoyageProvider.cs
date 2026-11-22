@@ -323,7 +323,7 @@ public sealed class VoyageProvider : OpenAICompatibleProvider
                 body["output_dtype"] = request.OutputDtype;
             }
 
-            var headers = ProviderExchange.Merge(_provider.CreateHeaders(), request.Headers);
+            var headers = ProviderExchange.Merge(await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false), request.Headers);
             ProviderExchange.AddUserAgent(headers, "voyage");
             var response = await ProviderExchange
                 .SendAsync(
@@ -499,7 +499,7 @@ public sealed class VoyageProvider : OpenAICompatibleProvider
                 body["top_k"] = top;
             }
 
-            var headers = ProviderExchange.Merge(_provider.CreateHeaders(), request.Headers);
+            var headers = ProviderExchange.Merge(await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false), request.Headers);
             ProviderExchange.AddUserAgent(headers, "voyage");
             var response = await ProviderExchange
                 .SendAsync(

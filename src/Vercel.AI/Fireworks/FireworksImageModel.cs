@@ -121,7 +121,7 @@ public sealed class FireworksImageModel : IImageModel
         ValidateOptions(options.ProviderOptions);
         OpenAICompatibleImages.MergeOptions(body, Provider, options.ProviderOptions, warnings);
         var timestamp = Clock != null ? Clock() : DateTimeOffset.UtcNow;
-        var headers = _provider.CreateHeaders(options.Headers);
+        var headers = (await _provider.CreateHeadersAsync(options.Headers, cancellationToken).ConfigureAwait(false));
         if (IsAsync(ModelId))
         {
             return await GenerateAsync(body, headers, warnings, timestamp, cancellationToken)

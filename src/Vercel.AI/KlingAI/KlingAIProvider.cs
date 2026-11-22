@@ -100,10 +100,14 @@ public sealed class KlingAIProvider : OpenAICompatibleProvider
     /// <summary>
     /// Resolves the bearer token on every call. An API key is sent as is. A legacy access key and secret key sign a fresh JWT.
     /// </summary>
-    protected override string? ResolveApiKey()
+    protected override async Task<string?> ResolveApiKeyAsync(CancellationToken cancellationToken)
     {
         var kling = Options as KlingAIOptions;
-        return KlingAIAuth.ResolveAuthToken(Options.ApiKey, kling?.AccessKey, kling?.SecretKey);
+        var apiKey =
+            Options.ApiKey is null
+                ? null
+                : await Options.ApiKey.ResolveAsync(cancellationToken).ConfigureAwait(false);
+        return KlingAIAuth.ResolveAuthToken(apiKey, kling?.AccessKey, kling?.SecretKey);
     }
 
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)

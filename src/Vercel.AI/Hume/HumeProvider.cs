@@ -338,7 +338,7 @@ public sealed class HumeProvider : OpenAICompatibleProvider
             };
             var options = _provider.Options as HumeOptions;
             var started = options?.Clock != null ? options.Clock() : DateTimeOffset.UtcNow;
-            var headers = ProviderExchange.Merge(_provider.CreateHeaders(), request.Headers);
+            var headers = ProviderExchange.Merge(await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false), request.Headers);
             ProviderExchange.AddUserAgent(headers, "hume");
             var response = await ProviderExchange
                 .SendAsync(

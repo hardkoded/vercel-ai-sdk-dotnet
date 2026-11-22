@@ -5,6 +5,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.OpenAICompatible;
 
@@ -40,7 +41,7 @@ public class OpenAICompatibleOptions
     public string BaseUrl { get; set; } = "https://api.openai.com/v1";
 
     /// <summary>Explicit API key. Wins over the environment variable.</summary>
-    public string? ApiKey { get; set; }
+    public Resolvable<string>? ApiKey { get; set; }
 
     /// <summary>Environment variable read when <see cref="ApiKey"/> is empty.</summary>
     public string ApiKeyEnvironmentVariable { get; set; } = "OPENAI_API_KEY";

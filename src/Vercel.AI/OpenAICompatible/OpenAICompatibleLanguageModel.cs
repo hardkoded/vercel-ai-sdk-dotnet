@@ -820,9 +820,7 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
 
         return new PreparedRequest(
             body,
-            _provider.CreateHeaders(
-                _provider.Options.PrepareCallHeaders?.Invoke(options) ?? options.Headers
-            ),
+            (await _provider.CreateHeadersAsync(_provider.Options.PrepareCallHeaders?.Invoke(options) ?? options.Headers, cancellationToken).ConfigureAwait(false)),
             warnings,
             metadataKey,
             jsonResponse && _provider.Options.JsonTextOverridesToolCalls,

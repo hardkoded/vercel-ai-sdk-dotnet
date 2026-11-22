@@ -276,7 +276,7 @@ public sealed class RevAIProvider : OpenAICompatibleProvider
 
             var options = _provider.Options as RevAIOptions;
             var started = options?.Clock != null ? options.Clock() : DateTimeOffset.UtcNow;
-            var headers = Headers(request);
+            var headers = await HeadersAsync(request, cancellationToken).ConfigureAwait(false);
             var config = new JsonObject { ["transcriber"] = ModelId };
             if (request?.Config != null)
             {
@@ -449,9 +449,12 @@ public sealed class RevAIProvider : OpenAICompatibleProvider
             }
         }
 
-        private Dictionary<string, string?> Headers(RevAITranscriptionRequest? request)
+        private async Task<Dictionary<string, string?>> HeadersAsync(
+            RevAITranscriptionRequest? request,
+            CancellationToken cancellationToken
+        )
         {
-            var headers = ProviderExchange.Merge(_provider.CreateHeaders(), request?.Headers);
+            var headers = ProviderExchange.Merge(await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false), request?.Headers);
             ProviderExchange.AddUserAgent(headers, "revai");
             return headers;
         }

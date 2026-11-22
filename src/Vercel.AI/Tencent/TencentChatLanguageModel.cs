@@ -62,7 +62,7 @@ public sealed class TencentChatLanguageModel : OpenAICompatibleLanguageModel
             throw new ArgumentNullException(nameof(serialized));
         }
 
-        var options = new TencentOptions { ApiKey = apiKey };
+        var options = new TencentOptions { ApiKey = apiKey is null ? null : Resolvable<string>.From(apiKey) };
         if (serialized.Config.TryGetValue("baseURL", out var baseUrl))
         {
             var url = baseUrl is JsonElement { ValueKind: JsonValueKind.String } element

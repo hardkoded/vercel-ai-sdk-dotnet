@@ -304,7 +304,7 @@ public sealed class TencentVideoModel : IVideoModel, IVideoCaller
     {
         try
         {
-            var headers = ProviderExchange.Merge(_provider.CreateHeaders(), call.Headers);
+            var headers = ProviderExchange.Merge(await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false), call.Headers);
             if (method == HttpMethod.Get)
             {
                 return await ProviderExchange

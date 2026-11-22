@@ -79,7 +79,7 @@ public sealed class XaiTranscriptionModel : ITranscriptionModel, ITranscriptionC
     )
     {
         serialized = serialized ?? throw new ArgumentNullException(nameof(serialized));
-        var options = new XaiOptions { ApiKey = apiKey };
+        var options = new XaiOptions { ApiKey = apiKey is null ? null : Resolvable<string>.From(apiKey) };
         if (
             serialized.Config.TryGetValue("baseURL", out var baseUrl)
             && baseUrl is string text
@@ -153,9 +153,7 @@ public sealed class XaiTranscriptionModel : ITranscriptionModel, ITranscriptionC
                 HttpMethod.Post,
                 ApiKeys.Combine(_provider.Options.BaseUrl, "stt"),
                 form,
-                _provider.CreateHeaders(
-                    call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value)
-                ),
+                (await _provider.CreateHeadersAsync(call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value), cancellationToken).ConfigureAwait(false)),
                 cancellationToken
             )
             .ConfigureAwait(false);
@@ -308,7 +306,7 @@ public sealed class XaiTranscriptionModel : ITranscriptionModel, ITranscriptionC
         }
 
         var url = BuildXaiStreamingTranscriptionUrl(call.InputAudioFormat, xaiOptions);
-        var headers = _provider.CreateHeaders(call.Headers);
+        var headers = (await _provider.CreateHeadersAsync(call.Headers, cancellationToken).ConfigureAwait(false));
         var session = new Session(
             call,
             warnings,

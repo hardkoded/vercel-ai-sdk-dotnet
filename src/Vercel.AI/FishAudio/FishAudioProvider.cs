@@ -99,7 +99,7 @@ public sealed class FishAudioProvider : OpenAICompatibleProvider
     public override ITranscriptionModel TranscriptionModel(string modelId) =>
         new FishTranscriptionModel(this, string.IsNullOrEmpty(modelId) ? "transcribe-1" : modelId);
 
-    private Task<ProviderExchangeResult> SendAsync(
+    private async Task<ProviderExchangeResult> SendAsync(
         string path,
         HttpContent content,
         IEnumerable<KeyValuePair<string, string>>? modelHeaders,
@@ -108,17 +108,19 @@ public sealed class FishAudioProvider : OpenAICompatibleProvider
     )
     {
         var headers = ProviderExchange.Merge(
-            ProviderExchange.Merge(CreateHeaders(), modelHeaders),
+            ProviderExchange.Merge(await CreateHeadersAsync(cancellationToken).ConfigureAwait(false), modelHeaders),
             callHeaders
         );
-        return ProviderExchange.SendAsync(
-            _httpClient,
-            HttpMethod.Post,
-            ApiKeys.Combine(Options.BaseUrl, path),
-            content,
-            headers,
-            cancellationToken
-        );
+        return await ProviderExchange
+            .SendAsync(
+                _httpClient,
+                HttpMethod.Post,
+                ApiKeys.Combine(Options.BaseUrl, path),
+                content,
+                headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
     }
 
     private static JsonElement? FishOptions(JsonElement providerOptions)

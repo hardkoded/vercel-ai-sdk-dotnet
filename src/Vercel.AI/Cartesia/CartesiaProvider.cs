@@ -142,7 +142,7 @@ public sealed class CartesiaProvider : OpenAICompatibleProvider
         CancellationToken cancellationToken
     )
     {
-        var merged = ProviderExchange.Merge(CreateHeaders(), headers);
+        var merged = ProviderExchange.Merge(await CreateHeadersAsync(cancellationToken).ConfigureAwait(false), headers);
         return await ProviderExchange
             .SendAsync(
                 _httpClient,

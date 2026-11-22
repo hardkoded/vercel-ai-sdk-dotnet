@@ -392,7 +392,7 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
                 throw new ArgumentNullException(nameof(serialized));
             }
 
-            var options = new GladiaOptions { ApiKey = apiKey };
+            var options = new GladiaOptions { ApiKey = apiKey is null ? null : Resolvable<string>.From(apiKey) };
             // The provider's fixed endpoint is restored when the config has no url.
             if (ReadString(serialized.Config, "url") is { } baseUrl)
             {
@@ -442,7 +442,7 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
             // Options are validated before the audio is uploaded.
             var (args, warnings) = GetArgs(request);
             var started = options?.Clock != null ? options.Clock() : DateTimeOffset.UtcNow;
-            var headers = Headers(request, includeKey: true);
+            var headers = await HeadersAsync(request, includeKey: true, cancellationToken).ConfigureAwait(false);
             var form = new MultipartFormDataContent();
             var media = new ByteArrayContent(audio.Data);
             if (!string.IsNullOrEmpty(audio.MediaType))
@@ -1066,12 +1066,13 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
             return options?.Clock != null ? options.Clock() : DateTimeOffset.UtcNow;
         }
 
-        private Dictionary<string, string?> Headers(
+        private async Task<Dictionary<string, string?>> HeadersAsync(
             GladiaTranscriptionRequest? request,
-            bool includeKey
+            bool includeKey,
+            CancellationToken cancellationToken
         )
         {
-            var headers = ProviderExchange.Merge(_provider.CreateHeaders(), request?.Headers);
+            var headers = ProviderExchange.Merge(await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false), request?.Headers);
             if (!includeKey)
             {
                 headers.Remove("x-gladia-key");

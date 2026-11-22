@@ -76,7 +76,7 @@ public sealed class XaiProvider : OpenAICompatibleProvider, Operations.IBatchPro
     /// <summary>xAI file store.</summary>
     public XaiFiles Files()
     {
-        return new XaiFiles(_httpClient, Options.BaseUrl, () => CreateHeaders());
+        return new XaiFiles(_httpClient, Options.BaseUrl, () => await CreateHeadersAsync(cancellationToken).ConfigureAwait(false));
     }
 
     /// <inheritdoc />
@@ -103,7 +103,7 @@ public sealed class XaiProvider : OpenAICompatibleProvider, Operations.IBatchPro
         return new XaiRealtimeModel(
             modelId,
             new XaiRealtimeModelConfig("xai.realtime", Options.BaseUrl, _ =>
-                Task.FromResult<IReadOnlyDictionary<string, string?>>(CreateHeaders())
+                Task.FromResult<IReadOnlyDictionary<string, string?>>(await CreateHeadersAsync(cancellationToken).ConfigureAwait(false))
             )
             {
                 HttpClient = _httpClient,
@@ -125,7 +125,7 @@ public sealed class XaiProvider : OpenAICompatibleProvider, Operations.IBatchPro
             new XaiImageModelConfig(
                 "xai.image",
                 Options.BaseUrl,
-                () => CreateHeaders(),
+                () => await CreateHeadersAsync(cancellationToken).ConfigureAwait(false),
                 _httpClient
             )
             {

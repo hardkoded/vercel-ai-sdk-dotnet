@@ -98,7 +98,7 @@ public sealed class MistralEmbeddingModel : IEmbeddingModel
                 HttpMethod.Post,
                 url,
                 ProviderExchange.Json(requestBody),
-                _provider.CreateHeaders(headers),
+                (await _provider.CreateHeadersAsync(headers, cancellationToken).ConfigureAwait(false)),
                 cancellationToken,
                 (status, text) => MistralError.FailedResponse(status, text, url, body)
             )

@@ -405,7 +405,7 @@ public sealed class OpenAICompatibleCompletionLanguageModel : ILanguageModel
 
         return new Prepared(
             body.ToJsonString(),
-            _provider.CreateHeaders(options.Headers),
+            (await _provider.CreateHeadersAsync(options.Headers, cancellationToken).ConfigureAwait(false)),
             warnings
         );
     }

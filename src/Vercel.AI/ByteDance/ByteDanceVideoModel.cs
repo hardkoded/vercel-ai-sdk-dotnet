@@ -182,7 +182,7 @@ public sealed class ByteDanceVideoModel : IVideoModel, IVideoCaller
                 HttpMethod.Post,
                 ApiKeys.Combine(_provider.Options.BaseUrl, "contents/generations/tasks"),
                 ProviderExchange.Json(body.ToJsonString()),
-                ProviderExchange.Merge(_provider.CreateHeaders(), call.Headers),
+                ProviderExchange.Merge(await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false), call.Headers),
                 cancellationToken
             )
             .ConfigureAwait(false);
@@ -226,7 +226,7 @@ public sealed class ByteDanceVideoModel : IVideoModel, IVideoCaller
                     "contents/generations/tasks/" + PathSegments.Encode(taskId)
                 ),
                 null,
-                ProviderExchange.Merge(_provider.CreateHeaders(), call.Headers),
+                ProviderExchange.Merge(await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false), call.Headers),
                 cancellationToken
             )
             .ConfigureAwait(false);

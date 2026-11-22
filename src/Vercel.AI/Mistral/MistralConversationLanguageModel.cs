@@ -71,7 +71,7 @@ public sealed class MistralConversationLanguageModel : ILanguageModel
             .PostJsonAsync(
                 ConversationsUri,
                 requestJson,
-                _provider.CreateHeaders(options.Headers),
+                (await _provider.CreateHeadersAsync(options.Headers, cancellationToken).ConfigureAwait(false)),
                 cancellationToken
             )
             .ConfigureAwait(false);
@@ -169,7 +169,7 @@ public sealed class MistralConversationLanguageModel : ILanguageModel
             .PostSseAsync(
                 ConversationsUri,
                 json,
-                _provider.CreateHeaders(options.Headers),
+                (await _provider.CreateHeadersAsync(options.Headers, cancellationToken).ConfigureAwait(false)),
                 cancellationToken
             )
             .ConfigureAwait(false);

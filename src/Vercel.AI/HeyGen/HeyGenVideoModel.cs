@@ -311,7 +311,7 @@ public sealed class HeyGenVideoModel : IVideoModel, IVideoCaller
                     method,
                     uri,
                     content,
-                    ProviderExchange.Merge(_provider.CreateHeaders(), call.Headers),
+                    ProviderExchange.Merge(await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false), call.Headers),
                     cancellationToken
                 )
                 .ConfigureAwait(false);

@@ -88,7 +88,7 @@ public sealed class ReplicateProvider : OpenAICompatibleProvider
             method,
             uri,
             content,
-            ProviderExchange.Merge(CreateHeaders(), headers),
+            ProviderExchange.Merge(await CreateHeadersAsync(cancellationToken).ConfigureAwait(false), headers),
             cancellationToken
         );
     }
@@ -108,7 +108,7 @@ public sealed class ReplicateProvider : OpenAICompatibleProvider
             );
             using var timeout = new CancellationTokenSource(CancelTimeout);
             await ProviderExchange
-                .SendAsync(_httpClient, HttpMethod.Post, uri, null, CreateHeaders(), timeout.Token)
+                .SendAsync(_httpClient, HttpMethod.Post, uri, null, await CreateHeadersAsync(cancellationToken).ConfigureAwait(false), timeout.Token)
                 .ConfigureAwait(false);
         }
         catch
@@ -127,7 +127,7 @@ public sealed class ReplicateProvider : OpenAICompatibleProvider
         CancellationToken cancellationToken
     )
     {
-        var outgoing = headers != null ? ProviderExchange.Merge(CreateHeaders(), headers) : null;
+        var outgoing = headers != null ? ProviderExchange.Merge(await CreateHeadersAsync(cancellationToken).ConfigureAwait(false), headers) : null;
         return ProviderExchange.GetResponseUrlAsync(
             _httpClient,
             url,
@@ -136,7 +136,7 @@ public sealed class ReplicateProvider : OpenAICompatibleProvider
             outgoing,
             cancellationToken,
             ProviderExchange.DownloadClient(Options),
-            ProviderExchange.UserAgentOnly(CreateHeaders())
+            ProviderExchange.UserAgentOnly(await CreateHeadersAsync(cancellationToken).ConfigureAwait(false))
         );
     }
 }

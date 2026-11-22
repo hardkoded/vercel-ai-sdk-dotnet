@@ -76,7 +76,7 @@ public sealed class MistralTranscriptionModel : ITranscriptionModel, ITranscript
                 call,
                 ModelId,
                 _provider.Options.BaseUrl,
-                _provider.CreateHeaders(call.Headers),
+                (await _provider.CreateHeadersAsync(call.Headers, cancellationToken).ConfigureAwait(false)),
                 (_provider.Options as MistralOptions)?.WebSocket,
                 _clock?.Invoke() ?? DateTime.UtcNow
             )
@@ -94,9 +94,7 @@ public sealed class MistralTranscriptionModel : ITranscriptionModel, ITranscript
         var (form, warnings) = GetArgs(call);
         using var _ = form;
         var url = ApiKeys.Combine(_provider.Options.BaseUrl, "audio/transcriptions");
-        var headers = _provider.CreateHeaders(
-            call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value)
-        );
+        var headers = (await _provider.CreateHeadersAsync(call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value), cancellationToken).ConfigureAwait(false));
         var response = await ProviderExchange
             .SendAsync(
                 _provider.SharedHttpClient,

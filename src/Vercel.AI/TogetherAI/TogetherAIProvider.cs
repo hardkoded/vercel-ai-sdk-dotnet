@@ -72,12 +72,16 @@ public sealed class TogetherAIProvider : OpenAICompatibleProvider
     }
 
     /// <inheritdoc />
-    protected override string? ResolveApiKey()
+    protected override async Task<string?> ResolveApiKeyAsync(CancellationToken cancellationToken)
     {
         ApiKeyDeprecationWarning = null;
-        if (!string.IsNullOrWhiteSpace(Options.ApiKey))
+        var apiKey =
+            Options.ApiKey is null
+                ? null
+                : await Options.ApiKey.ResolveAsync(cancellationToken).ConfigureAwait(false);
+        if (!string.IsNullOrWhiteSpace(apiKey))
         {
-            return Options.ApiKey;
+            return apiKey;
         }
 
         var preferredName = string.IsNullOrEmpty(Options.ApiKeyEnvironmentVariable)
