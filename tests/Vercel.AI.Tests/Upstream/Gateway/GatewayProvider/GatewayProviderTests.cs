@@ -357,6 +357,46 @@ public sealed class GatewayProviderTests
         AssertReusedGatewayHeaders(handler);
     }
 
+    [Fact]
+    [UpstreamTest(
+        Prefix + "::should create GatewayRerankingModel for rerankingModel",
+        Coverage = UpstreamCoverage.Covered,
+        Note = "Upstream reads provider and baseURL from the internal model config. The port asserts the provider id and the URL of the request the model sends."
+    )]
+    public async Task Should_create_GatewayRerankingModel_for_rerankingModel()
+    {
+        var handler = new UpstreamRecordingHandler("{\"ranking\":[]}");
+        var provider = GatewayProvider.Create(
+            new GatewayOptions { BaseUrl = "https://api.example.com", ApiKey = "test-api-key" },
+            handler
+        );
+
+        var model = Assert.IsType<Vercel.AI.Gateway.GatewayRerankingModel>(
+            provider.RerankingModel("cohere/rerank-v3.5")
+        );
+        await model.DoRerankAsync("query", ["a"], null, CancellationToken.None);
+
+        Assert.Equal("gateway", model.Provider);
+        Assert.Equal("https://api.example.com/reranking-model", handler.Uri);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "::should create GatewayRerankingModel for reranking alias",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void Should_create_GatewayRerankingModel_for_reranking_alias()
+    {
+        var provider = GatewayProvider.Create(
+            new GatewayOptions { BaseUrl = "https://api.example.com", ApiKey = "test-api-key" },
+            new UpstreamRecordingHandler("{}")
+        );
+
+        Assert.IsType<Vercel.AI.Gateway.GatewayRerankingModel>(
+            provider.Reranking("cohere/rerank-v3.5")
+        );
+    }
+
     private static void AssertReusedGatewayHeaders(UpstreamRecordingHandler handler)
     {
         Assert.Equal("Bearer test-api-key", handler.Headers["Authorization"]);
