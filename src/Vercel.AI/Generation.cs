@@ -682,7 +682,10 @@ internal static class Generation
                         current,
                         cancellationToken,
                         new StepTiming(now, stepStartMs, responseTimeMs, Array.Empty<double>()),
-                        LanguageModelRequestMetadata.Empty,
+                        new LanguageModelRequestMetadata
+                        {
+                            Url = RequestOrigin.SanitizeRequestMetadata(modelResponse.Request)?.Url,
+                        },
                         GeneratedResponseInfo(generated, current),
                         ParseResponseBody(generated.RawResponse),
                         steeringMessages: deliveredSteeringMessages,
@@ -1504,14 +1507,17 @@ internal static class Generation
                     break;
                 }
 
-                LanguageModelRequestMetadata RequestMetadata(JsonElement? requestBody) =>
+                LanguageModelRequestMetadata RequestMetadata(
+                    LanguageModelStreamRequest? modelRequest
+                ) =>
                     new()
                     {
-                        Body = options.Include?.RequestBody == true ? requestBody : null,
+                        Url = RequestOrigin.SanitizeRequestMetadata(modelRequest)?.Url,
+                        Body = options.Include?.RequestBody == true ? modelRequest?.Body : null,
                         Messages = options.Include?.RequestMessages == true ? stepMessages : null,
                     };
 
-                var stepRequest = RequestMetadata(streamResult.Request?.Body);
+                var stepRequest = RequestMetadata(streamResult.Request);
                 // The start-step part of a step is streamed once. A model call that follows a cancelled one sends a boundary instead,
                 // which replaces what the step recorded for the cancelled call, such as its request and warnings.
                 TextStreamPart StepStart(IReadOnlyList<CallWarning>? stepWarnings) =>
@@ -1930,7 +1936,7 @@ internal static class Generation
                                 // The retried attempt gets its own timeout windows.
                                 timeouts?.ClearModelOutput();
                                 timeouts?.StartFirstChunk();
-                                stepRequest = RequestMetadata(retry?.Current.Request?.Body);
+                                stepRequest = RequestMetadata(retry?.Current.Request);
                                 buffer.Add(new StreamRetryBoundaryPart(stepRequest, warnings));
                                 break;
                             case ModelCallStartPart start:
@@ -2723,7 +2729,9 @@ internal static class Generation
                 : await ResolveStepApprovalsAsync(
                         options,
                         toolCalls,
-                        stepInputMessages.Skip(instructionCount).ToArray()
+                        stepInputMessages.Skip(instructionCount).ToArray(),
+                        stepInputMessages,
+                        cancellationToken
                     )
                     .ConfigureAwait(false);
 
@@ -3873,6 +3881,68 @@ internal static class Generation
             );
     }
 
+    // Notifies the tool that its call is available, with the validated tool context, before the approval is resolved.
+    // A call that is invalid or has no known tool is ignored.
+    private static async Task InvokeToolInputCallbacksAsync(
+        GenerateTextOptions options,
+        GeneratedToolCall call,
+        IReadOnlyList<ModelMessage> messages,
+        CancellationToken cancellationToken
+    )
+    {
+        if (call.Invalid)
+        {
+            return;
+        }
+
+        var tool = FindTool(options, call.ToolName);
+        if (tool == null || (tool.OnInputStart == null && tool.OnInputAvailable == null))
+        {
+            return;
+        }
+
+        JsonElement? context = null;
+        if (
+            options.ToolsContext != null
+            && options.ToolsContext.TryGetValue(call.ToolName, out var rawContext)
+        )
+        {
+            context = rawContext;
+        }
+
+        context = ToolContexts.ValidateToolContext(call.ToolName, context, tool.ContextSchema);
+
+        if (tool.OnInputStart != null)
+        {
+            await tool.OnInputStart(
+                    new ToolExecutionOptions(call.ToolCallId, messages, cancellationToken)
+                    {
+                        Context = context,
+                    }
+                )
+                .ConfigureAwait(false);
+        }
+
+        if (tool.OnInputAvailable != null)
+        {
+            using var arguments = JsonDocument.Parse(
+                string.IsNullOrWhiteSpace(call.ArgumentsJson) ? "{}" : call.ArgumentsJson
+            );
+            await tool.OnInputAvailable(
+                    new ToolInputAvailableOptions(
+                        call.ToolCallId,
+                        messages,
+                        cancellationToken,
+                        arguments.RootElement.Clone()
+                    )
+                    {
+                        Context = context,
+                    }
+                )
+                .ConfigureAwait(false);
+        }
+    }
+
     // Resolves the approval of each valid call to a known tool. A call that does not need approval does not use an approval id.
     private static async Task<(
         List<GeneratedToolApprovalRequest> Requests,
@@ -3881,7 +3951,9 @@ internal static class Generation
     )> ResolveStepApprovalsAsync(
         GenerateTextOptions options,
         IReadOnlyList<GeneratedToolCall> toolCalls,
-        IReadOnlyList<ModelMessage> messages
+        IReadOnlyList<ModelMessage> messages,
+        IReadOnlyList<ModelMessage> stepInputMessages,
+        CancellationToken cancellationToken
     )
     {
         var requests = new List<GeneratedToolApprovalRequest>();
@@ -3889,6 +3961,8 @@ internal static class Generation
         var blocked = new HashSet<string>(StringComparer.Ordinal);
         foreach (var call in toolCalls)
         {
+            await InvokeToolInputCallbacksAsync(options, call, stepInputMessages, cancellationToken)
+                .ConfigureAwait(false);
             var approval = await ExecuteToolsFromStream
                 .ResolveToolCallApprovalAsync(options, call, messages)
                 .ConfigureAwait(false);

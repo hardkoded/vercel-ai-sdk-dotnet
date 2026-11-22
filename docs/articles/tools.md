@@ -75,7 +75,7 @@ A tool can observe its input as the model generates it:
 - `OnInputDelta` runs for each fragment of the input text, as `InputTextDelta`.
 - `OnInputAvailable` runs when the complete input is available, as `Input`, even when the tool has no executor. A call that failed validation (`Invalid`) does not reach it. It runs for the tool that the completed call names, which can differ from the tool that started the input when `RepairToolCall` renamed the call.
 
-Each hook receives the `ToolCallId`, the `Messages` of the step, the `AbortSignal` and the `Context` of the tool, validated with `ContextSchema`. The context is validated once per tool call and shared by its hooks. `StreamTextAsync` calls all three. After a stream retry starts a new attempt, the tool calls of the failed attempt are forgotten. `GenerateTextAsync` does not call these hooks yet.
+Each hook receives the `ToolCallId`, the `Messages` of the step, the `AbortSignal` and the `Context` of the tool, validated with `ContextSchema`. The context is validated once per tool call and shared by its hooks. `StreamTextAsync` calls all three. After a stream retry starts a new attempt, the tool calls of the failed attempt are forgotten. `GenerateTextAsync` calls `OnInputStart` and then `OnInputAvailable` for every valid call to a known tool of a step, with the validated tool context and before the approval is resolved. It does not call `OnInputDelta`, because a non-streaming response has no input deltas. A call that violates `ToolChoice` throws before any hook runs.
 
 ```csharp
 var tool = Tool.Function("getWeather", "Get the weather", schema, execute);

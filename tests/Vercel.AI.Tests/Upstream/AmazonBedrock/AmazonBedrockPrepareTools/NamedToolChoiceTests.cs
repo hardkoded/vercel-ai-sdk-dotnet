@@ -28,6 +28,16 @@ public sealed class NamedToolChoiceTests
             .Select(tool => tool!["toolSpec"]!["name"]!.GetValue<string>())
             .ToArray();
 
+    private static LanguageModelTool BashTool()
+    {
+        using var document = JsonDocument.Parse("{}");
+        return LanguageModelTool.ProviderDefined(
+            "anthropic.bash_20250124",
+            "bash",
+            document.RootElement.Clone()
+        );
+    }
+
     private static LanguageModelTool[] Tools() =>
         [Tool("getWeather", "Get weather"), Tool("getTime", "Get time")];
 
@@ -70,16 +80,17 @@ public sealed class NamedToolChoiceTests
     )]
     public void Should_send_every_function_tool_for_a_declared_Anthropic_application_inference_profile()
     {
-        // The port infers an Anthropic profile from the reasoning budget, as upstream's
-        // detectAnthropicModel does; it has no `modelFamily` setting.
         var config = AmazonBedrockTools.Prepare(
             CustomProfile,
             Tools(),
             ToolChoice.Tool("getWeather"),
-            1024,
+            AmazonBedrockChatModelFamily.Anthropic,
             null,
+            null,
+            false,
             out _,
-            out var additionalTools
+            out var additionalTools,
+            out _
         );
 
         Assert.Equal(["getWeather", "getTime"], Names(config));
@@ -137,6 +148,37 @@ public sealed class NamedToolChoiceTests
             additionalTools!.ToJsonString()
         );
         Assert.Null(config["toolChoice"]);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/amazon-bedrock-prepare-tools.test.ts::prepareTools > tool choice > named tool choice::should send provider tools and every function tool with the named tool choice",
+        Coverage = UpstreamCoverage.Partial,
+        Commit = "62a4dcd641895b3aca4698015c0378b2bd558c4e"
+    )]
+    public void Should_send_provider_tools_and_every_function_tool_with_the_named_tool_choice()
+    {
+        var full = AmazonBedrockTools.Prepare(
+            AnthropicModel,
+            [.. Tools(), BashTool()],
+            ToolChoice.Tool("getWeather"),
+            null,
+            null,
+            null,
+            false,
+            out _,
+            out var additionalTools,
+            out _
+        );
+
+        Assert.Equal(["bash", "getWeather", "getTime"], Names(full));
+        // Upstream spies on prepareAnthropicTools. The port reads the same arguments from the
+        // tool_choice that the Anthropic preparation produced.
+        Assert.Equal(
+            "{\"tool_choice\":{\"type\":\"tool\",\"name\":\"getWeather\",\"disable_parallel_tool_use\":true}}",
+            additionalTools!.ToJsonString()
+        );
+        Assert.Null(full["toolChoice"]);
     }
 
     [Theory]
