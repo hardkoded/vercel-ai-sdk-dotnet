@@ -419,6 +419,18 @@ public sealed class StepResult
         return copy;
     }
 
+    // A copy of the step with other request and response metadata. Telemetry hands integrations the redacted bodies and leaves the original step alone.
+    internal StepResult WithRedactedMetadata(
+        LanguageModelRequestMetadata request,
+        StepResponse response
+    )
+    {
+        var copy = (StepResult)MemberwiseClone();
+        copy.Request = request;
+        copy.Response = response;
+        return copy;
+    }
+
     internal static IReadOnlyDictionary<string, JsonElement> EmptyToolsContext { get; } =
         new Dictionary<string, JsonElement>();
 
@@ -510,10 +522,10 @@ public sealed class StepResult
     /// Additional request information for this step. <see cref="LanguageModelRequestMetadata.Body"/> and <see cref="LanguageModelRequestMetadata.Messages"/>
     /// are set only when <see cref="StreamTextOptions.Include"/> asks for them. Maps to <c>request</c>.
     /// </summary>
-    public LanguageModelRequestMetadata Request { get; }
+    public LanguageModelRequestMetadata Request { get; private set; }
 
     /// <summary>Additional response information for this step, with the messages this step added to the conversation. Maps to <c>response</c>.</summary>
-    public StepResponse Response { get; }
+    public StepResponse Response { get; private set; }
 }
 
 /// <summary>Stops the tool loop. The default for <c>generateText</c> is <see cref="StopWhen.IsStepCount"/> of 1.</summary>
@@ -1848,6 +1860,18 @@ public sealed class LanguageModelCallStartEvent
 
     /// <summary>Call settings.</summary>
     public LanguageModelCallOptions CallOptions { get; init; } = new();
+
+    /// <summary>Whether input recording was enabled for the call, as <see cref="TelemetryOptions.RecordInputs"/> set it. Set only on events sent to telemetry integrations. Maps to <c>recordInputs</c>.</summary>
+    public bool? RecordInputs { get; init; }
+
+    /// <summary>Whether output recording was enabled for the call, as <see cref="TelemetryOptions.RecordOutputs"/> set it. Set only on events sent to telemetry integrations. Maps to <c>recordOutputs</c>.</summary>
+    public bool? RecordOutputs { get; init; }
+
+    /// <summary>The <see cref="TelemetryOptions.FunctionId"/> of the call. Set only on events sent to telemetry integrations. Maps to <c>functionId</c>.</summary>
+    public string? FunctionId { get; init; }
+
+    /// <summary>The version of the SDK that emitted the event. Set only on events sent to telemetry integrations. Maps to <c>aiVersion</c>.</summary>
+    public string? AiVersion { get; init; }
 }
 
 /// <summary>Passed to <see cref="GenerateTextOptions.OnLanguageModelCallEnd"/> after a provider model call returns.</summary>
@@ -1907,6 +1931,18 @@ public sealed class LanguageModelCallEndEvent
 
     /// <summary>Performance of the model call. Set for streamed calls. Maps to <c>performance</c>.</summary>
     internal Vercel.AI.GenerateText.ModelCallPerformance? Performance { get; init; }
+
+    /// <summary>Whether input recording was enabled for the call, as <see cref="TelemetryOptions.RecordInputs"/> set it. Set only on events sent to telemetry integrations. Maps to <c>recordInputs</c>.</summary>
+    public bool? RecordInputs { get; init; }
+
+    /// <summary>Whether output recording was enabled for the call, as <see cref="TelemetryOptions.RecordOutputs"/> set it. Set only on events sent to telemetry integrations. Maps to <c>recordOutputs</c>.</summary>
+    public bool? RecordOutputs { get; init; }
+
+    /// <summary>The <see cref="TelemetryOptions.FunctionId"/> of the call. Set only on events sent to telemetry integrations. Maps to <c>functionId</c>.</summary>
+    public string? FunctionId { get; init; }
+
+    /// <summary>The version of the SDK that emitted the event. Set only on events sent to telemetry integrations. Maps to <c>aiVersion</c>.</summary>
+    public string? AiVersion { get; init; }
 }
 
 /// <summary>Passed to <see cref="GenerateTextOptions.OnToolExecutionStart"/> before a tool runs.</summary>
@@ -2205,6 +2241,10 @@ public class GenerateTextResult
         new(Text, ReasoningText, steps, FinishReason, Usage, Output, Sources, ProviderMetadata)
         {
             ResponseMessages = ResponseMessages,
+            RecordInputs = RecordInputs,
+            RecordOutputs = RecordOutputs,
+            FunctionId = FunctionId,
+            AiVersion = AiVersion,
         };
 
     /// <summary>Text from the last step.</summary>
@@ -2258,6 +2298,18 @@ public class GenerateTextResult
     /// </summary>
     public IReadOnlyList<ModelMessage> ResponseMessages { get; init; } =
         Array.Empty<ModelMessage>();
+
+    /// <summary>Whether input recording was enabled for the call, as <see cref="TelemetryOptions.RecordInputs"/> set it. Set only on events sent to telemetry integrations. Maps to <c>recordInputs</c>.</summary>
+    public bool? RecordInputs { get; init; }
+
+    /// <summary>Whether output recording was enabled for the call, as <see cref="TelemetryOptions.RecordOutputs"/> set it. Set only on events sent to telemetry integrations. Maps to <c>recordOutputs</c>.</summary>
+    public bool? RecordOutputs { get; init; }
+
+    /// <summary>The <see cref="TelemetryOptions.FunctionId"/> of the call. Set only on events sent to telemetry integrations. Maps to <c>functionId</c>.</summary>
+    public string? FunctionId { get; init; }
+
+    /// <summary>The version of the SDK that emitted the event. Set only on events sent to telemetry integrations. Maps to <c>aiVersion</c>.</summary>
+    public string? AiVersion { get; init; }
 }
 
 /// <summary>
@@ -2320,6 +2372,9 @@ public sealed class LanguageModelRequestMetadata
 
     /// <summary>Request HTTP body that was sent to the provider API.</summary>
     public JsonElement? Body { get; init; }
+
+    /// <summary>Provider-owned telemetry view of <see cref="Body"/>, which hides credentials. Maps to the annotation of <c>withTelemetryRedaction</c> on the request body.</summary>
+    public Func<JsonElement, JsonElement>? RedactBody { get; init; }
 }
 
 /// <summary>
@@ -2383,6 +2438,9 @@ public sealed class StepResponse : LanguageModelResponseMetadata
 
     /// <summary>Response body, for providers that use HTTP and report it. It is not set for streams. Maps to <c>body</c>.</summary>
     public JsonElement? Body { get; }
+
+    /// <summary>Provider-owned telemetry view of <see cref="Body"/>, which hides credentials. Maps to the annotation of <c>withTelemetryRedaction</c> on the response body.</summary>
+    public Func<JsonElement, JsonElement>? RedactBody { get; init; }
 }
 
 /// <summary>What <c>streamText</c> keeps of the request and the provider stream. Maps to <c>StreamTextInclude</c>.</summary>
