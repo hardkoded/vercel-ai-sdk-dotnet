@@ -25,7 +25,9 @@ public sealed class ParseMistralRealtimeEventTests
             .Parse("{\"type\":\"tool_call.ended\",\"id\":\"call-1\",\"result\":\"done\"}")
             .RootElement;
 
-        var events = MistralRealtimeTransportFunctions.ParseMistralRealtimeEvent(raw);
+        var events = global::Vercel.AI.Mistral.MistralRealtimeTransport.ParseMistralRealtimeEvent(
+            raw
+        );
 
         var parsed = Assert.Single(events);
         Assert.Equal("custom", parsed.Type);
