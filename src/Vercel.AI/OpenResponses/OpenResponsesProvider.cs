@@ -19,8 +19,8 @@ public sealed class OpenResponsesOptions
     /// <summary>API origin. Requests are posted to <c>{BaseUrl}/responses</c>.</summary>
     public string BaseUrl { get; set; } = "https://ai-gateway.vercel.sh/v1";
 
-    /// <summary>Explicit key.</summary>
-    public string? ApiKey { get; set; }
+    /// <summary>Explicit key. A callback is resolved before each request.</summary>
+    public Resolvable<string>? ApiKey { get; set; }
 
     /// <summary>Environment variable.</summary>
     public string ApiKeyEnvironmentVariable { get; set; } = "AI_GATEWAY_API_KEY";
@@ -40,8 +40,8 @@ public sealed class OpenResponsesOptions
     /// </summary>
     public string CustomToolId { get; set; } = "open-responses.custom";
 
-    /// <summary>Extra headers sent with every request.</summary>
-    public IReadOnlyDictionary<string, string>? Headers { get; set; }
+    /// <summary>Extra headers sent with every request. A callback is resolved before each request.</summary>
+    public Resolvable<IReadOnlyDictionary<string, string>>? Headers { get; set; }
 
     /// <summary>
     /// Reads HTTP status and retry metadata from an endpoint-specific response <c>error</c> object.
@@ -183,7 +183,7 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
                 HttpMethod.Post,
                 uri,
                 body.ToJsonString(),
-                Headers(options),
+                await HeadersAsync(options, cancellationToken).ConfigureAwait(false),
                 cancellationToken
             )
             .ConfigureAwait(false);
@@ -215,7 +215,12 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
         body["stream"] = true;
         var json = body.ToJsonString();
         var sse = await _provider
-            .Http.OpenSseResponseAsync(RequestUri(), json, Headers(options), cancellationToken)
+            .Http.OpenSseResponseAsync(
+                RequestUri(),
+                json,
+                await HeadersAsync(options, cancellationToken).ConfigureAwait(false),
+                cancellationToken
+            )
             .ConfigureAwait(false);
         return sse.ToStreamResult(
             StreamAsync(options, warnings, sse.Events, cancellationToken),
@@ -816,18 +821,28 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
         return ApiKeys.Combine(_provider.Options.BaseUrl, "responses");
     }
 
-    private Dictionary<string, string?> Headers(LanguageModelCallOptions options)
+    private async Task<Dictionary<string, string?>> HeadersAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
         var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
         {
             ["Authorization"] =
                 "Bearer "
-                + ApiKeys.Require(
-                    _provider.Options.ApiKey,
-                    _provider.Options.ApiKeyEnvironmentVariable
-                ),
+                + await ApiKeys
+                    .RequireAsync(
+                        _provider.Options.ApiKey,
+                        _provider.Options.ApiKeyEnvironmentVariable,
+                        null,
+                        cancellationToken
+                    )
+                    .ConfigureAwait(false),
         };
-        foreach (var pair in _provider.Options.Headers ?? new Dictionary<string, string>())
+        var configured = _provider.Options.Headers is null
+            ? null
+            : await _provider.Options.Headers.ResolveAsync(cancellationToken).ConfigureAwait(false);
+        foreach (var pair in configured ?? new Dictionary<string, string>())
         {
             headers[pair.Key] = pair.Value;
         }

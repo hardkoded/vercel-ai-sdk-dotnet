@@ -102,7 +102,7 @@ internal static class GoogleUpstream
     public static GoogleProvider Client(RecordingHandler handler, GoogleOptions? options = null)
     {
         options ??= new GoogleOptions { ApiKey = "test-api-key" };
-        if (string.IsNullOrEmpty(options.ApiKey) && !options.UseBearerToken)
+        if (options.ApiKey is null && !options.UseBearerToken)
         {
             options.ApiKey = "test-api-key";
         }

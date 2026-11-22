@@ -12,8 +12,8 @@ namespace Vercel.AI.MiniMax;
 /// <summary>MiniMax provider settings.</summary>
 public sealed class MiniMaxOptions
 {
-    /// <summary>MiniMax API key. Defaults to the <c>MINIMAX_API_KEY</c> environment variable.</summary>
-    public string? ApiKey { get; set; }
+    /// <summary>MiniMax API key. Defaults to the <c>MINIMAX_API_KEY</c> environment variable. A callback is resolved before each request.</summary>
+    public Resolvable<string>? ApiKey { get; set; }
 
     /// <summary>Base URL for the API calls. Defaults to MiniMax's Anthropic-compatible endpoint (<c>https://api.minimax.io/anthropic/v1</c>).</summary>
     public string BaseUrl { get; set; } = MiniMaxProvider.DefaultBaseUrl;
@@ -141,20 +141,24 @@ public sealed class MiniMaxProvider : ProviderBase
         );
     }
 
-    private Dictionary<string, string> CreateMediaHeaders()
+    private async Task<IReadOnlyDictionary<string, string?>> CreateMediaHeaders(
+        CancellationToken cancellationToken
+    )
     {
         var headers = new List<KeyValuePair<string, string?>>
         {
             new KeyValuePair<string, string?>(
                 "Authorization",
-                "Bearer " + ApiKeys.Require(Options.ApiKey, ApiKeyVariable)
+                "Bearer "
+                    + await ApiKeys
+                        .RequireAsync(Options.ApiKey, ApiKeyVariable, null, cancellationToken)
+                        .ConfigureAwait(false)
             ),
         };
         headers.AddRange(Options.Headers);
-        return ProviderValues.WithUserAgentSuffix(
-            headers,
-            "ai-sdk-minimax/" + Operations.AiSdkVersion.Version
-        );
+        return ProviderValues
+            .WithUserAgentSuffix(headers, "ai-sdk-minimax/" + Operations.AiSdkVersion.Version)
+            .ToDictionary(pair => pair.Key, pair => (string?)pair.Value);
     }
 }
 

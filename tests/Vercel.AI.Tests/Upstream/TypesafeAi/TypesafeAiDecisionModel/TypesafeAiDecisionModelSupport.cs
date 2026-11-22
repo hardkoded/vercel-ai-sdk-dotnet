@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Operations;
+using Vercel.AI.ProviderUtils;
 using Vercel.AI.TypeSafeAi;
 using static Vercel.AI.Tests.DecisionFixtures;
 
@@ -135,7 +136,13 @@ internal static class TypesafeAiDecisionModelSupport
         string? apiKey = "test-api-key"
     )
     {
-        return TypeSafeAiProvider.Create(new TypeSafeAiOptions { ApiKey = apiKey }, server);
+        return TypeSafeAiProvider.Create(
+            new TypeSafeAiOptions
+            {
+                ApiKey = apiKey is null ? null : Resolvable<string>.From(apiKey),
+            },
+            server
+        );
     }
 
     /// <summary>The questions of the native request, with <c>noul</c> spelled <c>boolean</c> as the public API does.</summary>

@@ -12,8 +12,8 @@ namespace Vercel.AI.TypeSafeAi;
 /// <summary>TypeSafe provider settings.</summary>
 public sealed class TypeSafeAiOptions
 {
-    /// <summary>API key. Falls back to <c>TYPESAFE_AI_API_KEY</c> at call time.</summary>
-    public string? ApiKey { get; set; }
+    /// <summary>API key. Falls back to <c>TYPESAFE_AI_API_KEY</c> at call time. A callback is resolved before each request.</summary>
+    public Resolvable<string>? ApiKey { get; set; }
 
     /// <summary>API base URL. Defaults to <c>TYPESAFE_AI_BASE_URL</c>, then <c>https://api.typesafe.ai/v1</c>.</summary>
     public string? BaseUrl { get; set; }
@@ -128,12 +128,22 @@ public sealed class TypeSafeAiProvider
         throw new NoSuchModelError(modelId, "imageModel");
     }
 
-    private IReadOnlyDictionary<string, string> Headers()
+    private async Task<IReadOnlyDictionary<string, string?>> Headers(
+        CancellationToken cancellationToken
+    )
     {
-        var headers = new Dictionary<string, string>
+        var headers = new Dictionary<string, string?>
         {
             ["Authorization"] =
-                "Bearer " + ApiKeys.Require(_options.ApiKey, ApiKeyEnvironmentVariable),
+                "Bearer "
+                + await ApiKeys
+                    .RequireAsync(
+                        _options.ApiKey,
+                        ApiKeyEnvironmentVariable,
+                        null,
+                        cancellationToken
+                    )
+                    .ConfigureAwait(false),
         };
         if (_options.Headers != null)
         {
