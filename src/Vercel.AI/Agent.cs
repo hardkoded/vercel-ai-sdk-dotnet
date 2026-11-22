@@ -137,6 +137,7 @@ public sealed class Agent : IAgent
         prepared.Timeout = timeout ?? prepared.Timeout;
         prepared.ExperimentalSteering = experimentalSteering ?? prepared.ExperimentalSteering;
         prepared.OnStepEnd = MergeCallbacks(Options.OnStepEnd, prepared.OnStepEnd);
+        prepared.OnStepError = Options.OnStepError;
         prepared.OnStart = MergeCallbacks(Options.OnStart, prepared.OnStart);
 #pragma warning disable CS0618 // OnFinish is the deprecated alias of OnEnd
         prepared.OnEnd = MergeCallbacks(Options.OnEnd, prepared.OnEnd ?? prepared.OnFinish);
@@ -282,6 +283,7 @@ public sealed class Agent : IAgent
                 ExperimentalSteering = experimentalSteering ?? prepared.ExperimentalSteering,
                 ExperimentalSandbox = prepared.ExperimentalSandbox,
                 OnStepEnd = MergeCallbacks(Options.OnStepEnd, onStepEnd ?? prepared.OnStepEnd),
+                OnStepError = Options.OnStepError,
                 OnStart = MergeCallbacks(Options.OnStart, prepared.OnStart),
 #pragma warning disable CS0618 // OnFinish is the deprecated alias of OnEnd
                 OnEnd = MergeCallbacks(Options.OnEnd, prepared.OnEnd ?? prepared.OnFinish),
@@ -424,6 +426,12 @@ public class AgentOptions
     /// Maps to <c>onStepEnd</c> of the <c>ToolLoopAgent</c> settings.
     /// </summary>
     public Func<StepResult, CancellationToken, Task>? OnStepEnd { get; set; }
+
+    /// <summary>
+    /// Called when a step that started fails before it produces a step result. <see cref="OnStepEnd"/> is not called for such a step.
+    /// Unlike <see cref="OnStepEnd"/>, it can only be set here and not per call. Maps to <c>onStepError</c> of the <c>ToolLoopAgent</c> settings.
+    /// </summary>
+    public Func<GenerateTextStepErrorEvent, CancellationToken, Task>? OnStepError { get; set; }
 
     /// <summary>Telemetry configuration of every call. See <see cref="GenerateTextOptions.Telemetry"/>. <see cref="PrepareCall"/> can replace it. Maps to <c>telemetry</c>.</summary>
     public TelemetryOptions? Telemetry { get; set; }
