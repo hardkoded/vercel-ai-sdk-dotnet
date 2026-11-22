@@ -33,7 +33,8 @@ public sealed class OnAbortTests
     [Fact]
     [UpstreamTest(
         Prefix + "should call onAbort when stream() is aborted",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public async Task ShouldCallOnAbortWhenStreamIsAborted()
     {
@@ -61,7 +62,8 @@ public sealed class OnAbortTests
     [Fact]
     [UpstreamTest(
         Prefix + "should call onAbort when stream() times out",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public async Task ShouldCallOnAbortWhenStreamTimesOut()
     {
@@ -91,7 +93,8 @@ public sealed class OnAbortTests
     [Fact]
     [UpstreamTest(
         Prefix + "should not call onAbort when generate() is aborted",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public async Task ShouldNotCallOnAbortWhenGenerateIsAborted()
     {

@@ -18,7 +18,8 @@ public sealed class OnStepErrorTests
     [UpstreamTest(
         Prefix + "should call onStepError when a generate step fails",
         Coverage = UpstreamCoverage.Partial,
-        Note = "AgentOptions has no OnStepStart, so the test does not check that the error event carries the step start event."
+        Note = "AgentOptions has no OnStepStart, so the test does not check that the error event carries the step start event.",
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public async Task ShouldCallOnStepErrorWhenAGenerateStepFails()
     {
@@ -56,7 +57,8 @@ public sealed class OnStepErrorTests
     [Fact]
     [UpstreamTest(
         Prefix + "should call onStepError when a stream step ends without output",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public async Task ShouldCallOnStepErrorWhenAStreamStepEndsWithoutOutput()
     {

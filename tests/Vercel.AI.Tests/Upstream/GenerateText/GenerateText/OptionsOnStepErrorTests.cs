@@ -18,7 +18,8 @@ public sealed class OptionsOnStepErrorTests
     [Fact]
     [UpstreamTest(
         Prefix + "should be called when the provider call fails",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public async Task Should_be_called_when_the_provider_call_fails()
     {
@@ -67,7 +68,8 @@ public sealed class OptionsOnStepErrorTests
     [Fact]
     [UpstreamTest(
         Prefix + "should report the step that failed in a multi-step run",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public async Task Should_report_the_step_that_failed_in_a_multi_step_run()
     {
@@ -118,7 +120,8 @@ public sealed class OptionsOnStepErrorTests
     [Fact]
     [UpstreamTest(
         Prefix + "should not be called when the step completes",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public async Task Should_not_be_called_when_the_step_completes()
     {
@@ -147,7 +150,8 @@ public sealed class OptionsOnStepErrorTests
     [Fact]
     [UpstreamTest(
         Prefix + "should be called with the same wrapped gateway error that is thrown",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public async Task Should_be_called_with_the_same_wrapped_gateway_error_that_is_thrown()
     {
@@ -179,7 +183,8 @@ public sealed class OptionsOnStepErrorTests
     [Fact]
     [UpstreamTest(
         Prefix + "should be called with the abort error when the call is aborted",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public async Task Should_be_called_with_the_abort_error_when_the_call_is_aborted()
     {
@@ -227,7 +232,8 @@ public sealed class OptionsOnStepErrorTests
     [InlineData("step")]
     [UpstreamTest(
         Prefix + "should be called with the timeout error when the %s timeout is reached",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public async Task Should_be_called_with_the_timeout_error_when_the_timeout_is_reached(
         string kind

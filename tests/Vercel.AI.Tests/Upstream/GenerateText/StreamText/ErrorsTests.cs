@@ -424,7 +424,8 @@ public sealed class ErrorsTests
     [Fact]
     [UpstreamTest(
         Prefix + "should call onStepError when provider stream closes before finish chunk",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public async Task Should_call_onStepError_when_provider_stream_closes_before_finish_chunk()
     {
@@ -470,7 +471,8 @@ public sealed class ErrorsTests
     [Fact]
     [UpstreamTest(
         Prefix + "should call onStepError when the provider call throws",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public async Task Should_call_onStepError_when_the_provider_call_throws()
     {
@@ -501,7 +503,8 @@ public sealed class ErrorsTests
     [UpstreamTest(
         Prefix
             + "should report the step error to telemetry before onError when the provider call throws",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public async Task Should_report_the_step_error_to_telemetry_before_onError_when_the_provider_call_throws()
     {
@@ -553,7 +556,8 @@ public sealed class ErrorsTests
     [Fact]
     [UpstreamTest(
         Prefix + "should call onStepError when the provider stream errors",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public async Task Should_call_onStepError_when_the_provider_stream_errors()
     {
@@ -591,7 +595,8 @@ public sealed class ErrorsTests
     [Fact]
     [UpstreamTest(
         Prefix + "should report the error of the failed step instead of an earlier step error",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public async Task Should_report_the_error_of_the_failed_step_instead_of_an_earlier_step_error()
     {
@@ -641,7 +646,8 @@ public sealed class ErrorsTests
     [InlineData("the step timeout")]
     [UpstreamTest(
         Prefix + "should end the step with onAbort instead of onStepError on %s",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public async Task Should_end_the_step_with_onAbort_instead_of_onStepError(string setup)
     {
@@ -694,7 +700,8 @@ public sealed class ErrorsTests
     [Fact]
     [UpstreamTest(
         Prefix + "should end the step with onStepEnd when stream retries run out",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public async Task Should_end_the_step_with_onStepEnd_when_stream_retries_run_out()
     {
@@ -750,7 +757,8 @@ public sealed class ErrorsTests
     [Fact]
     [UpstreamTest(
         Prefix + "should not call onStepError when the step completes",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public async Task Should_not_call_onStepError_when_the_step_completes()
     {
@@ -779,7 +787,8 @@ public sealed class ErrorsTests
     [UpstreamTest(
         Prefix
             + "should report a provider failure on a continuation step to onStepError and end the call once",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public async Task Should_report_a_provider_failure_on_a_continuation_step_to_onStepError_and_end_the_call_once()
     {
