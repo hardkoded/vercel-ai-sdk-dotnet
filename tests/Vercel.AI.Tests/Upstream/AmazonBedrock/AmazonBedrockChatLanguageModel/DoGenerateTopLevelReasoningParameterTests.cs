@@ -238,7 +238,7 @@ public sealed class DoGenerateTopLevelReasoningParameterTests
             "{\"bedrock\":{\"reasoningConfig\":{\"display\":\"summarized\"}}}"
         );
 
-        Assert.Null(Field(body, "thinking"));
+        AssertEqual("{\"type\":\"disabled\"}", Field(body, "thinking")!.Value);
         Assert.Null(Field(body, "output_config"));
         Assert.Empty(result.Warnings);
     }
