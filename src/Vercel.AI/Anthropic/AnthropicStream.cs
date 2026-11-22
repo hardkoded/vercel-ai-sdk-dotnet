@@ -43,6 +43,15 @@ public sealed class AnthropicStream
     /// <summary>The caller's name for the declared computer toolset. Defaults to <c>computer</c>.</summary>
     public string? ComputerToolsetName { get; init; }
 
+    private static readonly HashSet<string> TextOrThinkingBlockTypes =
+    [
+        "redacted_thinking",
+        "text",
+        "thinking",
+    ];
+
+    private readonly List<HeldBackText> _heldBack = [];
+    private readonly Dictionary<int, HeldBackText> _heldBackByIndex = [];
     private bool _hasOutput;
     private bool _failed;
     private FinishStreamPart? _lastFinish;
@@ -178,6 +187,11 @@ public sealed class AnthropicStream
         else if (type == "message_stop")
         {
             _open = false;
+            foreach (var part in FlushHeldBackText())
+            {
+                yield return part;
+            }
+
             yield return Finish();
         }
     }
@@ -202,6 +216,7 @@ public sealed class AnthropicStream
         }
 
         _open = true;
+        _heldBackByIndex.Clear();
         _hasOutput = false;
         _finish = null;
         _stopSequence = null;
@@ -268,8 +283,25 @@ public sealed class AnthropicStream
         }
 
         var id = index.ToString(CultureInfo.InvariantCulture);
+
+        // Text before a tool call or result is preamble, not the answer.
+        if (!TextOrThinkingBlockTypes.Contains(type ?? string.Empty))
+        {
+            _heldBack.Clear();
+        }
+
         if (type == "text")
         {
+            // When the JSON response tool is used, the tool call is returned as text, so the text
+            // content is held back until we know whether the tool was called.
+            if (_usesJsonTool)
+            {
+                var entry = new HeldBackText(id);
+                _heldBack.Add(entry);
+                _heldBackByIndex[index] = entry;
+                yield break;
+            }
+
             _blocks[index] = new Block("text", id);
             yield return new TextStartStreamPart(id);
         }
@@ -365,6 +397,20 @@ public sealed class AnthropicStream
     {
         var index = Int(node["index"]) ?? 0;
         var delta = node["delta"] as JsonObject;
+        if (_heldBackByIndex.TryGetValue(index, out var heldBack))
+        {
+            if (Text(delta?["type"]) == "text_delta")
+            {
+                heldBack.Text.Append(Text(delta?["text"]) ?? string.Empty);
+            }
+            else if (Text(delta?["type"]) == "citations_delta" && delta?["citation"] != null)
+            {
+                heldBack.Citations.Add(ParseElement(delta["citation"]!.ToJsonString()));
+            }
+
+            yield break;
+        }
+
         Block? block;
         if (delta == null || !_blocks.TryGetValue(index, out block) || block == null)
         {
@@ -495,6 +541,43 @@ public sealed class AnthropicStream
                 };
             }
         }
+    }
+
+    // A message that hands off to a tool or continuation is not the final answer,
+    // so its held-back text is discarded.
+    private IEnumerable<LanguageModelStreamPart> FlushHeldBackText()
+    {
+        var emit = !_jsonTool && !IsContinuationStopReason(_finish);
+        var entries = _heldBack.ToArray();
+        _heldBack.Clear();
+        if (!emit)
+        {
+            yield break;
+        }
+
+        foreach (var entry in entries)
+        {
+            if (entry.Text.Length == 0)
+            {
+                continue;
+            }
+
+            _hasOutput = true;
+            yield return new TextStartStreamPart(entry.Id);
+            yield return new TextDeltaStreamPart(entry.Id, entry.Text.ToString());
+            yield return entry.Citations.Count == 0
+                ? new TextEndStreamPart(entry.Id)
+                : new TextEndStreamPart(
+                    entry.Id,
+                    AnthropicCitations.MapAll(entry.Citations),
+                    AnthropicCitations.TextMetadata(entry.Citations)
+                );
+        }
+    }
+
+    private static bool IsContinuationStopReason(string? stopReason)
+    {
+        return stopReason == "pause_turn" || stopReason == "tool_use";
     }
 
     private static bool IsCodeExecution(string name)
@@ -653,6 +736,15 @@ public sealed class AnthropicStream
         }
 
         return null;
+    }
+
+    private sealed class HeldBackText(string id)
+    {
+        public string Id { get; } = id;
+
+        public StringBuilder Text { get; } = new();
+
+        public List<JsonElement> Citations { get; } = [];
     }
 
     private sealed class Block

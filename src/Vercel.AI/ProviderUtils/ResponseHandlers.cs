@@ -154,7 +154,13 @@ public static class ResponseHandlers
                 when (error is not OperationCanceledException and not OutOfMemoryException)
             {
                 // The error holds the parsed body with placeholders: the bytes never reach a message.
-                throw Invalid(new TypeValidationException(rawValue, error, null));
+                throw Invalid(
+                    new TypeValidationException(
+                        rawValue,
+                        JsonBinaryFieldScanner.RedactBinaryFields(error, binaries),
+                        null
+                    )
+                );
             }
 
             return new JsonResponseHandlerResult<T>(value, rawValue, headers);
