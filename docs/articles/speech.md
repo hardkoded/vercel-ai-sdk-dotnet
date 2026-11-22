@@ -85,6 +85,18 @@ Gemini 3.8 and newer TTS models (and custom model IDs) take structured speech. S
 
 `GoogleSpeechModel.GenerateAsync` returns a `GoogleSpeechResult`. Older Gemini TTS models return raw PCM, so `Audio` wraps it in a 44-byte WAV header unless you request `OutputFormat = "pcm"`. In that case you get the raw bytes and an `unsupported` `outputFormat` warning. WAV responses pass through unchanged. The result also carries the raw `Usage` (`usageMetadata`, including cached tokens), `SampleRate` and `MimeType` (the `providerMetadata.google` values), `Timestamp`, `ModelId`, `Headers`, `RequestBody` and `ResponseBody`. A response without inline audio gives an empty `Audio`. Through `GenerateSpeech`, the sample rate and mime type arrive as `providerMetadata.google`.
 
+## AssemblyAI speech
+
+`AssemblyAIProvider.SpeechModel("assemblyai-tts-1")` synthesizes buffered speech; see the AssemblyAI entries in [Providers](providers.md) for the output formats and `assemblyai` provider options.
+
+```csharp
+var model = AssemblyAIProvider.Create().Speech("assemblyai-tts-1");
+var result = await model.GenerateAsync(
+    new AssemblyAISpeechRequest("Hola, mundo!") { Voice = "aai-kyla", Language = "es", OutputFormat = "wav" },
+    CancellationToken.None);
+Console.WriteLine(result.Usage?.Characters);
+```
+
 ## Transcription telemetry
 
 `Transcribe.TranscribeAsync` accepts a `TranscribeRequest.Telemetry` object. Its `OnStart`, `OnEnd` and `OnError` callbacks receive start, end and error events. They carry the provider and model, the audio byte length and media type, the transcript, warnings, response metadata, provider metadata and the provider's usage when it reports one. The start event also carries the `TimestampGranularities` you asked for. The end event carries the provider's `Words`, whether you requested them or the provider returned them by default.
