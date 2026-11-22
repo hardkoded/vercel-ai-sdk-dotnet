@@ -426,12 +426,6 @@ public sealed class GoogleVertexProvider : GoogleProvider
         return new GoogleVertexVideoModel(this, modelId);
     }
 
-    /// <summary>Creates a video model. Same as <see cref="VideoModel(string)"/>.</summary>
-    public IVideoModel Video(string modelId)
-    {
-        return VideoModel(modelId);
-    }
-
     /// <summary>Uses <see cref="VertexOptions.GenerateAuthToken"/> unless an API key is set.</summary>
     private protected override Task<string> BearerTokenAsync(CancellationToken cancellationToken)
     {

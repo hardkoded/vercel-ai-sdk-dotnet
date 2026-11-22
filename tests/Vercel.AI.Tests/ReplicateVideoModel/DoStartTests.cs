@@ -157,7 +157,7 @@ public sealed class DoStartTests
     [UpstreamTest(
         Id + "should pass seed when it is 0",
         Coverage = UpstreamCoverage.Covered,
-        Commit = "f35668be8bd5fffafb1461f34c5d4b1ca9a43beb"
+        Commit = "ef2dfb5e9fb7b72287b226eba8b743f809414172"
     )]
     public async Task ShouldPassSeedWhenItIs0()
     {

@@ -510,6 +510,19 @@ Parts: `transcript-delta` for each text delta, `transcript-final` for each segme
 
 On Baseten Model APIs, `deepseek-ai/DeepSeek-V4-Pro-0813` can return an empty answer when JSON mode and reasoning are combined. When reasoning is enabled (the default), `BasetenProvider` puts JSON instructions and your schema in a system message and omits `response_format`. It emits a `compatibility` warning for `responseFormat` because the server does not constrain the output; the SDK still validates the result. Set reasoning to `none` to use native JSON Schema enforcement instead. Dedicated deployments (`ModelUrl`) are not affected.
 
+## Fal, Google, Google Vertex and Replicate video models
+
+`FalProvider`, `GoogleProvider`, `GoogleVertexProvider`, and `ReplicateProvider` create video models with `VideoModel(id)` (alias `Video(id)`). Each model implements `IVideoCaller` with `DoStartAsync` and `DoStatusAsync`, so pass it as the `Model` of `GenerateVideoRequest`; `GenerateVideo` polls until the video is ready.
+
+| Model | Provider id | `MaxVideosPerCall` | Operation | Provider options |
+| --- | --- | --- | --- | --- |
+| `FalVideoModel` | `fal.video` | 1 | `{ responseUrl, submitUrl }` | `fal` (`loop`, `motionStrength`, `resolution`, `negativePrompt`, `promptOptimizer`; other keys are sent as is) |
+| `GoogleVideoModel` | `google.generative-ai` | 4 | `{ operationName }` | `google` |
+| `GoogleVertexVideoModel` | `google.vertex.video` | 4 | `{ operationName }` | `googleVertex`, then `vertex` |
+| `ReplicateVideoModel` | `replicate.video` | 1 | `{ getUrl }` | `replicate` (`guidance_scale`, `num_inference_steps`, `motion_bucket_id`, `prompt_optimizer`, and others; unknown keys are sent as is) |
+
+`Seed` is sent whenever it is set, so `0` reaches the provider. Fal and Replicate support webhooks: `HandleWebhookAsync` passes the factory's URL and `Received` task straight through. Fal appends the URL as the `fal_webhook` query parameter. Replicate sends `webhook` with `webhook_events_filter: ["completed"]`. A Fal status call that finds the request still in progress reports `pending`.
+
 ## Videos delivered to your storage
 
 A video model can deliver a finished video straight to storage you manage, for example through a signed upload URL. It reports that with a `VideoOutput` of type `uploaded`. `GenerateVideo` does not download it and does not add it to `GenerateVideoResult.Videos`. `GenerateVideoResult.UploadedVideos` counts those videos.

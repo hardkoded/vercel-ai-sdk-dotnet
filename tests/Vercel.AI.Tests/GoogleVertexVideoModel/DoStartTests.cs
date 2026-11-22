@@ -57,7 +57,11 @@ public sealed class DoStartTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "should pass seed when it is 0", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Id + "should pass seed when it is 0",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "ef2dfb5e9fb7b72287b226eba8b743f809414172"
+    )]
     public async Task ShouldPassSeedWhenItIs0()
     {
         var server = new VertexVideoServer();
