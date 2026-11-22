@@ -286,7 +286,7 @@ Reads operation status.
 
 **Returns:** [Task&lt;VideoStatusResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceVideoModel.cs#L201)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceVideoModel.cs#L204)
 
 <a id="Vercel_AI_ByteDance_ByteDanceVideoModel_HandleWebhookAsync_"></a>
 <a id="Vercel_AI_ByteDance_ByteDanceVideoModel_HandleWebhookAsync_System_Func_System_Threading_Tasks_Task_Vercel_AI_Operations_VideoWebhook___System_Threading_CancellationToken_"></a>
@@ -310,7 +310,7 @@ Turns a webhook factory into a URL and a received task.
 
 **Returns:** [Task&lt;VideoWebhook&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceVideoModel.cs#L289)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceVideoModel.cs#L295)
 
 <a id="Vercel_AI_ByteDance_ByteDanceVideoModel_ResolveMaxVideosPerCallAsync_"></a>
 <a id="Vercel_AI_ByteDance_ByteDanceVideoModel_ResolveMaxVideosPerCallAsync_System_Threading_CancellationToken_"></a>

@@ -23,7 +23,7 @@ Alibaba embedding request.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Alibaba/AlibabaProvider.cs#L308)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Alibaba/AlibabaProvider.cs#L311)
 
 ## Constructors
 
@@ -46,7 +46,7 @@ Creates a request for &lt;code class="paramref"&gt;values&lt;/code&gt;.
 | --- | --- | --- |
 | `values` | [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Alibaba/AlibabaProvider.cs#L311)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Alibaba/AlibabaProvider.cs#L314)
 
 ## Properties
 
@@ -65,7 +65,7 @@ public int? Dimension { get; set; }
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Alibaba/AlibabaProvider.cs#L323)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Alibaba/AlibabaProvider.cs#L326)
 
 <a id="Vercel_AI_Alibaba_AlibabaEmbeddingRequest_Headers_"></a>
 <a id="Vercel_AI_Alibaba_AlibabaEmbeddingRequest_Headers"></a>
@@ -82,7 +82,7 @@ Headers merged over the provider headers.
 
 **Value:** [IDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.idictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Alibaba/AlibabaProvider.cs#L329)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Alibaba/AlibabaProvider.cs#L332)
 
 <a id="Vercel_AI_Alibaba_AlibabaEmbeddingRequest_OutputType_"></a>
 <a id="Vercel_AI_Alibaba_AlibabaEmbeddingRequest_OutputType"></a>
@@ -99,7 +99,7 @@ public string? OutputType { get; set; }
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Alibaba/AlibabaProvider.cs#L326)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Alibaba/AlibabaProvider.cs#L329)
 
 <a id="Vercel_AI_Alibaba_AlibabaEmbeddingRequest_TextType_"></a>
 <a id="Vercel_AI_Alibaba_AlibabaEmbeddingRequest_TextType"></a>
@@ -116,7 +116,7 @@ public string? TextType { get; set; }
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Alibaba/AlibabaProvider.cs#L320)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Alibaba/AlibabaProvider.cs#L323)
 
 <a id="Vercel_AI_Alibaba_AlibabaEmbeddingRequest_Values_"></a>
 <a id="Vercel_AI_Alibaba_AlibabaEmbeddingRequest_Values"></a>
@@ -133,4 +133,4 @@ Texts to embed.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Alibaba/AlibabaProvider.cs#L317)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Alibaba/AlibabaProvider.cs#L320)

@@ -21,6 +21,6 @@ public interface IRerankingModel
 
 Reranking model specification.
 
-**Derived:** [AmazonBedrockRerankingModel](/api/Vercel.AI.AmazonBedrock/AmazonBedrockRerankingModel/), [CohereRerankingModel](/api/Vercel.AI.Cohere/CohereRerankingModel/), [TogetherAIRerankingModel](/api/Vercel.AI.TogetherAI/TogetherAIRerankingModel/), [VoyageProvider.VoyageRerankingModel](/api/Vercel.AI.Voyage/VoyageProvider.VoyageRerankingModel/)
+**Derived:** [AmazonBedrockRerankingModel](/api/Vercel.AI.AmazonBedrock/AmazonBedrockRerankingModel/), [CohereRerankingModel](/api/Vercel.AI.Cohere/CohereRerankingModel/), [GatewayRerankingModel](/api/Vercel.AI.Gateway/GatewayRerankingModel/), [TogetherAIRerankingModel](/api/Vercel.AI.TogetherAI/TogetherAIRerankingModel/), [VoyageProvider.VoyageRerankingModel](/api/Vercel.AI.Voyage/VoyageProvider.VoyageRerankingModel/)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/OtherModels.cs#L544)

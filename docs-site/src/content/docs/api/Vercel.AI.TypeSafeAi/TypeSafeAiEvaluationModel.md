@@ -30,7 +30,7 @@ Deprecated alias of [TypeSafeAiDecisionModel](/api/Vercel.AI.TypeSafeAi/TypeSafe
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiDecisionModel.cs#L953)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiDecisionModel.cs#L970)
 
 ## Constructors
 
@@ -54,7 +54,7 @@ Creates a decision model. &lt;code class="paramref"&gt;modelId&lt;/code&gt; may 
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `config` | [TypeSafeAiDecisionModelConfig](/api/Vercel.AI.TypeSafeAi/TypeSafeAiDecisionModelConfig/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiDecisionModel.cs#L957)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiDecisionModel.cs#L974)
 
 ## Methods
 
@@ -80,4 +80,4 @@ Deprecated alias of `HttpClient)`.
 
 **Returns:** [TypeSafeAiEvaluationModel](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiDecisionModel.cs#L961)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiDecisionModel.cs#L978)

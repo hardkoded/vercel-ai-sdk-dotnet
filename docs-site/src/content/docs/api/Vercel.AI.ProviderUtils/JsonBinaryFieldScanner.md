@@ -146,6 +146,33 @@ Reads the next chunk of the body. Maps to `push`.
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonBinaryFieldScanner.cs#L182)
 
+<a id="Vercel_AI_ProviderUtils_JsonBinaryFieldScanner_RedactBinaryFields_"></a>
+<a id="Vercel_AI_ProviderUtils_JsonBinaryFieldScanner_RedactBinaryFields_System_Exception_System_Collections_Generic_IReadOnlyDictionary_System_String_System_Byte____"></a>
+
+### `RedactBinaryFields(Exception, IReadOnlyDictionary<string, byte[]>)`
+
+
+```csharp
+public static Exception RedactBinaryFields(Exception error, IReadOnlyDictionary<string, byte[]> binaries)
+```
+
+
+Returns &lt;code class="paramref"&gt;error&lt;/code&gt;, or a copy of it when its message, or the message of a cause, holds the base64 of one of the
+&lt;code class="paramref"&gt;binaries&lt;/code&gt;: a validator that stringifies the value it was given prints the bytes, and a [byte](https://learn.microsoft.com/dotnet/api/system.byte) array
+has no `toJSON` hook to print the placeholder instead. The copy keeps the type name and the stack trace, and each base64
+text becomes its placeholder. Stands in for `maskBinariesInJson`.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `error` | [Exception](https://learn.microsoft.com/dotnet/api/system.exception) |  |
+| `binaries` | [IReadOnlyDictionary&lt;string, byte\[\]&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2) |  |
+
+**Returns:** [Exception](https://learn.microsoft.com/dotnet/api/system.exception)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/JsonBinaryFieldScanner.cs#L419)
+
 <a id="Vercel_AI_ProviderUtils_JsonBinaryFieldScanner_ReplaceBinaryFieldPlaceholders_"></a>
 <a id="Vercel_AI_ProviderUtils_JsonBinaryFieldScanner_ReplaceBinaryFieldPlaceholders_System_Text_Json_JsonElement_System_Collections_Generic_IReadOnlyDictionary_System_String_System_Byte____"></a>
 

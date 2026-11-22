@@ -23,7 +23,7 @@ Request limits derived from an OpenAI model id.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAILanguageModelCapabilities.cs#L11)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAILanguageModelCapabilities.cs#L13)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Whether sampling parameters such as temperature are limited.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAILanguageModelCapabilities.cs#L35)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAILanguageModelCapabilities.cs#L37)
 
 <a id="Vercel_AI_OpenAI_OpenAILanguageModelCapabilities_SupportedReasoningEfforts_"></a>
 <a id="Vercel_AI_OpenAI_OpenAILanguageModelCapabilities_SupportedReasoningEfforts"></a>
@@ -59,7 +59,7 @@ Allowed reasoning efforts. Null when the family does not constrain them.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAILanguageModelCapabilities.cs#L53)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAILanguageModelCapabilities.cs#L55)
 
 <a id="Vercel_AI_OpenAI_OpenAILanguageModelCapabilities_SupportsAsyncToolCalling_"></a>
 <a id="Vercel_AI_OpenAI_OpenAILanguageModelCapabilities_SupportsAsyncToolCalling"></a>
@@ -76,7 +76,7 @@ Whether async tool calling is accepted.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAILanguageModelCapabilities.cs#L50)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAILanguageModelCapabilities.cs#L52)
 
 <a id="Vercel_AI_OpenAI_OpenAILanguageModelCapabilities_SupportsConfigurationUpdate_"></a>
 <a id="Vercel_AI_OpenAI_OpenAILanguageModelCapabilities_SupportsConfigurationUpdate"></a>
@@ -93,7 +93,7 @@ Whether GPT-6 configuration updates are accepted.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAILanguageModelCapabilities.cs#L47)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAILanguageModelCapabilities.cs#L49)
 
 <a id="Vercel_AI_OpenAI_OpenAILanguageModelCapabilities_SupportsFlexProcessing_"></a>
 <a id="Vercel_AI_OpenAI_OpenAILanguageModelCapabilities_SupportsFlexProcessing"></a>
@@ -110,7 +110,7 @@ Whether `service_tier: flex` is accepted.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAILanguageModelCapabilities.cs#L41)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAILanguageModelCapabilities.cs#L43)
 
 <a id="Vercel_AI_OpenAI_OpenAILanguageModelCapabilities_SupportsNonReasoningParameters_"></a>
 <a id="Vercel_AI_OpenAI_OpenAILanguageModelCapabilities_SupportsNonReasoningParameters"></a>
@@ -127,7 +127,7 @@ Whether temperature and top_p stay when reasoning effort is `none`.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAILanguageModelCapabilities.cs#L56)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAILanguageModelCapabilities.cs#L58)
 
 <a id="Vercel_AI_OpenAI_OpenAILanguageModelCapabilities_SupportsPriorityProcessing_"></a>
 <a id="Vercel_AI_OpenAI_OpenAILanguageModelCapabilities_SupportsPriorityProcessing"></a>
@@ -144,7 +144,7 @@ Whether `service_tier` `priority` or `fast` is accepted.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAILanguageModelCapabilities.cs#L44)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAILanguageModelCapabilities.cs#L46)
 
 <a id="Vercel_AI_OpenAI_OpenAILanguageModelCapabilities_SystemMessageMode_"></a>
 <a id="Vercel_AI_OpenAI_OpenAILanguageModelCapabilities_SystemMessageMode"></a>
@@ -161,7 +161,7 @@ public string SystemMessageMode { get; }
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAILanguageModelCapabilities.cs#L38)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAILanguageModelCapabilities.cs#L40)
 
 ## Methods
 
@@ -186,4 +186,4 @@ Classifies &lt;code class="paramref"&gt;modelId&lt;/code&gt; the way the OpenAI 
 
 **Returns:** [OpenAILanguageModelCapabilities](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAILanguageModelCapabilities.cs#L59)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAILanguageModelCapabilities.cs#L61)

@@ -24,7 +24,7 @@ deployments routes when [UseDeploymentBasedUrls](/api/Vercel.AI.Azure/AzureOpenA
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [ProviderBase](/api/Vercel.AI.Provider/ProviderBase/) → [OpenAICompatibleProvider](/api/Vercel.AI.OpenAICompatible/OpenAICompatibleProvider/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L89)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L92)
 
 ## Constructors
 
@@ -48,7 +48,7 @@ Creates a provider.
 | `httpClient` | [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient) |  |
 | `options` | [AzureOpenAIOptions](/api/Vercel.AI.Azure/AzureOpenAIOptions/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L103)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L106)
 
 ## Fields
 
@@ -66,7 +66,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L92)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L95)
 
 ## Methods
 
@@ -93,7 +93,7 @@ detection; requests always use the deployment ID.
 
 **Returns:** [OpenAIChatLanguageModel](/api/Vercel.AI.OpenAI/OpenAIChatLanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L350)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L361)
 
 <a id="Vercel_AI_Azure_AzureOpenAIProvider_CompletionModel_"></a>
 <a id="Vercel_AI_Azure_AzureOpenAIProvider_CompletionModel_System_String_Vercel_AI_Azure_AzureOpenAILanguageModelSettings_"></a>
@@ -118,7 +118,7 @@ requests always use the deployment ID.
 
 **Returns:** [OpenAICompatibleCompletionLanguageModel](/api/Vercel.AI.OpenAICompatible/OpenAICompatibleCompletionLanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L382)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L393)
 
 <a id="Vercel_AI_Azure_AzureOpenAIProvider_Create_"></a>
 <a id="Vercel_AI_Azure_AzureOpenAIProvider_Create_Vercel_AI_Azure_AzureOpenAIOptions_System_Net_Http_HttpMessageHandler_"></a>
@@ -142,7 +142,7 @@ Creates a provider.
 
 **Returns:** [AzureOpenAIProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L280)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L291)
 
 <a id="Vercel_AI_Azure_AzureOpenAIProvider_DeepSeek_"></a>
 <a id="Vercel_AI_Azure_AzureOpenAIProvider_DeepSeek_System_String_"></a>
@@ -166,7 +166,7 @@ Azure-hosted DeepSeek chat model for a deployment. Images are sent as URLs when 
 
 **Returns:** [DeepSeekChatLanguageModel](/api/Vercel.AI.DeepSeek/DeepSeekChatLanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L362)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L373)
 
 <a id="Vercel_AI_Azure_AzureOpenAIProvider_Image_"></a>
 <a id="Vercel_AI_Azure_AzureOpenAIProvider_Image_System_String_"></a>
@@ -190,7 +190,7 @@ Image model. MAI-Image models use the MAI image API by default; other IDs use Op
 
 **Returns:** [AzureImageModel](/api/Vercel.AI.Azure/AzureImageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L399)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L410)
 
 <a id="Vercel_AI_Azure_AzureOpenAIProvider_ImageModel_"></a>
 <a id="Vercel_AI_Azure_AzureOpenAIProvider_ImageModel_System_String_"></a>
@@ -213,7 +213,7 @@ Image model. Alias of [Image(string)](#Vercel_AI_Azure_AzureOpenAIProvider_Image
 
 **Returns:** [IImageModel](/api/Vercel.AI.Provider/IImageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L405)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L416)
 
 <a id="Vercel_AI_Azure_AzureOpenAIProvider_LanguageModel_"></a>
 <a id="Vercel_AI_Azure_AzureOpenAIProvider_LanguageModel_System_String_"></a>
@@ -236,7 +236,7 @@ Returns a language model.
 
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L320)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L331)
 
 <a id="Vercel_AI_Azure_AzureOpenAIProvider_LanguageModel_System_String_Vercel_AI_Azure_AzureOpenAILanguageModelSettings_"></a>
 
@@ -260,7 +260,7 @@ Responses API model, like [ResponsesModel(string)](#Vercel_AI_Azure_AzureOpenAIP
 
 **Returns:** [OpenAIResponsesLanguageModel](/api/Vercel.AI.OpenAI/OpenAIResponsesLanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L311)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L322)
 
 <a id="Vercel_AI_Azure_AzureOpenAIProvider_ResponsesModel_"></a>
 <a id="Vercel_AI_Azure_AzureOpenAIProvider_ResponsesModel_System_String_"></a>
@@ -284,7 +284,7 @@ Options are read from the `azure` provider options and fall back to `openai`.
 
 **Returns:** [OpenAIResponsesLanguageModel](/api/Vercel.AI.OpenAI/OpenAIResponsesLanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L329)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L340)
 
 <a id="Vercel_AI_Azure_AzureOpenAIProvider_ResponsesModel_System_String_Vercel_AI_Azure_AzureOpenAILanguageModelSettings_"></a>
 
@@ -308,7 +308,7 @@ capability detection; requests always use the deployment ID.
 
 **Returns:** [OpenAIResponsesLanguageModel](/api/Vercel.AI.OpenAI/OpenAIResponsesLanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L338)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L349)
 
 <a id="Vercel_AI_Azure_AzureOpenAIProvider_Speech_"></a>
 <a id="Vercel_AI_Azure_AzureOpenAIProvider_Speech_System_String_"></a>
@@ -332,7 +332,7 @@ Speech model. MAI-Voice models use the Azure Speech API and every other model us
 
 **Returns:** [AzureSpeechModel](/api/Vercel.AI.Azure/AzureSpeechModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L414)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L425)
 
 <a id="Vercel_AI_Azure_AzureOpenAIProvider_SpeechModel_"></a>
 <a id="Vercel_AI_Azure_AzureOpenAIProvider_SpeechModel_System_String_"></a>
@@ -355,7 +355,7 @@ Speech model. Alias of [Speech(string)](#Vercel_AI_Azure_AzureOpenAIProvider_Spe
 
 **Returns:** [ISpeechModel](/api/Vercel.AI.Provider/ISpeechModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L430)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L441)
 
 <a id="Vercel_AI_Azure_AzureOpenAIProvider_Transcription_"></a>
 <a id="Vercel_AI_Azure_AzureOpenAIProvider_Transcription_System_String_"></a>
@@ -379,7 +379,7 @@ by default; other deployment names use the Azure OpenAI transcription API. Maps 
 
 **Returns:** [AzureTranscriptionModel](/api/Vercel.AI.Azure/AzureTranscriptionModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L439)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L450)
 
 <a id="Vercel_AI_Azure_AzureOpenAIProvider_TranscriptionModel_"></a>
 <a id="Vercel_AI_Azure_AzureOpenAIProvider_TranscriptionModel_System_String_"></a>
@@ -402,4 +402,4 @@ Transcription model. Alias of [Transcription(string)](#Vercel_AI_Azure_AzureOpen
 
 **Returns:** [ITranscriptionModel](/api/Vercel.AI.Provider/ITranscriptionModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L490)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureOpenAIProvider.cs#L503)

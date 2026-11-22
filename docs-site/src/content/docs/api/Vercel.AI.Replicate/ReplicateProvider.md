@@ -154,3 +154,49 @@ Returns a language model.
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Replicate/ReplicateProvider.cs#L34)
+
+<a id="Vercel_AI_Replicate_ReplicateProvider_Video_"></a>
+<a id="Vercel_AI_Replicate_ReplicateProvider_Video_System_String_"></a>
+
+### Video(string)
+
+
+```csharp
+public IVideoModel Video(string modelId)
+```
+
+
+Creates a video model. Same as [VideoModel(string)](#Vercel_AI_Replicate_ReplicateProvider_VideoModel_System_String_).
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+
+**Returns:** [IVideoModel](/api/Vercel.AI.Provider/IVideoModel/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Replicate/ReplicateProvider.cs#L82)
+
+<a id="Vercel_AI_Replicate_ReplicateProvider_VideoModel_"></a>
+<a id="Vercel_AI_Replicate_ReplicateProvider_VideoModel_System_String_"></a>
+
+### VideoModel(string)
+
+
+```csharp
+public override IVideoModel VideoModel(string modelId)
+```
+
+
+Returns a video model.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+
+**Returns:** [IVideoModel](/api/Vercel.AI.Provider/IVideoModel/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Replicate/ReplicateProvider.cs#L78)

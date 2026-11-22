@@ -27,25 +27,6 @@ Deepgram settings.
 
 ## Properties
 
-<a id="Vercel_AI_Deepgram_DeepgramOptions_ApiKeyProvider_"></a>
-<a id="Vercel_AI_Deepgram_DeepgramOptions_ApiKeyProvider"></a>
-
-### ApiKeyProvider
-
-
-```csharp
-public Func<CancellationToken, Task<string>>? ApiKeyProvider { get; set; }
-```
-
-
-Resolves the API key on every call, like upstream's resolvable `apiKey`. Its value wins over
-[ApiKey](/api/Vercel.AI.OpenAICompatible/OpenAICompatibleOptions/#Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_ApiKey) and the environment variable. An `Authorization` header in
-[Headers](/api/Vercel.AI.OpenAICompatible/OpenAICompatibleOptions/#Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_Headers) still wins.
-
-**Value:** [Func&lt;CancellationToken, Task&lt;string&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
-
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Deepgram/DeepgramProvider.cs#L33)
-
 <a id="Vercel_AI_Deepgram_DeepgramOptions_Clock_"></a>
 <a id="Vercel_AI_Deepgram_DeepgramOptions_Clock"></a>
 

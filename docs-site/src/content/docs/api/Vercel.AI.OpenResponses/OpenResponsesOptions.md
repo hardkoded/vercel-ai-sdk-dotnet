@@ -34,13 +34,13 @@ Open Responses settings. The default origin is the AI Gateway Open Responses rou
 
 
 ```csharp
-public string? ApiKey { get; set; }
+public Resolvable<string>? ApiKey { get; set; }
 ```
 
 
-Explicit key.
+Explicit key. A callback is resolved before each request.
 
-**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+**Value:** `Resolvable&lt;string&gt;`
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesProvider.cs#L23)
 
@@ -111,7 +111,7 @@ Codecs for Open Responses extension tools, items, and streaming events. Experime
 
 **Value:** [IReadOnlyList&lt;OpenResponsesExtension&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesProvider.cs#L53)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesProvider.cs#L64)
 
 <a id="Vercel_AI_OpenResponses_OpenResponsesOptions_GetResponseErrorMetadata_"></a>
 <a id="Vercel_AI_OpenResponses_OpenResponsesOptions_GetResponseErrorMetadata"></a>
@@ -129,7 +129,7 @@ Applies to both generation and streaming errors. Maps to `getResponseErrorMetada
 
 **Value:** [Func&lt;JsonElement, OpenResponsesErrorMetadata&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesProvider.cs#L50)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesProvider.cs#L61)
 
 <a id="Vercel_AI_OpenResponses_OpenResponsesOptions_Headers_"></a>
 <a id="Vercel_AI_OpenResponses_OpenResponsesOptions_Headers"></a>
@@ -138,15 +138,15 @@ Applies to both generation and streaming errors. Maps to `getResponseErrorMetada
 
 
 ```csharp
-public IReadOnlyDictionary<string, string>? Headers { get; set; }
+public Resolvable<IReadOnlyDictionary<string, string>>? Headers { get; set; }
 ```
 
 
-Extra headers sent with every request.
+Extra headers sent with every request. A callback is resolved before each request.
 
-**Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
+**Value:** `Resolvable&lt;IReadOnlyDictionary&lt;string, string&gt;&gt;`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesProvider.cs#L44)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesProvider.cs#L55)
 
 <a id="Vercel_AI_OpenResponses_OpenResponsesOptions_Name_"></a>
 <a id="Vercel_AI_OpenResponses_OpenResponsesOptions_Name"></a>
@@ -182,3 +182,38 @@ without an item ID are sent as easy input messages. Maps to `strictResponseInput
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesProvider.cs#L35)
+
+<a id="Vercel_AI_OpenResponses_OpenResponsesOptions_StructuredOutputs_"></a>
+<a id="Vercel_AI_OpenResponses_OpenResponsesOptions_StructuredOutputs"></a>
+
+### StructuredOutputs
+
+
+```csharp
+public bool StructuredOutputs { get; set; }
+```
+
+
+Whether the endpoint supports structured outputs (`text.format`). When false, a JSON response format is omitted
+and reported as an unsupported `responseFormat` warning. Maps to `structuredOutputs`.
+
+**Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesProvider.cs#L47)
+
+<a id="Vercel_AI_OpenResponses_OpenResponsesOptions_UserAgentSuffix_"></a>
+<a id="Vercel_AI_OpenResponses_OpenResponsesOptions_UserAgentSuffix"></a>
+
+### UserAgentSuffix
+
+
+```csharp
+public string? UserAgentSuffix { get; set; }
+```
+
+
+Suffix appended to the `User-Agent` header. Defaults to `ai-sdk-open-responses/{version}`. Maps to `userAgentSuffix`.
+
+**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenResponses/OpenResponsesProvider.cs#L52)

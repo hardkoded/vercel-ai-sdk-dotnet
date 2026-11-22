@@ -31,11 +31,11 @@ The event an integration receives in [OnError](/api/Vercel.AI/ITelemetry/#Vercel
 <a id="Vercel_AI_TelemetryErrorEvent__ctor_"></a>
 <a id="Vercel_AI_TelemetryErrorEvent__ctor_System_String_System_Exception_"></a>
 
-### TelemetryErrorEvent(string, Exception)
+### TelemetryErrorEvent(string?, Exception)
 
 
 ```csharp
-public TelemetryErrorEvent(string callId, Exception error)
+public TelemetryErrorEvent(string? callId, Exception error)
 ```
 
 
@@ -76,11 +76,11 @@ The version of the AI SDK that emitted this event.
 
 
 ```csharp
-public string CallId { get; }
+public string? CallId { get; }
 ```
 
 
-Unique identifier of the failed call.
+Unique identifier of the failed call. Null for a stream, which has no call id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 

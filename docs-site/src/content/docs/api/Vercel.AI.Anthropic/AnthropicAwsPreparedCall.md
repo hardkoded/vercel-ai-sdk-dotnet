@@ -23,7 +23,7 @@ A request after the Claude Platform fetch wrapper has applied user-agent and Sig
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicAwsFetch.cs#L44)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicAwsFetch.cs#L46)
 
 ## Constructors
 
@@ -50,7 +50,7 @@ Creates a prepared call.
 | `headers` | [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2) |  |
 | `signed` | [bool](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicAwsFetch.cs#L47)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicAwsFetch.cs#L49)
 
 ## Properties
 
@@ -69,7 +69,7 @@ Body. Unchanged when the caller passed a string.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicAwsFetch.cs#L69)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicAwsFetch.cs#L71)
 
 <a id="Vercel_AI_Anthropic_AnthropicAwsPreparedCall_Headers_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicAwsPreparedCall_Headers"></a>
@@ -86,7 +86,7 @@ Lower-case headers, including signing headers when [Signed](#Vercel_AI_Anthropic
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicAwsFetch.cs#L72)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicAwsFetch.cs#L74)
 
 <a id="Vercel_AI_Anthropic_AnthropicAwsPreparedCall_Method_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicAwsPreparedCall_Method"></a>
@@ -103,7 +103,7 @@ HTTP method.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicAwsFetch.cs#L63)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicAwsFetch.cs#L65)
 
 <a id="Vercel_AI_Anthropic_AnthropicAwsPreparedCall_Signed_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicAwsPreparedCall_Signed"></a>
@@ -120,7 +120,7 @@ True when the body was signed.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicAwsFetch.cs#L75)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicAwsFetch.cs#L77)
 
 <a id="Vercel_AI_Anthropic_AnthropicAwsPreparedCall_Url_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicAwsPreparedCall_Url"></a>
@@ -137,4 +137,4 @@ Request URL.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicAwsFetch.cs#L66)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicAwsFetch.cs#L68)

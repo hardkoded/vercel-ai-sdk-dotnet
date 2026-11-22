@@ -273,7 +273,7 @@ Streams partial results. The result carries the stream with the request and resp
 
 **Returns:** [Task&lt;LanguageModelStreamResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleLanguageModel.cs#L303)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleLanguageModel.cs#L309)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleLanguageModel_PrepareRequest_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleLanguageModel_PrepareRequest_Vercel_AI_Provider_LanguageModelCallOptions_"></a>
