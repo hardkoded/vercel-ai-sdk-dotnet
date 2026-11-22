@@ -65,7 +65,7 @@ public sealed class DoGenerateTests
     [UpstreamTest(
         Prefix + "should map HTTP output format %s to %s",
         Coverage = UpstreamCoverage.Partial,
-        Commit = "3e5a123"
+        Commit = "3e5a12334b64c987a86b9ce54e369e56a5f2f863"
     )]
     public async Task Should_map_HTTP_output_format(string outputFormat, string nativeFormat)
     {
