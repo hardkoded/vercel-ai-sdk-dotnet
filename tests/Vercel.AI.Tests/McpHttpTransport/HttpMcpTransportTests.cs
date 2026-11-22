@@ -19,6 +19,7 @@ public sealed class HttpMcpTransportTests
         Prefix
             + "should expose HTTP status and JSON-RPC error details on a JSON-RPC error from POST",
         Coverage = UpstreamCoverage.Partial,
+        Commit = "d55f3cfc456d1b7bc7db3a4b70fbf602ddc8647d",
         Note = "The port has no onmessage/onerror callbacks on HttpMcpTransport and the exception has no object cause, so those assertions and the cause are not checked."
     )]
     public async Task Should_expose_HTTP_status_and_JSON_RPC_error_details_on_a_JSON_RPC_error_from_POST()
