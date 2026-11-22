@@ -70,7 +70,8 @@ public sealed class OpenAILanguageModelCapabilities
             && variant.StartsWith("chat", StringComparison.Ordinal);
         var isGptNano = variant != null && variant.StartsWith("nano", StringComparison.Ordinal);
         var isGpt6OrLater = gpt != null && gpt.Value.Major >= 6;
-        var isGpt6SolOrLuna = modelId == "gpt-6-sol" || modelId == "gpt-6-luna";
+        var isGpt6SolOrLuna =
+            modelId == "gpt-6-sol" || modelId == "gpt-6-luna" || modelId == "gpt-6.1-terra";
         var supportsFlex =
             (oSeries != null && oSeries >= 3)
             || (gpt != null && gpt.Value.Major >= 5 && !isGptChat);
