@@ -5,7 +5,7 @@
 namespace Vercel.AI.ElevenLabs;
 
 /// <summary>Request configuration of one ElevenLabs speech model. Maps to <c>requestConfig.speech</c>.</summary>
-public sealed class ElevenLabsSpeechRequestConfig
+internal sealed class ElevenLabsSpeechRequestConfig
 {
     /// <summary>Creates the configuration.</summary>
     public ElevenLabsSpeechRequestConfig(
@@ -45,10 +45,10 @@ public sealed class ElevenLabsSpeechRequestConfig
 }
 
 /// <summary>ElevenLabs model catalog. Maps to <c>elevenlabs-model-catalog.ts</c>.</summary>
-public static class ElevenLabsModelCatalog
+internal static class ElevenLabsModelCatalog
 {
     /// <summary>Provider options that only apply to text-to-speech. Maps to <c>elevenLabsTextToSpeechOnlyOptions</c>.</summary>
-    public static readonly IReadOnlyList<string> ElevenLabsTextToSpeechOnlyOptions =
+    internal static readonly IReadOnlyList<string> ElevenLabsTextToSpeechOnlyOptions =
     [
         "applyLanguageTextNormalization",
         "applyTextNormalization",
@@ -65,7 +65,7 @@ public static class ElevenLabsModelCatalog
     ];
 
     /// <summary>Provider options that only apply to music. Maps to <c>elevenLabsMusicOnlyOptions</c>.</summary>
-    public static readonly IReadOnlyList<string> ElevenLabsMusicOnlyOptions =
+    internal static readonly IReadOnlyList<string> ElevenLabsMusicOnlyOptions =
     [
         "compositionPlan",
         "forceInstrumental",
@@ -73,15 +73,15 @@ public static class ElevenLabsModelCatalog
     ];
 
     /// <summary>Provider options that only apply to sound effects. Maps to <c>elevenLabsSoundEffectsOnlyOptions</c>.</summary>
-    public static readonly IReadOnlyList<string> ElevenLabsSoundEffectsOnlyOptions =
+    internal static readonly IReadOnlyList<string> ElevenLabsSoundEffectsOnlyOptions =
     [
         "durationSeconds",
         "loop",
         "promptInfluence",
     ];
 
-    /// <summary>Returns the request configuration of a speech model. Maps to <c>getElevenLabsSpeechModelEntry</c> <c>requestConfig.speech</c>.</summary>
-    public static ElevenLabsSpeechRequestConfig GetElevenLabsSpeechModelEntry(string modelId)
+    /// <summary>Returns only <c>requestConfig.speech</c> of upstream <c>getElevenLabsSpeechModelEntry</c>. The full entry (capabilities, providerOptions) is not ported (#1681); internal until it is.</summary>
+    internal static ElevenLabsSpeechRequestConfig GetElevenLabsSpeechModelEntry(string modelId)
     {
         return new ElevenLabsSpeechRequestConfig(
             music: modelId.StartsWith("music_", StringComparison.Ordinal),

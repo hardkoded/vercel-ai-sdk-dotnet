@@ -955,6 +955,7 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
                 var envelope = ReadTimestampsEnvelope(response.Body, uri.ToString(), body);
                 rawBody = envelope.Raw;
                 audio = envelope.Audio;
+                mediaType = DetailedMediaType(args.OutputFormat);
                 if (envelope.Alignment != null)
                 {
                     metadata["alignment"] = envelope.Alignment;
@@ -1000,19 +1001,27 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
                 );
             }
 
-            var explicitInputs = Child(elevenlabs, "inputs") is
+            var explicitInputs = Child(elevenlabs, "inputs");
+            if (
+                explicitInputs is { } rawInputs
+                && (rawInputs.ValueKind != JsonValueKind.Array || rawInputs.GetArrayLength() == 0)
+            )
             {
-                ValueKind: JsonValueKind.Array
-            } inputsArray
-                ? inputsArray
-                : (JsonElement?)null;
+                throw new InvalidArgumentError(
+                    "providerOptions.elevenlabs.inputs",
+                    rawInputs.ToString(),
+                    "inputs must be a non-empty array."
+                );
+            }
+
             var inputs = new JsonArray();
             if (explicitInputs is { } given)
             {
                 foreach (var input in given.EnumerateArray())
                 {
                     if (
-                        Child(input, "text") is not { ValueKind: JsonValueKind.String } inputText
+                        input.ValueKind != JsonValueKind.Object
+                        || Child(input, "text") is not { ValueKind: JsonValueKind.String } inputText
                         || Child(input, "voiceId")
                             is not { ValueKind: JsonValueKind.String } inputVoice
                     )
@@ -1288,8 +1297,15 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
                 requestedDurationMs = ReadNumber(elevenlabs, "durationSeconds") * 1000;
                 body = new JsonObject { ["text"] = request.Text, ["model_id"] = ModelId };
                 CopyNumber(elevenlabs, "durationSeconds", body, "duration_seconds");
-                CopyNumber(elevenlabs, "promptInfluence", body, "prompt_influence");
-                CopyRaw(elevenlabs, "loop", body, "loop");
+                if (ReadNumber(elevenlabs, "promptInfluence") is { } promptInfluence)
+                {
+                    body["prompt_influence"] = promptInfluence;
+                }
+
+                if (Child(elevenlabs, "loop") != null)
+                {
+                    body["loop"] = ReadFlag(elevenlabs, "loop");
+                }
             }
 
             return new SpeechArgs(
@@ -1649,6 +1665,26 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
             }
         }
 
+        private static string SegmentString(JsonElement root, JsonElement segment, string name) =>
+            segment.ValueKind == JsonValueKind.Object
+            && segment.TryGetProperty(name, out var value)
+            && value.ValueKind == JsonValueKind.String
+                ? value.GetString()!
+                : throw new TypeValidationException(
+                    "Type validation failed: voice_segments." + name + " must be a string.",
+                    root
+                );
+
+        private static double SegmentNumber(JsonElement root, JsonElement segment, string name) =>
+            segment.ValueKind == JsonValueKind.Object
+            && segment.TryGetProperty(name, out var value)
+            && value.ValueKind == JsonValueKind.Number
+                ? value.GetDouble()
+                : throw new TypeValidationException(
+                    "Type validation failed: voice_segments." + name + " must be a number.",
+                    root
+                );
+
         private static JsonArray? ToVoiceSegments(JsonElement root)
         {
             if (
@@ -1665,16 +1701,20 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
                 array.Add(
                     new JsonObject
                     {
-                        ["voiceId"] = segment.GetProperty("voice_id").GetString(),
-                        ["startTimeSeconds"] = segment.GetProperty("start_time_seconds").GetDouble(),
-                        ["endTimeSeconds"] = segment.GetProperty("end_time_seconds").GetDouble(),
-                        ["characterStartIndex"] = segment
-                            .GetProperty("character_start_index")
-                            .GetDouble(),
-                        ["characterEndIndex"] = segment.GetProperty("character_end_index").GetDouble(),
-                        ["dialogueInputIndex"] = segment
-                            .GetProperty("dialogue_input_index")
-                            .GetDouble(),
+                        ["voiceId"] = SegmentString(root, segment, "voice_id"),
+                        ["startTimeSeconds"] = SegmentNumber(root, segment, "start_time_seconds"),
+                        ["endTimeSeconds"] = SegmentNumber(root, segment, "end_time_seconds"),
+                        ["characterStartIndex"] = SegmentNumber(
+                            root,
+                            segment,
+                            "character_start_index"
+                        ),
+                        ["characterEndIndex"] = SegmentNumber(root, segment, "character_end_index"),
+                        ["dialogueInputIndex"] = SegmentNumber(
+                            root,
+                            segment,
+                            "dialogue_input_index"
+                        ),
                     }
                 );
             }
