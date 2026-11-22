@@ -28,6 +28,12 @@ internal sealed class DecideRestrictedTelemetryDispatcher
         return new DecideRestrictedTelemetryDispatcher(telemetry);
     }
 
+    /// <summary>Maps to <c>runInTracingChannelSpan</c>, which the restricted dispatcher spreads from the telemetry dispatcher.</summary>
+    internal Task<T> RunInTracingChannelSpan<T>(string type, object @event, Func<Task<T>> execute)
+    {
+        return _dispatcher.RunInTracingChannelSpan(type, @event, execute);
+    }
+
     /// <summary>Maps to <c>onStart</c>, which calls <c>experimental_onDecideStart</c>.</summary>
     internal Task OnStartAsync(DecideEvent source, CancellationToken cancellationToken)
     {
