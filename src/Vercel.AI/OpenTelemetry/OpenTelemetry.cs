@@ -115,10 +115,14 @@ public sealed class OpenTelemetry : ITelemetry
         };
 
     /// <inheritdoc />
-    public Func<GenerateTextResult, CancellationToken, Task>? OnEnd =>
+    public Func<IOperationEndEvent, CancellationToken, Task>? OnEnd =>
         (e, _) =>
         {
-            OnGenerateEnd(e);
+            if (e is GenerateTextResult result)
+            {
+                OnGenerateEnd(result);
+            }
+
             return Task.CompletedTask;
         };
 
