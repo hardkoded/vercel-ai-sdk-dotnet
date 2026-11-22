@@ -250,10 +250,10 @@ public sealed class GatewayProvider
         return new GatewayRerankingModel(this, modelId);
     }
 
-    /// <summary>Alias of <see cref="RerankingModel"/>. Maps to <c>reranking</c>.</summary>
-    public IRerankingModel Reranking(string modelId)
+    /// <summary>Alias of <see cref="RerankingModel"/>. Maps to <c>reranking</c>. Returns the concrete model so it can be passed to <c>RerankRequest.Model</c>.</summary>
+    public GatewayRerankingModel Reranking(string modelId)
     {
-        return RerankingModel(modelId);
+        return new GatewayRerankingModel(this, modelId);
     }
 
     /// <summary>Extraction model routed through <c>/extraction-model</c>. Maps to <c>extractionModel</c>.</summary>

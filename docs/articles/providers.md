@@ -1887,12 +1887,12 @@ Validation is strict and returns no partial results. `Extract.ExtractAsync` thro
 
 ## Gateway reranking models
 
-`GatewayProvider.RerankingModel(id)` (alias `Reranking(id)`, upstream `rerankingModel` and `reranking`) returns a `GatewayRerankingModel`. It posts `{ documents, query, topN, providerOptions }` to `{base}/reranking-model` with the `ai-reranking-model-specification-version: 4` and `ai-model-id` headers, and leaves out `topN` and `providerOptions` when you did not set them. The response `warnings`, `providerMetadata`, and headers come back on the `RerankModelResponse`. Reranking models re-score candidate documents after an initial retrieval step, which helps retrieval-augmented generation pipelines.
+`GatewayProvider.RerankingModel(id)` returns an `IRerankingModel`. `Reranking(id)` (upstream `rerankingModel` and `reranking`) returns the concrete `GatewayRerankingModel`, which `RerankRequest.Model` accepts. It posts `{ documents, query, topN, providerOptions }` to `{base}/reranking-model` with the `ai-reranking-model-specification-version: 4` and `ai-model-id` headers, and leaves out `topN` and `providerOptions` when you did not set them. The response `warnings`, `providerMetadata`, and headers come back on the `RerankModelResponse`. Reranking models re-score candidate documents after an initial retrieval step, which helps retrieval-augmented generation pipelines.
 
 ```csharp
 var result = await Rerank.RerankAsync(new RerankRequest
 {
-    Model = GatewayProvider.Create().RerankingModel("cohere/rerank-v3.5"),
+    Model = GatewayProvider.Create().Reranking("cohere/rerank-v3.5"),
     Query = "What is the capital of France?",
     Documents = ["Paris is the capital of France.", "Berlin is the capital of Germany.", "Madrid is the capital of Spain."],
     TopN = 2,
