@@ -89,6 +89,25 @@ public static class ElevenLabsMusicResponse
             }
 
             var contentType = response.Content?.Headers.ContentType?.ToString() ?? string.Empty;
+            var bytes = await ResponseBodies
+                .ReadResponseWithSizeLimitAsync(response, url, cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
+            var (value, raw) = ParseMusicTimestampsResponse(bytes, contentType);
+            return new JsonResponseHandlerResult<ElevenLabsMusicTimestampsResponse>(
+                value,
+                raw,
+                JsonStreams.ExtractResponseHeaders(response)
+            );
+        };
+    }
+
+    /// <summary>Reads a <c>multipart/mixed</c> detailed music body: JSON metadata and audio.</summary>
+    internal static (ElevenLabsMusicTimestampsResponse Value, JsonElement Raw) ParseMusicTimestampsResponse(
+        byte[] bytes,
+        string contentType
+    )
+    {
+        {
             var boundary = BoundaryPattern.Match(contentType);
             if (!MultipartMixedPattern.IsMatch(contentType) || !boundary.Success)
             {
@@ -98,9 +117,6 @@ public static class ElevenLabsMusicResponse
                 );
             }
 
-            var bytes = await ResponseBodies
-                .ReadResponseWithSizeLimitAsync(response, url, cancellationToken: cancellationToken)
-                .ConfigureAwait(false);
             var delimiter = Encoding.UTF8.GetBytes(
                 "--"
                     + (
@@ -186,12 +202,8 @@ public static class ElevenLabsMusicResponse
                 );
             }
 
-            return new JsonResponseHandlerResult<ElevenLabsMusicTimestampsResponse>(
-                new ElevenLabsMusicTimestampsResponse(audio, wordTimestamps),
-                metadata.Value,
-                JsonStreams.ExtractResponseHeaders(response)
-            );
-        };
+            return (new ElevenLabsMusicTimestampsResponse(audio, wordTimestamps), metadata.Value);
+        }
     }
 
     private static (
