@@ -149,25 +149,29 @@ public sealed class ModelsThatRejectForcedToolUseTests
     [Fact]
     [UpstreamTest(
         "packages/amazon-bedrock/src/amazon-bedrock-prepare-tools.test.ts::prepareTools > tool choice > models that reject forced tool use::should pass the forced-tool capability to Anthropic provider tool preparation",
-        Coverage = UpstreamCoverage.Partial,
+        Coverage = UpstreamCoverage.Covered,
         Commit = "62a4dcd641895b3aca4698015c0378b2bd558c4e"
     )]
     public void Should_pass_the_forced_tool_capability_to_Anthropic_provider_tool_preparation()
     {
-        // Upstream spies on prepareAnthropicTools. The port reads the result of that call: with
-        // rejectsForcedToolUse the Anthropic preparation falls back to auto for the named tool.
-        _ = Prepare(
+        var mock = new PrepareAnthropicToolsMock();
+        _ = AmazonBedrockTools.Prepare(
             Opus55,
             [BashTool()],
             ToolChoice.Tool("bash"),
             null,
+            null,
+            null,
             true,
-            out var warnings,
-            out var additionalTools
+            mock.Invoke,
+            out _,
+            out _,
+            out _
         );
 
-        Assert.Equal("{\"tool_choice\":{\"type\":\"auto\"}}", additionalTools!.ToJsonString());
-        Assert.Contains(warnings, warning => warning.Feature == "toolChoice");
+        Assert.Contains(mock.Calls, call =>
+            call.ToolChoiceType == "tool" && call.ToolName == "bash" && call.RejectsForcedToolUse
+        );
     }
 
     [Fact]

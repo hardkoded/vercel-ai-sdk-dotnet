@@ -65,7 +65,7 @@ public sealed class ExtractionSource
     /// <param name="part">Index of the part in the state.</param>
     /// <param name="start">Start offset in UTF-16 code units, inclusive. Text sources only.</param>
     /// <param name="end">End offset in UTF-16 code units, exclusive. Text sources only.</param>
-    public ExtractionSource(string type, int part, int? start = null, int? end = null)
+    public ExtractionSource(string type, double part, double? start = null, double? end = null)
     {
         Type = type;
         Part = part;
@@ -77,13 +77,13 @@ public sealed class ExtractionSource
     public string Type { get; }
 
     /// <summary>Index of the text or file part in the state.</summary>
-    public int Part { get; }
+    public double Part { get; }
 
     /// <summary>Start offset in UTF-16 code units, inclusive. Set for a text source.</summary>
-    public int? Start { get; }
+    public double? Start { get; }
 
     /// <summary>End offset in UTF-16 code units, exclusive. Set for a text source.</summary>
-    public int? End { get; }
+    public double? End { get; }
 }
 
 /// <summary>One entry of a list answer. Maps to the <c>items</c> member of a list <c>ExtractionModelV4Answer</c>.</summary>
