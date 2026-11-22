@@ -19,7 +19,7 @@ public sealed class GenerateTextExperimentalSteeringInterruptTests
     private const string Prefix =
         "packages/ai/src/generate-text/generate-text-steering-interrupt.test.ts::generateText experimental_steering interrupt::";
 
-    private static Task<GenerateTextResult> GenerateAsync(
+    private static Task<GenerateTextResult<string>> GenerateAsync(
         GenerateTextOptions options,
         CancellationToken cancellationToken = default
     ) => Client().GenerateTextAsync(options, cancellationToken);

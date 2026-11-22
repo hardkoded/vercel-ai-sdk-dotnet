@@ -97,7 +97,10 @@ public sealed class ProviderSelectedStructuredOutputTests
             );
 
         const string expectedText = "{\"value\":\"draft\"}{\"value\":\"final\"}";
-        Assert.Equal("final", result.Output!.Value.GetProperty("value").GetString());
+        Assert.Equal(
+            "final",
+            ((GenerateTextResult)result).Output!.Value.GetProperty("value").GetString()
+        );
         Assert.Equal(expectedText, result.Text);
         Assert.Equal(content, result.Content);
         Assert.Equal(new[] { source }, result.Sources);
@@ -166,7 +169,10 @@ public sealed class ProviderSelectedStructuredOutputTests
                 }
             );
 
-        Assert.Equal("final", result.Output!.Value.GetProperty("value").GetString());
+        Assert.Equal(
+            "final",
+            ((GenerateTextResult)result).Output!.Value.GetProperty("value").GetString()
+        );
         Assert.Equal("{\"value\":\"final\"}", result.Text);
     }
 
@@ -289,7 +295,10 @@ public sealed class ProviderSelectedStructuredOutputTests
                 }
             );
 
-        Assert.Equal("final", result.Output!.Value.GetProperty("value").GetString());
+        Assert.Equal(
+            "final",
+            ((GenerateTextResult)result).Output!.Value.GetProperty("value").GetString()
+        );
         Assert.Equal("{\"value\":\"final\"}", result.Text);
         Assert.Equal(2, result.Steps.Count);
         Assert.Equal("{\"value\":\"earlier\"}", result.Steps[0].Text);

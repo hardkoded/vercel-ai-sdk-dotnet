@@ -28,6 +28,12 @@ public sealed class ToolChoiceEnforcementTests
             [ToolChoice.Auto, ToolChoice.None, FinishReason.ToolCalls],
         ];
 
+    private static Tool With(Tool tool, Action<Tool> configure)
+    {
+        configure(tool);
+        return tool;
+    }
+
     private static AiClient Client() =>
         new(GatewayProvider.Create(new GatewayOptions { ApiKey = "test" }));
 
@@ -36,7 +42,7 @@ public sealed class ToolChoiceEnforcementTests
     [UpstreamTest(
         Prefix + "should reject tool calls with none ($toolChoice, $stepToolChoice, $finishReason)",
         Coverage = UpstreamCoverage.Partial,
-        Note = "The port has no onInputStart, onInputDelta and onInputAvailable tool callbacks, so they are not asserted. The port raises the error from the stream and faults finishReason and usage, where upstream emits an error part and resolves finishReason to error and usage."
+        Note = "The port raises the error from the stream and faults finishReason and usage, where upstream emits an error part and resolves finishReason to error and usage."
     )]
     public async Task Should_reject_tool_calls_with_none(
         ToolChoice toolChoice,
@@ -45,6 +51,7 @@ public sealed class ToolChoiceEnforcementTests
     )
     {
         var executed = false;
+        var inputCallbacks = 0;
         var errors = new List<Exception>();
         var usage = new LanguageModelUsage(3, 10, 13);
         var model = new TestLanguageModel
@@ -65,11 +72,34 @@ public sealed class ToolChoiceEnforcementTests
                 {
                     Model = model,
                     Prompt = "test-input",
-                    Tools = new[] { Tool.Function("tool1", null, "{\"type\":\"object\"}", (_, _) =>
-                        {
-                            executed = true;
-                            return Task.FromResult("tool-result");
-                        }) },
+                    Tools = new[]
+                    {
+                        With(
+                            Tool.Function("tool1", null, "{\"type\":\"object\"}", (_, _) =>
+                            {
+                                executed = true;
+                                return Task.FromResult("tool-result");
+                            }),
+                            tool =>
+                            {
+                                tool.OnInputStart = _ =>
+                                {
+                                    inputCallbacks++;
+                                    return Task.CompletedTask;
+                                };
+                                tool.OnInputDelta = _ =>
+                                {
+                                    inputCallbacks++;
+                                    return Task.CompletedTask;
+                                };
+                                tool.OnInputAvailable = _ =>
+                                {
+                                    inputCallbacks++;
+                                    return Task.CompletedTask;
+                                };
+                            }
+                        ),
+                    },
                     ToolChoice = toolChoice,
                     PrepareStep =
                         stepToolChoice == null
@@ -100,6 +130,7 @@ public sealed class ToolChoiceEnforcementTests
         await Assert.ThrowsAsync<ToolChoiceViolationException>(() => result.FinishReason);
         await Assert.ThrowsAsync<ToolChoiceViolationException>(() => result.Usage);
         Assert.False(executed);
+        Assert.Equal(0, inputCallbacks);
     }
 
     [Fact]
@@ -216,12 +247,12 @@ public sealed class ToolChoiceEnforcementTests
     [Fact]
     [UpstreamTest(
         Prefix + "should allow prepareStep to replace none with auto",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The port has no onInputAvailable tool callback, so the assertion that it runs once is not made."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Should_allow_prepareStep_to_replace_none_with_auto()
     {
         var executed = 0;
+        var inputAvailable = 0;
         var errors = new List<Exception>();
         var model = new TestLanguageModel
         {
@@ -242,11 +273,24 @@ public sealed class ToolChoiceEnforcementTests
                 {
                     Model = model,
                     Prompt = "test-input",
-                    Tools = new[] { Tool.Function("tool1", null, "{\"type\":\"object\"}", (_, _) =>
-                        {
-                            executed++;
-                            return Task.FromResult("tool-result");
-                        }) },
+                    Tools = new[]
+                    {
+                        With(
+                            Tool.Function("tool1", null, "{\"type\":\"object\"}", (_, _) =>
+                            {
+                                executed++;
+                                return Task.FromResult("tool-result");
+                            }),
+                            tool =>
+                            {
+                                tool.OnInputAvailable = _ =>
+                                {
+                                    inputAvailable++;
+                                    return Task.CompletedTask;
+                                };
+                            }
+                        ),
+                    },
                     ToolChoice = ToolChoice.None,
                     PrepareStep = _ => new PrepareStepUpdate { ToolChoice = ToolChoice.Auto },
                     OnError = (error, _) =>
@@ -260,6 +304,7 @@ public sealed class ToolChoiceEnforcementTests
         await foreach (var _ in result.Stream()) { }
 
         Assert.Equal(1, executed);
+        Assert.Equal(1, inputAvailable);
         Assert.Empty(errors);
     }
 

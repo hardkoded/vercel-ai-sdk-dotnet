@@ -126,6 +126,19 @@ public sealed class GenerateObjectOptions<T>
         Task<string?>
     >? RepairText { get; set; }
 
+    /// <summary>Deprecated alias of <see cref="RepairText"/>. Maps to <c>experimental_repairText</c>.</summary>
+    public Func<
+        GenerateObjectRepairContext,
+        CancellationToken,
+        Task<string?>
+    >? ExperimentalRepairText { get; set; }
+
+    /// <summary>Telemetry configuration. Maps to <c>telemetry</c>.</summary>
+    public TelemetryOptions? Telemetry { get; set; }
+
+    /// <summary>Deprecated alias of <see cref="Telemetry"/>. Maps to <c>experimental_telemetry</c>.</summary>
+    public TelemetryOptions? ExperimentalTelemetry { get; set; }
+
     /// <summary>Called before generation begins.</summary>
     public Func<GenerateObjectStartEvent, CancellationToken, Task>? OnStart { get; set; }
 

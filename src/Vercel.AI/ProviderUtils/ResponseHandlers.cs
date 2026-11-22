@@ -27,6 +27,39 @@ public sealed class ResponseHandlerResult<T>
     public IReadOnlyDictionary<string, string> ResponseHeaders { get; }
 }
 
+/// <summary>A handled JSON value, the parsed body before validation, and the response headers.</summary>
+public sealed class JsonResponseHandlerResult<T>
+{
+    /// <summary>Creates a result.</summary>
+    public JsonResponseHandlerResult(
+        T value,
+        JsonElement rawValue,
+        IReadOnlyDictionary<string, string> responseHeaders
+    )
+    {
+        Value = value;
+        RawValue = rawValue;
+        ResponseHeaders = responseHeaders;
+    }
+
+    /// <summary>The validated value. It holds the decoded <see cref="byte"/> arrays at the binary fields.</summary>
+    public T Value { get; }
+
+    /// <summary>The parsed body. It holds a placeholder string in place of each decoded binary field.</summary>
+    public JsonElement RawValue { get; }
+
+    /// <summary>Response headers.</summary>
+    public IReadOnlyDictionary<string, string> ResponseHeaders { get; }
+}
+
+/// <summary>Handles a JSON response. Maps to the <c>ResponseHandler</c> that <c>createJsonResponseHandler</c> returns.</summary>
+public delegate Task<JsonResponseHandlerResult<T>> JsonResponseHandler<T>(
+    HttpResponseMessage response,
+    string url,
+    object? requestBodyValues,
+    CancellationToken cancellationToken
+);
+
 /// <summary>
 /// Response handlers for binary, event stream, and error responses.
 /// Maps to <c>createBinaryResponseHandler</c>, <c>createBinaryStreamResponseHandler</c>,
@@ -35,6 +68,105 @@ public sealed class ResponseHandlerResult<T>
 /// </summary>
 public static class ResponseHandlers
 {
+    /// <summary>
+    /// Creates a handler that parses a JSON body and validates it with <paramref name="validate"/>. Maps to <c>createJsonResponseHandler</c>.
+    /// <paramref name="validate"/> receives the parsed body as <see cref="bool"/>, <see cref="double"/>, <see cref="string"/>,
+    /// <see cref="List{T}"/> of objects, <see cref="Dictionary{TKey, TValue}"/> of objects, or <c>null</c>. With
+    /// <paramref name="experimentalBinaryFields"/> it also holds the decoded <see cref="byte"/> arrays in place of their placeholders.
+    /// A <paramref name="validate"/> of <c>null</c> returns that value as it is. When the validation fails, the error holds the placeholders, never the bytes.
+    /// See <see cref="JsonStreams.ReadJsonAsync"/> for the paths.
+    /// A body that is not valid JSON, or a validation that fails, throws an <see cref="ApiException"/> with the message
+    /// <c>Invalid JSON response</c>, whose cause is a <see cref="JsonParseException"/> or a <see cref="TypeValidationException"/>.
+    /// </summary>
+    /// <exception cref="Util.InvalidArgumentError">A path in <paramref name="experimentalBinaryFields"/> is not valid.</exception>
+    public static JsonResponseHandler<T> CreateJsonResponseHandler<T>(
+        Func<object?, T>? validate = null,
+        IReadOnlyList<string>? experimentalBinaryFields = null
+    )
+    {
+        var binaryFieldPaths = experimentalBinaryFields is { Count: > 0 }
+            ? JsonBinaryFieldScanner.CompileBinaryFieldPaths(experimentalBinaryFields)
+            : null;
+        return async (response, url, requestBodyValues, cancellationToken) =>
+        {
+            if (response is null)
+            {
+                throw new ArgumentNullException(nameof(response));
+            }
+
+            string text;
+            IReadOnlyDictionary<string, byte[]> binaries = new Dictionary<string, byte[]>();
+            if (binaryFieldPaths is null)
+            {
+                var bytes = await ResponseBodies
+                    .ReadResponseWithSizeLimitAsync(
+                        response,
+                        url,
+                        cancellationToken: cancellationToken
+                    )
+                    .ConfigureAwait(false);
+                text = JsonStreams.ResponseEncoding(response).GetString(bytes).TrimStart('\uFEFF');
+            }
+            else
+            {
+                var scanner = new JsonBinaryFieldScanner(binaryFieldPaths);
+                await ResponseBodies
+                    .ReadResponseWithSizeLimitAsync(
+                        response,
+                        url,
+                        cancellationToken: cancellationToken,
+                        onChunk: scanner.Push
+                    )
+                    .ConfigureAwait(false);
+                var scanned = scanner.Finish();
+                text = scanned.Text.TrimStart('\uFEFF');
+                binaries = scanned.Binaries;
+            }
+
+            var headers = JsonStreams.ExtractResponseHeaders(response);
+            ApiException Invalid(Exception cause) =>
+                new("Invalid JSON response", (int)response.StatusCode, text, cause)
+                {
+                    Url = url,
+                    RequestBodyValues = requestBodyValues,
+                    ResponseHeaders = headers,
+                };
+
+            var parsed = JsonParsing.SafeParse(text);
+            if (!parsed.Success || parsed.RawValue is not { } rawValue)
+            {
+                throw Invalid(
+                    parsed.Error
+                        ?? new JsonParseException(text, new JsonException("Invalid JSON response"))
+                );
+            }
+
+            var replaced = JsonBinaryFieldScanner.ReplaceBinaryFieldPlaceholders(
+                rawValue,
+                binaries
+            );
+            T value;
+            try
+            {
+                value = validate is null ? (T)replaced! : validate(replaced);
+            }
+            catch (Exception error)
+                when (error is not OperationCanceledException and not OutOfMemoryException)
+            {
+                // The error holds the parsed body with placeholders: the bytes never reach a message.
+                throw Invalid(
+                    new TypeValidationException(
+                        rawValue,
+                        JsonBinaryFieldScanner.RedactBinaryFields(error, binaries),
+                        null
+                    )
+                );
+            }
+
+            return new JsonResponseHandlerResult<T>(value, rawValue, headers);
+        };
+    }
+
     /// <summary>Reads the body as bytes. Maps to <c>createBinaryResponseHandler</c>.</summary>
     /// <exception cref="ApiException">The response has no body.</exception>
     /// <exception cref="Util.DownloadError">The body is larger than <see cref="Util.Download.DefaultMaxBytes"/>.</exception>

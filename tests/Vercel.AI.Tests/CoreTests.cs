@@ -97,7 +97,10 @@ public sealed class CoreTests
                 }
             );
 
-        Assert.Equal("Paris", result.Output!.Value.GetProperty("city").GetString());
+        Assert.Equal(
+            "Paris",
+            ((GenerateTextResult)result).Output!.Value.GetProperty("city").GetString()
+        );
     }
 
     [Fact]

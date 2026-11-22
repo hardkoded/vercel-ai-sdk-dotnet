@@ -71,7 +71,7 @@ public sealed class WhenASingleToolNeedsApprovalUserDefinedTests
         AssertApprovalRequestPart(message.Parts[1], "id-1", "call-1");
     }
 
-    private static Task<GenerateTextResult> RunAsync() =>
+    private static Task<GenerateTextResult<string>> RunAsync() =>
         Client()
             .GenerateTextAsync(
                 new GenerateTextOptions

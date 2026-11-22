@@ -70,14 +70,14 @@ Emits a configuration update at this position in history: `none`, `low`, `medium
 
 
 ```csharp
-public JsonElement? TextFormatUpdate { get; set; }
+public OpenAIResponsesTextFormat? TextFormatUpdate { get; set; }
 ```
 
 
 Replaces the response format at this position in history (a `text` or `json_schema` format).
 Requires empty system message content.
 
-**Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
+**Value:** [OpenAIResponsesTextFormat](/api/Vercel.AI.OpenAI/OpenAIResponsesTextFormat/)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Responses/OpenAIResponsesSystemMessageOptions.cs#L26)
 

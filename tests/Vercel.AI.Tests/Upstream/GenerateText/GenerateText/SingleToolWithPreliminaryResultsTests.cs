@@ -93,7 +93,7 @@ public sealed class SingleToolWithPreliminaryResultsTests
         );
     }
 
-    private static Task<GenerateTextResult> Run()
+    private static Task<GenerateTextResult<string>> Run()
     {
         return new AiClient(
             GatewayProvider.Create(new GatewayOptions { ApiKey = "test" })

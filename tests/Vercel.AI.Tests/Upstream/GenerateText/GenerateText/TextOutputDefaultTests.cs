@@ -36,6 +36,6 @@ public sealed class TextOutputDefaultTests
             }
         );
 
-        Assert.Equal("Hello, world!", result.Output!.Value.GetString());
+        Assert.Equal("Hello, world!", result.Output);
     }
 }

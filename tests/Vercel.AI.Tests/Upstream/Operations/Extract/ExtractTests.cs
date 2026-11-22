@@ -145,6 +145,60 @@ public sealed class ExtractTests
         }
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData(" INV-2041 ")]
+    [InlineData("   ")]
+    [UpstreamTest(
+        "packages/ai/src/extract/extract.test.ts::normalizes empty answers and preserves text %j and metadata",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "15bfd6b262f688cfb8281dbdb32c7dffe082337e"
+    )]
+    public async Task Normalizes_empty_answers_and_preserves_text_and_metadata(string value)
+    {
+        var source = new ExtractionSource("text", 0, 8, 16);
+        var providerAnswers = new Dictionary<string, ExtractionAnswer>(Answers())
+        {
+            ["invoiceNumber"] = new ExtractionAnswer(
+                "text",
+                text: value,
+                confidence: 0.98,
+                source: source
+            ),
+            ["dueDate"] = new ExtractionAnswer("date", text: ""),
+            ["contacts"] = new ExtractionAnswer(
+                "list",
+                textItems: [],
+                items: [],
+                confidence: 0.8,
+                pNull: 0.9
+            ),
+        };
+
+        var result = await ExtractOperation.ExtractAsync(
+            new ExtractRequest
+            {
+                Model = Setup(new ExtractionModelResult(providerAnswers, [])),
+                State = State,
+                Fields = Fields(),
+            }
+        );
+
+        var invoice = result.Answers["invoiceNumber"];
+        Assert.Equal(value == "" ? null : value, invoice.Text);
+        Assert.Equal(0.98, invoice.Confidence);
+        Assert.Same(source, invoice.Source);
+        Assert.Equal("date", result.Answers["dueDate"].Type);
+        Assert.Null(result.Answers["dueDate"].Text);
+        var contacts = result.Answers["contacts"];
+        Assert.Null(contacts.TextItems);
+        Assert.Null(contacts.Items);
+        Assert.Equal(0.8, contacts.Confidence);
+        Assert.Equal(0.9, contacts.PNull);
+        Assert.Empty(providerAnswers["contacts"].TextItems!);
+        Assert.NotNull(providerAnswers["contacts"].Items);
+    }
+
     [Fact]
     [UpstreamTest(
         "packages/ai/src/extract/extract.test.ts::accepts null values for fields the state does not contain",
@@ -662,21 +716,5 @@ public sealed class ExtractTests
         Assert.Equal(1, fetches);
         Assert.Equal(0, globalFetches);
         Assert.Empty(model.Calls);
-    }
-
-    private static Dictionary<string, ExtractionAnswer> InvoiceNumberAnswer()
-    {
-        return new Dictionary<string, ExtractionAnswer>
-        {
-            ["invoiceNumber"] = new ExtractionAnswer("text", text: "INV-2041"),
-        };
-    }
-
-    private static Dictionary<string, ExtractionField> InvoiceNumberField()
-    {
-        return new Dictionary<string, ExtractionField>
-        {
-            ["invoiceNumber"] = Fields()["invoiceNumber"],
-        };
     }
 }
