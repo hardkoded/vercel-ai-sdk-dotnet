@@ -252,7 +252,9 @@ public sealed class OpenAICompletionLanguageModel : ILanguageModel
                 HttpMethod.Post,
                 ApiKeys.Combine(_provider.Options.BaseUrl, "completions"),
                 prepared.Body.ToJsonString(),
-                _provider.CreateOpenAIHeaders(options.Headers),
+                await _provider
+                    .CreateOpenAIHeadersAsync(options.Headers, cancellationToken)
+                    .ConfigureAwait(false),
                 cancellationToken
             )
             .ConfigureAwait(false);
@@ -307,7 +309,9 @@ public sealed class OpenAICompletionLanguageModel : ILanguageModel
             .Http.OpenSseResponseAsync(
                 ApiKeys.Combine(_provider.Options.BaseUrl, "completions"),
                 json,
-                _provider.CreateOpenAIHeaders(options.Headers),
+                await _provider
+                    .CreateOpenAIHeadersAsync(options.Headers, cancellationToken)
+                    .ConfigureAwait(false),
                 cancellationToken
             )
             .ConfigureAwait(false);

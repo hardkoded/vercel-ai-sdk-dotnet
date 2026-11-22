@@ -57,7 +57,8 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
     private readonly bool _explicitMessageItemType;
     private readonly Func<
         IReadOnlyDictionary<string, string?>?,
-        Dictionary<string, string?>
+        CancellationToken,
+        Task<Dictionary<string, string?>>
     > _headers;
 
     /// <summary>
@@ -80,7 +81,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         _providerName = provider.Name;
         _providerOptionsName = "openai";
         _url = () => ApiKeys.Combine(provider.Options.BaseUrl, "responses");
-        _headers = provider.CreateOpenAIHeaders;
+        _headers = provider.CreateOpenAIHeadersAsync;
     }
 
     /// <summary>
@@ -115,7 +116,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         _explicitMessageItemType = Azure
             .AzureOpenAIProvider.GetAzureOpenAIBaseURLInfo(provider.Options.BaseUrl)
             .IsFoundryProject;
-        _headers = provider.CreateHeaders;
+        _headers = provider.CreateHeadersAsync;
     }
 
     /// <inheritdoc />
@@ -931,7 +932,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                 HttpMethod.Post,
                 _url(),
                 prepared.Body.ToJsonString(),
-                _headers(options.Headers),
+                await _headers(options.Headers, cancellationToken).ConfigureAwait(false),
                 cancellationToken
             )
             .ConfigureAwait(false);
@@ -998,7 +999,12 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         );
         var json = prepared.Body.ToJsonString();
         var sse = await _http
-            .OpenSseResponseAsync(_url(), json, _headers(options.Headers), cancellationToken)
+            .OpenSseResponseAsync(
+                _url(),
+                json,
+                await _headers(options.Headers, cancellationToken).ConfigureAwait(false),
+                cancellationToken
+            )
             .ConfigureAwait(false);
         return sse.ToStreamResult(
             StreamAsync(

@@ -293,15 +293,19 @@ public sealed class OpenAIProvider
     /// Builds request headers. Custom provider headers override the API key, organization, and project.
     /// The user-agent suffix is appended after that, and per-call headers override the result.
     /// </summary>
-    public Dictionary<string, string?> CreateOpenAIHeaders(
-        IReadOnlyDictionary<string, string?>? callHeaders = null
+    public async Task<Dictionary<string, string?>> CreateOpenAIHeadersAsync(
+        IReadOnlyDictionary<string, string?>? callHeaders = null,
+        CancellationToken cancellationToken = default
     )
     {
-        var key = ApiKeys.Require(
-            Options.ApiKey,
-            Options.ApiKeyEnvironmentVariable,
-            Options.AdditionalApiKeyEnvironmentVariables
-        );
+        var key = await ApiKeys
+            .RequireAsync(
+                Options.ApiKey,
+                Options.ApiKeyEnvironmentVariable,
+                Options.AdditionalApiKeyEnvironmentVariables,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
         {
             ["Authorization"] = "Bearer " + key,
@@ -404,7 +408,9 @@ internal sealed class OpenAIBatchModel : IBatchModel
                 HttpMethod.Post,
                 ApiKeys.Combine(_provider.Options.BaseUrl, "batches"),
                 body.ToJsonString(),
-                _provider.CreateOpenAIHeaders(),
+                await _provider
+                    .CreateOpenAIHeadersAsync(null, cancellationToken)
+                    .ConfigureAwait(false),
                 cancellationToken
             )
             .ConfigureAwait(false);
@@ -418,7 +424,9 @@ internal sealed class OpenAIBatchModel : IBatchModel
                 HttpMethod.Get,
                 ApiKeys.Combine(_provider.Options.BaseUrl, "batches/" + id),
                 null,
-                _provider.CreateOpenAIHeaders(),
+                await _provider
+                    .CreateOpenAIHeadersAsync(null, cancellationToken)
+                    .ConfigureAwait(false),
                 cancellationToken
             )
             .ConfigureAwait(false);
