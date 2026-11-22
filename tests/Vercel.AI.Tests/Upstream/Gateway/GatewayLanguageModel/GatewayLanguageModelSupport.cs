@@ -89,6 +89,42 @@ internal static class GatewayLanguageModelSupport
             )
             .LanguageModel("test-model");
 
+    /// <summary>
+    /// Builds the model with a <c>fetch</c> hook, as upstream <c>createTestModel({ fetch })</c>. The hook receives the token the
+    /// send uses. <see cref="HttpClient"/> would wrap a handler exception and always add a token, so the hook replaces it.
+    /// </summary>
+    internal static ILanguageModel CreateTestModel(
+        Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> fetch
+    )
+    {
+        var provider = GatewayProvider.Create(
+            new GatewayOptions
+            {
+                ApiKey = "test-token",
+                BaseUrl = "https://api.test.com",
+                O11yHeaders = new Dictionary<string, string>(),
+            },
+            new GatewayLanguageModelServer()
+        );
+        provider.Http.Fetch = fetch;
+        return provider.LanguageModel("test-model");
+    }
+
+    /// <summary>A fetch that sends through <paramref name="server"/> and records the token it was given, as <c>vi.fn().mockImplementation(globalThis.fetch)</c>.</summary>
+    internal static Func<
+        HttpRequestMessage,
+        CancellationToken,
+        Task<HttpResponseMessage>
+    > Recording(GatewayLanguageModelServer server, List<CancellationToken> tokens)
+    {
+        var invoker = new HttpMessageInvoker(server);
+        return (request, token) =>
+        {
+            tokens.Add(token);
+            return invoker.SendAsync(request, token);
+        };
+    }
+
     /// <summary>Builds the server response of upstream <c>prepareStreamResponse</c>.</summary>
     internal static GatewayLanguageModelServer PrepareStreamResponse(params string[] content)
     {
