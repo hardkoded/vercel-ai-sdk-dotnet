@@ -194,7 +194,8 @@ public sealed class SpeechToTextParityTests
     [Fact]
     [UpstreamTest(
         AssemblyAIModelTest + "should pass the prompted-model input params",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "e6ad3867b8bfa5efcabe2cf0e737385c726d8fea"
     )]
     public async Task AssemblyAI_sends_the_prompted_model_input_params()
     {
