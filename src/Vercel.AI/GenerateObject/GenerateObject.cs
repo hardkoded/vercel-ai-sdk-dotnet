@@ -366,7 +366,7 @@ public sealed class GenerateObjectStepEndEvent : GenerateObjectEvent
 }
 
 /// <summary>Event sent after the generated object has been parsed and validated.</summary>
-public sealed class GenerateObjectEndEvent<T> : GenerateObjectEvent
+public sealed class GenerateObjectEndEvent<T> : GenerateObjectEvent, IOperationEndEvent
 {
     internal GenerateObjectEndEvent(
         string callId,

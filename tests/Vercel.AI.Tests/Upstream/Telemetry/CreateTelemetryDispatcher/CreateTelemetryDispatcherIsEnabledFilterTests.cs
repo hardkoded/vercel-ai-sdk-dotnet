@@ -15,7 +15,7 @@ public sealed class CreateTelemetryDispatcherIsEnabledFilterTests
     [UpstreamTest(
         Id + "does not invoke any integration callbacks when isEnabled is false",
         Coverage = UpstreamCoverage.Partial,
-        Note = "Covers onStart, onObjectStepStart and onObjectStepEnd as generateObject and streamObject dispatch them."
+        Note = "Covers onStart, onObjectStepStart, onObjectStepEnd, onEnd and onError as generateObject and streamObject dispatch them."
     )]
     public async Task Does_not_invoke_object_integration_callbacks_when_isEnabled_is_false()
     {

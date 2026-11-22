@@ -204,6 +204,8 @@ public sealed class AiClient : IAiClient
         var model = ResolveLanguage(options.Model, options.ModelId);
         var callId = options.GenerateId?.Invoke() ?? ProviderUtils.JsonValues.GenerateId("aiobj-");
         var telemetryDispatcher = TelemetryDispatcher.Create(options);
+        try
+        {
         if (options.OnStart != null || telemetryDispatcher.OnStart != null)
         {
             var startEvent = new GenerateObjectStartEvent(
@@ -379,25 +381,33 @@ public sealed class AiClient : IAiClient
         }
 
         var result = new GenerateObjectResult<T>(value, generated);
+        var endEvent = new GenerateObjectEndEvent<T>(callId, model.Provider, model.ModelId, result);
         if (options.OnFinish != null)
         {
             await NotifyCallbackAsync(
-                    () =>
-                        options.OnFinish(
-                            new GenerateObjectEndEvent<T>(
-                                callId,
-                                model.Provider,
-                                model.ModelId,
-                                result
-                            ),
-                            cancellationToken
-                        ),
+                    () => options.OnFinish(endEvent, cancellationToken),
                     cancellationToken
                 )
                 .ConfigureAwait(false);
         }
 
+        if (telemetryDispatcher.OnEnd is { } telemetryOnEnd)
+        {
+            await telemetryOnEnd(endEvent, cancellationToken).ConfigureAwait(false);
+        }
+
         return result;
+        }
+        catch (Exception error) when (!cancellationToken.IsCancellationRequested)
+        {
+            if (telemetryDispatcher.OnError is { } telemetryOnError)
+            {
+                await telemetryOnError(new TelemetryErrorEvent(callId, error), cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            throw;
+        }
     }
 
     /// <inheritdoc />

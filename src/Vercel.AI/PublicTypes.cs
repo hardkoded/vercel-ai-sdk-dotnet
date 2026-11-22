@@ -2163,7 +2163,7 @@ public sealed class StreamAbortContext
 }
 
 /// <summary>Result of <c>generateText</c>.</summary>
-public class GenerateTextResult
+public class GenerateTextResult : IOperationEndEvent
 {
     // Copies a result. GenerateTextResult<TOutput> uses it to give the same result a typed output.
     private protected GenerateTextResult(GenerateTextResult result)
