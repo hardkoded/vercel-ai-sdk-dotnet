@@ -735,7 +735,10 @@ internal static class StreamObject
             catch (Exception error)
             {
                 result.RejectResultPromises(GatewayErrorWrappers.WrapGatewayError(error));
-                if (_telemetryDispatcher.OnError is { } telemetryOnError)
+                if (
+                    !_cancellationToken.IsCancellationRequested
+                    && _telemetryDispatcher.OnError is { } telemetryOnError
+                )
                 {
                     await telemetryOnError(
                             new TelemetryErrorEvent(_callId, error),

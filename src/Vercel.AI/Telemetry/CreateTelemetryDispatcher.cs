@@ -153,7 +153,16 @@ internal sealed class TelemetryDispatcher
             OnObjectStepStart = Merge(integrations.Select(i => i.OnObjectStepStart)),
             OnObjectStepEnd = Merge(integrations.Select(i => i.OnObjectStepEnd)),
             OnEnd = Filter<IOperationEndEvent>(Merge(integrations.Select(i => i.OnEnd)), e =>
-                e is GenerateTextResult result ? AugmentResult(result, telemetry) : e
+                e switch
+                {
+                    GenerateTextResult result => AugmentResult(result, telemetry),
+                    IRecordingFilterableEndEvent filterable
+                        when telemetry?.RecordInputs == false
+                            || telemetry?.RecordOutputs == false => filterable.FilterTelemetryEvent(
+                        telemetry.RecordOutputs == false
+                    ),
+                    _ => e,
+                }
             ),
             OnLanguageModelCallStart = Filter<LanguageModelCallStartEvent>(
                 Merge(integrations.Select(i => i.OnLanguageModelCallStart)),
