@@ -44,6 +44,62 @@ public sealed class HttpMcpTransportTests
         Assert.Equal(body, error.ResponseBody);
     }
 
+    [Fact]
+    [UpstreamTest(
+        Prefix
+            + "should explain legacy discovery incompatibility from an HTTP 400 without falling back",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d55f3cfc456d1b7bc7db3a4b70fbf602ddc8647d"
+    )]
+    public async Task Should_explain_legacy_discovery_incompatibility_from_an_HTTP_400_without_falling_back()
+    {
+        var methods = new List<string>();
+        var data =
+            "{\"requested\":\""
+            + McpClient.LatestProtocolVersion
+            + "\",\"supported\":[\"2025-06-18\"]}";
+        var handler = new RecordingHandler(methods, HttpStatusCode.BadRequest, data);
+
+        var error = await Assert.ThrowsAsync<MCPClientError>(() =>
+            McpClient.ConnectAsync(
+                new HttpMcpTransport(new HttpClient(handler), new Uri("http://localhost:4000/mcp"))
+            )
+        );
+
+        Assert.Contains("ProtocolVersionDiscovery to false", error.Message);
+        Assert.Equal(-32022, error.Code);
+        Assert.Equal(data, error.Data!.Value.GetRawText());
+        Assert.Equal(400, error.StatusCode);
+        Assert.Equal("http://localhost:4000/mcp", error.Url);
+        Assert.IsType<MCPClientError>(error.InnerException);
+        Assert.Equal(["server/discover"], methods);
+    }
+
+    private sealed class RecordingHandler(List<string> methods, HttpStatusCode status, string data)
+        : HttpMessageHandler
+    {
+        protected override async Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken
+        )
+        {
+            using var message = JsonDocument.Parse(
+                await request.Content!.ReadAsStringAsync().ConfigureAwait(false)
+            );
+            methods.Add(message.RootElement.GetProperty("method").GetString()!);
+            var body =
+                "{\"jsonrpc\":\"2.0\",\"id\":"
+                + message.RootElement.GetProperty("id").GetRawText()
+                + ",\"error\":{\"code\":-32022,\"message\":\"Unsupported protocol version\",\"data\":"
+                + data
+                + "}}";
+            return new HttpResponseMessage(status)
+            {
+                Content = new StringContent(body, Encoding.UTF8, "application/json"),
+            };
+        }
+    }
+
     private sealed class ScriptedHandler(HttpStatusCode status, string body) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(
