@@ -23,7 +23,7 @@ Parses AssemblyAI error JSON.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L75)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L76)
 
 ## Methods
 
@@ -48,7 +48,7 @@ Parses an error body in the flat or the nested shape.
 
 **Returns:** [AssemblyAIErrorParseResult](/api/Vercel.AI.AssemblyAI/AssemblyAIErrorParseResult/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L78)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L79)
 
 <a id="Vercel_AI_AssemblyAI_AssemblyAIError_ToMessage_"></a>
 <a id="Vercel_AI_AssemblyAI_AssemblyAIError_ToMessage_Vercel_AI_AssemblyAI_AssemblyAIErrorData_"></a>
@@ -71,4 +71,4 @@ Maps parsed error data to the most informative message: the flat `error` string,
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L116)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L117)

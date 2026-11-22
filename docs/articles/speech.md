@@ -97,6 +97,8 @@ var result = await model.GenerateAsync(
 Console.WriteLine(result.Usage?.Characters);
 ```
 
+Read the `assemblyai` provider options with `AssemblyAISpeechModelOptions.Parse(request.ProviderOptions)`. It validates `Encoding`, `Container`, `SampleRate` and `BitRate`.
+
 ## Transcription telemetry
 
 `Transcribe.TranscribeAsync` accepts a `TranscribeRequest.Telemetry` object. Its `OnStart`, `OnEnd` and `OnError` callbacks receive start, end and error events. They carry the provider and model, the audio byte length and media type, the transcript, warnings, response metadata, provider metadata and the provider's usage when it reports one. The start event also carries the `TimestampGranularities` you asked for. The end event carries the provider's `Words`, whether you requested them or the provider returned them by default.

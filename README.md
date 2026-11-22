@@ -200,6 +200,10 @@ Every code block in this README comes from a project in [examples](examples). Ea
 | [Providers](examples/Providers) | Call a model through the Gateway and through a provider directly. |
 | [StreamText](examples/StreamText) | Stream text as the model writes it. |
 | [StreamTranscribeDeepgramBasic](examples/StreamTranscribeDeepgramBasic) | Transcribe paced live audio with Deepgram streaming transcription. |
+| [GenerateSpeechAssemblyAIBasic](examples/GenerateSpeechAssemblyAIBasic) | Generates speech with AssemblyAI assemblyai-tts-1 and saves it to a file. |
+| [TranscribeAssemblyAIBasic](examples/TranscribeAssemblyAIBasic) | Transcribes a local audio file with AssemblyAI assemblyai-stt-3-7. |
+| [TranscribeAssemblyAIString](examples/TranscribeAssemblyAIString) | Transcribes a base64 audio string with AssemblyAI assemblyai-stt-3-7. |
+| [TranscribeAssemblyAIUrl](examples/TranscribeAssemblyAIUrl) | Transcribes audio from a URL with AssemblyAI assemblyai-stt-3-7. |
 | [TranscribeGladiaV2Options](examples/TranscribeGladiaV2Options) | Transcribe audio with Gladia solaria-3, a language config and PII redaction. |
 | [Tools](examples/Tools) | Let the model call a tool and read its result. |
 | [McpImageContent](examples/McpImageContent) | Convert an MCP image tool result into a model file part. |

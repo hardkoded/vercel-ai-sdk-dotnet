@@ -73,6 +73,10 @@
         <Project Path="examples/StreamText/StreamText.csproj" />
         <Project Path="examples/StreamTextCerebrasServiceTier/StreamTextCerebrasServiceTier.csproj" />
         <Project Path="examples/StreamTranscribeDeepgramBasic/StreamTranscribeDeepgramBasic.csproj" />
+        <Project Path="examples/GenerateSpeechAssemblyAIBasic/GenerateSpeechAssemblyAIBasic.csproj" />
+        <Project Path="examples/TranscribeAssemblyAIBasic/TranscribeAssemblyAIBasic.csproj" />
+        <Project Path="examples/TranscribeAssemblyAIString/TranscribeAssemblyAIString.csproj" />
+        <Project Path="examples/TranscribeAssemblyAIUrl/TranscribeAssemblyAIUrl.csproj" />
         <Project Path="examples/TranscribeGladiaV2Options/TranscribeGladiaV2Options.csproj" />
         <Project Path="examples/Tools/Tools.csproj" />
         <Project Path="examples/UIMessageStream/UIMessageStream.csproj" />
