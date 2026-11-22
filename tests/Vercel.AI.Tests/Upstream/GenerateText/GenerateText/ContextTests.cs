@@ -7,6 +7,7 @@ using Vercel.AI.GenerateText;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 using Vercel.AI.Testing;
+using Vercel.AI.Tests.Upstream.Telemetry;
 using Vercel.AI.Tests.Upstream.ToolLoopAgent;
 using static Vercel.AI.Tests.Upstream.GenerateText.ToolExecutionCallbackSupport;
 
@@ -93,6 +94,141 @@ public sealed class ContextTests
             );
 
         Assert.Equal(new[] { stepSandbox, sandbox }, recordedSandboxes);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/ai/src/generate-text/generate-text.test.ts::generateText > context::should include configured runtimeContext properties in telemetry",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_include_configured_runtimeContext_properties_in_telemetry()
+    {
+        var contexts = new List<string>();
+
+        await Client()
+            .GenerateTextAsync(
+                new GenerateTextOptions
+                {
+                    Model = new TestLanguageModel
+                    {
+                        OnGenerate = _ => TestLanguageModel.Text("Hello, world!"),
+                    },
+                    RuntimeContext = TelemetryContextSupport.RuntimeContext(),
+                    Prompt = "test-input",
+                    Telemetry = new TelemetryOptions
+                    {
+                        IncludeRuntimeContext = new Dictionary<string, bool>
+                        {
+                            ["requestId"] = true,
+                        },
+                        Integrations =
+                        [
+                            TelemetryContextSupport.RuntimeContextIntegration(contexts),
+                        ],
+                    },
+                }
+            );
+
+        Assert.Equal(Enumerable.Repeat("{\"requestId\":\"request-123\"}", 4), contexts);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/ai/src/generate-text/generate-text.test.ts::generateText > context::should include configured toolsContext properties in telemetry",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_include_configured_toolsContext_properties_in_telemetry()
+    {
+        var contexts = new List<string>();
+
+        await Client()
+            .GenerateTextAsync(
+                new GenerateTextOptions
+                {
+                    Model = new TestLanguageModel
+                    {
+                        OnGenerate = _ => TestLanguageModel.Text("Hello, world!"),
+                    },
+                    Prompt = "test-input",
+                    Tools = [TelemetryContextSupport.WeatherTool()],
+                    ToolsContext = TelemetryContextSupport.WeatherToolsContext(),
+                    Telemetry = new TelemetryOptions
+                    {
+                        IncludeToolsContext = new Dictionary<
+                            string,
+                            IReadOnlyDictionary<string, bool>
+                        >
+                        {
+                            ["weather"] = new Dictionary<string, bool> { ["region"] = true },
+                        },
+                        Integrations = [TelemetryContextSupport.ToolsContextIntegration(contexts)],
+                    },
+                }
+            );
+
+        Assert.Equal(Enumerable.Repeat("{\"weather\":{\"region\":\"eu\"}}", 4), contexts);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/ai/src/generate-text/generate-text.test.ts::generateText > context::should exclude toolsContext properties from telemetry by default",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_exclude_toolsContext_properties_from_telemetry_by_default()
+    {
+        var contexts = new List<string>();
+
+        await Client()
+            .GenerateTextAsync(
+                new GenerateTextOptions
+                {
+                    Model = new TestLanguageModel
+                    {
+                        OnGenerate = _ => TestLanguageModel.Text("Hello, world!"),
+                    },
+                    Prompt = "test-input",
+                    Tools = [TelemetryContextSupport.WeatherTool()],
+                    ToolsContext = TelemetryContextSupport.WeatherToolsContext(),
+                    Telemetry = new TelemetryOptions
+                    {
+                        Integrations = [TelemetryContextSupport.ToolsContextIntegration(contexts)],
+                    },
+                }
+            );
+
+        Assert.Equal(Enumerable.Repeat("{}", 4), contexts);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/ai/src/generate-text/generate-text.test.ts::generateText > context::should exclude runtimeContext from telemetry by default",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_exclude_runtimeContext_from_telemetry_by_default()
+    {
+        var contexts = new List<string>();
+
+        await Client()
+            .GenerateTextAsync(
+                new GenerateTextOptions
+                {
+                    Model = new TestLanguageModel
+                    {
+                        OnGenerate = _ => TestLanguageModel.Text("Hello, world!"),
+                    },
+                    RuntimeContext = TelemetryContextSupport.RuntimeContext(),
+                    Prompt = "test-input",
+                    Telemetry = new TelemetryOptions
+                    {
+                        Integrations =
+                        [
+                            TelemetryContextSupport.RuntimeContextIntegration(contexts),
+                        ],
+                    },
+                }
+            );
+
+        Assert.Equal(Enumerable.Repeat("{}", 4), contexts);
     }
 
     private static LanguageModelGenerateResult ToolCall(string id, string input) =>

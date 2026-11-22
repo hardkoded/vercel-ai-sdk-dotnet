@@ -100,7 +100,10 @@ public sealed class MiniMaxChatLanguageModel : AnthropicLanguageModel
             throw new ArgumentNullException(nameof(serialized));
         }
 
-        var options = new MiniMaxOptions { ApiKey = apiKey };
+        var options = new MiniMaxOptions
+        {
+            ApiKey = apiKey is null ? null : Resolvable<string>.From(apiKey),
+        };
         if (serialized.Config.TryGetValue("baseURL", out var baseUrl) && baseUrl is string url)
         {
             options.BaseUrl = url;

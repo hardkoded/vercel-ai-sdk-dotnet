@@ -115,7 +115,11 @@ public sealed class DeepSeekChatLanguageModel : ILanguageModel
                 HttpMethod.Post,
                 uri,
                 json,
-                _config.Transport.CreateHeaders(options.Headers),
+                (
+                    await _config
+                        .Transport.CreateHeadersAsync(options.Headers, cancellationToken)
+                        .ConfigureAwait(false)
+                ),
                 cancellationToken
             )
             .ConfigureAwait(false);
@@ -166,7 +170,11 @@ public sealed class DeepSeekChatLanguageModel : ILanguageModel
             .Transport.Http.OpenSseResponseAsync(
                 _config.Url(ModelId, "/chat/completions"),
                 json,
-                _config.Transport.CreateHeaders(options.Headers),
+                (
+                    await _config
+                        .Transport.CreateHeadersAsync(options.Headers, cancellationToken)
+                        .ConfigureAwait(false)
+                ),
                 cancellationToken
             )
             .ConfigureAwait(false);

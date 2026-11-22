@@ -165,7 +165,9 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
                 HttpMethod.Post,
                 ApiKeys.Combine(_provider.Options.BaseUrl, "decisions"),
                 body.ToJsonString(Text),
-                _provider.CreateOpenAIHeaders(headers),
+                await _provider
+                    .CreateOpenAIHeadersAsync(headers, cancellationToken)
+                    .ConfigureAwait(false),
                 cancellationToken
             )
             .ConfigureAwait(false);

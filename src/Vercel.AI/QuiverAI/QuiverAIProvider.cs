@@ -44,9 +44,9 @@ public sealed class QuiverAIProvider : OpenAICompatibleProvider
     public override IImageModel ImageModel(string modelId) => new QuiverAIImageModel(this, modelId);
 
     /// <summary>Throws when neither the option nor <c>QUIVERAI_API_KEY</c> holds a key.</summary>
-    protected override string? ResolveApiKey()
+    protected override async Task<string?> ResolveApiKeyAsync(CancellationToken cancellationToken)
     {
-        return base.ResolveApiKey()
+        return await base.ResolveApiKeyAsync(cancellationToken).ConfigureAwait(false)
             ?? throw new AiSdkException(
                 "QuiverAI API key is missing. Pass it using the 'apiKey' parameter or the QUIVERAI_API_KEY environment variable."
             );

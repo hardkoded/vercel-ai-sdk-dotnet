@@ -187,7 +187,9 @@ public sealed class OpenAIFileStore : IFileStore
                 HttpMethod.Post,
                 ApiKeys.Combine(_provider.Options.BaseUrl, "files"),
                 content,
-                _provider.CreateOpenAIHeaders(),
+                await _provider
+                    .CreateOpenAIHeadersAsync(null, cancellationToken)
+                    .ConfigureAwait(false),
                 cancellationToken
             )
             .ConfigureAwait(false);
@@ -207,7 +209,9 @@ public sealed class OpenAIFileStore : IFileStore
                 HttpMethod.Get,
                 ApiKeys.Combine(_provider.Options.BaseUrl, "files/" + PathSegments.Encode(id)),
                 null,
-                _provider.CreateOpenAIHeaders(),
+                await _provider
+                    .CreateOpenAIHeadersAsync(null, cancellationToken)
+                    .ConfigureAwait(false),
                 cancellationToken
             )
             .ConfigureAwait(false);
@@ -229,7 +233,9 @@ public sealed class OpenAIFileStore : IFileStore
                     "files/" + PathSegments.Encode(id) + "/content"
                 ),
                 null,
-                _provider.CreateOpenAIHeaders(),
+                await _provider
+                    .CreateOpenAIHeadersAsync(null, cancellationToken)
+                    .ConfigureAwait(false),
                 cancellationToken
             )
             .ConfigureAwait(false);
@@ -245,7 +251,9 @@ public sealed class OpenAIFileStore : IFileStore
                 HttpMethod.Delete,
                 ApiKeys.Combine(_provider.Options.BaseUrl, "files/" + PathSegments.Encode(id)),
                 null,
-                _provider.CreateOpenAIHeaders(),
+                await _provider
+                    .CreateOpenAIHeadersAsync(null, cancellationToken)
+                    .ConfigureAwait(false),
                 cancellationToken
             )
             .ConfigureAwait(false);

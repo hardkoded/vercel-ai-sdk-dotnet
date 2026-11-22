@@ -462,7 +462,7 @@ public sealed class DeepInfraUpstreamTests
         "packages/deepinfra/src/deepinfra-provider.test.ts::DeepInfraProvider > createDeepInfra::should create a DeepInfraProvider instance with default options",
         Coverage = UpstreamCoverage.Covered
     )]
-    public void Default_options_read_the_deepinfra_api_key()
+    public async Task Default_options_read_the_deepinfra_api_key()
     {
         var previous = Environment.GetEnvironmentVariable("DEEPINFRA_API_KEY");
         Environment.SetEnvironmentVariable("DEEPINFRA_API_KEY", "env-key");
@@ -470,7 +470,10 @@ public sealed class DeepInfraUpstreamTests
         {
             var provider = DeepInfraProvider.Create();
             Assert.Equal("DEEPINFRA_API_KEY", provider.Options.ApiKeyEnvironmentVariable);
-            Assert.Equal("Bearer env-key", provider.CreateHeaders()["Authorization"]);
+            Assert.Equal(
+                "Bearer env-key",
+                (await provider.CreateHeadersAsync(CancellationToken.None))["Authorization"]
+            );
         }
         finally
         {
@@ -483,7 +486,7 @@ public sealed class DeepInfraUpstreamTests
         "packages/deepinfra/src/deepinfra-provider.test.ts::DeepInfraProvider > createDeepInfra::should create a DeepInfraProvider instance with custom options",
         Coverage = UpstreamCoverage.Covered
     )]
-    public void Custom_options_set_the_key_base_url_and_headers()
+    public async Task Custom_options_set_the_key_base_url_and_headers()
     {
         var options = new OpenAICompatibleOptions
         {
@@ -492,7 +495,7 @@ public sealed class DeepInfraUpstreamTests
         };
         options.Headers["Custom-Header"] = "value";
         var provider = DeepInfraProvider.Create(options);
-        var headers = provider.CreateHeaders();
+        var headers = await provider.CreateHeadersAsync(CancellationToken.None);
         Assert.Equal("Bearer custom-key", headers["Authorization"]);
         Assert.Equal("value", headers["Custom-Header"]);
         Assert.Equal("https://custom.url", provider.Options.BaseUrl);

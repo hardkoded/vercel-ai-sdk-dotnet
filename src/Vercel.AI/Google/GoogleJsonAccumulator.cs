@@ -141,7 +141,8 @@ public sealed class GoogleJsonAccumulator
         if (arg.HasString && existing is { Kind: BagKind.String })
         {
             existing.String = (existing.String ?? string.Empty) + (arg.StringValue ?? string.Empty);
-            return EscapeFragment(arg.StringValue ?? string.Empty);
+            var escaped = EscapeFragment(arg.StringValue ?? string.Empty);
+            return arg.WillContinue == true ? escaped : escaped + CloseOpenString();
         }
 
         if (!TryResolve(arg, out var value, out var valueJson))
@@ -153,19 +154,24 @@ public sealed class GoogleJsonAccumulator
         return Emit(segments, arg, valueJson);
     }
 
+    private string CloseOpenString()
+    {
+        if (!_stringOpen)
+        {
+            return string.Empty;
+        }
+
+        _stringOpen = false;
+        return "\"";
+    }
+
     private string Emit(
         IReadOnlyList<Segment> segments,
         GooglePartialArgument arg,
         string valueJson
     )
     {
-        var fragment = string.Empty;
-        if (_stringOpen)
-        {
-            fragment += "\"";
-            _stringOpen = false;
-        }
-
+        var fragment = CloseOpenString();
         if (_stack.Count == 0)
         {
             _stack.Add(new StackEntry(string.Empty, false));

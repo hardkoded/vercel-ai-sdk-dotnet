@@ -154,7 +154,8 @@ public sealed class OpenAIImageModel : IImageModel
     private readonly Func<string, Uri> _url;
     private readonly Func<
         IReadOnlyDictionary<string, string?>?,
-        Dictionary<string, string?>
+        CancellationToken,
+        Task<Dictionary<string, string?>>
     > _headers;
     private readonly Func<DateTimeOffset>? _clock;
 
@@ -170,7 +171,7 @@ public sealed class OpenAIImageModel : IImageModel
         _clock = clock;
         _providerId = provider.Name + ".image";
         _url = path => ApiKeys.Combine(provider.Options.BaseUrl, path);
-        _headers = provider.CreateOpenAIHeaders;
+        _headers = provider.CreateOpenAIHeadersAsync;
     }
 
     /// <summary>
@@ -188,7 +189,7 @@ public sealed class OpenAIImageModel : IImageModel
         _clock = clock;
         _providerId = "azure.image";
         _url = path => provider.AzureUri(path, deploymentId);
-        _headers = provider.CreateHeaders;
+        _headers = provider.CreateHeadersAsync;
     }
 
     /// <inheritdoc />
@@ -431,7 +432,7 @@ public sealed class OpenAIImageModel : IImageModel
                 HttpMethod.Post,
                 _url("images/generations"),
                 body.ToJsonString(),
-                _headers(call.Headers),
+                await _headers(call.Headers, cancellationToken).ConfigureAwait(false),
                 cancellationToken
             )
             .ConfigureAwait(false);
@@ -530,7 +531,7 @@ public sealed class OpenAIImageModel : IImageModel
                 HttpMethod.Post,
                 _url("images/edits"),
                 content,
-                _headers(call.Headers),
+                await _headers(call.Headers, cancellationToken).ConfigureAwait(false),
                 cancellationToken
             )
             .ConfigureAwait(false);
@@ -620,7 +621,12 @@ public sealed class OpenAIImageModel : IImageModel
     )
     {
         var (data, mediaType) = await ImageFileDownload
-            .DownloadBlobAsync(_provider, _headers(null), url, cancellationToken)
+            .DownloadBlobAsync(
+                _provider,
+                await _headers(null, cancellationToken).ConfigureAwait(false),
+                url,
+                cancellationToken
+            )
             .ConfigureAwait(false);
         return new ImageBlob(data, mediaType, defaultName);
     }

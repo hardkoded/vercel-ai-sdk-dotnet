@@ -19,7 +19,7 @@ public sealed class MiniMaxImageModelConfig
     public MiniMaxImageModelConfig(
         string provider,
         string baseUrl,
-        Func<Dictionary<string, string>> headers,
+        Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>> headers,
         HttpClient httpClient,
         Func<DateTime>? currentDate = null
     )
@@ -38,7 +38,7 @@ public sealed class MiniMaxImageModelConfig
     public string BaseUrl { get; }
 
     /// <summary>Resolves the request headers on every call (bearer token and user agent).</summary>
-    public Func<Dictionary<string, string>> Headers { get; }
+    public Func<CancellationToken, Task<IReadOnlyDictionary<string, string?>>> Headers { get; }
 
     /// <summary>The client every request goes through (upstream <c>fetch</c>).</summary>
     public HttpClient HttpClient { get; }
@@ -228,7 +228,10 @@ public sealed class MiniMaxImageModel : IImageModel, IImageCaller
         // URL output supports the full batch size without the base64 area limit.
         body["response_format"] = "url";
         var headers = ProviderExchange.Merge(
-            Config.Headers().ToDictionary(pair => pair.Key, pair => (string?)pair.Value),
+            (await Config.Headers(cancellationToken).ConfigureAwait(false)).ToDictionary(
+                pair => pair.Key,
+                pair => pair.Value
+            ),
             call.Headers
         );
         var uri = ApiKeys.Combine(
