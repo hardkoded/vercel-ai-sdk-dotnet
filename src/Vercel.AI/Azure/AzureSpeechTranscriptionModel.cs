@@ -64,7 +64,8 @@ internal sealed class AzureSpeechTranscriptionModel
     private readonly Func<Uri> _url;
     private readonly Func<
         IReadOnlyDictionary<string, string?>?,
-        Dictionary<string, string?>
+        CancellationToken,
+        Task<Dictionary<string, string?>>
     > _headers;
 
     /// <summary>Creates a Speech transcription model.</summary>
@@ -72,7 +73,11 @@ internal sealed class AzureSpeechTranscriptionModel
         string modelId,
         ProviderHttp http,
         Func<Uri> url,
-        Func<IReadOnlyDictionary<string, string?>?, Dictionary<string, string?>> headers
+        Func<
+            IReadOnlyDictionary<string, string?>?,
+            CancellationToken,
+            Task<Dictionary<string, string?>>
+        > headers
     )
     {
         ModelId = modelId;
@@ -197,7 +202,7 @@ internal sealed class AzureSpeechTranscriptionModel
                 HttpMethod.Post,
                 _url(),
                 formData,
-                _headers(callHeaders),
+                await _headers(callHeaders, cancellationToken).ConfigureAwait(false),
                 cancellationToken
             )
             .ConfigureAwait(false);

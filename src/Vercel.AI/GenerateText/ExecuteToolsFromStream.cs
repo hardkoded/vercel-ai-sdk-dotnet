@@ -278,7 +278,13 @@ internal static class ExecuteToolsFromStream
         }
 
         var approvalId = Generation.NewApprovalId(options);
-        var signature = Generation.SignApproval(options, approvalId, toolCall);
+
+        // A signature lets a later request execute this tool call by replaying the approval from
+        // client-supplied history, so a denied tool call must not get one.
+        var signature =
+            status.Type == ToolApprovalStatus.DeniedType
+                ? null
+                : Generation.SignApproval(options, approvalId, toolCall);
         switch (status.Type)
         {
             case ToolApprovalStatus.UserApprovalType:

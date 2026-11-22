@@ -345,9 +345,13 @@ public sealed class XaiBatch : BatchResultsApiBase
 
     private Uri Url(string path) => ApiKeys.Combine(_provider.Options.BaseUrl, path);
 
-    private Dictionary<string, string?> Headers(BatchOperationCall call) =>
-        _provider.CreateHeaders(
-            call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value)
+    private Task<Dictionary<string, string?>> HeadersAsync(
+        BatchOperationCall call,
+        CancellationToken cancellationToken
+    ) =>
+        _provider.CreateHeadersAsync(
+            call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value),
+            cancellationToken
         );
 
     private async Task<JsonElement> SendBatchAsync(
@@ -364,7 +368,7 @@ public sealed class XaiBatch : BatchResultsApiBase
                 method,
                 url,
                 body == null ? null : ProviderExchange.Json(body),
-                Headers(call),
+                await HeadersAsync(call, cancellationToken).ConfigureAwait(false),
                 cancellationToken,
                 XaiError.FailedResponseHandler
             )
@@ -384,7 +388,7 @@ public sealed class XaiBatch : BatchResultsApiBase
                 HttpMethod.Get,
                 url,
                 null,
-                Headers(call),
+                await HeadersAsync(call, cancellationToken).ConfigureAwait(false),
                 cancellationToken,
                 XaiError.FailedResponseHandler
             )

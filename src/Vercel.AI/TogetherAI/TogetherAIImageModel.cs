@@ -139,7 +139,11 @@ public sealed class TogetherAIImageModel : IImageModel
             .PostJsonAsync(
                 _provider.ImagesUri(),
                 body.ToJsonString(),
-                _provider.CreateHeaders(options.Headers),
+                (
+                    await _provider
+                        .CreateHeadersAsync(options.Headers, cancellationToken)
+                        .ConfigureAwait(false)
+                ),
                 cancellationToken
             )
             .ConfigureAwait(false);

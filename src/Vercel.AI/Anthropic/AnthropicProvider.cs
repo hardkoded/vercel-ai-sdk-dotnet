@@ -23,8 +23,11 @@ public class AnthropicOptions
     /// <summary>API origin. The official host is normalized to <c>/v1</c>. Message calls append <c>/messages</c>.</summary>
     public string BaseUrl { get; set; } = "https://api.anthropic.com";
 
-    /// <summary>Explicit API key. Mutually exclusive with <see cref="AuthToken"/>.</summary>
-    public string? ApiKey { get; set; }
+    /// <summary>
+    /// Explicit API key. Mutually exclusive with <see cref="AuthToken"/>. A callback is resolved before each request
+    /// (Anthropic AWS). Upstream types only the Anthropic AWS key as <c>Resolvable</c>; the shared options class accepts it for both.
+    /// </summary>
+    public Resolvable<string>? ApiKey { get; set; }
 
     /// <summary>Bearer token. Mutually exclusive with <see cref="ApiKey"/>.</summary>
     public string? AuthToken { get; set; }
@@ -140,7 +143,7 @@ public class AnthropicProvider
         }
 
         if (
-            !string.IsNullOrEmpty(Options.ApiKey)
+            Options.ApiKey is not null
             && (!string.IsNullOrEmpty(Options.AuthToken) || Options.AuthTokenProvider != null)
         )
         {
@@ -447,7 +450,7 @@ public class AnthropicProvider
         }
         else
         {
-            var apiKey = TryApiKey();
+            var apiKey = await TryApiKeyAsync(cancellationToken).ConfigureAwait(false);
             if (apiKey != null)
             {
                 headers["x-api-key"] = apiKey;
@@ -474,10 +477,7 @@ public class AnthropicProvider
             }
             else if (!Aws)
             {
-                headers["x-api-key"] = ApiKeys.Require(
-                    Options.ApiKey,
-                    Options.ApiKeyEnvironmentVariable
-                );
+                headers["x-api-key"] = ApiKeys.Require(null, Options.ApiKeyEnvironmentVariable);
             }
             else
             {
@@ -519,11 +519,15 @@ public class AnthropicProvider
         );
     }
 
-    private string? TryApiKey()
+    private async Task<string?> TryApiKeyAsync(CancellationToken cancellationToken)
     {
-        if (!string.IsNullOrEmpty(Options.ApiKey))
+        if (Options.ApiKey is not null)
         {
-            return Options.ApiKey;
+            var apiKey = await Options.ApiKey.ResolveAsync(cancellationToken).ConfigureAwait(false);
+            if (!string.IsNullOrEmpty(apiKey))
+            {
+                return apiKey;
+            }
         }
 
         var env = Environment.GetEnvironmentVariable(Options.ApiKeyEnvironmentVariable);

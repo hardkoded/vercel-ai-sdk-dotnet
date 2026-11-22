@@ -22,8 +22,10 @@ public sealed class GatewayOptions
     /// <summary>Gateway origin for the V4 routes.</summary>
     public string BaseUrl { get; set; } = "https://ai-gateway.vercel.sh/v4/ai";
 
-    /// <summary>Explicit key. Falls back to <c>AI_GATEWAY_API_KEY</c>.</summary>
-    public string? ApiKey { get; set; }
+    /// <summary>
+    /// Explicit key. Falls back to <c>AI_GATEWAY_API_KEY</c>. A callback is resolved before each request.
+    /// </summary>
+    public Resolvable<string>? ApiKey { get; set; }
 
     /// <summary>
     /// Observability headers sent on every request. When null, they come from <c>VERCEL_DEPLOYMENT_ID</c>
@@ -444,9 +446,14 @@ public sealed class GatewayProvider
         CancellationToken cancellationToken
     )
     {
-        var apiKey = !string.IsNullOrWhiteSpace(Options.ApiKey)
-            ? Options.ApiKey
-            : Environment.GetEnvironmentVariable(ApiKeyEnvironmentVariable);
+        var apiKey = Options.ApiKey is null
+            ? null
+            : await Options.ApiKey.ResolveAsync(cancellationToken).ConfigureAwait(false);
+        if (string.IsNullOrWhiteSpace(apiKey))
+        {
+            apiKey = Environment.GetEnvironmentVariable(ApiKeyEnvironmentVariable);
+        }
+
         if (!string.IsNullOrWhiteSpace(apiKey))
         {
             return (apiKey!, "api-key");

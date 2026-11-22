@@ -124,6 +124,177 @@ public sealed class DoGenerateTests
         Assert.Equal("req_test_speech", data.Detail!.RequestId);
     }
 
+    private const string TimestampsCommit = "48ab95d62a08b409311c110852e8083910ba438d";
+
+    private const string AlignmentJson =
+        "{\"characters\":[\"H\",\"i\"],\"character_start_times_seconds\":[0,0.123456789],\"character_end_times_seconds\":[0.123456789,0.4]}";
+
+    private const string AlignmentMetadataJson =
+        "{\"characters\":[\"H\",\"i\"],\"characterStartTimesSeconds\":[0,0.123456789],\"characterEndTimesSeconds\":[0.123456789,0.4]}";
+
+    private static ElevenLabsProvider.ElevenLabsSpeechModel SpeechModel(
+        ParityHandler handler,
+        string modelId = "eleven_multilingual_v2"
+    ) =>
+        (ElevenLabsProvider.ElevenLabsSpeechModel)
+            ElevenLabsProvider
+                .Create(new OpenAICompatibleOptions { ApiKey = "test-api-key" }, handler)
+                .SpeechModel(modelId);
+
+    private static JsonElement Options(string json) => JsonDocument.Parse(json).RootElement.Clone();
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData(false)]
+    [UpstreamTest(
+        Prefix + "preserves binary audio when withTimestamps is %s",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = TimestampsCommit
+    )]
+    public async Task Preserves_binary_audio_when_withTimestamps_is(bool? withTimestamps)
+    {
+        var audio = new byte[100];
+        var handler = new ParityHandler(_ => ParityHandler.Bytes(audio, "audio/mp3"));
+        var model = SpeechModel(handler);
+
+        var result = await model.GenerateAsync(
+            new ElevenLabsSpeechRequest("Hi")
+            {
+                ProviderOptions = Options(
+                    withTimestamps is null
+                        ? "{\"elevenlabs\":{}}"
+                        : "{\"elevenlabs\":{\"withTimestamps\":false}}"
+                ),
+            },
+            CancellationToken.None
+        );
+
+        Assert.Equal(audio, result.Audio);
+        Assert.Equal(
+            "{\"elevenlabs\":{\"outputFormat\":\"mp3_44100_128\"}}",
+            result.ProviderMetadata!.Value.GetRawText()
+        );
+        Assert.Equal(
+            "https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM?output_format=mp3_44100_128",
+            handler.Calls[0].Uri.AbsoluteUri
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "returns timestamped audio and metadata from Text to Speech",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = TimestampsCommit
+    )]
+    public async Task Returns_timestamped_audio_and_metadata_from_Text_to_Speech()
+    {
+        var body =
+            "{\"audio_base64\":\"AQID\",\"alignment\":"
+            + AlignmentJson
+            + ",\"normalized_alignment\":"
+            + AlignmentJson
+            + "}";
+        var handler = new ParityHandler(_ =>
+            ParityHandler.Json(body, ("request-id", "tts-request"))
+        );
+        var model = SpeechModel(handler);
+
+        var result = await model.GenerateAsync(
+            new ElevenLabsSpeechRequest("Hi")
+            {
+                Voice = "test-voice",
+                OutputFormat = "pcm_24000",
+                Headers = new Dictionary<string, string> { ["custom-header"] = "custom-value" },
+                ProviderOptions = Options(
+                    "{\"elevenlabs\":{\"withTimestamps\":true,\"seed\":0,\"enableLogging\":false}}"
+                ),
+            },
+            CancellationToken.None
+        );
+
+        Assert.Equal(
+            "https://api.elevenlabs.io/v1/text-to-speech/test-voice/with-timestamps?output_format=pcm_24000&enable_logging=false",
+            handler.Calls[0].Uri.AbsoluteUri
+        );
+        Assert.Equal(
+            "{\"text\":\"Hi\",\"model_id\":\"eleven_multilingual_v2\",\"seed\":0}",
+            handler.Calls[0].Text
+        );
+        Assert.Equal("custom-value", handler.Calls[0].Headers["custom-header"]);
+        Assert.Equal(new byte[] { 1, 2, 3 }, result.Audio);
+        Assert.Equal(
+            "{\"elevenlabs\":{\"outputFormat\":\"pcm_24000\",\"alignment\":"
+                + AlignmentMetadataJson
+                + ",\"normalizedAlignment\":"
+                + AlignmentMetadataJson
+                + "}}",
+            result.ProviderMetadata!.Value.GetRawText()
+        );
+        Assert.Equal("tts-request", result.Response.Headers["request-id"]);
+        Assert.Equal(body, result.Response.Body!.Value.GetRawText());
+    }
+
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("{\"alignment\":null,\"normalized_alignment\":null,\"voice_segments\":null}")]
+    [UpstreamTest(
+        Prefix + "accepts absent or null timestamp metadata: %j",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = TimestampsCommit
+    )]
+    public async Task Accepts_absent_or_null_timestamp_metadata(string metadata)
+    {
+        var extra = metadata == "{}" ? string.Empty : "," + metadata.Trim('{', '}');
+        var handler = new ParityHandler(_ =>
+            ParityHandler.Json("{\"audio_base64\":\"AQID\"" + extra + "}")
+        );
+        var model = SpeechModel(handler);
+
+        var result = await model.GenerateAsync(
+            new ElevenLabsSpeechRequest("Hi")
+            {
+                ProviderOptions = Options("{\"elevenlabs\":{\"withTimestamps\":true}}"),
+            },
+            CancellationToken.None
+        );
+
+        Assert.Equal(new byte[] { 1, 2, 3 }, result.Audio);
+        Assert.Equal(
+            "{\"elevenlabs\":{\"outputFormat\":\"mp3_44100_128\"}}",
+            result.ProviderMetadata!.Value.GetRawText()
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "preserves empty audio and alignment arrays",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = TimestampsCommit
+    )]
+    public async Task Preserves_empty_audio_and_alignment_arrays()
+    {
+        var handler = new ParityHandler(_ =>
+            ParityHandler.Json(
+                "{\"audio_base64\":\"\",\"alignment\":{\"characters\":[],\"character_start_times_seconds\":[],\"character_end_times_seconds\":[]}}"
+            )
+        );
+        var model = SpeechModel(handler);
+
+        var result = await model.GenerateAsync(
+            new ElevenLabsSpeechRequest("Hi")
+            {
+                ProviderOptions = Options("{\"elevenlabs\":{\"withTimestamps\":true}}"),
+            },
+            CancellationToken.None
+        );
+
+        Assert.Empty(result.Audio);
+        Assert.Equal(
+            "{\"elevenlabs\":{\"outputFormat\":\"mp3_44100_128\",\"alignment\":{\"characters\":[],\"characterStartTimesSeconds\":[],\"characterEndTimesSeconds\":[]}}}",
+            result.ProviderMetadata!.Value.GetRawText()
+        );
+    }
+
     private static HttpResponseMessage Error(HttpStatusCode status, string body)
     {
         return new HttpResponseMessage(status)

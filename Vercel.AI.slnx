@@ -43,6 +43,7 @@
         <Project Path="examples/StreamVertexAnthropicOutputObjectNative/StreamVertexAnthropicOutputObjectNative.csproj" />
         <Project Path="examples/GenerateText/GenerateText.csproj" />
         <Project Path="examples/GenerateTextCerebrasServiceTier/GenerateTextCerebrasServiceTier.csproj" />
+        <Project Path="examples/GenerateVideoHeyGenLongClip/GenerateVideoHeyGenLongClip.csproj" />
         <Project Path="examples/GenerateVideoXaiBasic/GenerateVideoXaiBasic.csproj" />
         <Project Path="examples/GenerateVideoXaiCost/GenerateVideoXaiCost.csproj" />
         <Project Path="examples/GenerateVideoXaiEdit/GenerateVideoXaiEdit.csproj" />

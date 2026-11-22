@@ -578,9 +578,12 @@ public sealed class BatchItemResult<TOutput> : BatchItemResult
     }
 }
 
-/// <summary>A version-2 batch reference.</summary>
-public sealed class BatchReference
+/// <summary>A version-2 batch reference. Upstream <c>BatchReference</c>.</summary>
+public class BatchReference
 {
+    /// <summary>Creates an empty reference. <see cref="Batch"/> fills it in.</summary>
+    public BatchReference() { }
+
     /// <summary>Creates a reference.</summary>
     public BatchReference(int version, string id, string provider)
     {
@@ -590,13 +593,13 @@ public sealed class BatchReference
     }
 
     /// <summary>Reference version. Only 2 is accepted.</summary>
-    public int Version { get; }
+    public int Version { get; set; } = 2;
 
     /// <summary>Batch id.</summary>
-    public string Id { get; }
+    public string Id { get; set; } = string.Empty;
 
     /// <summary>Provider id.</summary>
-    public string Provider { get; }
+    public string Provider { get; set; } = string.Empty;
 }
 
 /// <summary>Request counts.</summary>
@@ -641,8 +644,11 @@ public sealed class BatchRequestWarning
     public OperationWarning Warning { get; }
 }
 
-/// <summary>Status fields shared by start, list, and status calls.</summary>
-public class BatchStatus
+/// <summary>
+/// The latest status of a batch. It is also upstream's <c>Batch</c> (<c>BatchReference &amp; BatchStatus</c>), so the
+/// start, list, and status results are all <see cref="BatchReference"/> values.
+/// </summary>
+public class BatchStatus : BatchReference
 {
     /// <summary>Status name.</summary>
     public string? Status { get; set; }
@@ -672,32 +678,13 @@ public class BatchStatus
 /// <summary>Start acknowledgement.</summary>
 public sealed class BatchStartResult : BatchStatus
 {
-    /// <summary>Reference version.</summary>
-    public int Version { get; set; } = 2;
-
-    /// <summary>Batch id.</summary>
-    public string Id { get; set; } = string.Empty;
-
-    /// <summary>Provider id.</summary>
-    public string Provider { get; set; } = string.Empty;
-
     /// <summary>Warnings.</summary>
     public IReadOnlyList<BatchRequestWarning> Warnings { get; set; } =
         Array.Empty<BatchRequestWarning>();
 }
 
 /// <summary>One listed batch.</summary>
-public sealed class ListedBatch : BatchStatus
-{
-    /// <summary>Reference version.</summary>
-    public int Version { get; set; } = 2;
-
-    /// <summary>Batch id.</summary>
-    public string Id { get; set; } = string.Empty;
-
-    /// <summary>Provider id.</summary>
-    public string Provider { get; set; } = string.Empty;
-}
+public sealed class ListedBatch : BatchStatus { }
 
 /// <summary>A page of batches.</summary>
 public sealed class BatchListResult
@@ -885,6 +872,61 @@ public sealed class BatchRequestOptions : OperationRequest
     public Func<string, CancellationToken, Task<DownloadedMedia>>? Download { get; set; }
 }
 
+/// <summary>
+/// Options for <see cref="Batch.StartBatchAsync"/>. Upstream <c>StartBatchOptions</c>. Starting a batch never retries,
+/// so there is no <c>MaxRetries</c>.
+/// </summary>
+public sealed class StartBatchOptions
+{
+    /// <summary>Batch API or a provider that exposes one. Null uses <see cref="BatchModels.Default"/>.</summary>
+    public ApiOrProvider<IBatchApi, IBatchProvider>? Provider { get; set; }
+
+    /// <summary>Requests to start.</summary>
+    public IReadOnlyList<BatchRequest>? Requests { get; set; }
+
+    /// <summary>Provider-specific options.</summary>
+    public JsonElement? ProviderOptions { get; set; }
+
+    /// <summary>
+    /// Specification for structured data in the text responses. Its response format is sent with every text request
+    /// in the batch; image requests ignore it. Pass the same value to <c>GetBatchResults</c> to parse and
+    /// validate each result.
+    /// </summary>
+    public OutputSpec? Output { get; set; }
+
+    /// <summary>URL the provider notifies when the batch reaches a terminal state.</summary>
+    public string? WebhookUrl { get; set; }
+
+    /// <summary>Total timeout in milliseconds.</summary>
+    public int? TimeoutMs { get; set; }
+
+    /// <summary>Cancels the call.</summary>
+    public CancellationToken CancellationToken { get; set; }
+
+    /// <summary>Exception thrown when <see cref="CancellationToken"/> is already cancelled.</summary>
+    public Exception? AbortReason { get; set; }
+
+    /// <summary>Extra HTTP headers.</summary>
+    public IReadOnlyDictionary<string, string>? Headers { get; set; }
+
+    internal BatchRequestOptions ToRequestOptions()
+    {
+        return new BatchRequestOptions
+        {
+            Provider = Provider,
+            Requests = Requests,
+            ProviderOptions = ProviderOptions,
+            Output = Output,
+            WebhookUrl = WebhookUrl,
+            TimeoutMs = TimeoutMs,
+            CancellationToken = CancellationToken,
+            AbortReason = AbortReason,
+            Headers = Headers,
+            MaxRetries = 0,
+        };
+    }
+}
+
 /// <summary>Batch operations. Maps to <c>startBatch</c>, <c>getBatchStatus</c>, <c>getBatchResults</c>, <c>listBatches</c>, and <c>cancelBatch</c>.</summary>
 public static class Batch
 {
@@ -952,14 +994,16 @@ public static class Batch
 
     /// <summary>Validates and starts a batch.</summary>
     public static async Task<BatchStartResult> StartBatchAsync(
-        BatchRequestOptions request,
+        StartBatchOptions options,
         CancellationToken cancellationToken = default
     )
     {
-        if (request == null)
+        if (options == null)
         {
-            throw new ArgumentNullException(nameof(request));
+            throw new ArgumentNullException(nameof(options));
         }
+
+        var request = options.ToRequestOptions();
 
         var requests = request.Requests ?? Array.Empty<BatchRequest>();
         ValidateRequests(requests);
@@ -1057,7 +1101,7 @@ public static class Batch
         ValidateReference(api, request.Batch);
         using var scope = Token(request, cancellationToken);
         var token = scope.Token;
-        return await OperationRetry
+        var status = await OperationRetry
             .ExecuteAsync(
                 request.MaxRetries,
                 token,
@@ -1066,6 +1110,10 @@ public static class Batch
                 null
             )
             .ConfigureAwait(false);
+        status.Version = 2;
+        status.Id = request.Batch!.Id;
+        status.Provider = api.Provider;
+        return status;
     }
 
     /// <summary>

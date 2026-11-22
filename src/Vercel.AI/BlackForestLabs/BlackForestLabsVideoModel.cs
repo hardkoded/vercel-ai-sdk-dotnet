@@ -198,8 +198,13 @@ public sealed class BlackForestLabsVideoModel : IVideoModel, IVideoCaller
         call = call ?? throw new ArgumentNullException(nameof(call));
         var (body, warnings) = GetArgs(call);
         var timestamp = _clock();
-        var headers = _provider.CreateHeaders(
-            call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value)
+        var headers = (
+            await _provider
+                .CreateHeadersAsync(
+                    call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value),
+                    cancellationToken
+                )
+                .ConfigureAwait(false)
         );
         var submitUrl = _provider.Options.BaseUrl.TrimEnd('/') + "/" + ModelId;
 
@@ -254,8 +259,13 @@ public sealed class BlackForestLabsVideoModel : IVideoModel, IVideoCaller
         var operation = ReadOperation(call.Operation);
         var baseUrl = _provider.Options.BaseUrl.TrimEnd('/');
         var url = WithRequestId(operation.PollingUrl, operation.RequestId);
-        var headers = _provider.CreateHeaders(
-            call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value)
+        var headers = (
+            await _provider
+                .CreateHeadersAsync(
+                    call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value),
+                    cancellationToken
+                )
+                .ConfigureAwait(false)
         );
 
         // The polling URL comes from the provider response. Credentials only go to a trusted provider host.

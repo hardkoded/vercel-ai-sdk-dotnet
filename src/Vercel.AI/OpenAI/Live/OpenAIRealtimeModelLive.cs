@@ -93,17 +93,17 @@ public sealed class OpenAIRealtimeModelLive : IServerWebSocketRealtimeModel
     }
 
     /// <inheritdoc />
-    public Task<RealtimeModelV4ServerConnection> GetServerWebSocketConfigAsync(
+    public async Task<RealtimeModelV4ServerConnection> GetServerWebSocketConfigAsync(
         RealtimeModelV4SessionIntent? intent,
         CancellationToken cancellationToken
     )
     {
         AssertConversationIntent(intent);
-        return Task.FromResult(
-            new RealtimeModelV4ServerConnection(
-                BuildServerUrl(),
-                OpenAIRealtimeModel.ResolveHeaders(_provider)
-            )
+        return new RealtimeModelV4ServerConnection(
+            BuildServerUrl(),
+            await OpenAIRealtimeModel
+                .ResolveHeadersAsync(_provider, cancellationToken)
+                .ConfigureAwait(false)
         );
     }
 
@@ -134,7 +134,9 @@ public sealed class OpenAIRealtimeModelLive : IServerWebSocketRealtimeModel
                 HttpMethod.Post,
                 ApiKeys.Combine(_provider.Options.BaseUrl, "live/sessions"),
                 body.ToJsonString(),
-                _provider.CreateOpenAIHeaders(),
+                await _provider
+                    .CreateOpenAIHeadersAsync(null, cancellationToken)
+                    .ConfigureAwait(false),
                 cancellationToken
             )
             .ConfigureAwait(false);
@@ -243,7 +245,11 @@ public sealed class OpenAIRealtimeModelLive : IServerWebSocketRealtimeModel
         var socket = new System.Net.WebSockets.ClientWebSocket();
         try
         {
-            foreach (var header in OpenAIRealtimeModel.ResolveHeaders(_provider))
+            foreach (
+                var header in await OpenAIRealtimeModel
+                    .ResolveHeadersAsync(_provider, cancellationToken)
+                    .ConfigureAwait(false)
+            )
             {
                 socket.Options.SetRequestHeader(header.Key, header.Value);
             }

@@ -228,6 +228,11 @@ public sealed class CerebrasUpstreamTests
         options.Headers = new Dictionary<string, string?> { ["X-Custom"] = "yes" };
         await Chat(capture).DoGenerateAsync(options, CancellationToken.None);
         Assert.Equal("yes", capture.Requests[0].Headers["X-Custom"]);
+        Assert.Contains(
+            "ai-sdk/cerebras/" + AiSdkVersion.Version,
+            capture.Requests[0].Headers["User-Agent"],
+            StringComparison.Ordinal
+        );
     }
 
     [Fact]

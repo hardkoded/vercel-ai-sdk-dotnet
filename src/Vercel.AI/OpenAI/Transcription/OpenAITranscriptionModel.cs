@@ -196,7 +196,8 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
     private readonly Func<Uri> _realtimeUrl;
     private readonly Func<
         IReadOnlyDictionary<string, string?>?,
-        Dictionary<string, string?>
+        CancellationToken,
+        Task<Dictionary<string, string?>>
     > _headers;
     private readonly WebSocketFactory? _webSocket;
     private readonly Func<DateTimeOffset>? _clock;
@@ -228,7 +229,7 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
         _url = () => ApiKeys.Combine(provider.Options.BaseUrl, path);
         _realtimeUrl = () =>
             ApiKeys.Combine(provider.Options.BaseUrl, "realtime?intent=transcription");
-        _headers = provider.CreateOpenAIHeaders;
+        _headers = provider.CreateOpenAIHeadersAsync;
         _webSocket = provider.WebSocket;
         _clock = clock;
     }
@@ -264,7 +265,7 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
                     query.Length == 0 ? "intent=transcription" : "intent=transcription&" + query,
             }.Uri;
         };
-        _headers = provider.CreateHeaders;
+        _headers = provider.CreateHeadersAsync;
         _webSocket = webSocket;
         _clock = clock;
     }
@@ -279,7 +280,7 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
         ProviderHttp http,
         Func<Uri> url,
         Func<Uri> realtimeUrl,
-        Func<Dictionary<string, string?>> headers,
+        Func<CancellationToken, Task<Dictionary<string, string?>>> headers,
         WebSocketFactory? webSocket = null,
         Func<DateTimeOffset>? clock = null
     )
@@ -289,10 +290,10 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
         _http = http;
         _url = url;
         _realtimeUrl = realtimeUrl;
-        _headers = callHeaders =>
+        _headers = async (callHeaders, cancellationToken) =>
         {
             var combined = new Dictionary<string, string?>(
-                headers(),
+                await headers(cancellationToken).ConfigureAwait(false),
                 StringComparer.OrdinalIgnoreCase
             );
             if (callHeaders != null)
@@ -359,7 +360,7 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
                 HttpMethod.Post,
                 _url(),
                 Build(call, warnings),
-                _headers(call.Headers),
+                await _headers(call.Headers, cancellationToken).ConfigureAwait(false),
                 cancellationToken
             )
             .ConfigureAwait(false);
@@ -617,21 +618,16 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
     }
 
     /// <summary>Starts a realtime streaming transcription over the OpenAI Realtime WebSocket. Maps to <c>doStream</c>.</summary>
-    public Task<TranscriptionStreamStart?> DoStreamAsync(
+    public async Task<TranscriptionStreamStart?> DoStreamAsync(
         TranscriptionStreamCall call,
         CancellationToken cancellationToken
     )
     {
-        try
-        {
-            return Task.FromResult<TranscriptionStreamStart?>(
-                DoStream(call ?? throw new ArgumentNullException(nameof(call)))
-            );
-        }
-        catch (Exception error)
-        {
-            return Task.FromException<TranscriptionStreamStart?>(error);
-        }
+        return await DoStream(
+                call ?? throw new ArgumentNullException(nameof(call)),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
     }
 
     private static JsonObject BuildRealtimeSession(
@@ -741,7 +737,10 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
         );
     }
 
-    private TranscriptionStreamStart DoStream(TranscriptionStreamCall call)
+    private async Task<TranscriptionStreamStart?> DoStream(
+        TranscriptionStreamCall call,
+        CancellationToken cancellationToken
+    )
     {
         var entry = OpenAIModelCatalog.GetOpenAITranscriptionModelEntry(ModelId);
         if (entry.Capabilities.Streaming != true)
@@ -811,9 +810,11 @@ public sealed class OpenAITranscriptionModel : ITranscriptionModel, ITranscripti
             );
         }
 
-        var headers = _headers(
-            call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value)
-        );
+        var headers = await _headers(
+                call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         var language = OpenAIJson.String(openai, "language");
         var sessionUpdate = BuildRealtimeSession(
             ModelId,

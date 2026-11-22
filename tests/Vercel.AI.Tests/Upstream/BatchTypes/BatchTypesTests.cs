@@ -96,10 +96,10 @@ public sealed class BatchTypesTests
     public void Accepts_an_output_specification_when_starting_a_batch()
     {
         // StartBatchOptions.Output is an OutputSpec?, and a typed specification is one.
-        var options = new BatchRequestOptions { Output = OutputSpec.Object<TextOutput>("{}") };
+        var options = new StartBatchOptions { Output = OutputSpec.Object<TextOutput>("{}") };
 
         Assert.IsAssignableFrom<OutputSpec<TextOutput>>(options.Output);
-        Assert.Null(new BatchRequestOptions().Output);
+        Assert.Null(new StartBatchOptions().Output);
     }
 
     private static Type PropertyType<T>(string name) =>
@@ -109,35 +109,28 @@ public sealed class BatchTypesTests
     [Fact]
     [UpstreamTest(
         Prefix + "uses a modality-independent batch reference",
-        Coverage = UpstreamCoverage.Partial,
+        Coverage = UpstreamCoverage.Covered,
         Commit = Commit
     )]
     public void Uses_a_modality_independent_batch_reference()
     {
-        // GetBatchStatus takes the same BatchReference as every other batch operation. The C# start result is
-        // not a BatchReference subtype: it repeats Version, Id and Provider (see the follow-up issue).
+        // Batch (a start result or a listed batch) is a BatchReference, and status takes a BatchReference.
+        Assert.True(typeof(BatchReference).IsAssignableFrom(typeof(BatchStartResult)));
+        Assert.True(typeof(BatchReference).IsAssignableFrom(typeof(ListedBatch)));
         Assert.Equal(typeof(BatchReference), PropertyType<BatchRequestOptions>("Batch"));
-        foreach (var name in new[] { "Version", "Id", "Provider" })
-        {
-            Assert.Equal(
-                typeof(BatchReference).GetProperty(name)!.PropertyType,
-                typeof(BatchStartResult).GetProperty(name)!.PropertyType
-            );
-        }
     }
 
     [Fact]
     [UpstreamTest(
         Prefix + "keeps batch start non-retrying",
-        Coverage = UpstreamCoverage.Partial,
+        Coverage = UpstreamCoverage.Covered,
         Commit = Commit
     )]
     public void Keeps_batch_start_non_retrying()
     {
-        // Covered: webhookUrl is an optional string and the timeout is optional.
-        // Not covered: C# shares BatchRequestOptions between operations, so MaxRetries exists on the type.
-        Assert.Equal(typeof(string), PropertyType<BatchRequestOptions>("WebhookUrl"));
-        Assert.Equal(typeof(int?), PropertyType<BatchRequestOptions>("TimeoutMs"));
+        Assert.Null(typeof(StartBatchOptions).GetProperty("MaxRetries"));
+        Assert.Equal(typeof(int?), PropertyType<StartBatchOptions>("TimeoutMs"));
+        Assert.Equal(typeof(string), PropertyType<StartBatchOptions>("WebhookUrl"));
     }
 
     [Fact]

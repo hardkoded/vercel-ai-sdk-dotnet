@@ -27,6 +27,18 @@ public sealed class ProviderHttp
     /// </summary>
     internal Action<CancellationToken>? OnRequest { get; set; }
 
+    /// <summary>
+    /// Test seam that replaces the <see cref="HttpClient"/> send. It receives the request and the token the send uses: the
+    /// caller's own token when the client has no timeout, and a token that is not cancellable when the caller passed none.
+    /// <see cref="HttpClient"/> wraps a handler exception in a <see cref="TaskCanceledException"/> and always passes a token,
+    /// so tests use this to see the exact token and the exact exception. .NET-only: stands in for upstream's <c>fetch</c> config.
+    /// </summary>
+    internal Func<
+        HttpRequestMessage,
+        CancellationToken,
+        Task<HttpResponseMessage>
+    >? Fetch { get; set; }
+
     /// <summary>Creates a provider HTTP client.</summary>
     public ProviderHttp(HttpClient httpClient, RetryPolicy? retry = null, TimeSpan? timeout = null)
     {
@@ -667,9 +679,14 @@ public sealed class ProviderHttp
                 ApplyHeaders(request, headers);
                 request.Content = attempt == 0 ? content : rebuild?.Invoke();
                 OnRequest?.Invoke(cancellationToken);
-                var response = await _httpClient
-                    .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token)
-                    .ConfigureAwait(false);
+                var response = await (
+                    Fetch?.Invoke(request, token)
+                    ?? _httpClient.SendAsync(
+                        request,
+                        HttpCompletionOption.ResponseHeadersRead,
+                        token
+                    )
+                ).ConfigureAwait(false);
                 if (
                     response.IsSuccessStatusCode
                     || !IsRetryable((int)response.StatusCode)

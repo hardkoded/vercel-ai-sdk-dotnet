@@ -5,6 +5,7 @@
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 using Vercel.AI.Tests.MoreProviders;
 using HeyGenProviderType = Vercel.AI.HeyGen.HeyGenProvider;
 
@@ -71,7 +72,7 @@ public sealed class CreateHeyGenTests
             );
             var options = new OpenAICompatibleOptions
             {
-                ApiKey = explicitKey ? "explicit-key" : null,
+                ApiKey = explicitKey ? Resolvable<string>.From("explicit-key") : null,
                 BaseUrl = "https://proxy.example.com/heygen/",
             };
             options.Headers["X-Custom"] = "custom";
