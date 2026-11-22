@@ -28,7 +28,9 @@ jobs:
         run: dotnet test Vercel.AI.slnx -c Release --nologo
 
       - name: Pack
-        run: dotnet pack src/Vercel.AI/Vercel.AI.csproj -c Release -o artifacts --nologo
+        run: |
+          dotnet pack src/Vercel.AI/Vercel.AI.csproj -c Release -o artifacts --nologo
+          dotnet pack src/Vercel.AI.Mistral.LiveKit/Vercel.AI.Mistral.LiveKit.csproj -c Release -o artifacts --nologo
 
       - name: NuGet login
         uses: NuGet/login@v1

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFrameworks>net10.0</TargetFrameworks>
+        <Description>LiveKit adapter for the Mistral realtime transport of the community .NET port of the Vercel AI SDK. Wraps the Livekit.Rtc.Dotnet client. Not an official Vercel product.</Description>
+        <IsPackable>true</IsPackable>
+        <PackageTags>ai;vercel;llm;sdk;mistral;livekit;realtime</PackageTags>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+    </PropertyGroup>
+    <ItemGroup>
+        <None Include="README.md" Pack="true" PackagePath="\" />
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\Vercel.AI\Vercel.AI.csproj" />
+        <PackageReference Include="Livekit.Rtc.Dotnet" Version="0.1.8" />
+    </ItemGroup>
+</Project>

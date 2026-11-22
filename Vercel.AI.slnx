@@ -78,6 +78,7 @@
     </Folder>
     <Folder Name="/src/">
         <Project Path="src/Vercel.AI/Vercel.AI.csproj" />
+        <Project Path="src/Vercel.AI.Mistral.LiveKit/Vercel.AI.Mistral.LiveKit.csproj" />
     </Folder>
     <Folder Name="/scripts/">
         <Project Path="scripts/Vercel.AI.Gateway.Scripts/Vercel.AI.Gateway.Scripts.csproj" />
