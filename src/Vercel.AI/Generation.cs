@@ -354,6 +354,10 @@ internal static class Generation
         options = options.ShallowCopy();
         options.Headers = WithUserAgentHeader(options.Headers);
         options.TelemetrySnapshot = TelemetryDispatcher.Create(options);
+        // Maps to `include = experimental_include` and the defaults of `include`: nothing is retained unless it is asked for.
+#pragma warning disable CS0618 // ExperimentalInclude is the deprecated alias of Include
+        var include = options.Include ?? options.ExperimentalInclude ?? new GenerateTextInclude();
+#pragma warning restore CS0618
         // With a timeout, the model and the tools get a token that also cancels when the timeout expires.
         using var timeouts = CallTimeouts.Create(options.Timeout, null, false, callerToken);
         var cancellationToken = timeouts?.Token ?? callerToken;
@@ -709,12 +713,16 @@ internal static class Generation
                         current,
                         cancellationToken,
                         new StepTiming(now, stepStartMs, responseTimeMs, Array.Empty<double>()),
+                        // Maps to `stepRequest`: the body and the messages are kept only when `include` asks for them.
                         new LanguageModelRequestMetadata
                         {
                             Url = RequestOrigin.SanitizeRequestMetadata(modelResponse.Request)?.Url,
+                            Body = include.RequestBody ? modelResponse.Request?.Body : null,
+                            RedactBody = modelResponse.Request?.RedactBody,
+                            Messages = include.RequestMessages ? messages.ToArray() : null,
                         },
                         GeneratedResponseInfo(generated, current),
-                        ParseResponseBody(generated.RawResponse),
+                        include.ResponseBody ? ParseResponseBody(generated.RawResponse) : null,
                         steeringMessages: deliveredSteeringMessages,
                         callId: callId,
                         stepNumber: steps.Count
@@ -1485,7 +1493,8 @@ internal static class Generation
                     options.ProviderOptions,
                     update?.ProviderOptions
                 );
-                streamOptions.IncludeRawChunks = options.Include?.RawChunks == true;
+                streamOptions.IncludeRawChunks =
+                    (options.Include as StreamTextInclude)?.RawChunks == true;
                 // onStepStart runs once per step with the converted prompt, even when a steering interrupt redoes the model call:
                 streamOptions.OnStart = async (_, token) =>
                 {
@@ -1594,6 +1603,7 @@ internal static class Generation
                     {
                         Url = RequestOrigin.SanitizeRequestMetadata(modelRequest)?.Url,
                         Body = options.Include?.RequestBody == true ? modelRequest?.Body : null,
+                        RedactBody = modelRequest?.RedactBody,
                         Messages = options.Include?.RequestMessages == true ? stepMessages : null,
                     };
 
@@ -5606,7 +5616,7 @@ public class StreamTextResult
 
     /// <summary>
     /// Additional request information of the last step. <see cref="LanguageModelRequestMetadata.Body"/> and
-    /// <see cref="LanguageModelRequestMetadata.Messages"/> are set only when <see cref="StreamTextOptions.Include"/> asks for them.
+    /// <see cref="LanguageModelRequestMetadata.Messages"/> are set only when <see cref="GenerateTextOptions.Include"/> asks for them.
     /// Completes when the stream finishes. Maps to <c>request</c>.
     /// </summary>
     public Task<LanguageModelRequestMetadata> Request { get; }

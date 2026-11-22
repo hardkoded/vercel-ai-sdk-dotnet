@@ -280,6 +280,8 @@ public sealed class AiClient : IAiClient
                 Timeout = options.Timeout,
                 Headers = options.Headers,
                 ProviderOptions = options.ProviderOptions,
+                // generateObject always returns the response body.
+                Include = new GenerateTextInclude { ResponseBody = true },
                 RepairOutput = (options.RepairText ?? options.ExperimentalRepairText)
                     is { } repairText
                     ? (text, error, token) =>
