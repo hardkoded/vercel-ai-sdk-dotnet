@@ -86,7 +86,15 @@ internal sealed class TelemetryDispatcher
         {
             HasIntegrations = integrations.Count > 0,
             OnEnd = Filter<GenerateTextResult>(Merge(integrations.Select(i => i.OnEnd)), result =>
-                FilterResult(result, telemetry)
+                AugmentResult(result, telemetry)
+            ),
+            OnLanguageModelCallStart = Filter<LanguageModelCallStartEvent>(
+                Merge(integrations.Select(i => i.OnLanguageModelCallStart)),
+                e => AugmentEvent(e, telemetry)
+            ),
+            OnLanguageModelCallEnd = Filter<LanguageModelCallEndEvent>(
+                Merge(integrations.Select(i => i.OnLanguageModelCallEnd)),
+                e => AugmentEvent(e, telemetry)
             ),
             OnStart = Filter<GenerateTextStartEvent>(
                 Merge(integrations.Select(i => i.OnStart)),
@@ -155,9 +163,88 @@ internal sealed class TelemetryDispatcher
                 )
             ),
             OnError = Merge(integrations.Select(i => i.OnError)),
-            OnLanguageModelCallStart = Merge(integrations.Select(i => i.OnLanguageModelCallStart)),
-            OnLanguageModelCallEnd = Merge(integrations.Select(i => i.OnLanguageModelCallEnd)),
         };
+    }
+
+    // Adds the telemetry settings and the SDK version to an event, then strips the inputs and outputs the call does not record. Maps to augmentEvent.
+    private static LanguageModelCallStartEvent AugmentEvent(
+        LanguageModelCallStartEvent value,
+        TelemetryOptions? telemetry
+    )
+    {
+        var augmented = new LanguageModelCallStartEvent
+        {
+            CallId = value.CallId,
+            Provider = value.Provider,
+            ModelId = value.ModelId,
+            Instructions = value.Instructions,
+            Messages = value.Messages,
+            Tools = value.Tools,
+            CallOptions = value.CallOptions,
+            RecordInputs = telemetry?.RecordInputs,
+            RecordOutputs = telemetry?.RecordOutputs,
+            FunctionId = telemetry?.FunctionId,
+            AiVersion = Operations.AiSdkVersion.Version,
+        };
+        return FilterTelemetryEventHelper.FilterTelemetryEvent(augmented, telemetry);
+    }
+
+    // Maps to augmentEvent.
+    private static LanguageModelCallEndEvent AugmentEvent(
+        LanguageModelCallEndEvent value,
+        TelemetryOptions? telemetry
+    )
+    {
+        var augmented = new LanguageModelCallEndEvent(
+            value.Provider,
+            value.ModelId,
+            value.FinishReason,
+            value.Usage,
+            value.Content,
+            value.ResponseId,
+            value.ProviderMetadata,
+            value.ResponseTime
+        )
+        {
+            CallId = value.CallId,
+            Request = value.Request,
+            Performance = value.Performance,
+            RecordInputs = telemetry?.RecordInputs,
+            RecordOutputs = telemetry?.RecordOutputs,
+            FunctionId = telemetry?.FunctionId,
+            AiVersion = Operations.AiSdkVersion.Version,
+        };
+        return FilterTelemetryEventHelper.FilterTelemetryEvent(augmented, telemetry);
+    }
+
+    // Maps to augmentEvent: the settings and version, the context filter, the content filter, and the credential redaction.
+    private static GenerateTextResult AugmentResult(
+        GenerateTextResult result,
+        TelemetryOptions? telemetry
+    )
+    {
+        var augmented = FilterResult(result, telemetry);
+        augmented = new GenerateTextResult(
+            augmented.Text,
+            augmented.ReasoningText,
+            augmented.Steps,
+            augmented.FinishReason,
+            augmented.Usage,
+            augmented.Output,
+            augmented.Sources,
+            augmented.ProviderMetadata
+        )
+        {
+            ResponseMessages = augmented.ResponseMessages,
+            RecordInputs = telemetry?.RecordInputs,
+            RecordOutputs = telemetry?.RecordOutputs,
+            FunctionId = telemetry?.FunctionId,
+            AiVersion = Operations.AiSdkVersion.Version,
+        };
+        return FilterTelemetryEventHelper.FilterTelemetryEvent(
+            RedactTelemetryCredentialsHelper.RedactTelemetryCredentials(augmented),
+            telemetry
+        );
     }
 
     // Integrations see only the runtime and tool context properties the call includes. Maps to the filterContext step of augmentEvent.
