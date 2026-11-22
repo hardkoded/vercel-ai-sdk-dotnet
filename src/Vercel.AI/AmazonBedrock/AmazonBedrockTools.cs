@@ -9,6 +9,17 @@ using Vercel.AI.Provider;
 
 namespace Vercel.AI.AmazonBedrock;
 
+/// <summary>The Anthropic <c>prepareTools</c> that Bedrock calls for provider tools.</summary>
+internal delegate AnthropicPreparedTools PrepareAnthropicTools(
+    IReadOnlyList<AnthropicToolDefinition> tools,
+    string? toolChoiceType,
+    string? toolName,
+    bool? disableParallelToolUse,
+    bool supportsStructuredOutput,
+    bool supportsStrictTools,
+    bool rejectsForcedToolUse
+);
+
 /// <summary>Builds a Converse <c>toolConfig</c> from V4 function tools.</summary>
 public static class AmazonBedrockTools
 {
@@ -67,6 +78,46 @@ public static class AmazonBedrockTools
         int? reasoningBudgetTokens,
         bool? disableParallelToolUse,
         bool rejectsForcedToolUse,
+        out List<CallWarning> warnings,
+        out JsonObject? additionalTools,
+        out HashSet<string> betas
+    ) =>
+        Prepare(
+            modelId,
+            tools,
+            toolChoice,
+            modelFamily,
+            reasoningBudgetTokens,
+            disableParallelToolUse,
+            rejectsForcedToolUse,
+            (tools, choiceType, name, disableParallel, structured, strict, rejectsForced) =>
+                AnthropicToolPreparer.Prepare(
+                    tools,
+                    choiceType,
+                    name,
+                    disableParallel,
+                    supportsStructuredOutput: structured,
+                    supportsStrictTools: strict,
+                    rejectsForcedToolUse: rejectsForced
+                ),
+            out warnings,
+            out additionalTools,
+            out betas
+        );
+
+    /// <summary>
+    /// Prepares tools with an injectable <paramref name="prepareAnthropicTools"/>. Upstream imports
+    /// <c>prepareTools as prepareAnthropicTools</c> from <c>@ai-sdk/anthropic/internal</c>, and its tests mock it.
+    /// </summary>
+    internal static JsonObject Prepare(
+        string modelId,
+        IReadOnlyList<LanguageModelTool>? tools,
+        ToolChoice? toolChoice,
+        AmazonBedrockChatModelFamily? modelFamily,
+        int? reasoningBudgetTokens,
+        bool? disableParallelToolUse,
+        bool rejectsForcedToolUse,
+        PrepareAnthropicTools prepareAnthropicTools,
         out List<CallWarning> warnings,
         out JsonObject? additionalTools,
         out HashSet<string> betas
@@ -146,14 +197,14 @@ public static class AmazonBedrockTools
         // Handle Anthropic provider-defined tools for Anthropic models on Bedrock.
         if (usingAnthropicTools)
         {
-            var prepared = AnthropicToolPreparer.Prepare(
+            var prepared = prepareAnthropicTools(
                 providerTools.Select(ToAnthropicTool).ToList(),
                 toolChoice?.Type,
                 (toolChoice as ToolChoice.NamedChoice)?.ToolName,
                 disableParallelToolUseForRequest,
-                supportsStructuredOutput: false,
-                supportsStrictTools: false,
-                rejectsForcedToolUse: rejectsForcedToolUse
+                false,
+                false,
+                rejectsForcedToolUse
             );
             foreach (var warning in prepared.Warnings)
             {

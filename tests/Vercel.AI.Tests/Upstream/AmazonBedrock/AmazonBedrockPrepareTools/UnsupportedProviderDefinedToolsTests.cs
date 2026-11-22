@@ -43,23 +43,30 @@ public sealed class UnsupportedProviderDefinedToolsTests
     [Fact]
     [UpstreamTest(
         "packages/amazon-bedrock/src/amazon-bedrock-prepare-tools.test.ts::prepareTools > unsupported provider-defined tools::should warn for unknown provider-defined tools on anthropic models",
-        Coverage = UpstreamCoverage.Partial,
+        Coverage = UpstreamCoverage.Covered,
         Commit = "62a4dcd641895b3aca4698015c0378b2bd558c4e"
     )]
     public void Should_warn_for_unknown_provider_defined_tools_on_anthropic_models()
     {
+        var mock = new PrepareAnthropicToolsMock();
         var config = AmazonBedrockTools.Prepare(
             AnthropicModel,
             [Provider("anthropic.unknown_tool", "unknown_tool")],
             null,
-            out var warnings
+            null,
+            null,
+            null,
+            false,
+            mock.Invoke,
+            out var warnings,
+            out _,
+            out _
         );
 
-        // Upstream mocks prepareAnthropicTools to return no warnings, so it sees one warning. The
-        // port runs the real Anthropic preparation, which adds its own warning for the unknown tool.
         Assert.Equal("{}", config.ToJsonString());
-        var warning = Assert.Single(warnings, w => w.Message == "tool anthropic.unknown_tool");
+        var warning = Assert.Single(warnings);
         Assert.Equal("unsupported", warning.Type);
+        Assert.Equal("tool anthropic.unknown_tool", warning.Message);
     }
 
     [Fact]
