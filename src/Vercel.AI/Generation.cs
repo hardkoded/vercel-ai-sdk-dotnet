@@ -180,6 +180,14 @@ internal static class Generation
         return stepOptions;
     }
 
+    // Maps to `include = experimental_include` of streamText.
+    private static StreamTextInclude ResolveStreamInclude(StreamTextOptions options)
+    {
+#pragma warning disable CS0618 // ExperimentalInclude is the deprecated alias of Include
+        return options.Include ?? options.ExperimentalInclude ?? new StreamTextInclude();
+#pragma warning restore CS0618
+    }
+
     // Maps to `stepSandbox = prepareStepResult?.experimental_sandbox ?? sandbox`. The sandbox from prepareStep applies to tool execution in this step only.
     private static GenerateTextOptions StepOptions(
         GenerateTextOptions options,
@@ -1493,8 +1501,7 @@ internal static class Generation
                     options.ProviderOptions,
                     update?.ProviderOptions
                 );
-                streamOptions.IncludeRawChunks =
-                    (options.Include as StreamTextInclude)?.RawChunks == true;
+                streamOptions.IncludeRawChunks = ResolveStreamInclude(options).RawChunks;
                 // onStepStart runs once per step with the converted prompt, even when a steering interrupt redoes the model call:
                 streamOptions.OnStart = async (_, token) =>
                 {
@@ -1602,9 +1609,13 @@ internal static class Generation
                     new()
                     {
                         Url = RequestOrigin.SanitizeRequestMetadata(modelRequest)?.Url,
-                        Body = options.Include?.RequestBody == true ? modelRequest?.Body : null,
+                        Body = ResolveStreamInclude(options).RequestBody
+                            ? modelRequest?.Body
+                            : null,
                         RedactBody = modelRequest?.RedactBody,
-                        Messages = options.Include?.RequestMessages == true ? stepMessages : null,
+                        Messages = ResolveStreamInclude(options).RequestMessages
+                            ? stepMessages
+                            : null,
                     };
 
                 var stepRequest = RequestMetadata(streamResult.Request);

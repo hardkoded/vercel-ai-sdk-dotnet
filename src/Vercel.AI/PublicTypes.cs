@@ -1450,8 +1450,7 @@ public class GenerateTextOptions
     public TelemetryOptions? ExperimentalTelemetry { get; set; }
 
     /// <summary>
-    /// What to retain in the step results. By default request bodies, request messages and response bodies are excluded.
-    /// <c>StreamTextAsync</c> reads a <see cref="StreamTextInclude"/> here. Maps to <c>include</c>.
+    /// What to retain in the step results. By default request bodies, request messages and response bodies are excluded. Maps to <c>include</c>.
     /// </summary>
     public GenerateTextInclude? Include { get; set; }
 
@@ -2091,6 +2090,13 @@ public sealed class StreamTextOptions : GenerateTextOptions
     /// </summary>
     public IReadOnlyList<StreamTextTransform>? ExperimentalTransform { get; set; }
 
+    /// <summary>What to retain of the request in the <see cref="StartStepPart"/> and whether to forward raw chunks. Hides <see cref="GenerateTextOptions.Include"/>, which has the type of <c>generateText</c>. Maps to <c>include</c>.</summary>
+    public new StreamTextInclude? Include { get; set; }
+
+    /// <summary>Deprecated alias of <see cref="Include"/>. Hides <see cref="GenerateTextOptions.ExperimentalInclude"/>. Maps to <c>experimental_include</c>.</summary>
+    [Obsolete("Use Include instead.")]
+    public new StreamTextInclude? ExperimentalInclude { get; set; }
+
     /// <summary>
     /// Aborts the call and carries the reason. Use it instead of the <see cref="CancellationToken"/> when the reason matters.
     /// A reason that is an <see cref="Exception"/> faults the results as is. Maps to <c>abortSignal</c>.
@@ -2341,7 +2347,7 @@ public class GenerateTextResult : IOperationEndEvent
     /// <summary>Provider metadata from the last step.</summary>
     public JsonElement? ProviderMetadata { get; }
 
-    /// <summary>Additional request information of the last step. Maps to <c>request</c>. <see cref="GenerateTextOptions"/> has no include option yet, so <c>Body</c> and <c>Messages</c> are <see langword="null"/>.</summary>
+    /// <summary>Additional request information of the last step. Maps to <c>request</c>. <c>Body</c> and <c>Messages</c> are set only when <see cref="GenerateTextOptions.Include"/> asks for them.</summary>
     public LanguageModelRequestMetadata Request => FinalStep.Request;
 
     /// <summary>Additional response information of the last step. Maps to <c>response</c>.</summary>
@@ -2527,8 +2533,20 @@ public class GenerateTextInclude
 }
 
 /// <summary>What <c>streamText</c> keeps of the request and the provider stream. Maps to <c>StreamTextInclude</c>.</summary>
-public sealed class StreamTextInclude : GenerateTextInclude
+public sealed class StreamTextInclude
 {
+    /// <summary>
+    /// Whether to retain the request body in step results. The request body can be large when sending images or files.
+    /// Maps to <c>requestBody</c>. The default is <see langword="false"/>.
+    /// </summary>
+    public bool RequestBody { get; init; }
+
+    /// <summary>
+    /// Whether to retain the request messages in step results. The request messages can be large when sending images or files.
+    /// Maps to <c>requestMessages</c>. The default is <see langword="false"/>.
+    /// </summary>
+    public bool RequestMessages { get; init; }
+
     /// <summary>
     /// Whether to forward the provider's raw chunks as <see cref="RawPart"/> in the full stream. It asks the model to include them.
     /// Maps to <c>rawChunks</c>. The default is <see langword="false"/>.

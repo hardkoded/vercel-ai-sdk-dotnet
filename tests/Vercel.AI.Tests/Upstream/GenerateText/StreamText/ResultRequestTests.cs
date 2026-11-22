@@ -11,8 +11,7 @@ using Vercel.AI.Tests.StreamText;
 namespace Vercel.AI.Tests.Upstream.GenerateText.StreamText;
 
 /// <summary>
-/// Port of <c>stream-text.test.ts</c> &gt; <c>streamText &gt; result.request</c>. Not ported: <c>should accept deprecated experimental_include as an alias for include</c>
-/// and <c>should prefer include over deprecated experimental_include</c>, because the port has no deprecated <c>experimental_include</c> alias.
+/// Port of <c>stream-text.test.ts</c> &gt; <c>streamText &gt; result.request</c>.
 /// </summary>
 public sealed class ResultRequestTests
 {
@@ -53,6 +52,55 @@ public sealed class ResultRequestTests
 
         var request = await result.Request;
         Assert.Equal("test body", request.Body!.Value.GetString());
+        Assert.Null(request.Messages);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should accept deprecated experimental_include as an alias for include",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_accept_deprecated_experimental_include_as_an_alias_for_include()
+    {
+#pragma warning disable CS0618 // ExperimentalInclude is the deprecated alias of Include
+        var result = Client()
+            .StreamTextAsync(
+                new StreamTextOptions
+                {
+                    Model = HelloModel(),
+                    Prompt = "test-input",
+                    ExperimentalInclude = new StreamTextInclude { RequestBody = true },
+                }
+            );
+#pragma warning restore CS0618
+
+        var request = await result.Request;
+        Assert.Equal("test body", request.Body!.Value.GetString());
+        Assert.Null(request.Messages);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should prefer include over deprecated experimental_include",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_prefer_include_over_deprecated_experimental_include()
+    {
+#pragma warning disable CS0618 // ExperimentalInclude is the deprecated alias of Include
+        var result = Client()
+            .StreamTextAsync(
+                new StreamTextOptions
+                {
+                    Model = HelloModel(),
+                    Prompt = "test-input",
+                    Include = new StreamTextInclude { RequestBody = false },
+                    ExperimentalInclude = new StreamTextInclude { RequestBody = true },
+                }
+            );
+#pragma warning restore CS0618
+
+        var request = await result.Request;
+        Assert.Null(request.Body);
         Assert.Null(request.Messages);
     }
 
