@@ -816,7 +816,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                     "topP is not supported for reasoning models"
                 );
                 if (
-                    capabilities.SupportedReasoningEfforts != null
+                    capabilities.SupportsConfigurationUpdate
                     && (
                         body["top_logprobs"] != null
                         || include.Contains("message.output_text.logprobs")

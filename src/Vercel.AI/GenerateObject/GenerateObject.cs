@@ -192,7 +192,7 @@ public abstract class GenerateObjectEvent
 }
 
 /// <summary>Event sent before object generation begins.</summary>
-public sealed class GenerateObjectStartEvent : GenerateObjectEvent
+public sealed class GenerateObjectStartEvent : GenerateObjectEvent, IOperationStartEvent
 {
     internal GenerateObjectStartEvent(
         string callId,

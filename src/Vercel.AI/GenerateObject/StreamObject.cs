@@ -720,6 +720,9 @@ internal static class StreamObject
     )
     {
         private CancellationToken _cancellationToken;
+        private readonly TelemetryDispatcher _telemetryDispatcher = TelemetryDispatcher.Create(
+            options
+        );
 
         public async Task RunAsync(CancellationToken cancellationToken)
         {
@@ -766,47 +769,48 @@ internal static class StreamObject
             var jsonSchema = outputStrategy.JsonSchema;
 
             var maxRetries = OperationRetry.ResolveMaxRetries(options.MaxRetries);
-            if (options.OnStart != null)
+            if (options.OnStart != null || _telemetryDispatcher.OnStart != null)
             {
-                await Generation
-                    .NotifyAsync(
-                        () =>
-                            options.OnStart(
-                                new GenerateObjectStartEvent(
-                                    callId,
-                                    model.Provider,
-                                    model.ModelId,
-                                    options.Prompt,
-                                    options.Messages
-                                )
-                                {
-                                    OperationId = "ai.streamObject",
-                                    System = options.Instructions
-                                        ?? (
-                                            options.System != null
-                                                ? Instructions.From(options.System)
-                                                : null
-                                        ),
-                                    MaxOutputTokens = options.MaxOutputTokens,
-                                    Temperature = options.Temperature,
-                                    TopP = options.TopP,
-                                    TopK = options.TopK,
-                                    PresencePenalty = options.PresencePenalty,
-                                    FrequencyPenalty = options.FrequencyPenalty,
-                                    Seed = options.Seed,
-                                    MaxRetries = maxRetries,
-                                    Headers = options.Headers,
-                                    ProviderOptions = options.ProviderOptions,
-                                    Output = OutputName(options.Output),
-                                    Schema = jsonSchema,
-                                    SchemaName = options.SchemaName,
-                                    SchemaDescription = options.SchemaDescription,
-                                },
-                                _cancellationToken
-                            ),
-                        _cancellationToken
-                    )
-                    .ConfigureAwait(false);
+                var startEvent = new GenerateObjectStartEvent(
+                    callId,
+                    model.Provider,
+                    model.ModelId,
+                    options.Prompt,
+                    options.Messages
+                )
+                {
+                    OperationId = "ai.streamObject",
+                    System = options.Instructions
+                        ?? (options.System != null ? Instructions.From(options.System) : null),
+                    MaxOutputTokens = options.MaxOutputTokens,
+                    Temperature = options.Temperature,
+                    TopP = options.TopP,
+                    TopK = options.TopK,
+                    PresencePenalty = options.PresencePenalty,
+                    FrequencyPenalty = options.FrequencyPenalty,
+                    Seed = options.Seed,
+                    MaxRetries = maxRetries,
+                    Headers = options.Headers,
+                    ProviderOptions = options.ProviderOptions,
+                    Output = OutputName(options.Output),
+                    Schema = jsonSchema,
+                    SchemaName = options.SchemaName,
+                    SchemaDescription = options.SchemaDescription,
+                };
+                if (options.OnStart != null)
+                {
+                    await Generation
+                        .NotifyAsync(
+                            () => options.OnStart(startEvent, _cancellationToken),
+                            _cancellationToken
+                        )
+                        .ConfigureAwait(false);
+                }
+
+                if (_telemetryDispatcher.OnStart is { } telemetryOnStart)
+                {
+                    await telemetryOnStart(startEvent, _cancellationToken).ConfigureAwait(false);
+                }
             }
 
             var callOptions = new StreamLanguageModelCallOptions
@@ -833,22 +837,33 @@ internal static class StreamObject
                 NowMs = options.NowMs,
                 // Maps to onStepStart, which runs once the prompt is converted and before doStream.
                 OnStart =
-                    options.OnStepStart == null
+                    options.OnStepStart == null && _telemetryDispatcher.OnObjectStepStart == null
                         ? null
-                        : (start, token) =>
-                            options.OnStepStart(
-                                new GenerateObjectStepStartEvent(
-                                    callId,
-                                    model.Provider,
-                                    model.ModelId
-                                )
-                                {
-                                    ProviderOptions = options.ProviderOptions,
-                                    Headers = options.Headers,
-                                    PromptMessages = start.PromptMessages,
-                                },
-                                token
-                            ),
+                        : async (start, token) =>
+                        {
+                            var stepStartEvent = new GenerateObjectStepStartEvent(
+                                callId,
+                                model.Provider,
+                                model.ModelId
+                            )
+                            {
+                                ProviderOptions = options.ProviderOptions,
+                                Headers = options.Headers,
+                                PromptMessages = start.PromptMessages,
+                            };
+                            if (options.OnStepStart != null)
+                            {
+                                await options
+                                    .OnStepStart(stepStartEvent, token)
+                                    .ConfigureAwait(false);
+                            }
+
+                            if (_telemetryDispatcher.OnObjectStepStart is { } telemetryOnStepStart)
+                            {
+                                await telemetryOnStepStart(stepStartEvent, token)
+                                    .ConfigureAwait(false);
+                            }
+                        },
             };
 
             var now = options.NowMs ?? Generation.DefaultNowMs;
@@ -1168,30 +1183,36 @@ internal static class StreamObject
             // Maps to flush.
             try
             {
-                if (options.OnStepEnd != null)
+                if (options.OnStepEnd != null || _telemetryDispatcher.OnObjectStepEnd != null)
                 {
-                    await Generation
-                        .NotifyAsync(
-                            () =>
-                                options.OnStepEnd(
-                                    new GenerateObjectStepEndEvent(
-                                        callId,
-                                        model.Provider,
-                                        model.ModelId,
-                                        accumulatedText.ToString(),
-                                        finishReason ?? FinishReason.Other,
-                                        usage,
-                                        warnings ?? [],
-                                        request,
-                                        ResponseWithHeaders(),
-                                        providerMetadata,
-                                        msToFirstChunk
-                                    ),
-                                    _cancellationToken
-                                ),
-                            _cancellationToken
-                        )
-                        .ConfigureAwait(false);
+                    var stepEndEvent = new GenerateObjectStepEndEvent(
+                        callId,
+                        model.Provider,
+                        model.ModelId,
+                        accumulatedText.ToString(),
+                        finishReason ?? FinishReason.Other,
+                        usage,
+                        warnings ?? [],
+                        request,
+                        ResponseWithHeaders(),
+                        providerMetadata,
+                        msToFirstChunk
+                    );
+                    if (options.OnStepEnd != null)
+                    {
+                        await Generation
+                            .NotifyAsync(
+                                () => options.OnStepEnd(stepEndEvent, _cancellationToken),
+                                _cancellationToken
+                            )
+                            .ConfigureAwait(false);
+                    }
+
+                    if (_telemetryDispatcher.OnObjectStepEnd is { } telemetryOnStepEnd)
+                    {
+                        await telemetryOnStepEnd(stepEndEvent, _cancellationToken)
+                            .ConfigureAwait(false);
+                    }
                 }
 
                 if (options.OnFinish != null)

@@ -199,7 +199,6 @@ public sealed class OpenAICapabilitiesAndSchemaTests
     )]
     public void ReasoningEffortMatrix()
     {
-        Assert.Null(OpenAILanguageModelCapabilities.ForModel("gpt-5.6").SupportedReasoningEfforts);
         var expected = new[] { "low", "medium", "high", "xhigh", "max" };
         Assert.Equal(
             expected,
@@ -209,6 +208,29 @@ public sealed class OpenAICapabilitiesAndSchemaTests
             expected,
             OpenAILanguageModelCapabilities.ForModel("gpt-99").SupportedReasoningEfforts
         );
+    }
+
+    [Theory]
+    [InlineData("gpt-5", "minimal,low,medium,high")]
+    [InlineData("gpt-5-nano-2025-08-07", "minimal,low,medium,high")]
+    [InlineData("gpt-5.1", "none,low,medium,high")]
+    [InlineData("gpt-5.2", "none,low,medium,high,xhigh")]
+    [InlineData("gpt-5.4-mini", "none,low,medium,high,xhigh")]
+    [InlineData("gpt-5.5", "none,low,medium,high,xhigh")]
+    [InlineData("gpt-5.6", "none,low,medium,high,xhigh,max")]
+    [InlineData("gpt-5.6-luna", "none,low,medium,high,xhigh,max")]
+    [InlineData("gpt-5-pro", null)]
+    [InlineData("gpt-5-codex", null)]
+    [InlineData("gpt-5-chat-latest", null)]
+    [InlineData("gpt-5.2-pro", null)]
+    [UpstreamTest(
+        "packages/openai/src/openai-language-model-capabilities.test.ts::getOpenAILanguageModelCapabilities > GPT-5 reasoning efforts::%s supports the expected reasoning efforts",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void Gpt5ReasoningEfforts(string modelId, string? expected)
+    {
+        var actual = OpenAILanguageModelCapabilities.ForModel(modelId).SupportedReasoningEfforts;
+        Assert.Equal(expected, actual == null ? null : string.Join(",", actual));
     }
 
     [Fact]

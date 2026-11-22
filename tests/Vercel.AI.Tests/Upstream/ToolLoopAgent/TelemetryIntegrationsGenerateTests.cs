@@ -121,7 +121,8 @@ public sealed class TelemetryIntegrationsGenerateTests : IDisposable
             {
                 Model = SteeringTestModel.Generate(_ => SteeringTestSupport.TextResponse("Hello!")),
                 RuntimeContext = TelemetryContextSupport.RuntimeContext(),
-                OnStart = (e, _) => Record(callbackContexts, e.RuntimeContext),
+                OnStart = (e, _) =>
+                    Record(callbackContexts, ((GenerateTextStartEvent)e).RuntimeContext),
                 OnStepEnd = (e, _) => Record(callbackContexts, e.RuntimeContext),
                 OnEnd = (e, _) => Record(callbackContexts, e.RuntimeContext),
                 Telemetry = new TelemetryOptions
@@ -131,7 +132,11 @@ public sealed class TelemetryIntegrationsGenerateTests : IDisposable
                     [
                         new TestTelemetry
                         {
-                            OnStart = (e, _) => Record(telemetryContexts, e.RuntimeContext),
+                            OnStart = (e, _) =>
+                                Record(
+                                    telemetryContexts,
+                                    ((GenerateTextStartEvent)e).RuntimeContext
+                                ),
                             OnStepEnd = (e, _) => Record(telemetryContexts, e.RuntimeContext),
                             OnEnd = (e, _) => Record(telemetryContexts, e.RuntimeContext),
                         },

@@ -1707,7 +1707,7 @@ public class GenerateTextOptions
 }
 
 /// <summary>Passed to <see cref="GenerateTextOptions.OnStart"/> when the generation begins, before any model call. Maps to <c>GenerateTextStartEvent</c>.</summary>
-public sealed class GenerateTextStartEvent
+public sealed class GenerateTextStartEvent : IOperationStartEvent
 {
     /// <summary>Unique identifier for this generation call, used to correlate events. Maps to <c>callId</c>.</summary>
     public string CallId { get; init; } = string.Empty;
