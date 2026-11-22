@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <Description>Generates a 30-second video from a text prompt with HeyGen.</Description>
+    </PropertyGroup>
+</Project>
