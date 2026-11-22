@@ -103,11 +103,42 @@ internal sealed class LiveKitRtcAudioElement(
         Pause();
     }
 
+    /// <summary>Reports a failure to the host callback; a callback that throws is traced, never rethrown.</summary>
+    private void Report(Exception exception)
+    {
+        try
+        {
+            if (onError is not null)
+            {
+                onError(exception);
+                return;
+            }
+        }
+        catch (Exception callbackFailure)
+        {
+            System.Diagnostics.Trace.TraceError(
+                "Mistral voice OnRemoteAudioError failed: " + callbackFailure
+            );
+        }
+
+        System.Diagnostics.Trace.TraceError(
+            "Mistral voice remote audio playback stopped: " + exception
+        );
+    }
+
     private async Task RunAsync(Pump pump, Task previous)
     {
         try
         {
-            await previous.ConfigureAwait(false);
+            // A previous pump has reported its own failure, which must not stop this one.
+            await previous
+                .ContinueWith(
+                    static _ => { },
+                    CancellationToken.None,
+                    TaskContinuationOptions.ExecuteSynchronously,
+                    TaskScheduler.Default
+                )
+                .ConfigureAwait(false);
 
             // The stream opens only now, so no audio queues while the previous callback finishes.
             var stream = pump.Open(createStream);
@@ -137,16 +168,7 @@ internal sealed class LiveKitRtcAudioElement(
                 }
             }
 
-            if (onError is not null)
-            {
-                onError(exception);
-            }
-            else
-            {
-                System.Diagnostics.Trace.TraceError(
-                    "Mistral voice remote audio playback stopped: " + exception
-                );
-            }
+            Report(exception);
         }
         finally
         {
