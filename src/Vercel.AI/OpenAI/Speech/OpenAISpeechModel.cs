@@ -141,7 +141,8 @@ public sealed class OpenAISpeechModel : ISpeechModel, ISpeechCaller
     private readonly Func<Uri> _url;
     private readonly Func<
         IReadOnlyDictionary<string, string?>?,
-        Dictionary<string, string?>
+        CancellationToken,
+        Task<Dictionary<string, string?>>
     > _headers;
     private readonly Func<DateTimeOffset>? _clock;
 
@@ -162,7 +163,7 @@ public sealed class OpenAISpeechModel : ISpeechModel, ISpeechCaller
         _http = provider.Http;
         _providerName = provider.Name;
         _url = () => ApiKeys.Combine(provider.Options.BaseUrl, "audio/speech");
-        _headers = provider.CreateOpenAIHeaders;
+        _headers = provider.CreateOpenAIHeadersAsync;
     }
 
     /// <summary>
@@ -185,7 +186,7 @@ public sealed class OpenAISpeechModel : ISpeechModel, ISpeechCaller
         _http = provider.Http;
         _providerName = provider.Name;
         _url = () => provider.AzureUri("audio/speech", modelId);
-        _headers = provider.CreateHeaders;
+        _headers = provider.CreateHeadersAsync;
     }
 
     /// <inheritdoc />
@@ -336,7 +337,7 @@ public sealed class OpenAISpeechModel : ISpeechModel, ISpeechCaller
                 HttpMethod.Post,
                 _url(),
                 new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json"),
-                _headers(call.Headers),
+                await _headers(call.Headers, cancellationToken).ConfigureAwait(false),
                 cancellationToken
             )
             .ConfigureAwait(false);

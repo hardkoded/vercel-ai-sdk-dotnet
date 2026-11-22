@@ -51,7 +51,7 @@ public sealed class PerplexityLanguageModel : ILanguageModel
                 HttpMethod.Post,
                 _provider.AgentUri(),
                 built.Body.ToJsonString(),
-                Headers(options),
+                await HeadersAsync(options, cancellationToken).ConfigureAwait(false),
                 cancellationToken
             )
             .ConfigureAwait(false);
@@ -126,7 +126,7 @@ public sealed class PerplexityLanguageModel : ILanguageModel
             .Http.OpenSseResponseAsync(
                 _provider.AgentUri(),
                 json,
-                Headers(options),
+                await HeadersAsync(options, cancellationToken).ConfigureAwait(false),
                 cancellationToken
             )
             .ConfigureAwait(false);
@@ -167,9 +167,12 @@ public sealed class PerplexityLanguageModel : ILanguageModel
         }
     }
 
-    private Dictionary<string, string?> Headers(LanguageModelCallOptions options)
+    private async Task<Dictionary<string, string?>> HeadersAsync(
+        LanguageModelCallOptions options,
+        CancellationToken cancellationToken
+    )
     {
-        var headers = _provider.CreateHeaders();
+        var headers = await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false);
         if (options.Headers != null)
         {
             foreach (var pair in options.Headers)

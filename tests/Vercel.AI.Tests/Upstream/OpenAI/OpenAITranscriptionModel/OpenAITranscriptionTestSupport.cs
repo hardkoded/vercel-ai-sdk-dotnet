@@ -30,10 +30,10 @@ internal static class OpenAITranscriptionTestSupport
             new ProviderHttp(new HttpClient(new OpenAICapture())),
             () => new Uri("https://api.openai.com/v1/audio/transcriptions"),
             () => new Uri("https://api.openai.com/v1/realtime?intent=transcription"),
-            headers
-                ?? (
-                    () =>
-                        new Dictionary<string, string?>
+            _ =>
+                Task.FromResult(
+                    headers?.Invoke()
+                        ?? new Dictionary<string, string?>
                         {
                             ["Authorization"] = "Bearer test-api-key",
                         }

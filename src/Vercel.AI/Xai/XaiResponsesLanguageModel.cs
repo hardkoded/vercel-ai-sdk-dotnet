@@ -79,7 +79,11 @@ public sealed class XaiResponsesLanguageModel : ILanguageModel
                 HttpMethod.Post,
                 RequestUri(),
                 prepared.Body.ToJsonString(),
-                _provider.CreateHeaders(options?.Headers),
+                (
+                    await _provider
+                        .CreateHeadersAsync(options?.Headers, cancellationToken)
+                        .ConfigureAwait(false)
+                ),
                 cancellationToken
             )
             .ConfigureAwait(false);
@@ -125,7 +129,11 @@ public sealed class XaiResponsesLanguageModel : ILanguageModel
             .Http.OpenSseResponseAsync(
                 RequestUri(),
                 json,
-                _provider.CreateHeaders(options?.Headers),
+                (
+                    await _provider
+                        .CreateHeadersAsync(options?.Headers, cancellationToken)
+                        .ConfigureAwait(false)
+                ),
                 cancellationToken
             )
             .ConfigureAwait(false);

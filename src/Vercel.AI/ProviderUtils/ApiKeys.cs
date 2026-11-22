@@ -46,6 +46,23 @@ public static class ApiKeys
         );
     }
 
+    /// <summary>
+    /// Resolves <paramref name="apiKey"/> (a value, a task or a callback) and returns the first non-empty key,
+    /// or throws. Maps to <c>loadApiKey</c> after <c>resolveWith</c>.
+    /// </summary>
+    public static async Task<string> RequireAsync(
+        Resolvable<string>? apiKey,
+        string environmentVariable,
+        string[]? additionalEnvironmentVariables = null,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var resolved = apiKey is null
+            ? null
+            : await apiKey.ResolveAsync(cancellationToken).ConfigureAwait(false);
+        return Require(resolved, environmentVariable, additionalEnvironmentVariables ?? []);
+    }
+
     /// <summary>Joins a base URL and a relative path.</summary>
     public static Uri Combine(string baseUrl, string relativePath)
     {

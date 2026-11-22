@@ -346,7 +346,7 @@ public sealed class GoogleVertexProvider : GoogleProvider
     {
         if (
             Vertex.UpstreamRoutes
-            && !string.IsNullOrEmpty(Options.ApiKey)
+            && Options.ApiKey is not null
             && GoogleVertexEndpoints.IsEndpointModel(modelId)
         )
         {
@@ -361,7 +361,7 @@ public sealed class GoogleVertexProvider : GoogleProvider
     /// <summary>Interactions use the location resource and reject Express Mode.</summary>
     public override ILanguageModel Interactions(string modelId)
     {
-        if (Vertex.UpstreamRoutes && !string.IsNullOrEmpty(Options.ApiKey))
+        if (Vertex.UpstreamRoutes && Options.ApiKey is not null)
         {
             throw new InvalidOperationException(
                 "Google Vertex interactions models do not support Express Mode API keys. Use standard Google Cloud credentials instead."
@@ -374,7 +374,7 @@ public sealed class GoogleVertexProvider : GoogleProvider
     /// <summary>Interactions use the location resource and reject Express Mode.</summary>
     public override ILanguageModel Interactions(GoogleInteractionsAgent agent)
     {
-        if (Vertex.UpstreamRoutes && !string.IsNullOrEmpty(Options.ApiKey))
+        if (Vertex.UpstreamRoutes && Options.ApiKey is not null)
         {
             throw new InvalidOperationException(
                 "Google Vertex interactions models do not support Express Mode API keys. Use standard Google Cloud credentials instead."
@@ -389,7 +389,7 @@ public sealed class GoogleVertexProvider : GoogleProvider
     {
         if (modelId != null && modelId.StartsWith("chirp", StringComparison.Ordinal))
         {
-            if (Vertex.UpstreamRoutes && !string.IsNullOrEmpty(Options.ApiKey))
+            if (Vertex.UpstreamRoutes && Options.ApiKey is not null)
             {
                 throw new InvalidOperationException(
                     "Google Vertex Chirp speech models do not support Express Mode API keys. Use standard Google Cloud credentials instead."
@@ -405,7 +405,7 @@ public sealed class GoogleVertexProvider : GoogleProvider
     /// <summary>Gemini transcription ids use generateContent. Other ids use Cloud Speech-to-Text.</summary>
     public override ITranscriptionModel TranscriptionModel(string modelId)
     {
-        if (Vertex.UpstreamRoutes && !string.IsNullOrEmpty(Options.ApiKey))
+        if (Vertex.UpstreamRoutes && Options.ApiKey is not null)
         {
             throw new InvalidOperationException(
                 "Google Vertex transcription models do not support Express Mode API keys. Use standard Google Cloud credentials instead."
@@ -423,7 +423,7 @@ public sealed class GoogleVertexProvider : GoogleProvider
     /// <summary>Uses <see cref="VertexOptions.GenerateAuthToken"/> unless an API key is set.</summary>
     private protected override Task<string> BearerTokenAsync(CancellationToken cancellationToken)
     {
-        if (Vertex.GenerateAuthToken != null && string.IsNullOrEmpty(Options.ApiKey))
+        if (Vertex.GenerateAuthToken != null && Options.ApiKey is null)
         {
             return Vertex.GenerateAuthToken(cancellationToken);
         }
@@ -463,7 +463,7 @@ public sealed class GoogleVertexProvider : GoogleProvider
 
         if (options.UpstreamRoutes)
         {
-            var express = !string.IsNullOrEmpty(options.ApiKey);
+            var express = options.ApiKey is not null;
             options.BaseUrl = GoogleVertexEndpoints.GeminiBaseUrl(
                 options.Project,
                 options.Region,

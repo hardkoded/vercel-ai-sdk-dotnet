@@ -100,8 +100,16 @@ public sealed class XaiSpeechModel : ISpeechModel, ISpeechCaller
                 HttpMethod.Post,
                 ApiKeys.Combine(_provider.Options.BaseUrl, "tts"),
                 new StringContent(requestJson, System.Text.Encoding.UTF8, "application/json"),
-                _provider.CreateHeaders(
-                    call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value)
+                (
+                    await _provider
+                        .CreateHeadersAsync(
+                            call.Headers.ToDictionary(
+                                pair => pair.Key,
+                                pair => (string?)pair.Value
+                            ),
+                            cancellationToken
+                        )
+                        .ConfigureAwait(false)
                 ),
                 cancellationToken,
                 XaiError.FailedResponseHandler

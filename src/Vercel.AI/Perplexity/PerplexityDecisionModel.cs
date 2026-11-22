@@ -52,7 +52,7 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
     public SerializedModelOptions Serialize()
     {
         var headers = new Dictionary<string, string>();
-        foreach (var pair in _provider.CreateHeaders())
+        foreach (var pair in _provider.CreateHeadersForSerialization())
         {
             if (pair.Value != null)
             {
@@ -175,7 +175,11 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
             .PostJsonAsync(
                 ApiKeys.Combine(_provider.Options.BaseUrl, "v1/decisions"),
                 body.ToJsonString(),
-                _provider.CreateHeaders(headers),
+                (
+                    await _provider
+                        .CreateHeadersAsync(headers, cancellationToken)
+                        .ConfigureAwait(false)
+                ),
                 cancellationToken
             )
             .ConfigureAwait(false);

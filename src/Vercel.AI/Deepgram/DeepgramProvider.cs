@@ -24,13 +24,6 @@ public class DeepgramOptions : OpenAICompatibleOptions
 
     /// <summary>Custom WebSocket implementation for streaming transcription. Defaults to <c>ClientWebSocket</c>.</summary>
     public WebSocketFactory? WebSocket { get; set; }
-
-    /// <summary>
-    /// Resolves the API key on every call, like upstream's resolvable <c>apiKey</c>. Its value wins over
-    /// <see cref="OpenAICompatibleOptions.ApiKey"/> and the environment variable. An <c>Authorization</c> header in
-    /// <see cref="OpenAICompatibleOptions.Headers"/> still wins.
-    /// </summary>
-    public Func<CancellationToken, Task<string>>? ApiKeyProvider { get; set; }
 }
 
 /// <summary>Parsed Deepgram error body.</summary>
@@ -344,32 +337,6 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
 
     /// <summary>The WebSocket factory for streaming transcription.</summary>
     internal WebSocketFactory? WebSocket => (Options as DeepgramOptions)?.WebSocket;
-
-    /// <summary>Provider headers with the key from <see cref="DeepgramOptions.ApiKeyProvider"/> resolved.</summary>
-    internal async Task<Dictionary<string, string?>> CreateHeadersAsync(
-        CancellationToken cancellationToken
-    )
-    {
-        var headers = CreateHeaders();
-        if (
-            (Options as DeepgramOptions)?.ApiKeyProvider is { } provider
-            && !Options.Headers.Any(pair =>
-                !string.IsNullOrEmpty(pair.Value)
-                && string.Equals(pair.Key, "Authorization", StringComparison.OrdinalIgnoreCase)
-            )
-        )
-        {
-            var key = await provider(cancellationToken).ConfigureAwait(false);
-            if (string.IsNullOrWhiteSpace(key))
-            {
-                throw new AiSdkException("Deepgram API key resolved to an empty value.");
-            }
-
-            headers["Authorization"] = "Token " + key;
-        }
-
-        return headers;
-    }
 
     internal DateTimeOffset Now()
     {

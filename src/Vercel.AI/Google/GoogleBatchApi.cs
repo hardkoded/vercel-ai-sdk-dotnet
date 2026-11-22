@@ -131,7 +131,6 @@ public sealed class GoogleBatchApi : BatchResultsApiBase
             }
         }
 
-        var headers = await BatchHeadersAsync(call, cancellationToken).ConfigureAwait(false);
         var baseUrl = _provider.Options.BaseUrl.TrimEnd('/');
         var createUri = new Uri(
             baseUrl + "/" + GoogleModelPath.Get(modelId) + ":batchGenerateContent"
@@ -152,7 +151,7 @@ public sealed class GoogleBatchApi : BatchResultsApiBase
                     HttpMethod.Post,
                     createUri,
                     body.ToJsonString(),
-                    headers,
+                    await BatchHeadersAsync(call, cancellationToken).ConfigureAwait(false),
                     cancellationToken
                 )
                 .ConfigureAwait(false);
@@ -169,7 +168,9 @@ public sealed class GoogleBatchApi : BatchResultsApiBase
             );
         }
 
-        var uploadHeaders = new Dictionary<string, string?>(headers)
+        var uploadHeaders = new Dictionary<string, string?>(
+            await BatchHeadersAsync(call, cancellationToken).ConfigureAwait(false)
+        )
         {
             ["X-Goog-Upload-Protocol"] = "resumable",
             ["X-Goog-Upload-Command"] = "start",
@@ -241,7 +242,7 @@ public sealed class GoogleBatchApi : BatchResultsApiBase
                 HttpMethod.Post,
                 createUri,
                 BatchBody(new JsonObject { ["fileName"] = fileName }).ToJsonString(),
-                headers,
+                await BatchHeadersAsync(call, cancellationToken).ConfigureAwait(false),
                 cancellationToken
             )
             .ConfigureAwait(false);

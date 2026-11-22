@@ -603,8 +603,13 @@ public sealed class TypesafeAiDecisionModelTests
             {
                 Provider = "typesafe.decision",
                 BaseUrl = "https://api.typesafe.ai/v1",
-                Headers = () =>
-                    new Dictionary<string, string> { ["Authorization"] = "Bearer restored-key" },
+                Headers = _ =>
+                    Task.FromResult<IReadOnlyDictionary<string, string?>>(
+                        new Dictionary<string, string?>
+                        {
+                            ["Authorization"] = "Bearer restored-key",
+                        }
+                    ),
                 HttpClient = new HttpClient(Server()),
             }
         );
