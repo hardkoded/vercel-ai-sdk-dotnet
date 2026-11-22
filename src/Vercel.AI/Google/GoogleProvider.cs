@@ -227,6 +227,18 @@ public class GoogleProvider
     }
 
     /// <inheritdoc />
+    public override IVideoModel VideoModel(string modelId)
+    {
+        return new GoogleVideoModel(this, modelId);
+    }
+
+    /// <summary>Creates a video model. Same as <see cref="VideoModel(string)"/>.</summary>
+    public IVideoModel Video(string modelId)
+    {
+        return VideoModel(modelId);
+    }
+
+    /// <inheritdoc />
     public override ISpeechModel SpeechModel(string modelId)
     {
         return new GoogleSpeechModel(this, modelId);
