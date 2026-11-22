@@ -23,7 +23,7 @@ Request counts.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L592)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L606)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates counts.
 | `completed` | [int](https://learn.microsoft.com/dotnet/api/system.int32) |  |
 | `failed` | [int](https://learn.microsoft.com/dotnet/api/system.int32) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L595)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L609)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Completed requests.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L610)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L624)
 
 <a id="Vercel_AI_Operations_BatchRequestCounts_Failed_"></a>
 <a id="Vercel_AI_Operations_BatchRequestCounts_Failed"></a>
@@ -85,7 +85,7 @@ Failed requests.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L613)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L627)
 
 <a id="Vercel_AI_Operations_BatchRequestCounts_Pending_"></a>
 <a id="Vercel_AI_Operations_BatchRequestCounts_Pending"></a>
@@ -102,7 +102,7 @@ Pending requests.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L607)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L621)
 
 <a id="Vercel_AI_Operations_BatchRequestCounts_Total_"></a>
 <a id="Vercel_AI_Operations_BatchRequestCounts_Total"></a>
@@ -119,4 +119,4 @@ Total requests.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L604)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L618)

@@ -25,7 +25,7 @@ MiniMax chat language model. Reuses the Anthropic Messages adapter and adds the 
 
 **Implements:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxChatLanguageModel.cs#L16)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxChatLanguageModel.cs#L17)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates a model.
 | `provider` | [AnthropicProvider](/api/Vercel.AI.Anthropic/AnthropicProvider/) |  |
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxChatLanguageModel.cs#L39)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxChatLanguageModel.cs#L40)
 
 ## Properties
 
@@ -68,7 +68,7 @@ URL patterns the model accepts for images and PDFs.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxChatLanguageModel.cs#L123)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxChatLanguageModel.cs#L127)
 
 ## Methods
 
@@ -95,7 +95,7 @@ Restores a model from [Serialize()](#Vercel_AI_MiniMax_MiniMaxChatLanguageModel_
 
 **Returns:** [MiniMaxChatLanguageModel](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxChatLanguageModel.cs#L91)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxChatLanguageModel.cs#L92)
 
 <a id="Vercel_AI_MiniMax_MiniMaxChatLanguageModel_PrepareCallOptions_"></a>
 <a id="Vercel_AI_MiniMax_MiniMaxChatLanguageModel_PrepareCallOptions_Vercel_AI_Provider_LanguageModelCallOptions_System_Collections_Generic_IList_Vercel_AI_Anthropic_AnthropicWarning__"></a>
@@ -120,7 +120,7 @@ Warnings added to &lt;code class="paramref"&gt;warnings&lt;/code&gt; are reporte
 
 **Returns:** [LanguageModelCallOptions](/api/Vercel.AI.Provider/LanguageModelCallOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxChatLanguageModel.cs#L127)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxChatLanguageModel.cs#L131)
 
 <a id="Vercel_AI_MiniMax_MiniMaxChatLanguageModel_Serialize_"></a>
 <a id="Vercel_AI_MiniMax_MiniMaxChatLanguageModel_Serialize"></a>
@@ -138,4 +138,4 @@ The API key is not part of the serialized config. Pass it to `HttpMessageHandler
 
 **Returns:** [SerializedModelOptions](/api/Vercel.AI.ProviderUtils/SerializedModelOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxChatLanguageModel.cs#L66)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/MiniMax/MiniMaxChatLanguageModel.cs#L67)

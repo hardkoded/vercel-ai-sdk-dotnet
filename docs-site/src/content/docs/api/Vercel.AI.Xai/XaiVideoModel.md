@@ -287,7 +287,7 @@ Reads operation status.
 
 **Returns:** [Task&lt;VideoStatusResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiVideoModel.cs#L181)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiVideoModel.cs#L184)
 
 <a id="Vercel_AI_Xai_XaiVideoModel_HandleWebhookAsync_"></a>
 <a id="Vercel_AI_Xai_XaiVideoModel_HandleWebhookAsync_System_Func_System_Threading_Tasks_Task_Vercel_AI_Operations_VideoWebhook___System_Threading_CancellationToken_"></a>

@@ -23,7 +23,7 @@ A request after the Bedrock fetch wrapper has applied user-agent and authenticat
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L43)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L45)
 
 ## Constructors
 
@@ -50,7 +50,7 @@ Creates a prepared call.
 | `headers` | [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2) |  |
 | `signed` | [bool](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L46)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L48)
 
 ## Properties
 
@@ -69,7 +69,7 @@ Body. Unchanged when the caller passed a string.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L68)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L70)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockPreparedCall_Headers_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockPreparedCall_Headers"></a>
@@ -86,7 +86,7 @@ Lower-case headers, including signing headers when [Signed](#Vercel_AI_AmazonBed
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L71)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L73)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockPreparedCall_Method_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockPreparedCall_Method"></a>
@@ -103,7 +103,7 @@ HTTP method.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L62)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L64)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockPreparedCall_Signed_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockPreparedCall_Signed"></a>
@@ -120,7 +120,7 @@ True when the body was signed.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L74)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L76)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockPreparedCall_Url_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockPreparedCall_Url"></a>
@@ -137,4 +137,4 @@ Request URL.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L65)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockFetch.cs#L67)

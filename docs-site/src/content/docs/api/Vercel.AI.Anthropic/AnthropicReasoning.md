@@ -73,7 +73,7 @@ Token budget for budget-based thinking. Clamped to at least 1024.
 
 **Returns:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicReasoning.cs#L139)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicReasoning.cs#L143)
 
 <a id="Vercel_AI_Anthropic_AnthropicReasoning_Resolve_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicReasoning_Resolve_System_String_System_String_Vercel_AI_Anthropic_AnthropicModelCapabilities_System_Collections_Generic_IList_Vercel_AI_Anthropic_AnthropicWarning__"></a>

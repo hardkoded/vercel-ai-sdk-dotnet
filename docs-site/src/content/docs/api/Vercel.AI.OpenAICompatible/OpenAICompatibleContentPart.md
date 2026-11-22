@@ -23,7 +23,7 @@ One text or reasoning fragment from a Chat Completions content field.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleChat.cs#L846)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleChat.cs#L870)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates a fragment.
 | `reasoning` | [bool](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 | `text` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleChat.cs#L849)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleChat.cs#L873)
 
 ## Properties
 
@@ -66,7 +66,7 @@ True when the fragment is reasoning.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleChat.cs#L856)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleChat.cs#L880)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleContentPart_Text_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleContentPart_Text"></a>
@@ -83,4 +83,4 @@ Fragment text.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleChat.cs#L859)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleChat.cs#L883)

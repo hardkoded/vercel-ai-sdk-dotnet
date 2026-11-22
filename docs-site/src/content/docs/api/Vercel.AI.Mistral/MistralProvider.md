@@ -99,6 +99,25 @@ Provider id.
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mistral/MistralProvider.cs#L27)
 
+## Properties
+
+<a id="Vercel_AI_Mistral_MistralProvider_ExperimentalRealtime_"></a>
+<a id="Vercel_AI_Mistral_MistralProvider_ExperimentalRealtime"></a>
+
+### ExperimentalRealtime
+
+
+```csharp
+public MistralRealtimeFactory ExperimentalRealtime { get; }
+```
+
+
+Creates Mistral voice agent models and manages their sessions. Maps to `experimental_realtime`.
+
+**Value:** [MistralRealtimeFactory](/api/Vercel.AI.Mistral/MistralRealtimeFactory/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mistral/MistralProvider.cs#L43)
+
 ## Methods
 
 <a id="Vercel_AI_Mistral_MistralProvider_Conversation_"></a>
@@ -122,7 +141,7 @@ Creates a model that uses the Conversations API, with support for web search. Ma
 
 **Returns:** [MistralConversationLanguageModel](/api/Vercel.AI.Mistral/MistralConversationLanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mistral/MistralProvider.cs#L52)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mistral/MistralProvider.cs#L58)
 
 <a id="Vercel_AI_Mistral_MistralProvider_Create_"></a>
 <a id="Vercel_AI_Mistral_MistralProvider_Create_Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_System_Net_Http_HttpMessageHandler_"></a>
@@ -146,7 +165,7 @@ Creates a provider. Pass a handler from tests.
 
 **Returns:** [MistralProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mistral/MistralProvider.cs#L40)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mistral/MistralProvider.cs#L46)
 
 <a id="Vercel_AI_Mistral_MistralProvider_EmbeddingModel_"></a>
 <a id="Vercel_AI_Mistral_MistralProvider_EmbeddingModel_System_String_"></a>
@@ -169,7 +188,30 @@ Returns an embedding model.
 
 **Returns:** [IEmbeddingModel](/api/Vercel.AI.Provider/IEmbeddingModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mistral/MistralProvider.cs#L58)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mistral/MistralProvider.cs#L64)
+
+<a id="Vercel_AI_Mistral_MistralProvider_RealtimeModel_"></a>
+<a id="Vercel_AI_Mistral_MistralProvider_RealtimeModel_System_String_"></a>
+
+### RealtimeModel(string)
+
+
+```csharp
+public override IRealtimeModel RealtimeModel(string modelId)
+```
+
+
+Returns a realtime model.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+
+**Returns:** [IRealtimeModel](/api/Vercel.AI.Provider/IRealtimeModel/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mistral/MistralProvider.cs#L76)
 
 <a id="Vercel_AI_Mistral_MistralProvider_SpeechModel_"></a>
 <a id="Vercel_AI_Mistral_MistralProvider_SpeechModel_System_String_"></a>
@@ -192,7 +234,7 @@ Returns a speech model.
 
 **Returns:** [ISpeechModel](/api/Vercel.AI.Provider/ISpeechModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mistral/MistralProvider.cs#L62)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mistral/MistralProvider.cs#L68)
 
 <a id="Vercel_AI_Mistral_MistralProvider_TranscriptionModel_"></a>
 <a id="Vercel_AI_Mistral_MistralProvider_TranscriptionModel_System_String_"></a>
@@ -215,4 +257,4 @@ Returns a transcription model.
 
 **Returns:** [ITranscriptionModel](/api/Vercel.AI.Provider/ITranscriptionModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mistral/MistralProvider.cs#L66)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mistral/MistralProvider.cs#L72)

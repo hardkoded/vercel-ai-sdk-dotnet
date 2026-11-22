@@ -27,7 +27,7 @@ Answers questions through the TypeSafe `/systemone` route.
 
 **Derived:** [TypeSafeAiEvaluationModel](/api/Vercel.AI.TypeSafeAi/TypeSafeAiEvaluationModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiDecisionModel.cs#L36)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiDecisionModel.cs#L39)
 
 ## Constructors
 
@@ -51,7 +51,7 @@ Creates a decision model. &lt;code class="paramref"&gt;modelId&lt;/code&gt; may 
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `config` | [TypeSafeAiDecisionModelConfig](/api/Vercel.AI.TypeSafeAi/TypeSafeAiDecisionModelConfig/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiDecisionModel.cs#L44)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiDecisionModel.cs#L47)
 
 ## Properties
 
@@ -70,7 +70,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiDecisionModel.cs#L54)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiDecisionModel.cs#L57)
 
 <a id="Vercel_AI_TypeSafeAi_TypeSafeAiDecisionModel_Provider_"></a>
 <a id="Vercel_AI_TypeSafeAi_TypeSafeAiDecisionModel_Provider"></a>
@@ -87,7 +87,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiDecisionModel.cs#L51)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiDecisionModel.cs#L54)
 
 <a id="Vercel_AI_TypeSafeAi_TypeSafeAiDecisionModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_TypeSafeAi_TypeSafeAiDecisionModel_SpecificationVersion"></a>
@@ -104,7 +104,7 @@ Specification version. Only `v4` is accepted.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiDecisionModel.cs#L57)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiDecisionModel.cs#L60)
 
 <a id="Vercel_AI_TypeSafeAi_TypeSafeAiDecisionModel_SupportedQuestionTypes_"></a>
 <a id="Vercel_AI_TypeSafeAi_TypeSafeAiDecisionModel_SupportedQuestionTypes"></a>
@@ -121,7 +121,7 @@ Question types this model can answer.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiDecisionModel.cs#L60)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiDecisionModel.cs#L63)
 
 ## Methods
 
@@ -148,7 +148,7 @@ Restores a model from [Serialize()](#Vercel_AI_TypeSafeAi_TypeSafeAiDecisionMode
 
 **Returns:** [TypeSafeAiDecisionModel](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiDecisionModel.cs#L92)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiDecisionModel.cs#L106)
 
 <a id="Vercel_AI_TypeSafeAi_TypeSafeAiDecisionModel_DoDecideAsync_"></a>
 <a id="Vercel_AI_TypeSafeAi_TypeSafeAiDecisionModel_DoDecideAsync_Vercel_AI_Operations_DecisionModelCall_System_Threading_CancellationToken_"></a>
@@ -172,7 +172,7 @@ Decides every question in one call.
 
 **Returns:** [Task&lt;DecisionModelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiDecisionModel.cs#L152)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiDecisionModel.cs#L169)
 
 <a id="Vercel_AI_TypeSafeAi_TypeSafeAiDecisionModel_DoEvaluateAsync_"></a>
 <a id="Vercel_AI_TypeSafeAi_TypeSafeAiDecisionModel_DoEvaluateAsync_Vercel_AI_Operations_EvaluationModelCall_System_Threading_CancellationToken_"></a>
@@ -201,7 +201,7 @@ Deprecated. Use `CancellationToken)`.
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiDecisionModel.cs#L140)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiDecisionModel.cs#L157)
 
 <a id="Vercel_AI_TypeSafeAi_TypeSafeAiDecisionModel_Serialize_"></a>
 <a id="Vercel_AI_TypeSafeAi_TypeSafeAiDecisionModel_Serialize"></a>
@@ -218,4 +218,4 @@ Serializes the model id and the JSON-serializable part of the config for a workf
 
 **Returns:** [SerializedModelOptions](/api/Vercel.AI.ProviderUtils/SerializedModelOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiDecisionModel.cs#L64)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiDecisionModel.cs#L67)

@@ -133,7 +133,7 @@ Posts &lt;code class="paramref"&gt;options&lt;/code&gt; to `{base}/{modelId}`. &
 
 **Returns:** [Task&lt;ImageGenerationResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Fal/FalProvider.cs#L83)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Fal/FalProvider.cs#L89)
 
 <a id="Vercel_AI_Fal_FalProvider_ImageModel_"></a>
 <a id="Vercel_AI_Fal_FalProvider_ImageModel_System_String_"></a>
@@ -226,3 +226,49 @@ Returns a transcription model.
 **Returns:** [ITranscriptionModel](/api/Vercel.AI.Provider/ITranscriptionModel/)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Fal/FalProvider.cs#L79)
+
+<a id="Vercel_AI_Fal_FalProvider_Video_"></a>
+<a id="Vercel_AI_Fal_FalProvider_Video_System_String_"></a>
+
+### Video(string)
+
+
+```csharp
+public IVideoModel Video(string modelId)
+```
+
+
+Creates a video model. Same as [VideoModel(string)](#Vercel_AI_Fal_FalProvider_VideoModel_System_String_).
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+
+**Returns:** [IVideoModel](/api/Vercel.AI.Provider/IVideoModel/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Fal/FalProvider.cs#L86)
+
+<a id="Vercel_AI_Fal_FalProvider_VideoModel_"></a>
+<a id="Vercel_AI_Fal_FalProvider_VideoModel_System_String_"></a>
+
+### VideoModel(string)
+
+
+```csharp
+public override IVideoModel VideoModel(string modelId)
+```
+
+
+Returns a video model.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+
+**Returns:** [IVideoModel](/api/Vercel.AI.Provider/IVideoModel/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Fal/FalProvider.cs#L83)

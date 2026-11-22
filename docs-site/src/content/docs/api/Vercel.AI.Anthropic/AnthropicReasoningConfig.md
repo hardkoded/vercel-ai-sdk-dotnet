@@ -23,7 +23,7 @@ Thinking and effort derived from a top-level reasoning level.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicReasoning.cs#L8)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicReasoning.cs#L11)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates a reasoning mapping.
 | `effort` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `display` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicReasoning.cs#L11)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicReasoning.cs#L14)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Budget for `enabled` thinking.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicReasoning.cs#L28)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicReasoning.cs#L31)
 
 <a id="Vercel_AI_Anthropic_AnthropicReasoningConfig_Display_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicReasoningConfig_Display"></a>
@@ -85,7 +85,7 @@ Thinking display mode.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicReasoning.cs#L34)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicReasoning.cs#L37)
 
 <a id="Vercel_AI_Anthropic_AnthropicReasoningConfig_Effort_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicReasoningConfig_Effort"></a>
@@ -102,7 +102,7 @@ Effort level, when adaptive thinking uses one.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicReasoning.cs#L31)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicReasoning.cs#L34)
 
 <a id="Vercel_AI_Anthropic_AnthropicReasoningConfig_ThinkingType_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicReasoningConfig_ThinkingType"></a>
@@ -119,4 +119,4 @@ public string? ThinkingType { get; }
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicReasoning.cs#L25)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicReasoning.cs#L28)

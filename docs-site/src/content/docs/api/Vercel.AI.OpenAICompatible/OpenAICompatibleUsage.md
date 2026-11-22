@@ -23,7 +23,7 @@ Chat usage plus prediction-token counts stored as provider metadata.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleChat.cs#L817)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleChat.cs#L841)
 
 ## Constructors
 
@@ -48,7 +48,7 @@ Creates converted usage.
 | `acceptedPredictionTokens` | [int?](https://learn.microsoft.com/dotnet/api/system.int32) |  |
 | `rejectedPredictionTokens` | [int?](https://learn.microsoft.com/dotnet/api/system.int32) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleChat.cs#L824)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleChat.cs#L848)
 
 ## Properties
 
@@ -67,7 +67,7 @@ Accepted prediction tokens, when reported.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleChat.cs#L839)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleChat.cs#L863)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleUsage_Missing_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleUsage_Missing"></a>
@@ -84,7 +84,7 @@ Usage when the provider omitted the object.
 
 **Value:** [OpenAICompatibleUsage](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleChat.cs#L820)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleChat.cs#L844)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleUsage_RejectedPredictionTokens_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleUsage_RejectedPredictionTokens"></a>
@@ -101,7 +101,7 @@ Rejected prediction tokens, when reported.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleChat.cs#L842)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleChat.cs#L866)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleUsage_Usage_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleUsage_Usage"></a>
@@ -118,4 +118,4 @@ Token counts.
 
 **Value:** [LanguageModelUsage](/api/Vercel.AI.Provider/LanguageModelUsage/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleChat.cs#L836)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleChat.cs#L860)

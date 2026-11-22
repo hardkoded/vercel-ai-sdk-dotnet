@@ -23,7 +23,7 @@ AWS credentials used to sign Claude Platform requests.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicAwsFetch.cs#L14)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicAwsFetch.cs#L16)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates credentials.
 | `secretAccessKey` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `sessionToken` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicAwsFetch.cs#L17)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicAwsFetch.cs#L19)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Access key id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicAwsFetch.cs#L34)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicAwsFetch.cs#L36)
 
 <a id="Vercel_AI_Anthropic_AnthropicAwsCredentials_Region_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicAwsCredentials_Region"></a>
@@ -85,7 +85,7 @@ AWS region.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicAwsFetch.cs#L31)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicAwsFetch.cs#L33)
 
 <a id="Vercel_AI_Anthropic_AnthropicAwsCredentials_SecretAccessKey_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicAwsCredentials_SecretAccessKey"></a>
@@ -102,7 +102,7 @@ Secret access key.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicAwsFetch.cs#L37)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicAwsFetch.cs#L39)
 
 <a id="Vercel_AI_Anthropic_AnthropicAwsCredentials_SessionToken_"></a>
 <a id="Vercel_AI_Anthropic_AnthropicAwsCredentials_SessionToken"></a>
@@ -119,4 +119,4 @@ Optional session token.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicAwsFetch.cs#L40)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicAwsFetch.cs#L42)

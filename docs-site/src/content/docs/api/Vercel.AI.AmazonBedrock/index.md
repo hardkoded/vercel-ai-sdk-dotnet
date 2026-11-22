@@ -20,6 +20,7 @@ Amazon Bedrock provider.
 | [AmazonBedrockAnthropicProvider](/api/Vercel.AI.AmazonBedrock/AmazonBedrockAnthropicProvider/) | Anthropic Messages provider hosted on Amazon Bedrock. |
 | [AmazonBedrockAnthropicRequests](/api/Vercel.AI.AmazonBedrock/AmazonBedrockAnthropicRequests/) | Builds InvokeModel URLs and the Bedrock Anthropic request body. |
 | [AmazonBedrockApiKeyFetch](/api/Vercel.AI.AmazonBedrock/AmazonBedrockApiKeyFetch/) | API-key fetch wrapper. The transport is read when the call is sent, not when the wrapper is created. |
+| [AmazonBedrockChatModelSettings](/api/Vercel.AI.AmazonBedrock/AmazonBedrockChatModelSettings/) | Settings for AmazonBedrockLanguageModel. Maps to AmazonBedrockChatModelSettings. |
 | [AmazonBedrockCredentials](/api/Vercel.AI.AmazonBedrock/AmazonBedrockCredentials/) | AWS credentials used to sign Amazon Bedrock requests. |
 | [AmazonBedrockEmbeddingModel](/api/Vercel.AI.AmazonBedrock/AmazonBedrockEmbeddingModel/) | Amazon Bedrock InvokeModel embedding model for Titan, Cohere, and Nova. |
 | [AmazonBedrockEmbeddingModelSettings](/api/Vercel.AI.AmazonBedrock/AmazonBedrockEmbeddingModelSettings/) | Settings for AmazonBedrockEmbeddingModel. |
@@ -47,4 +48,5 @@ Amazon Bedrock provider.
 
 | Type | Summary |
 | --- | --- |
+| [AmazonBedrockChatModelFamily](/api/Vercel.AI.AmazonBedrock/AmazonBedrockChatModelFamily/) | Amazon Bedrock chat model family. Maps to the modelFamily chat model setting. |
 | [AmazonBedrockEmbeddingModelFamily](/api/Vercel.AI.AmazonBedrock/AmazonBedrockEmbeddingModelFamily/) | Amazon Bedrock embedding model family. It selects the request format and the batch size. |

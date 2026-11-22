@@ -209,3 +209,26 @@ Gemini transcription ids use generateContent. Other ids use Cloud Speech-to-Text
 **Returns:** [ITranscriptionModel](/api/Vercel.AI.Provider/ITranscriptionModel/)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L406)
+
+<a id="Vercel_AI_Google_GoogleVertexProvider_VideoModel_"></a>
+<a id="Vercel_AI_Google_GoogleVertexProvider_VideoModel_System_String_"></a>
+
+### VideoModel(string)
+
+
+```csharp
+public override IVideoModel VideoModel(string modelId)
+```
+
+
+Creates a video model. The provider id is `google.vertex.video`.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+
+**Returns:** [IVideoModel](/api/Vercel.AI.Provider/IVideoModel/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleVertex.cs#L424)

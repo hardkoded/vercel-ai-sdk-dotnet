@@ -51,13 +51,13 @@ Access key. Falls back to `AWS_ACCESS_KEY_ID`.
 
 
 ```csharp
-public string? ApiKey { get; set; }
+public Resolvable<string>? ApiKey { get; set; }
 ```
 
 
-Bearer token. When set, SigV4 is not used. Falls back to `AWS_BEARER_TOKEN_BEDROCK`.
+Bearer token. When set, SigV4 is not used. Falls back to `AWS_BEARER_TOKEN_BEDROCK`. A callback is resolved before each request and must return a non-empty key.
 
-**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+**Value:** `Resolvable&lt;string&gt;`
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockAnthropicProvider.cs#L27)
 

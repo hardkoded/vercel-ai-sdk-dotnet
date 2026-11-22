@@ -23,7 +23,7 @@ QuiverAI provider.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [ProviderBase](/api/Vercel.AI.Provider/ProviderBase/) → [OpenAICompatibleProvider](/api/Vercel.AI.OpenAICompatible/OpenAICompatibleProvider/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/QuiverAI/QuiverAIProvider.cs#L13)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/QuiverAI/QuiverAIProvider.cs#L15)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates a provider.
 | `httpClient` | [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient) |  |
 | `options` | [OpenAICompatibleOptions](/api/Vercel.AI.OpenAICompatible/OpenAICompatibleOptions/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/QuiverAI/QuiverAIProvider.cs#L22)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/QuiverAI/QuiverAIProvider.cs#L27)
 
 ## Fields
 
@@ -65,7 +65,7 @@ Default API origin.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/QuiverAI/QuiverAIProvider.cs#L19)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/QuiverAI/QuiverAIProvider.cs#L21)
 
 <a id="Vercel_AI_QuiverAI_QuiverAIProvider_ProviderId"></a>
 
@@ -81,7 +81,26 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/QuiverAI/QuiverAIProvider.cs#L16)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/QuiverAI/QuiverAIProvider.cs#L18)
+
+## Properties
+
+<a id="Vercel_AI_QuiverAI_QuiverAIProvider_Tools_"></a>
+<a id="Vercel_AI_QuiverAI_QuiverAIProvider_Tools"></a>
+
+### Tools
+
+
+```csharp
+public OpenResponsesTools Tools { get; }
+```
+
+
+QuiverAI caller-executed tools, such as custom tools. Maps to `provider.tools`.
+
+**Value:** [OpenResponsesTools](/api/Vercel.AI.OpenResponses/OpenResponsesTools/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/QuiverAI/QuiverAIProvider.cs#L40)
 
 ## Methods
 
@@ -107,7 +126,7 @@ Creates a provider.
 
 **Returns:** [QuiverAIProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/QuiverAI/QuiverAIProvider.cs#L32)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/QuiverAI/QuiverAIProvider.cs#L52)
 
 <a id="Vercel_AI_QuiverAI_QuiverAIProvider_ImageModel_"></a>
 <a id="Vercel_AI_QuiverAI_QuiverAIProvider_ImageModel_System_String_"></a>
@@ -130,7 +149,7 @@ Returns an image model.
 
 **Returns:** [IImageModel](/api/Vercel.AI.Provider/IImageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/QuiverAI/QuiverAIProvider.cs#L44)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/QuiverAI/QuiverAIProvider.cs#L64)
 
 <a id="Vercel_AI_QuiverAI_QuiverAIProvider_LanguageModel_"></a>
 <a id="Vercel_AI_QuiverAI_QuiverAIProvider_LanguageModel_System_String_"></a>
@@ -143,7 +162,7 @@ public override ILanguageModel LanguageModel(string modelId)
 ```
 
 
-Returns a language model.
+Creates a language model for the QuiverAI Responses API. The provider id is `quiverai.responses`.
 
 **Parameters**
 
@@ -153,21 +172,27 @@ Returns a language model.
 
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/QuiverAI/QuiverAIProvider.cs#L26)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/QuiverAI/QuiverAIProvider.cs#L43)
 
-<a id="Vercel_AI_QuiverAI_QuiverAIProvider_ResolveApiKey_"></a>
-<a id="Vercel_AI_QuiverAI_QuiverAIProvider_ResolveApiKey"></a>
+<a id="Vercel_AI_QuiverAI_QuiverAIProvider_ResolveApiKeyAsync_"></a>
+<a id="Vercel_AI_QuiverAI_QuiverAIProvider_ResolveApiKeyAsync_System_Threading_CancellationToken_"></a>
 
-### ResolveApiKey()
+### ResolveApiKeyAsync(CancellationToken)
 
 
 ```csharp
-protected override string? ResolveApiKey()
+protected override Task<string?> ResolveApiKeyAsync(CancellationToken cancellationToken)
 ```
 
 
 Throws when neither the option nor `QUIVERAI_API_KEY` holds a key.
 
-**Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+**Parameters**
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/QuiverAI/QuiverAIProvider.cs#L47)
+| Name | Type | Description |
+| --- | --- | --- |
+| `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
+
+**Returns:** [Task&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/QuiverAI/QuiverAIProvider.cs#L67)

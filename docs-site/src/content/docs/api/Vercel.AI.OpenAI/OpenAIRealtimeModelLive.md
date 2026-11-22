@@ -180,7 +180,7 @@ Builds the provider session configuration from a normalized config. Maps to `bui
 
 **Returns:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Live/OpenAIRealtimeModelLive.cs#L167)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Live/OpenAIRealtimeModelLive.cs#L169)
 
 <a id="Vercel_AI_OpenAI_OpenAIRealtimeModelLive_BuildUri_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIRealtimeModelLive_BuildUri"></a>
@@ -220,7 +220,7 @@ Opens a realtime session.
 
 **Returns:** [Task&lt;IRealtimeSession&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Live/OpenAIRealtimeModelLive.cs#L177)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Live/OpenAIRealtimeModelLive.cs#L179)
 
 <a id="Vercel_AI_OpenAI_OpenAIRealtimeModelLive_CreateServerEventParser_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIRealtimeModelLive_CreateServerEventParser"></a>
@@ -237,7 +237,7 @@ Returns a server event parser. Maps to `createServerEventParser`.
 
 **Returns:** [Func&lt;JsonElement, IReadOnlyList&lt;RealtimeModelV4ServerEvent&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Live/OpenAIRealtimeModelLive.cs#L151)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Live/OpenAIRealtimeModelLive.cs#L153)
 
 <a id="Vercel_AI_OpenAI_OpenAIRealtimeModelLive_CreateWebRTCSessionAsync_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIRealtimeModelLive_CreateWebRTCSessionAsync_System_String_Vercel_AI_Provider_RealtimeModelV4SessionConfig_System_Threading_CancellationToken_"></a>
@@ -327,7 +327,7 @@ Parses a raw provider event into normalized events. Maps to `parseServerEvent`.
 
 **Returns:** [IReadOnlyList&lt;RealtimeModelV4ServerEvent&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Live/OpenAIRealtimeModelLive.cs#L145)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Live/OpenAIRealtimeModelLive.cs#L147)
 
 <a id="Vercel_AI_OpenAI_OpenAIRealtimeModelLive_SerializeClientEvent_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIRealtimeModelLive_SerializeClientEvent_Vercel_AI_Provider_RealtimeModelV4ClientEvent_System_Nullable_Vercel_AI_Provider_RealtimeModelV4SessionIntent__"></a>
@@ -351,4 +351,4 @@ Serializes a normalized client event into the provider wire format. Maps to `ser
 
 **Returns:** [JsonNode](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonnode)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Live/OpenAIRealtimeModelLive.cs#L157)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Live/OpenAIRealtimeModelLive.cs#L159)

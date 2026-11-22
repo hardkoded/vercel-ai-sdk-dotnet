@@ -97,8 +97,13 @@ Google Gemini and Vertex provider.
 | [GoogleVertexPartnerOptions](/api/Vercel.AI.Google/GoogleVertexPartnerOptions/) | Settings for the OpenAI-compatible MaaS and xAI endpoints on Vertex. |
 | [GoogleVertexProvider](/api/Vercel.AI.Google/GoogleVertexProvider/) | Google Vertex AI provider. |
 | [GoogleVertexSpeechTranscriptionModel](/api/Vercel.AI.Google/GoogleVertexSpeechTranscriptionModel/) | Cloud Speech-to-Text recognize. |
+| [GoogleVertexVideoModel](/api/Vercel.AI.Google/GoogleVertexVideoModel/) | Google Vertex video model (Veo). CancellationToken) starts a long-running prediction and CancellationToken) fetches it. The operation is a JSON object with the operationName. |
+| [GoogleVertexVideoModelOptions](/api/Vercel.AI.Google/GoogleVertexVideoModelOptions/) | Port of GoogleVertexVideoModelOptions (google-vertex-video-model-options.ts). Read from providerOptions.googleVertex, or the legacy providerOptions.vertex. |
 | [GoogleVertexXaiProvider](/api/Vercel.AI.Google/GoogleVertexXaiProvider/) | xAI Grok models hosted on Vertex. |
 | [GoogleVideoMetadata](/api/Vercel.AI.Google/GoogleVideoMetadata/) | Metadata for preprocessing video file parts. |
+| [GoogleVideoModel](/api/Vercel.AI.Google/GoogleVideoModel/) | Veo video model. CancellationToken) posts predictLongRunning and CancellationToken) reads the operation. The operation is a JSON object with the operationName. |
+| [GoogleVideoModelOptions](/api/Vercel.AI.Google/GoogleVideoModelOptions/) | Provider options for Google video generation, read from providerOptions.google. Upstream GoogleVideoModelOptions. |
+| [GoogleVideoModelReferenceImage](/api/Vercel.AI.Google/GoogleVideoModelReferenceImage/) | A reference image for Veo style or asset guidance. Upstream inline type of referenceImages. |
 | [GoogleWarning](/api/Vercel.AI.Google/GoogleWarning/) | A warning produced while preparing a Gemini request. |
 | [PrepareGoogleInteractionsToolsResult](/api/Vercel.AI.Google/PrepareGoogleInteractionsToolsResult/) | Result of ToolChoice): the tools and toolchoice request fields and the warnings. |
 | [ToolResultDownloads](/api/Vercel.AI.Google/ToolResultDownloads/) | Settings for downloading remote files that a tool result returns. Maps to toolResultDownloads. |

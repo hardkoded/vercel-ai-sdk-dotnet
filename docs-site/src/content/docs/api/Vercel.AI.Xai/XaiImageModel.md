@@ -25,32 +25,31 @@ xAI image model, over `/images/generations` and `/images/edits`. Maps to `XaiIma
 
 **Implements:** [IImageModel](/api/Vercel.AI.Provider/IImageModel/), [IImageCaller](/api/Vercel.AI.Operations/IImageCaller/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiImageModel.cs#L16)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiImageModel.cs#L52)
 
 ## Constructors
 
 <a id="Vercel_AI_Xai_XaiImageModel__ctor_"></a>
-<a id="Vercel_AI_Xai_XaiImageModel__ctor_Vercel_AI_Xai_XaiProvider_System_String_System_Func_System_DateTime__"></a>
+<a id="Vercel_AI_Xai_XaiImageModel__ctor_System_String_Vercel_AI_Xai_XaiImageModelConfig_"></a>
 
-### `XaiImageModel(XaiProvider, string, Func<DateTime>?)`
+### XaiImageModel(string, XaiImageModelConfig)
 
 
 ```csharp
-public XaiImageModel(XaiProvider provider, string modelId, Func<DateTime>? clock = null)
+public XaiImageModel(string modelId, XaiImageModelConfig config)
 ```
 
 
-Creates a model. &lt;code class="paramref"&gt;clock&lt;/code&gt; sets the response timestamp and defaults to UTC now. Maps to `_internal.currentDate`.
+Creates a model.
 
 **Parameters**
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `provider` | [XaiProvider](/api/Vercel.AI.Xai/XaiProvider/) |  |
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
-| `clock` | [Func&lt;DateTime&gt;](https://learn.microsoft.com/dotnet/api/system.func-1) |  |
+| `config` | [XaiImageModelConfig](/api/Vercel.AI.Xai/XaiImageModelConfig/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiImageModel.cs#L22)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiImageModel.cs#L57)
 
 ## Properties
 
@@ -69,7 +68,7 @@ Maximum images in one call. Maps to `maxImagesPerCall`.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiImageModel.cs#L42)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiImageModel.cs#L76)
 
 <a id="Vercel_AI_Xai_XaiImageModel_ModelId_"></a>
 <a id="Vercel_AI_Xai_XaiImageModel_ModelId"></a>
@@ -86,7 +85,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiImageModel.cs#L39)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiImageModel.cs#L73)
 
 <a id="Vercel_AI_Xai_XaiImageModel_Provider_"></a>
 <a id="Vercel_AI_Xai_XaiImageModel_Provider"></a>
@@ -103,7 +102,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiImageModel.cs#L36)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiImageModel.cs#L70)
 
 <a id="Vercel_AI_Xai_XaiImageModel_SpecificationVersion_"></a>
 <a id="Vercel_AI_Xai_XaiImageModel_SpecificationVersion"></a>
@@ -120,7 +119,7 @@ Specification version.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiImageModel.cs#L33)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiImageModel.cs#L67)
 
 <a id="Vercel_AI_Xai_XaiImageModel_SupportsFileInputs_"></a>
 <a id="Vercel_AI_Xai_XaiImageModel_SupportsFileInputs"></a>
@@ -137,7 +136,7 @@ Whether the model takes input images. Null when the catalog does not say. Maps t
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiImageModel.cs#L45)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiImageModel.cs#L79)
 
 <a id="Vercel_AI_Xai_XaiImageModel_SupportsMaskInputs_"></a>
 <a id="Vercel_AI_Xai_XaiImageModel_SupportsMaskInputs"></a>
@@ -154,7 +153,7 @@ Whether the model takes a mask. Null when the catalog does not say. Maps to `sup
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiImageModel.cs#L49)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiImageModel.cs#L83)
 
 ## Methods
 
@@ -180,7 +179,7 @@ Generates images.
 
 **Returns:** [Task&lt;ImageModelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiImageModel.cs#L90)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiImageModel.cs#L124)
 
 <a id="Vercel_AI_Xai_XaiImageModel_DoGenerateAsync_Vercel_AI_Provider_ImageCallOptions_System_Threading_CancellationToken_"></a>
 
@@ -203,7 +202,7 @@ Generates images. Maps to `doGenerate` on an image model.
 
 **Returns:** [Task&lt;ImageGenerationResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiImageModel.cs#L59)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiImageModel.cs#L93)
 
 <a id="Vercel_AI_Xai_XaiImageModel_ResolveMaxImagesPerCallAsync_"></a>
 <a id="Vercel_AI_Xai_XaiImageModel_ResolveMaxImagesPerCallAsync_System_Threading_CancellationToken_"></a>
@@ -226,4 +225,4 @@ Resolves a functional per-call limit. The default returns [MaxImagesPerCall](/ap
 
 **Returns:** [Task&lt;int?&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiImageModel.cs#L53)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Xai/XaiImageModel.cs#L87)

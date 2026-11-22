@@ -23,7 +23,7 @@ A completion prompt and its default stop sequences.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Completion/OpenAICompletionLanguageModel.cs#L542)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Completion/OpenAICompletionLanguageModel.cs#L546)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Prompt text.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Completion/OpenAICompletionLanguageModel.cs#L551)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Completion/OpenAICompletionLanguageModel.cs#L555)
 
 <a id="Vercel_AI_OpenAI_OpenAICompletionPrompt_Stop_"></a>
 <a id="Vercel_AI_OpenAI_OpenAICompletionPrompt_Stop"></a>
@@ -59,4 +59,4 @@ Stop sequences implied by the prompt.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Completion/OpenAICompletionLanguageModel.cs#L554)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Completion/OpenAICompletionLanguageModel.cs#L558)

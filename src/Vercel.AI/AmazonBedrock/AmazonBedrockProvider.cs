@@ -39,6 +39,12 @@ public sealed class AmazonBedrockOptions
     /// </summary>
     public string? AgentRuntimeBaseUrl { get; set; }
 
+    /// <summary>
+    /// Bedrock API key sent as a bearer token. A callback or task is resolved before each request and must resolve
+    /// to a non-empty key. Falls back to <c>AWS_BEARER_TOKEN_BEDROCK</c>. When set, it takes precedence over SigV4.
+    /// </summary>
+    public Resolvable<string>? ApiKey { get; set; }
+
     /// <summary>Access key. Falls back to <c>AWS_ACCESS_KEY_ID</c>.</summary>
     public string? AccessKeyId { get; set; }
 
@@ -172,6 +178,35 @@ public sealed class AmazonBedrockProvider : ProviderBase
             request.Headers.Remove(header.Key);
             request.Headers.TryAddWithoutValidation(header.Key, header.Value);
         }
+    }
+
+    /// <summary>
+    /// Authenticates a request: a bearer token when an API key is set, otherwise SigV4. Call after
+    /// <see cref="AddHeadersAsync"/>. Maps to the <c>apiKey</c> branch of <c>createAmazonBedrock</c>.
+    /// </summary>
+    internal async Task AuthorizeAsync(
+        HttpRequestMessage request,
+        byte[] payload,
+        CancellationToken cancellationToken
+    )
+    {
+        var apiKey = await AmazonBedrockSigningHandler
+            .ResolveApiKeyAsync(
+                AmazonBedrockSigningHandler.LoadApiKeySetting(Options.ApiKey),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
+        AmazonBedrockSigner.Apply(
+            request,
+            payload,
+            Options.Region,
+            "bedrock",
+            apiKey,
+            Options.AccessKeyId,
+            Options.SecretAccessKey,
+            Options.SessionToken,
+            Options.UtcNow?.Invoke() ?? DateTimeOffset.UtcNow
+        );
     }
 
     /// <summary>Creates a provider.</summary>
@@ -855,7 +890,9 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
             await _provider
                 .AddHeadersAsync(request, options.Headers, cancellationToken)
                 .ConfigureAwait(false);
-            Sign(request, Encoding.UTF8.GetBytes(body));
+            await _provider
+                .AuthorizeAsync(request, Encoding.UTF8.GetBytes(body), cancellationToken)
+                .ConfigureAwait(false);
         }
         catch
         {
@@ -864,33 +901,6 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
         }
 
         return request;
-    }
-
-    private void Sign(HttpRequestMessage request, byte[] payload)
-    {
-        var accessKey = _provider.Options.AccessKeyId
-            ?? Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID");
-        var secret = _provider.Options.SecretAccessKey
-            ?? Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY");
-        if (string.IsNullOrEmpty(accessKey) || string.IsNullOrEmpty(secret))
-        {
-            throw new AiSdkException(
-                "AWS credentials are required. Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY."
-            );
-        }
-
-        var token = _provider.Options.SessionToken
-            ?? Environment.GetEnvironmentVariable("AWS_SESSION_TOKEN");
-        AwsSigV4.Sign(
-            request,
-            payload,
-            _provider.Options.Region,
-            "bedrock",
-            accessKey!,
-            secret!,
-            token,
-            _provider.Options.UtcNow?.Invoke() ?? DateTimeOffset.UtcNow
-        );
     }
 
     private JsonObject Build(

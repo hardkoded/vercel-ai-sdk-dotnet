@@ -25,7 +25,7 @@ all fit a function that returns a task.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L328)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L352)
 
 ## Constructors
 
@@ -50,7 +50,7 @@ Creates a config.
 | `baseUrl` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `headers` | [Func&lt;CancellationToken, Task&lt;IReadOnlyDictionary&lt;string, string&gt;&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-2) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L331)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L355)
 
 ## Properties
 
@@ -69,7 +69,7 @@ API base URL.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L346)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L370)
 
 <a id="Vercel_AI_Google_GoogleRealtimeModelConfig_Clock_"></a>
 <a id="Vercel_AI_Google_GoogleRealtimeModelConfig_Clock"></a>
@@ -86,7 +86,7 @@ Clock used to compute token expiry. Defaults to the system clock.
 
 **Value:** [Func&lt;DateTimeOffset&gt;](https://learn.microsoft.com/dotnet/api/system.func-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L355)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L379)
 
 <a id="Vercel_AI_Google_GoogleRealtimeModelConfig_Headers_"></a>
 <a id="Vercel_AI_Google_GoogleRealtimeModelConfig_Headers"></a>
@@ -103,7 +103,7 @@ Resolves the request headers, including the credential.
 
 **Value:** [Func&lt;CancellationToken, Task&lt;IReadOnlyDictionary&lt;string, string&gt;&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L349)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L373)
 
 <a id="Vercel_AI_Google_GoogleRealtimeModelConfig_Http_"></a>
 <a id="Vercel_AI_Google_GoogleRealtimeModelConfig_Http"></a>
@@ -120,7 +120,7 @@ Maps `fetch`: the HTTP helper used to mint client secrets. Defaults to a shared 
 
 **Value:** [ProviderHttp](/api/Vercel.AI.ProviderUtils/ProviderHttp/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L352)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L376)
 
 <a id="Vercel_AI_Google_GoogleRealtimeModelConfig_Provider_"></a>
 <a id="Vercel_AI_Google_GoogleRealtimeModelConfig_Provider"></a>
@@ -137,4 +137,4 @@ Provider id, for example `google.realtime`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L343)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleProvider.cs#L367)

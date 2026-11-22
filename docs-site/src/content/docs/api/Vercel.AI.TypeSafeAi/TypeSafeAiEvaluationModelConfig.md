@@ -28,4 +28,4 @@ Deprecated alias of [TypeSafeAiDecisionModelConfig](/api/Vercel.AI.TypeSafeAi/Ty
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiDecisionModel.cs#L949)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/TypeSafeAi/TypeSafeAiDecisionModel.cs#L966)

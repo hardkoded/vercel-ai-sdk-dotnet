@@ -28,13 +28,13 @@ Where in the state a value was found. Maps to `ExtractionModelV4Source`.
 ## Constructors
 
 <a id="Vercel_AI_Operations_ExtractionSource__ctor_"></a>
-<a id="Vercel_AI_Operations_ExtractionSource__ctor_System_String_System_Int32_System_Nullable_System_Int32__System_Nullable_System_Int32__"></a>
+<a id="Vercel_AI_Operations_ExtractionSource__ctor_System_String_System_Double_System_Nullable_System_Double__System_Nullable_System_Double__"></a>
 
-### ExtractionSource(string, int, int?, int?)
+### ExtractionSource(string, double, double?, double?)
 
 
 ```csharp
-public ExtractionSource(string type, int part, int? start = null, int? end = null)
+public ExtractionSource(string type, double part, double? start = null, double? end = null)
 ```
 
 
@@ -45,9 +45,9 @@ Creates a source.
 | Name | Type | Description |
 | --- | --- | --- |
 | `type` | [string](https://learn.microsoft.com/dotnet/api/system.string) | `text` or `file`. |
-| `part` | [int](https://learn.microsoft.com/dotnet/api/system.int32) | Index of the part in the state. |
-| `start` | [int?](https://learn.microsoft.com/dotnet/api/system.int32) | Start offset in UTF-16 code units, inclusive. Text sources only. |
-| `end` | [int?](https://learn.microsoft.com/dotnet/api/system.int32) | End offset in UTF-16 code units, exclusive. Text sources only. |
+| `part` | [double](https://learn.microsoft.com/dotnet/api/system.double) | Index of the part in the state. |
+| `start` | [double?](https://learn.microsoft.com/dotnet/api/system.double) | Start offset in UTF-16 code units, inclusive. Text sources only. |
+| `end` | [double?](https://learn.microsoft.com/dotnet/api/system.double) | End offset in UTF-16 code units, exclusive. Text sources only. |
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L68)
 
@@ -60,13 +60,13 @@ Creates a source.
 
 
 ```csharp
-public int? End { get; }
+public double? End { get; }
 ```
 
 
 End offset in UTF-16 code units, exclusive. Set for a text source.
 
-**Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
+**Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L86)
 
@@ -77,13 +77,13 @@ End offset in UTF-16 code units, exclusive. Set for a text source.
 
 
 ```csharp
-public int Part { get; }
+public double Part { get; }
 ```
 
 
 Index of the text or file part in the state.
 
-**Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
+**Value:** [double](https://learn.microsoft.com/dotnet/api/system.double)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L80)
 
@@ -94,13 +94,13 @@ Index of the text or file part in the state.
 
 
 ```csharp
-public int? Start { get; }
+public double? Start { get; }
 ```
 
 
 Start offset in UTF-16 code units, inclusive. Set for a text source.
 
-**Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
+**Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/ExtractionModel.cs#L83)
 

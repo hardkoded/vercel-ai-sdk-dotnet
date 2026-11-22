@@ -23,7 +23,7 @@ Identifies the provider response.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [LanguageModelStreamPart](/api/Vercel.AI.Provider/LanguageModelStreamPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3187)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3209)
 
 ## Constructors
 
@@ -48,7 +48,7 @@ Creates a response-metadata part.
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `timestamp` | [DateTimeOffset?](https://learn.microsoft.com/dotnet/api/system.datetimeoffset) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3190)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3212)
 
 ## Properties
 
@@ -67,7 +67,7 @@ Provider response id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3199)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3221)
 
 <a id="Vercel_AI_Provider_ResponseMetadataStreamPart_ModelId_"></a>
 <a id="Vercel_AI_Provider_ResponseMetadataStreamPart_ModelId"></a>
@@ -84,7 +84,7 @@ Provider model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3202)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3224)
 
 <a id="Vercel_AI_Provider_ResponseMetadataStreamPart_Timestamp_"></a>
 <a id="Vercel_AI_Provider_ResponseMetadataStreamPart_Timestamp"></a>
@@ -101,4 +101,4 @@ Provider timestamp.
 
 **Value:** [DateTimeOffset?](https://learn.microsoft.com/dotnet/api/system.datetimeoffset)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3205)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L3227)

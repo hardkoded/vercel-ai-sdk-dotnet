@@ -23,7 +23,7 @@ Normalized request sent to `doStartBatch`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L118)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L129)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates a normalized request.
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `options` | [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L121)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L132)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Request id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L130)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L141)
 
 <a id="Vercel_AI_Operations_NormalizedBatchRequest_ModelId_"></a>
 <a id="Vercel_AI_Operations_NormalizedBatchRequest_ModelId"></a>
@@ -85,7 +85,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L136)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L147)
 
 <a id="Vercel_AI_Operations_NormalizedBatchRequest_Options_"></a>
 <a id="Vercel_AI_Operations_NormalizedBatchRequest_Options"></a>
@@ -102,7 +102,7 @@ Normalized options.
 
 **Value:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L139)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L150)
 
 <a id="Vercel_AI_Operations_NormalizedBatchRequest_Type_"></a>
 <a id="Vercel_AI_Operations_NormalizedBatchRequest_Type"></a>
@@ -119,4 +119,4 @@ Request type.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L133)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L144)

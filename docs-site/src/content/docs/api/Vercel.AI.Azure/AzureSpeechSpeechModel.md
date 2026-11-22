@@ -31,13 +31,13 @@ Azure Speech text to speech with SSML. The model is appended to the voice name, 
 ## Constructors
 
 <a id="Vercel_AI_Azure_AzureSpeechSpeechModel__ctor_"></a>
-<a id="Vercel_AI_Azure_AzureSpeechSpeechModel__ctor_System_String_Vercel_AI_ProviderUtils_ProviderHttp_System_Func_System_Uri__System_Func_System_Collections_Generic_Dictionary_System_String_System_String___System_Func_System_DateTimeOffset__"></a>
+<a id="Vercel_AI_Azure_AzureSpeechSpeechModel__ctor_System_String_Vercel_AI_ProviderUtils_ProviderHttp_System_Func_System_Uri__System_Func_System_Threading_CancellationToken_System_Threading_Tasks_Task_System_Collections_Generic_Dictionary_System_String_System_String____System_Func_System_DateTimeOffset__"></a>
 
-### `AzureSpeechSpeechModel(string, ProviderHttp, Func<Uri>, Func<Dictionary<string, string?>>, Func<DateTimeOffset>?)`
+### `AzureSpeechSpeechModel(string, ProviderHttp, Func<Uri>, Func<CancellationToken, Task<Dictionary<string, string?>>>, Func<DateTimeOffset>?)`
 
 
 ```csharp
-public AzureSpeechSpeechModel(string modelId, ProviderHttp http, Func<Uri> url, Func<Dictionary<string, string?>> headers, Func<DateTimeOffset>? currentDate = null)
+public AzureSpeechSpeechModel(string modelId, ProviderHttp http, Func<Uri> url, Func<CancellationToken, Task<Dictionary<string, string?>>> headers, Func<DateTimeOffset>? currentDate = null)
 ```
 
 
@@ -51,7 +51,7 @@ Creates an Azure Speech model. &lt;code class="paramref"&gt;url&lt;/code&gt; and
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `http` | [ProviderHttp](/api/Vercel.AI.ProviderUtils/ProviderHttp/) |  |
 | `url` | [Func&lt;Uri&gt;](https://learn.microsoft.com/dotnet/api/system.func-1) |  |
-| `headers` | [Func&lt;Dictionary&lt;string, string&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-1) |  |
+| `headers` | [Func&lt;CancellationToken, Task&lt;Dictionary&lt;string, string&gt;&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-2) |  |
 | `currentDate` | [Func&lt;DateTimeOffset&gt;](https://learn.microsoft.com/dotnet/api/system.func-1) |  |
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Azure/AzureSpeechSpeechModel.cs#L82)

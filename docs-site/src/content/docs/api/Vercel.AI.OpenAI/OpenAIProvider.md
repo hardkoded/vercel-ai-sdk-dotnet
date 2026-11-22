@@ -193,14 +193,14 @@ Creates a provider. Pass a handler from tests.
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L124)
 
-<a id="Vercel_AI_OpenAI_OpenAIProvider_CreateOpenAIHeaders_"></a>
-<a id="Vercel_AI_OpenAI_OpenAIProvider_CreateOpenAIHeaders_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__"></a>
+<a id="Vercel_AI_OpenAI_OpenAIProvider_CreateOpenAIHeadersAsync_"></a>
+<a id="Vercel_AI_OpenAI_OpenAIProvider_CreateOpenAIHeadersAsync_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_Threading_CancellationToken_"></a>
 
-### `CreateOpenAIHeaders(IReadOnlyDictionary<string, string?>?)`
+### `CreateOpenAIHeadersAsync(IReadOnlyDictionary<string, string?>?, CancellationToken)`
 
 
 ```csharp
-public Dictionary<string, string?> CreateOpenAIHeaders(IReadOnlyDictionary<string, string?>? callHeaders = null)
+public Task<Dictionary<string, string?>> CreateOpenAIHeadersAsync(IReadOnlyDictionary<string, string?>? callHeaders = null, CancellationToken cancellationToken = default)
 ```
 
 
@@ -212,8 +212,9 @@ The user-agent suffix is appended after that, and per-call headers override the 
 | Name | Type | Description |
 | --- | --- | --- |
 | `callHeaders` | [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2) |  |
+| `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
 
-**Returns:** [Dictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2)
+**Returns:** [Task&lt;Dictionary&lt;string, string&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/OpenAIProvider.cs#L296)
 

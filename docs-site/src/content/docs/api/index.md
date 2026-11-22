@@ -53,6 +53,7 @@ Generated from the XML documentation of `Vercel.AI`. Regenerate it with `npm run
 - [Vercel.AI.OpenResponses](/api/Vercel.AI.OpenResponses/) — Public types in the `Vercel.AI.OpenResponses` namespace.
 - [Vercel.AI.OpenTelemetry](/api/Vercel.AI.OpenTelemetry/) — Public types in the `Vercel.AI.OpenTelemetry` namespace.
 - [Vercel.AI.Operations](/api/Vercel.AI.Operations/) — Speech, image, video, embeddings, transcription, and other operations.
+- [Vercel.AI.Parallel](/api/Vercel.AI.Parallel/) — Public types in the `Vercel.AI.Parallel` namespace.
 - [Vercel.AI.Perplexity](/api/Vercel.AI.Perplexity/) — Public types in the `Vercel.AI.Perplexity` namespace.
 - [Vercel.AI.Prodia](/api/Vercel.AI.Prodia/) — Public types in the `Vercel.AI.Prodia` namespace.
 - [Vercel.AI.Prompt](/api/Vercel.AI.Prompt/) — Public types in the `Vercel.AI.Prompt` namespace.

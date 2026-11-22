@@ -23,7 +23,7 @@ Embedding options.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L688)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L827)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Requested output dimensions. Must be a positive integer. Support depends on the 
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L700)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L839)
 
 <a id="Vercel_AI_EmbedOptions_Headers_"></a>
 <a id="Vercel_AI_EmbedOptions_Headers"></a>
@@ -59,7 +59,7 @@ Headers for this call. They override the provider headers.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L706)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L845)
 
 <a id="Vercel_AI_EmbedOptions_Model_"></a>
 <a id="Vercel_AI_EmbedOptions_Model"></a>
@@ -76,7 +76,7 @@ Explicit embedding model.
 
 **Value:** [IEmbeddingModel](/api/Vercel.AI.Provider/IEmbeddingModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L691)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L830)
 
 <a id="Vercel_AI_EmbedOptions_ModelId_"></a>
 <a id="Vercel_AI_EmbedOptions_ModelId"></a>
@@ -93,7 +93,7 @@ Gateway embedding model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L694)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L833)
 
 <a id="Vercel_AI_EmbedOptions_ProviderOptions_"></a>
 <a id="Vercel_AI_EmbedOptions_ProviderOptions"></a>
@@ -110,7 +110,7 @@ Provider options keyed by provider id.
 
 **Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L703)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L842)
 
 <a id="Vercel_AI_EmbedOptions_Values_"></a>
 <a id="Vercel_AI_EmbedOptions_Values"></a>
@@ -127,4 +127,4 @@ Values to embed.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L697)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L836)

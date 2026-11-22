@@ -99,7 +99,7 @@ internal sealed class AmazonBedrockSigningHandler : DelegatingHandler
     }
 
     /// <summary>
-    /// Resolves the API key for one request. A blank key selects SigV4. Maps to the per-request <c>resolve(apiKey)</c>
+    /// Resolves the API key for one request. A blank static key selects SigV4. A callback or task that resolves to a blank key throws. Maps to the per-request <c>resolve(apiKey)</c>
     /// of <c>createApiKeyFetchFunction</c>.
     /// </summary>
     internal static async Task<string?> ResolveApiKeyAsync(
@@ -113,6 +113,11 @@ internal sealed class AmazonBedrockSigningHandler : DelegatingHandler
         }
 
         var resolved = await apiKey.ResolveAsync(cancellationToken).ConfigureAwait(false);
+        if (apiKey.IsDynamic && string.IsNullOrWhiteSpace(resolved))
+        {
+            throw new AiSdkException("Amazon Bedrock API key must be a non-empty string.");
+        }
+
         return string.IsNullOrWhiteSpace(resolved) ? null : resolved.Trim();
     }
 

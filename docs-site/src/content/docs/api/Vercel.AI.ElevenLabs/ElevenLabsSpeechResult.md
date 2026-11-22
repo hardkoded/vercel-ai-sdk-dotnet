@@ -28,13 +28,13 @@ Synthesized ElevenLabs audio.
 ## Constructors
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsSpeechResult__ctor_"></a>
-<a id="Vercel_AI_ElevenLabs_ElevenLabsSpeechResult__ctor_System_Byte___System_String_System_Collections_Generic_IReadOnlyList_Vercel_AI_Util_ModelWarning__System_String_Vercel_AI_ElevenLabs_ElevenLabsResponse_"></a>
+<a id="Vercel_AI_ElevenLabs_ElevenLabsSpeechResult__ctor_System_Byte___System_String_System_Collections_Generic_IReadOnlyList_Vercel_AI_Util_ModelWarning__System_String_Vercel_AI_ElevenLabs_ElevenLabsResponse_System_Nullable_System_Text_Json_JsonElement__"></a>
 
-### `ElevenLabsSpeechResult(byte[], string, IReadOnlyList<ModelWarning>, string, ElevenLabsResponse)`
+### `ElevenLabsSpeechResult(byte[], string, IReadOnlyList<ModelWarning>, string, ElevenLabsResponse, JsonElement?)`
 
 
 ```csharp
-public ElevenLabsSpeechResult(byte[] audio, string mediaType, IReadOnlyList<ModelWarning> warnings, string requestBody, ElevenLabsResponse response)
+public ElevenLabsSpeechResult(byte[] audio, string mediaType, IReadOnlyList<ModelWarning> warnings, string requestBody, ElevenLabsResponse response, JsonElement? providerMetadata = null)
 ```
 
 
@@ -49,6 +49,7 @@ Creates a speech result.
 | `warnings` | [IReadOnlyList&lt;ModelWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 | `requestBody` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `response` | [ElevenLabsResponse](/api/Vercel.AI.ElevenLabs/ElevenLabsResponse/) |  |
+| `providerMetadata` | [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L598)
 
@@ -69,7 +70,7 @@ Audio bytes.
 
 **Value:** [byte\[\]](https://learn.microsoft.com/dotnet/api/system.byte)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L614)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L616)
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsSpeechResult_MediaType_"></a>
 <a id="Vercel_AI_ElevenLabs_ElevenLabsSpeechResult_MediaType"></a>
@@ -86,7 +87,26 @@ Response media type.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L617)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L619)
+
+<a id="Vercel_AI_ElevenLabs_ElevenLabsSpeechResult_ProviderMetadata_"></a>
+<a id="Vercel_AI_ElevenLabs_ElevenLabsSpeechResult_ProviderMetadata"></a>
+
+### ProviderMetadata
+
+
+```csharp
+public JsonElement? ProviderMetadata { get; }
+```
+
+
+Provider metadata, `{"elevenlabs":{...}}`. It holds `outputFormat`, and with
+`providerOptions.elevenlabs.withTimestamps` also `alignment` and `normalizedAlignment`
+(`characters`, `characterStartTimesSeconds`, `characterEndTimesSeconds`).
+
+**Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L635)
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsSpeechResult_RequestBody_"></a>
 <a id="Vercel_AI_ElevenLabs_ElevenLabsSpeechResult_RequestBody"></a>
@@ -103,7 +123,7 @@ JSON request body.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L623)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L625)
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsSpeechResult_Response_"></a>
 <a id="Vercel_AI_ElevenLabs_ElevenLabsSpeechResult_Response"></a>
@@ -120,7 +140,7 @@ Response metadata.
 
 **Value:** [ElevenLabsResponse](/api/Vercel.AI.ElevenLabs/ElevenLabsResponse/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L626)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L628)
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsSpeechResult_Warnings_"></a>
 <a id="Vercel_AI_ElevenLabs_ElevenLabsSpeechResult_Warnings"></a>
@@ -137,4 +157,4 @@ Warnings for ignored settings.
 
 **Value:** [IReadOnlyList&lt;ModelWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L620)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L622)

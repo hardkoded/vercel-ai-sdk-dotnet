@@ -25,7 +25,7 @@ ElevenLabs batch speech-to-text model.
 
 **Implements:** [ITranscriptionModel](/api/Vercel.AI.Provider/ITranscriptionModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L1043)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L1845)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates a transcription model.
 | `provider` | [ElevenLabsProvider](/api/Vercel.AI.ElevenLabs/ElevenLabsProvider/) |  |
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L1048)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L1850)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L1058)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L1860)
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsProvider_ElevenLabsTranscriptionModel_Provider_"></a>
 <a id="Vercel_AI_ElevenLabs_ElevenLabsProvider_ElevenLabsTranscriptionModel_Provider"></a>
@@ -85,7 +85,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L1055)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L1857)
 
 ## Methods
 
@@ -111,7 +111,7 @@ Transcribes audio.
 
 **Returns:** [Task&lt;TranscriptionResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L1061)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L1863)
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsProvider_ElevenLabsTranscriptionModel_TranscribeAsync_"></a>
 <a id="Vercel_AI_ElevenLabs_ElevenLabsProvider_ElevenLabsTranscriptionModel_TranscribeAsync_Vercel_AI_Provider_AudioInput_Vercel_AI_ElevenLabs_ElevenLabsTranscriptionRequest_System_Threading_CancellationToken_"></a>
@@ -136,4 +136,4 @@ Uploads audio to `/v1/speech-to-text` and reads the transcript.
 
 **Returns:** [Task&lt;ElevenLabsTranscriptionResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L1072)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L1874)

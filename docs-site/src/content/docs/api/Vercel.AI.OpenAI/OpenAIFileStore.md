@@ -110,7 +110,7 @@ Deletes a file.
 
 **Returns:** [Task](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Files/OpenAIFileStore.cs#L240)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Files/OpenAIFileStore.cs#L246)
 
 <a id="Vercel_AI_OpenAI_OpenAIFileStore_DownloadAsync_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIFileStore_DownloadAsync_Vercel_AI_OpenAI_OpenAIFileReference_System_Threading_CancellationToken_"></a>
@@ -134,7 +134,7 @@ Downloads file bytes. The media type has parameters removed.
 
 **Returns:** [Task&lt;(byte\[\] Data, string MediaType)&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Files/OpenAIFileStore.cs#L218)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Files/OpenAIFileStore.cs#L222)
 
 <a id="Vercel_AI_OpenAI_OpenAIFileStore_GetMetadataAsync_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIFileStore_GetMetadataAsync_Vercel_AI_OpenAI_OpenAIFileReference_System_Threading_CancellationToken_"></a>
@@ -158,7 +158,7 @@ Reads file metadata.
 
 **Returns:** [Task&lt;OpenAIFileMetadata&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Files/OpenAIFileStore.cs#L199)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Files/OpenAIFileStore.cs#L201)
 
 <a id="Vercel_AI_OpenAI_OpenAIFileStore_RequireId_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIFileStore_RequireId_Vercel_AI_OpenAI_OpenAIFileReference_"></a>
@@ -181,7 +181,7 @@ Returns the OpenAI file id or throws when it is missing.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Files/OpenAIFileStore.cs#L256)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAI/Files/OpenAIFileStore.cs#L264)
 
 <a id="Vercel_AI_OpenAI_OpenAIFileStore_UploadAsync_"></a>
 <a id="Vercel_AI_OpenAI_OpenAIFileStore_UploadAsync_System_IO_Stream_System_String_System_String_System_String_System_Nullable_System_Int32__System_Threading_CancellationToken_"></a>

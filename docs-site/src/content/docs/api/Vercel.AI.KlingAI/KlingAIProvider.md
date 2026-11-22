@@ -179,20 +179,26 @@ Returns a language model.
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIProvider.cs#L50)
 
-<a id="Vercel_AI_KlingAI_KlingAIProvider_ResolveApiKey_"></a>
-<a id="Vercel_AI_KlingAI_KlingAIProvider_ResolveApiKey"></a>
+<a id="Vercel_AI_KlingAI_KlingAIProvider_ResolveApiKeyAsync_"></a>
+<a id="Vercel_AI_KlingAI_KlingAIProvider_ResolveApiKeyAsync_System_Threading_CancellationToken_"></a>
 
-### ResolveApiKey()
+### ResolveApiKeyAsync(CancellationToken)
 
 
 ```csharp
-protected override string? ResolveApiKey()
+protected override Task<string?> ResolveApiKeyAsync(CancellationToken cancellationToken)
 ```
 
 
 Resolves the bearer token on every call. An API key is sent as is. A legacy access key and secret key sign a fresh JWT.
 
-**Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
+
+**Returns:** [Task&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/KlingAI/KlingAIProvider.cs#L103)
 
