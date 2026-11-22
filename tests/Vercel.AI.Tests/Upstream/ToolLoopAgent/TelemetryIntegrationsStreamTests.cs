@@ -139,7 +139,8 @@ public sealed class TelemetryIntegrationsStreamTests : IDisposable
                                     ((GenerateTextStartEvent)e).RuntimeContext
                                 ),
                             OnStepEnd = (e, _) => Record(telemetryContexts, e.RuntimeContext),
-                            OnEnd = (e, _) => Record(telemetryContexts, ((GenerateTextResult)e).RuntimeContext),
+                            OnEnd = (e, _) =>
+                                Record(telemetryContexts, ((GenerateTextResult)e).RuntimeContext),
                         },
                     ],
                 },
