@@ -139,7 +139,10 @@ public sealed class XaiVideoModel : IVideoModel, IVideoCaller
                     HttpMethod.Post,
                     endpoint,
                     ProviderExchange.Json(body.ToJsonString()),
-                    ProviderExchange.Merge(await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false), call.Headers),
+                    ProviderExchange.Merge(
+                        await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false),
+                        call.Headers
+                    ),
                     cancellationToken
                 )
                 .ConfigureAwait(false);
@@ -207,7 +210,10 @@ public sealed class XaiVideoModel : IVideoModel, IVideoCaller
         ProviderExchangeResult response;
         try
         {
-            var headers = ProviderExchange.Merge(await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false), call.Headers);
+            var headers = ProviderExchange.Merge(
+                await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false),
+                call.Headers
+            );
             response = await ProviderExchange
                 .GetResponseUrlAsync(
                     _provider.SharedHttpClient,
