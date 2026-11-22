@@ -163,7 +163,7 @@ public sealed class OpenAIBatchApi : BatchResultsApiBase
             }
         }
 
-        var headers = Headers(call);
+        var headers = await HeadersAsync(call, cancellationToken).ConfigureAwait(false);
         JsonElement upload;
         using (var content = new MultipartFormDataContent())
         {
@@ -242,7 +242,7 @@ public sealed class OpenAIBatchApi : BatchResultsApiBase
                 HttpMethod.Post,
                 Url("batches/" + Uri.EscapeDataString(call.BatchId ?? string.Empty) + "/cancel"),
                 "{}",
-                Headers(call),
+                await HeadersAsync(call, cancellationToken).ConfigureAwait(false),
                 cancellationToken
             )
             .ConfigureAwait(false);
@@ -275,7 +275,13 @@ public sealed class OpenAIBatchApi : BatchResultsApiBase
         JsonElement page;
         using (
             var document = await _provider
-                .Http.SendJsonAsync(HttpMethod.Get, url, null, Headers(call), cancellationToken)
+                .Http.SendJsonAsync(
+                    HttpMethod.Get,
+                    url,
+                    null,
+                    await HeadersAsync(call, cancellationToken).ConfigureAwait(false),
+                    cancellationToken
+                )
                 .ConfigureAwait(false)
         )
         {
@@ -338,7 +344,11 @@ public sealed class OpenAIBatchApi : BatchResultsApiBase
             );
         }
 
-        return ReadResultFiles(fileIds, Headers(call), cancellationToken);
+        return ReadResultFiles(
+            fileIds,
+            await HeadersAsync(call, cancellationToken).ConfigureAwait(false),
+            cancellationToken
+        );
     }
 
     // Each file downloads only when the caller reaches it, so a malformed row fails the stream after the rows before it.
@@ -371,22 +381,27 @@ public sealed class OpenAIBatchApi : BatchResultsApiBase
 
     private Uri Url(string path) => ApiKeys.Combine(_provider.Options.BaseUrl, path);
 
-    private Dictionary<string, string?> Headers(BatchOperationCall call) =>
-        _provider.CreateOpenAIHeaders(
-            call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value)
-        );
-
-    private Task<JsonElement> RetrieveAsync(
+    private Task<Dictionary<string, string?>> HeadersAsync(
         BatchOperationCall call,
         CancellationToken cancellationToken
     ) =>
-        SendBatchAsync(
-            HttpMethod.Get,
-            Url("batches/" + Uri.EscapeDataString(call.BatchId ?? string.Empty)),
-            null,
-            Headers(call),
+        _provider.CreateOpenAIHeadersAsync(
+            call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value),
             cancellationToken
         );
+
+    private async Task<JsonElement> RetrieveAsync(
+        BatchOperationCall call,
+        CancellationToken cancellationToken
+    ) =>
+        await SendBatchAsync(
+                HttpMethod.Get,
+                Url("batches/" + Uri.EscapeDataString(call.BatchId ?? string.Empty)),
+                null,
+                await HeadersAsync(call, cancellationToken).ConfigureAwait(false),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
 
     private async Task<JsonElement> SendBatchAsync(
         HttpMethod method,

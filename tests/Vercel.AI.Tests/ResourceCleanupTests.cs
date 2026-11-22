@@ -73,7 +73,10 @@ public sealed class ResourceCleanupTests
         var files = new XaiFiles(
             new HttpClient(handler, disposeHandler: false),
             "https://api.x.ai/v1",
-            () => new Dictionary<string, string?> { ["Authorization"] = "Bearer k" }
+            _ =>
+                Task.FromResult<IReadOnlyDictionary<string, string?>>(
+                    new Dictionary<string, string?> { ["Authorization"] = "Bearer k" }
+                )
         );
 
         await files.UploadAsync(

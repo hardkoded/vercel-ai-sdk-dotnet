@@ -21,7 +21,8 @@ public sealed class OpenAISpeechTranslationModel : ISpeechTranslationModel, ISpe
     private readonly Func<string, Uri> _url;
     private readonly Func<
         IReadOnlyDictionary<string, string?>?,
-        Dictionary<string, string?>
+        CancellationToken,
+        Task<Dictionary<string, string?>>
     > _headers;
     private readonly WebSocketFactory? _webSocket;
     private readonly Func<DateTimeOffset>? _clock;
@@ -37,7 +38,7 @@ public sealed class OpenAISpeechTranslationModel : ISpeechTranslationModel, ISpe
         _providerName = provider.Name;
         _inner = new OpenAITranscriptionModel(provider, modelId, "audio/translations");
         _url = path => ApiKeys.Combine(provider.Options.BaseUrl, path);
-        _headers = provider.CreateOpenAIHeaders;
+        _headers = provider.CreateOpenAIHeadersAsync;
         _webSocket = provider.WebSocket;
         ModelId = modelId;
     }
@@ -51,7 +52,7 @@ public sealed class OpenAISpeechTranslationModel : ISpeechTranslationModel, ISpe
         string provider,
         ProviderHttp http,
         Func<string, Uri> url,
-        Func<Dictionary<string, string?>> headers,
+        Func<CancellationToken, Task<Dictionary<string, string?>>> headers,
         WebSocketFactory? webSocket = null,
         Func<DateTimeOffset>? clock = null
     )
@@ -67,10 +68,10 @@ public sealed class OpenAISpeechTranslationModel : ISpeechTranslationModel, ISpe
             () => url("realtime/translations"),
             headers
         );
-        _headers = callHeaders =>
+        _headers = async (callHeaders, cancellationToken) =>
         {
             var combined = new Dictionary<string, string?>(
-                headers(),
+                await headers(cancellationToken).ConfigureAwait(false),
                 StringComparer.OrdinalIgnoreCase
             );
             if (callHeaders != null)
@@ -106,19 +107,16 @@ public sealed class OpenAISpeechTranslationModel : ISpeechTranslationModel, ISpe
     }
 
     /// <summary>Starts a realtime speech translation over the OpenAI Realtime translations WebSocket. Maps to <c>doStream</c>.</summary>
-    public Task<TranslationStreamStart> DoStreamAsync(
+    public async Task<TranslationStreamStart> DoStreamAsync(
         TranslationStreamCall call,
         CancellationToken cancellationToken
     )
     {
-        try
-        {
-            return Task.FromResult(DoStream(call ?? throw new ArgumentNullException(nameof(call))));
-        }
-        catch (Exception error)
-        {
-            return Task.FromException<TranslationStreamStart>(error);
-        }
+        return await DoStream(
+                call ?? throw new ArgumentNullException(nameof(call)),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
     }
 
     private static JsonObject BuildOpenAIRealtimeSpeechTranslationSession(string targetLanguage)
@@ -153,7 +151,10 @@ public sealed class OpenAISpeechTranslationModel : ISpeechTranslationModel, ISpe
         }
     }
 
-    private TranslationStreamStart DoStream(TranslationStreamCall call)
+    private async Task<TranslationStreamStart> DoStream(
+        TranslationStreamCall call,
+        CancellationToken cancellationToken
+    )
     {
         if (string.IsNullOrEmpty(call.TargetLanguage))
         {
@@ -198,9 +199,11 @@ public sealed class OpenAISpeechTranslationModel : ISpeechTranslationModel, ISpe
             );
         }
 
-        var headers = _headers(
-            call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value)
-        );
+        var headers = await _headers(
+                call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         var sessionUpdate = BuildOpenAIRealtimeSpeechTranslationSession(call.TargetLanguage);
         var connection = OpenAITranscriptionModel.GetOpenAIRealtimeConnection(headers);
         var session = new RealtimeSpeechTranslationSession(call, sessionUpdate, warnings);

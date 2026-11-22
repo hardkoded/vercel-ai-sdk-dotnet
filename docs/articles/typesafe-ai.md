@@ -21,7 +21,7 @@ var result = await Decide.DecideAsync(new DecideRequest
 
 | Option | Meaning |
 | --- | --- |
-| `ApiKey` | API key. Defaults to `TYPESAFE_AI_API_KEY`. |
+| `ApiKey` | API key, a `Resolvable<string>`: a string, a `Task<string>`, or a callback such as `Resolvable<string>.From(ct => GetKeyAsync(ct))`. A callback is resolved before each request and handles its own caching and refresh. Defaults to `TYPESAFE_AI_API_KEY`. |
 | `BaseUrl` | Defaults to `TYPESAFE_AI_BASE_URL`, then `https://api.typesafe.ai/v1`. A trailing slash is removed. An assigned value wins over the variable. |
 | `Headers` | Sent with every request. Headers on the call win over them. |
 

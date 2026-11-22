@@ -6,6 +6,8 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json.Nodes;
 using Vercel.AI.Operations;
+using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.AmazonBedrock;
 
@@ -280,18 +282,54 @@ public sealed class AmazonBedrockSigV4Fetch
 /// </summary>
 public sealed class AmazonBedrockApiKeyFetch
 {
-    private readonly string _apiKey;
+    private readonly string? _apiKey;
+    private readonly Resolvable<string>? _resolvableApiKey;
 
-    /// <summary>Creates a wrapper for <paramref name="apiKey"/>.</summary>
+    /// <summary>Creates a wrapper for the static <paramref name="apiKey"/>.</summary>
     public AmazonBedrockApiKeyFetch(string apiKey)
     {
         _apiKey = apiKey ?? string.Empty;
     }
 
+    /// <summary>
+    /// Creates a wrapper for an API key that is resolved before each request and must resolve to a non-empty key.
+    /// </summary>
+    public AmazonBedrockApiKeyFetch(Resolvable<string> apiKey)
+    {
+        _resolvableApiKey = apiKey ?? throw new ArgumentNullException(nameof(apiKey));
+    }
+
     /// <summary>Optional transport. When unset, the prepared call is returned directly.</summary>
     public Func<AmazonBedrockPreparedCall, AmazonBedrockPreparedCall>? Transport { get; set; }
 
-    /// <summary>Applies the API key and user-agent, then invokes <see cref="Transport"/> if one is set.</summary>
+    /// <summary>
+    /// Resolves the API key, applies it and the user-agent, then invokes <see cref="Transport"/> if one is set.
+    /// A resolved key that is empty throws.
+    /// </summary>
+    public async Task<AmazonBedrockPreparedCall> SendAsync(
+        string url,
+        string? method,
+        string? body,
+        IReadOnlyDictionary<string, string?>? headers,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var apiKey = _apiKey;
+        if (_resolvableApiKey is not null)
+        {
+            apiKey = (
+                await _resolvableApiKey.ResolveAsync(cancellationToken).ConfigureAwait(false)
+            )?.Trim();
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                throw new AiSdkException("Amazon Bedrock API key must be a non-empty string.");
+            }
+        }
+
+        return Send(url, method, body, headers, apiKey!);
+    }
+
+    /// <summary>Applies the static API key and user-agent, then invokes <see cref="Transport"/> if one is set.</summary>
     public AmazonBedrockPreparedCall Send(
         string url,
         string? method,
@@ -299,7 +337,25 @@ public sealed class AmazonBedrockApiKeyFetch
         IReadOnlyDictionary<string, string?>? headers
     )
     {
-        var prepared = AmazonBedrockFetch.PrepareApiKey(_apiKey, url, method, body, headers);
+        if (_resolvableApiKey is not null)
+        {
+            throw new InvalidOperationException(
+                "Use SendAsync for an API key that is resolved per request."
+            );
+        }
+
+        return Send(url, method, body, headers, _apiKey!);
+    }
+
+    private AmazonBedrockPreparedCall Send(
+        string url,
+        string? method,
+        string? body,
+        IReadOnlyDictionary<string, string?>? headers,
+        string apiKey
+    )
+    {
+        var prepared = AmazonBedrockFetch.PrepareApiKey(apiKey, url, method, body, headers);
         var transport = Transport;
         return transport == null ? prepared : transport(prepared);
     }

@@ -94,10 +94,11 @@ public sealed class OpenAIRealtimeModel : IServerWebSocketRealtimeModel
             new OpenAIRealtimeModelConfig(
                 (provider ?? throw new ArgumentNullException(nameof(provider))).Name + ".realtime",
                 provider.Options.BaseUrl,
-                _ =>
-                    Task.FromResult<IReadOnlyDictionary<string, string?>>(
-                        provider.CreateOpenAIHeaders()
-                    )
+                async cancellationToken =>
+                    (IReadOnlyDictionary<string, string?>)
+                        await provider
+                            .CreateOpenAIHeadersAsync(null, cancellationToken)
+                            .ConfigureAwait(false)
             )
             {
                 Http = provider.Http,
@@ -280,9 +281,14 @@ public sealed class OpenAIRealtimeModel : IServerWebSocketRealtimeModel
     }
 
     /// <summary>Resolves the provider headers, dropping entries without a value. Maps to <c>removeUndefinedEntries(headers)</c>.</summary>
-    internal static Dictionary<string, string> ResolveHeaders(OpenAIProvider provider)
+    internal static async Task<Dictionary<string, string>> ResolveHeadersAsync(
+        OpenAIProvider provider,
+        CancellationToken cancellationToken
+    )
     {
-        return RemoveUndefinedEntries(provider.CreateOpenAIHeaders());
+        return RemoveUndefinedEntries(
+            await provider.CreateOpenAIHeadersAsync(null, cancellationToken).ConfigureAwait(false)
+        );
     }
 
     private static Dictionary<string, string> RemoveUndefinedEntries(

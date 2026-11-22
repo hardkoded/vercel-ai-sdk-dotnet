@@ -20,8 +20,8 @@ public class GoogleOptions
     /// <summary>API origin.</summary>
     public string BaseUrl { get; set; } = "https://generativelanguage.googleapis.com/v1beta";
 
-    /// <summary>Explicit key.</summary>
-    public string? ApiKey { get; set; }
+    /// <summary>Explicit key. A callback is resolved before each request and must return a non-empty key.</summary>
+    public Resolvable<string>? ApiKey { get; set; }
 
     /// <summary>Environment variable.</summary>
     public string ApiKeyEnvironmentVariable { get; set; } = "GOOGLE_GENERATIVE_AI_API_KEY";
@@ -270,7 +270,14 @@ public class GoogleProvider
         }
         else
         {
-            var key = ApiKeys.Require(Options.ApiKey, Options.ApiKeyEnvironmentVariable);
+            var key = await ApiKeys
+                .RequireAsync(
+                    Options.ApiKey,
+                    Options.ApiKeyEnvironmentVariable,
+                    null,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
             if (!ContainsKey(headers, "x-goog-api-key"))
             {
                 headers["x-goog-api-key"] = key;
@@ -283,7 +290,12 @@ public class GoogleProvider
     /// <summary>Token sent when <see cref="GoogleOptions.UseBearerToken"/> is set. Defaults to the API key.</summary>
     private protected virtual Task<string> BearerTokenAsync(CancellationToken cancellationToken)
     {
-        return Task.FromResult(ApiKeys.Require(Options.ApiKey, Options.ApiKeyEnvironmentVariable));
+        return ApiKeys.RequireAsync(
+            Options.ApiKey,
+            Options.ApiKeyEnvironmentVariable,
+            null,
+            cancellationToken
+        );
     }
 
     private static bool ContainsKey(Dictionary<string, string?> headers, string name)

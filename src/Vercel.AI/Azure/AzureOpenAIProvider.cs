@@ -26,8 +26,11 @@ public sealed class AzureOpenAIOptions
     /// </summary>
     public string? ResourceName { get; set; }
 
-    /// <summary>Explicit key. Falls back to <c>AZURE_API_KEY</c>.</summary>
-    public string? ApiKey { get; set; }
+    /// <summary>
+    /// Explicit key: a value, a task, or a synchronous or asynchronous callback that is resolved before each request.
+    /// Falls back to <c>AZURE_API_KEY</c>.
+    /// </summary>
+    public Resolvable<string>? ApiKey { get; set; }
 
     /// <summary>API version query parameter. Defaults to <c>v1</c>, also when set to null or empty.</summary>
     public string ApiVersion { get; set; } = "v1";
@@ -143,15 +146,18 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
     /// Headers for the Azure Speech API (<c>Ocp-Apim-Subscription-Key</c>) or the MAI API (<c>api-key</c>).
     /// With a token provider, no key header is added; callers add the bearer token. Maps to <c>getHeaders('speech' | 'mai')</c>.
     /// </summary>
-    internal Dictionary<string, string?> CreateHeaders(
+    internal async Task<Dictionary<string, string?>> CreateHeadersAsync(
         AzureApi api,
-        IReadOnlyDictionary<string, string?>? callHeaders = null
+        IReadOnlyDictionary<string, string?>? callHeaders = null,
+        CancellationToken cancellationToken = default
     )
     {
         var headers = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         if (_azure.TokenProvider == null)
         {
-            var key = ApiKeys.Require(_azure.ApiKey, "AZURE_API_KEY");
+            var key = await ApiKeys
+                .RequireAsync(_azure.ApiKey, "AZURE_API_KEY", null, cancellationToken)
+                .ConfigureAwait(false);
             headers[api == AzureApi.Speech ? "Ocp-Apim-Subscription-Key" : "api-key"] = key;
         }
 
@@ -215,7 +221,12 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
             throw new ArgumentNullException(nameof(serialized));
         }
 
-        var options = new AzureOpenAIOptions { ApiKey = apiKey };
+        var options = new AzureOpenAIOptions();
+        if (apiKey is not null)
+        {
+            options.ApiKey = apiKey;
+        }
+
         string? Text(string name) =>
             serialized.Config.TryGetValue(name, out var value) ? value as string : null;
         options.BaseUrl = Text("baseURL");
@@ -284,7 +295,7 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
     {
         options ??= new AzureOpenAIOptions();
         HttpMessageHandler? transport = handler;
-        if (options.TokenProvider != null && string.IsNullOrEmpty(options.ApiKey))
+        if (options.TokenProvider != null && options.ApiKey is null)
         {
             transport = new AzureEntraTokenHandler(
                 options.TokenProvider,
@@ -421,7 +432,7 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
                 deploymentId,
                 Http,
                 () => new Uri(SpeechBaseUrl() + "/tts/cognitiveservices/v1"),
-                () => CreateHeaders(AzureApi.Speech)
+                cancellationToken => CreateHeadersAsync(AzureApi.Speech, null, cancellationToken)
             )
         );
     }
@@ -454,14 +465,16 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
                         SpeechBaseUrl()
                             + "/speechtotext/transcriptions:transcribe?api-version=2025-10-15"
                     ),
-                callHeaders => CreateHeaders(AzureApi.Speech, callHeaders)
+                (callHeaders, cancellationToken) =>
+                    CreateHeadersAsync(AzureApi.Speech, callHeaders, cancellationToken)
             ),
             new AzureMaiTranscriptionModel(
                 deploymentId,
                 () => new Uri(MaiBaseUrl() + "/realtime?intent=transcription"),
-                () =>
+                async cancellationToken =>
                 {
-                    var headers = CreateHeaders(AzureApi.Mai);
+                    var headers = await CreateHeadersAsync(AzureApi.Mai, null, cancellationToken)
+                        .ConfigureAwait(false);
                     if (_azure.TokenProvider == null)
                     {
                         return headers;
@@ -498,7 +511,7 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
     )
     {
         options ??= new AzureOpenAIOptions();
-        if (!string.IsNullOrEmpty(options.ApiKey) && options.TokenProvider != null)
+        if (options.ApiKey is not null && options.TokenProvider != null)
         {
             throw new ArgumentException(
                 "Both apiKey and tokenProvider were provided. Please use only one authentication method."

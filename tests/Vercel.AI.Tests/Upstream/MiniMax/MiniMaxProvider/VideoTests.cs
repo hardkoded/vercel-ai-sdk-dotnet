@@ -69,12 +69,12 @@ public sealed class VideoTests
         "packages/minimax/src/minimax-provider.test.ts::MiniMaxProvider > video::should send a bearer token rather than the Anthropic x-api-key header",
         Coverage = UpstreamCoverage.Partial
     )]
-    public void Should_send_a_bearer_token_rather_than_the_Anthropic_x_api_key_header()
+    public async Task Should_send_a_bearer_token_rather_than_the_Anthropic_x_api_key_header()
     {
         var provider = Vercel.AI.MiniMax.MiniMaxProvider.Create(
             new MiniMaxOptions { ApiKey = "test-key" }
         );
-        var headers = provider.Video("MiniMax-H3").Config.Headers();
+        var headers = await provider.Video("MiniMax-H3").Config.Headers(CancellationToken.None);
 
         Assert.Equal("Bearer test-key", headers["authorization"]);
         Assert.Matches("^ai-sdk-minimax/", headers["user-agent"]);
@@ -88,12 +88,12 @@ public sealed class VideoTests
         "packages/minimax/src/minimax-provider.test.ts::MiniMaxProvider > video::should merge custom headers into the video headers",
         Coverage = UpstreamCoverage.Covered
     )]
-    public void Should_merge_custom_headers_into_the_video_headers()
+    public async Task Should_merge_custom_headers_into_the_video_headers()
     {
         var options = new MiniMaxOptions { ApiKey = "test-key" };
         options.Headers["Custom-Header"] = "value";
         var provider = Vercel.AI.MiniMax.MiniMaxProvider.Create(options);
-        var headers = provider.Video("MiniMax-H3").Config.Headers();
+        var headers = await provider.Video("MiniMax-H3").Config.Headers(CancellationToken.None);
 
         Assert.Equal("Bearer test-key", headers["authorization"]);
         Assert.Equal("value", headers["custom-header"]);

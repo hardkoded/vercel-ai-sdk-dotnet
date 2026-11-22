@@ -536,7 +536,10 @@ public sealed class XaiParityTests
         return new XaiFiles(
             new HttpClient(handler, disposeHandler: false),
             "https://api.x.ai/v1",
-            () => new Dictionary<string, string?> { ["Authorization"] = "Bearer test-key" }
+            _ =>
+                Task.FromResult<IReadOnlyDictionary<string, string?>>(
+                    new Dictionary<string, string?> { ["Authorization"] = "Bearer test-key" }
+                )
         );
     }
 

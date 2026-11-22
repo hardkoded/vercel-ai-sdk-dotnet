@@ -23,8 +23,8 @@ public sealed class AmazonBedrockAnthropicOptions
 
     private string? _region;
 
-    /// <summary>Bearer token. When set, SigV4 is not used. Falls back to <c>AWS_BEARER_TOKEN_BEDROCK</c>.</summary>
-    public string? ApiKey { get; set; }
+    /// <summary>Bearer token. When set, SigV4 is not used. Falls back to <c>AWS_BEARER_TOKEN_BEDROCK</c>. A callback is resolved before each request and must return a non-empty key.</summary>
+    public Resolvable<string>? ApiKey { get; set; }
 
     /// <summary>Access key. Falls back to <c>AWS_ACCESS_KEY_ID</c>.</summary>
     public string? AccessKeyId { get; set; }
@@ -376,8 +376,7 @@ public sealed class AmazonBedrockAnthropicLanguageModel : ILanguageModel
     {
         var baseUrl = _provider.ResolveBaseUrl();
         var options = _provider.Options;
-        var apiKey = options.ApiKey
-            ?? Environment.GetEnvironmentVariable("AWS_BEARER_TOKEN_BEDROCK");
+        var apiKey = AmazonBedrockSigningHandler.LoadApiKeySetting(options.ApiKey);
         var signing = new AmazonBedrockSigningHandler(
             new HttpClientMessageHandler(_provider.HttpClient),
             options.Region,

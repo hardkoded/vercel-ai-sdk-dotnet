@@ -58,7 +58,9 @@ public sealed class CohereLanguageModel : ILanguageModel
                 HttpMethod.Post,
                 ChatUri,
                 body.ToJsonString(),
-                _provider.Headers(options.Headers),
+                await _provider
+                    .HeadersAsync(options.Headers, cancellationToken)
+                    .ConfigureAwait(false),
                 cancellationToken
             )
             .ConfigureAwait(false);
@@ -169,7 +171,9 @@ public sealed class CohereLanguageModel : ILanguageModel
             .Http.OpenSseResponseAsync(
                 ChatUri,
                 json,
-                _provider.Headers(options.Headers),
+                await _provider
+                    .HeadersAsync(options.Headers, cancellationToken)
+                    .ConfigureAwait(false),
                 cancellationToken
             )
             .ConfigureAwait(false);
