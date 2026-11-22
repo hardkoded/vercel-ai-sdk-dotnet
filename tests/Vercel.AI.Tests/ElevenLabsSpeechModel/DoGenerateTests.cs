@@ -59,6 +59,34 @@ public sealed class DoGenerateTests
         Assert.Equal(2, body.RootElement.EnumerateObject().Count());
     }
 
+    [Theory]
+    [InlineData("wav", "wav_44100")]
+    [InlineData("wav_24000", "wav_24000")]
+    [UpstreamTest(
+        Prefix + "should map HTTP output format %s to %s",
+        Coverage = UpstreamCoverage.Partial,
+        Commit = "3e5a12334b64c987a86b9ce54e369e56a5f2f863"
+    )]
+    public async Task Should_map_HTTP_output_format(string outputFormat, string nativeFormat)
+    {
+        var audio = new byte[] { 1, 2, 3, 4 };
+        var handler = new ParityHandler(_ => ParityHandler.Bytes(audio, "audio/wav"));
+        var provider = ElevenLabsProvider.Create(
+            new OpenAICompatibleOptions { ApiKey = "test-api-key" },
+            handler
+        );
+        var model = (ElevenLabsProvider.ElevenLabsSpeechModel)
+            provider.SpeechModel("eleven_multilingual_v2");
+
+        var result = await model.GenerateAsync(
+            new ElevenLabsSpeechRequest("Hello, world!") { OutputFormat = outputFormat },
+            CancellationToken.None
+        );
+
+        Assert.Contains($"output_format={nativeFormat}", handler.Calls[0].Uri.Query);
+        Assert.Equal(audio, result.Audio);
+    }
+
     [Fact]
     [UpstreamTest(
         Prefix + "should surface the ElevenLabs error message and code",
