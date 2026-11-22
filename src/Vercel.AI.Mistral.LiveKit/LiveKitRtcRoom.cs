@@ -141,7 +141,16 @@ internal sealed class LiveKitRtcAudioElement(
         }
         finally
         {
-            pump.Dispose();
+            lock (_gate)
+            {
+                // A pump that ended on its own must not stay current, or play would never restart.
+                if (ReferenceEquals(_current, pump))
+                {
+                    _current = null;
+                }
+            }
+
+            pump.Stop();
         }
     }
 
@@ -164,12 +173,21 @@ internal sealed class LiveKitRtcAudioElement(
             }
         }
 
-        /// <summary>Cancels the pump and disposes its stream at once, without waiting for the callback.</summary>
+        /// <summary>
+        /// Cancels the pump and disposes its stream at once, without waiting for the callback. Safe to call more than
+        /// once and from any thread. The token source is never disposed: it has no timer or linked token, so there is
+        /// nothing to release, and disposing it would race with a concurrent <c>Cancel</c>.
+        /// </summary>
         public void Stop()
         {
             AudioStream? stream;
             lock (_gate)
             {
+                if (_stopped)
+                {
+                    return;
+                }
+
                 _stopped = true;
                 stream = _stream;
                 _stream = null;
@@ -177,12 +195,6 @@ internal sealed class LiveKitRtcAudioElement(
 
             Cancellation.Cancel();
             stream?.Dispose();
-        }
-
-        public void Dispose()
-        {
-            Stop();
-            Cancellation.Dispose();
         }
     }
 }
