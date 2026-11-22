@@ -200,11 +200,14 @@ public sealed class AnthropicLanguageModelClaudeOpus47SpecificBehaviorTests
         options.MaxOutputTokens = 4096;
         var (body, _, handler) = await Run(options, "claude-fable-5-1");
 
-        Assert.Equal(4096, body["max_tokens"]!.GetValue<int>());
-        Assert.Equal("claude-fable-5-1", body["model"]!.GetValue<string>());
-        Assert.Equal(
-            "{\"type\":\"adaptive\",\"block_binding\":{\"prefix_mismatch_behavior\":\"error\"}}",
-            body["thinking"]!.ToJsonString()
+        Assert.True(
+            JsonNode.DeepEquals(
+                JsonNode.Parse(
+                    "{\"max_tokens\":4096,\"messages\":[{\"content\":[{\"text\":\"Hello\",\"type\":\"text\"}],\"role\":\"user\"}],\"model\":\"claude-fable-5-1\",\"thinking\":{\"block_binding\":{\"prefix_mismatch_behavior\":\"error\"},\"type\":\"adaptive\"}}"
+                ),
+                body
+            ),
+            body.ToJsonString()
         );
         Assert.Contains("thinking-binding-controls-2026-08-01", handler.Headers["anthropic-beta"]);
     }

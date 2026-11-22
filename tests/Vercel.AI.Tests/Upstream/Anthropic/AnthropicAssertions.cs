@@ -1961,6 +1961,8 @@ internal static class AnthropicAssertions
         var options = AnthropicParity.Hello();
         options.Reasoning = "xhigh";
         var prepared = AnthropicParity.Prepare("claude-sonnet-4-6", options);
+        Assert.Equal("adaptive", prepared.Body["thinking"]!["type"]!.GetValue<string>());
+        Assert.Equal("summarized", prepared.Body["thinking"]!["display"]!.GetValue<string>());
         Assert.Equal("high", prepared.Body["output_config"]!["effort"]!.GetValue<string>());
         Assert.Contains(prepared.Warnings, warning =>
             warning.Type == "compatibility"
