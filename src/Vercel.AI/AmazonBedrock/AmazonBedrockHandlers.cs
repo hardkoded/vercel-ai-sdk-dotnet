@@ -9,6 +9,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.AmazonBedrock;
 
@@ -50,7 +51,7 @@ internal sealed class AmazonBedrockSigningHandler : DelegatingHandler
 {
     private readonly string _region;
     private readonly string _service;
-    private readonly string? _apiKey;
+    private readonly Resolvable<string>? _apiKey;
     private readonly string? _accessKeyId;
     private readonly string? _secretAccessKey;
     private readonly string? _sessionToken;
@@ -61,7 +62,7 @@ internal sealed class AmazonBedrockSigningHandler : DelegatingHandler
         HttpMessageHandler inner,
         string region,
         string service,
-        string? apiKey,
+        Resolvable<string>? apiKey,
         string? accessKeyId,
         string? secretAccessKey,
         string? sessionToken,
@@ -80,6 +81,41 @@ internal sealed class AmazonBedrockSigningHandler : DelegatingHandler
         _utcNow = utcNow;
     }
 
+    /// <summary>
+    /// Picks the <c>apiKey</c> setting: the explicit setting, else a non-blank <c>AWS_BEARER_TOKEN_BEDROCK</c>.
+    /// Maps to the <c>rawApiKey</c> selection in <c>createAmazonBedrock</c>.
+    /// </summary>
+    internal static Resolvable<string>? LoadApiKeySetting(Resolvable<string>? apiKey)
+    {
+        if (apiKey != null)
+        {
+            return apiKey;
+        }
+
+        var fromEnvironment = Environment.GetEnvironmentVariable("AWS_BEARER_TOKEN_BEDROCK");
+        return string.IsNullOrWhiteSpace(fromEnvironment)
+            ? null
+            : Resolvable<string>.From(fromEnvironment!.Trim());
+    }
+
+    /// <summary>
+    /// Resolves the API key for one request. A blank key selects SigV4. Maps to the per-request <c>resolve(apiKey)</c>
+    /// of <c>createApiKeyFetchFunction</c>.
+    /// </summary>
+    internal static async Task<string?> ResolveApiKeyAsync(
+        Resolvable<string>? apiKey,
+        CancellationToken cancellationToken
+    )
+    {
+        if (apiKey == null)
+        {
+            return null;
+        }
+
+        var resolved = await apiKey.ResolveAsync(cancellationToken).ConfigureAwait(false);
+        return string.IsNullOrWhiteSpace(resolved) ? null : resolved.Trim();
+    }
+
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
         CancellationToken cancellationToken
@@ -90,10 +126,11 @@ internal sealed class AmazonBedrockSigningHandler : DelegatingHandler
                 ? Array.Empty<byte>()
                 : await request.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
         request.Headers.Remove("Authorization");
+        var apiKey = await ResolveApiKeyAsync(_apiKey, cancellationToken).ConfigureAwait(false);
         var accessKeyId = _accessKeyId;
         var secretAccessKey = _secretAccessKey;
         var sessionToken = _sessionToken;
-        if (_credentialProvider != null && string.IsNullOrWhiteSpace(_apiKey))
+        if (_credentialProvider != null && apiKey == null)
         {
             // The region always comes from the options. The provider supplies only the keys.
             AmazonBedrockCredentials credentials;
@@ -121,7 +158,7 @@ internal sealed class AmazonBedrockSigningHandler : DelegatingHandler
             payload,
             _region,
             _service,
-            _apiKey,
+            apiKey,
             accessKeyId,
             secretAccessKey,
             sessionToken,
