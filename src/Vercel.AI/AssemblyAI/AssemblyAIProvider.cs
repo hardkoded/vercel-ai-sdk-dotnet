@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
+using Vercel.AI.Operations;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
@@ -218,6 +219,110 @@ public sealed class AssemblyAITranscriptionRequest
     public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; set; }
 }
 
+/// <summary>One AssemblyAI text-to-speech call.</summary>
+public sealed class AssemblyAISpeechRequest
+{
+    /// <summary>Creates a speech request.</summary>
+    public AssemblyAISpeechRequest(string text)
+    {
+        Text = text ?? throw new ArgumentNullException(nameof(text));
+    }
+
+    /// <summary>Text to speak.</summary>
+    public string Text { get; }
+
+    /// <summary>Voice id, sent as <c>voice_id</c>.</summary>
+    public string? Voice { get; set; }
+
+    /// <summary>Output format: <c>mp3</c> (default), <c>wav</c>, <c>pcm</c>, <c>mulaw</c>, or <c>alaw</c>.</summary>
+    public string? OutputFormat { get; set; }
+
+    /// <summary>Ignored. AssemblyAI does not accept instructions; a warning is returned.</summary>
+    public string? Instructions { get; set; }
+
+    /// <summary>Speaking rate. Only the default speed is supported; another value returns a warning.</summary>
+    public double? Speed { get; set; }
+
+    /// <summary>ISO 639-1 code (<c>de</c>, <c>en</c>, <c>es</c>, <c>fr</c>, <c>it</c>, <c>pt</c>) or the full language name.</summary>
+    public string? Language { get; set; }
+
+    /// <summary>Provider options. The <c>assemblyai</c> object is read: <c>encoding</c>, <c>container</c>, <c>sampleRate</c>, <c>bitRate</c>.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; set; }
+
+    /// <summary>Headers merged over the provider headers for this call.</summary>
+    public IDictionary<string, string>? Headers { get; set; }
+}
+
+/// <summary>Metadata returned with synthesized AssemblyAI speech.</summary>
+public sealed class AssemblyAISpeechResponse
+{
+    /// <summary>Creates response metadata.</summary>
+    public AssemblyAISpeechResponse(
+        DateTimeOffset timestamp,
+        string modelId,
+        IReadOnlyDictionary<string, string> headers
+    )
+    {
+        Timestamp = timestamp;
+        ModelId = modelId ?? string.Empty;
+        Headers = headers ?? new Dictionary<string, string>();
+    }
+
+    /// <summary>Timestamp captured when the call started.</summary>
+    public DateTimeOffset Timestamp { get; }
+
+    /// <summary>Model id.</summary>
+    public string ModelId { get; }
+
+    /// <summary>Response headers.</summary>
+    public IReadOnlyDictionary<string, string> Headers { get; }
+}
+
+/// <summary>Synthesized AssemblyAI audio.</summary>
+public sealed class AssemblyAISpeechResult
+{
+    /// <summary>Creates a speech result.</summary>
+    public AssemblyAISpeechResult(
+        byte[] audio,
+        string mediaType,
+        IReadOnlyList<ModelWarning> warnings,
+        string requestBody,
+        AudioUsage? usage,
+        JsonElement? providerMetadata,
+        AssemblyAISpeechResponse response
+    )
+    {
+        Audio = audio ?? Array.Empty<byte>();
+        MediaType = mediaType ?? "audio/mpeg";
+        Warnings = warnings ?? Array.Empty<ModelWarning>();
+        RequestBody = requestBody ?? string.Empty;
+        Usage = usage;
+        ProviderMetadata = providerMetadata;
+        Response = response;
+    }
+
+    /// <summary>Audio bytes.</summary>
+    public byte[] Audio { get; }
+
+    /// <summary>Response media type.</summary>
+    public string MediaType { get; }
+
+    /// <summary>Warnings for ignored settings.</summary>
+    public IReadOnlyList<ModelWarning> Warnings { get; }
+
+    /// <summary>JSON request body.</summary>
+    public string RequestBody { get; }
+
+    /// <summary>Billed characters, when the response reports them.</summary>
+    public AudioUsage? Usage { get; }
+
+    /// <summary>Response details under <c>assemblyai</c>: request id, model, voice, language, encoding, sample rate, duration, billed characters.</summary>
+    public JsonElement? ProviderMetadata { get; }
+
+    /// <summary>Response metadata.</summary>
+    public AssemblyAISpeechResponse Response { get; }
+}
+
 /// <summary>One transcribed word.</summary>
 public sealed class AssemblyAITranscriptionSegment
 {
@@ -326,6 +431,9 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
     /// <summary>Default API origin.</summary>
     public const string DefaultBaseUrl = "https://api.assemblyai.com";
 
+    /// <summary>Default text-to-speech API origin.</summary>
+    public const string DefaultSpeechBaseUrl = "https://tts.us.assemblyai.com";
+
     private readonly HttpClient _httpClient;
 
     /// <summary>Creates a provider.</summary>
@@ -373,9 +481,420 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
     public override ITranscriptionModel TranscriptionModel(string modelId) =>
         Transcription(modelId);
 
+    private static JsonElement? AssemblyAIObject(
+        IReadOnlyDictionary<string, JsonElement>? providerOptions
+    )
+    {
+        return
+            providerOptions != null
+            && providerOptions.TryGetValue(ProviderId, out var value)
+            && value.ValueKind == JsonValueKind.Object
+            ? value
+            : null;
+    }
+
+    /// <inheritdoc />
+    public override ISpeechModel SpeechModel(string modelId) => Speech(modelId);
+
+    /// <summary>Creates the typed speech model.</summary>
+    public AssemblyAISpeechModel Speech(string modelId) => new AssemblyAISpeechModel(this, modelId);
+
     /// <summary>Creates the typed transcription model.</summary>
     public AssemblyAITranscriptionModel Transcription(string modelId) =>
         new AssemblyAITranscriptionModel(this, modelId);
+
+    /// <summary>AssemblyAI text-to-speech model. Requests are buffered, not streamed.</summary>
+    public sealed class AssemblyAISpeechModel : ISpeechModel
+    {
+        private static readonly Dictionary<
+            string,
+            (string Encoding, string? Container, int? SampleRate)
+        > OutputFormats = new(StringComparer.Ordinal)
+        {
+            ["alaw"] = ("pcm_alaw", "raw", 8000),
+            ["mp3"] = ("mp3", null, null),
+            ["mulaw"] = ("pcm_mulaw", "raw", 8000),
+            ["pcm"] = ("pcm_s16le", "raw", null),
+            ["wav"] = ("pcm_s16le", "wav", null),
+        };
+
+        // The API names languages in full, so ISO 639-1 codes are translated.
+        private static readonly Dictionary<string, string> Languages = new(StringComparer.Ordinal)
+        {
+            ["de"] = "german",
+            ["en"] = "english",
+            ["es"] = "spanish",
+            ["fr"] = "french",
+            ["it"] = "italian",
+            ["pt"] = "portuguese",
+        };
+
+        private static readonly string[] Encodings = { "pcm_s16le", "pcm_mulaw", "pcm_alaw", "mp3" };
+        private static readonly string[] Containers = { "raw", "wav" };
+        private static readonly int[] SampleRates = { 8000, 16000, 22050, 24000, 44100, 48000 };
+        private static readonly int[] BitRates = { 32000, 48000, 64000, 96000, 128000 };
+
+        private readonly AssemblyAIProvider _provider;
+
+        /// <summary>Creates a speech model.</summary>
+        public AssemblyAISpeechModel(AssemblyAIProvider provider, string modelId)
+        {
+            _provider = provider ?? throw new ArgumentNullException(nameof(provider));
+            ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
+        }
+
+        /// <inheritdoc />
+        public string Provider => "assemblyai.speech";
+
+        /// <inheritdoc />
+        public string ModelId { get; }
+
+        /// <inheritdoc />
+        public async Task<SpeechResult> DoGenerateAsync(
+            SpeechCallOptions options,
+            CancellationToken cancellationToken
+        )
+        {
+            options = options ?? throw new ArgumentNullException(nameof(options));
+            var result = await GenerateAsync(
+                    new AssemblyAISpeechRequest(options.Text)
+                    {
+                        Voice = options.Voice,
+                        OutputFormat = options.OutputFormat,
+                        Instructions = options.Instructions,
+                        Speed = options.Speed,
+                        Language = options.Language,
+                        ProviderOptions = options.ProviderOptions,
+                        Headers = options.Headers is null
+                            ? null
+                            : options
+                                .Headers.Where(pair => pair.Value != null)
+                                .ToDictionary(pair => pair.Key, pair => pair.Value!),
+                    },
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
+            return new SpeechResult(result.Audio, result.MediaType, result.Usage);
+        }
+
+        /// <summary>Synthesizes speech and returns the audio with warnings, usage, and response metadata.</summary>
+        public async Task<AssemblyAISpeechResult> GenerateAsync(
+            AssemblyAISpeechRequest request,
+            CancellationToken cancellationToken
+        )
+        {
+            request = request ?? throw new ArgumentNullException(nameof(request));
+            var options = _provider.Options as AssemblyAIOptions;
+            var timestamp = options?.Clock != null ? options.Clock() : DateTimeOffset.UtcNow;
+            var (body, warnings) = Args(request);
+            var json = body.ToJsonString();
+            var uri = ApiKeys.Combine(DefaultSpeechBaseUrl, "/v1/speech");
+            ProviderExchangeResult response;
+            try
+            {
+                response = await ProviderExchange
+                    .SendAsync(
+                        _provider._httpClient,
+                        HttpMethod.Post,
+                        uri,
+                        ProviderExchange.Json(json),
+                        ProviderExchange.Merge(_provider.CreateHeaders(), request.Headers),
+                        cancellationToken
+                    )
+                    .ConfigureAwait(false);
+            }
+            catch (ApiException exception)
+                when (AssemblyAIError.Parse(exception.ResponseBody).Success)
+            {
+                throw AssemblyAIFailedResponseHandler.Handle(
+                    exception.ResponseBody!,
+                    exception.StatusCode,
+                    uri.ToString(),
+                    body,
+                    exception.ResponseHeaders
+                );
+            }
+
+            var mediaType = "audio/mpeg";
+            if (
+                response.Headers.TryGetValue("Content-Type", out var contentType)
+                && contentType.StartsWith("audio/", StringComparison.OrdinalIgnoreCase)
+            )
+            {
+                var separator = contentType.IndexOf(';');
+                mediaType = (
+                    separator >= 0 ? contentType.Substring(0, separator) : contentType
+                ).Trim();
+            }
+
+            var billedCharacters = HeaderNumber(response.Headers, "x-tts-billed-characters");
+            var audioDurationMs = HeaderNumber(response.Headers, "x-tts-audio-duration-ms");
+            var sampleRate = HeaderNumber(response.Headers, "x-tts-sample-rate");
+            var metadata = new JsonObject();
+            AddHeader(metadata, "requestId", response.Headers, "x-request-id");
+            AddHeader(metadata, "model", response.Headers, "x-tts-model");
+            AddHeader(metadata, "voiceId", response.Headers, "x-tts-voice-id");
+            AddHeader(metadata, "language", response.Headers, "x-tts-language");
+            AddHeader(metadata, "encoding", response.Headers, "x-tts-encoding");
+            if (sampleRate != null)
+            {
+                metadata["sampleRate"] = sampleRate;
+            }
+
+            if (audioDurationMs != null)
+            {
+                metadata["audioDurationMs"] = audioDurationMs;
+            }
+
+            if (billedCharacters != null)
+            {
+                metadata["billedCharacters"] = billedCharacters;
+            }
+
+            JsonElement providerMetadata;
+            using (
+                var document = JsonDocument.Parse(
+                    new JsonObject { [ProviderId] = metadata }.ToJsonString()
+                )
+            )
+            {
+                providerMetadata = document.RootElement.Clone();
+            }
+
+            return new AssemblyAISpeechResult(
+                response.Bytes,
+                mediaType,
+                warnings,
+                json,
+                billedCharacters is { } characters
+                    ? new AudioUsage(characters: (int)Math.Min(characters, int.MaxValue))
+                    : null,
+                providerMetadata,
+                new AssemblyAISpeechResponse(timestamp, ModelId, response.Headers)
+            );
+        }
+
+        private static double? HeaderNumber(IReadOnlyDictionary<string, string> headers, string name)
+        {
+            foreach (var header in headers)
+            {
+                if (string.Equals(header.Key, name, StringComparison.OrdinalIgnoreCase))
+                {
+                    return double.TryParse(
+                        header.Value,
+                        System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture,
+                        out var parsed
+                    )
+                        ? parsed
+                        : null;
+                }
+            }
+
+            return null;
+        }
+
+        private static void AddHeader(
+            JsonObject target,
+            string name,
+            IReadOnlyDictionary<string, string> headers,
+            string header
+        )
+        {
+            foreach (var pair in headers)
+            {
+                if (
+                    string.Equals(pair.Key, header, StringComparison.OrdinalIgnoreCase)
+                    && pair.Value.Length > 0
+                )
+                {
+                    target[name] = pair.Value;
+                    return;
+                }
+            }
+        }
+
+        private static string? OptionString(JsonElement? options, string name, string[] allowed)
+        {
+            if (
+                options is { } source
+                && source.TryGetProperty(name, out var value)
+                && value.ValueKind != JsonValueKind.Null
+            )
+            {
+                var text = value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+                if (text == null || Array.IndexOf(allowed, text) < 0)
+                {
+                    throw new InvalidArgumentException(
+                        "providerOptions.assemblyai." + name,
+                        value.ToString(),
+                        "Expected one of: " + string.Join(", ", allowed) + "."
+                    );
+                }
+
+                return text;
+            }
+
+            return null;
+        }
+
+        private static int? OptionNumber(JsonElement? options, string name, int[] allowed)
+        {
+            if (
+                options is { } source
+                && source.TryGetProperty(name, out var value)
+                && value.ValueKind != JsonValueKind.Null
+            )
+            {
+                if (
+                    value.ValueKind != JsonValueKind.Number
+                    || !value.TryGetInt32(out var number)
+                    || Array.IndexOf(allowed, number) < 0
+                )
+                {
+                    throw new InvalidArgumentException(
+                        "providerOptions.assemblyai." + name,
+                        value.ToString(),
+                        "Expected one of: " + string.Join(", ", allowed) + "."
+                    );
+                }
+
+                return number;
+            }
+
+            return null;
+        }
+
+        private (JsonObject Body, List<ModelWarning> Warnings) Args(AssemblyAISpeechRequest request)
+        {
+            var warnings = new List<ModelWarning>();
+            var assemblyai = AssemblyAIObject(request.ProviderOptions);
+            var outputFormat = request.OutputFormat ?? "mp3";
+            if (!OutputFormats.TryGetValue(outputFormat.ToLowerInvariant(), out var format))
+            {
+                warnings.Add(
+                    new UnsupportedWarning(
+                        "outputFormat",
+                        "Unknown output format \""
+                            + outputFormat
+                            + "\". Falling back to mp3. Use providerOptions.assemblyai to configure encoding, container, and sampleRate directly."
+                    )
+                );
+                format = OutputFormats["mp3"];
+            }
+
+            var encoding = OptionString(assemblyai, "encoding", Encodings) ?? format.Encoding;
+            // Container and sample rate implied by outputFormat only apply to the encoding they were derived for.
+            var formatApplies = encoding == format.Encoding;
+            var body = new JsonObject
+            {
+                ["text"] = request.Text,
+                ["model_id"] = ModelId,
+                ["encoding"] = encoding,
+                // Buffered responses report the final billed character count and are never cut mid-body.
+                ["stream"] = false,
+            };
+            if (!string.IsNullOrEmpty(request.Voice))
+            {
+                body["voice_id"] = request.Voice;
+            }
+
+            var container =
+                OptionString(assemblyai, "container", Containers)
+                ?? (formatApplies ? format.Container : null);
+            if (container != null)
+            {
+                if (encoding == "mp3")
+                {
+                    warnings.Add(
+                        new UnsupportedWarning(
+                            "providerOptions.assemblyai.container",
+                            "AssemblyAI MP3 output has no container. The container option was ignored."
+                        )
+                    );
+                }
+                else
+                {
+                    body["container"] = container;
+                }
+            }
+
+            var sampleRate =
+                OptionNumber(assemblyai, "sampleRate", SampleRates)
+                ?? (formatApplies ? format.SampleRate : null);
+            if (sampleRate != null)
+            {
+                body["sample_rate"] = sampleRate;
+            }
+
+            if (OptionNumber(assemblyai, "bitRate", BitRates) is { } bitRate)
+            {
+                if (encoding == "mp3")
+                {
+                    body["bit_rate"] = bitRate;
+                }
+                else
+                {
+                    warnings.Add(
+                        new UnsupportedWarning(
+                            "providerOptions.assemblyai.bitRate",
+                            "AssemblyAI only accepts a bit rate for MP3 output. The bitRate option was ignored."
+                        )
+                    );
+                }
+            }
+
+            if (!string.IsNullOrEmpty(request.Language))
+            {
+                var normalized = request.Language!.ToLowerInvariant();
+                if (Languages.TryGetValue(normalized, out var mapped))
+                {
+                    body["language"] = mapped;
+                }
+                else if (Languages.ContainsValue(normalized))
+                {
+                    body["language"] = normalized;
+                }
+                else
+                {
+                    warnings.Add(
+                        new UnsupportedWarning(
+                            "language",
+                            normalized == "auto"
+                                ? "AssemblyAI text-to-speech does not detect the language. The voice speaks its own language."
+                                : "AssemblyAI text-to-speech does not support language \""
+                                    + request.Language
+                                    + "\" (supported: "
+                                    + string.Join(", ", Languages.Keys)
+                                    + "). The language option was ignored."
+                        )
+                    );
+                }
+            }
+
+            if (request.Speed is { } speed && speed != 1)
+            {
+                warnings.Add(
+                    new UnsupportedWarning(
+                        "speed",
+                        "AssemblyAI text-to-speech only supports the default speed. The speed option was ignored."
+                    )
+                );
+            }
+
+            if (!string.IsNullOrEmpty(request.Instructions))
+            {
+                warnings.Add(
+                    new UnsupportedWarning(
+                        "instructions",
+                        "AssemblyAI text-to-speech does not support instructions. Instructions parameter was ignored."
+                    )
+                );
+            }
+
+            return (body, warnings);
+        }
+    }
 
     /// <summary>Uploads audio, submits a transcript, and polls until it completes.</summary>
     public sealed class AssemblyAITranscriptionModel : ITranscriptionModel
@@ -684,39 +1203,26 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
         {
             var body = new JsonObject();
 
-            // The legacy best model uses the singular speech_model field; every other model goes in speech_models.
-            if (ModelId == "best")
+            // Every model id, including ones AssemblyAI no longer accepts, goes in speech_models unchanged.
+            body["speech_models"] = new JsonArray(ModelId);
+            if (ModelId == "universal-3-5-pro")
             {
-                body["speech_model"] = ModelId;
                 warnings.Add(
                     new DeprecatedWarning(
-                        "model 'best'",
-                        "The 'best' model is a legacy AssemblyAI model. Use 'universal-3-5-pro' instead. See documentation: "
+                        "model 'universal-3-5-pro'",
+                        "AssemblyAI has deprecated 'universal-3-5-pro'. Use 'assemblyai-stt-3-7' instead. See documentation: "
                             + SpeechModelDocs
                     )
                 );
             }
-            else
+            else if (ModelId == "universal-2")
             {
-                body["speech_models"] = new JsonArray(ModelId);
-                if (ModelId == "universal-3-pro")
-                {
-                    warnings.Add(
-                        new OtherWarning(
-                            "'universal-3-5-pro' is AssemblyAI's latest flagship model and is set to replace 'universal-3-pro'. See "
-                                + SpeechModelDocs
-                        )
-                    );
-                }
-                else if (ModelId == "universal-2")
-                {
-                    warnings.Add(
-                        new OtherWarning(
-                            "'universal-3-5-pro' is AssemblyAI's latest flagship model. See "
-                                + SpeechModelDocs
-                        )
-                    );
-                }
+                warnings.Add(
+                    new OtherWarning(
+                        "'assemblyai-stt-3-7' is AssemblyAI's latest flagship model; 'universal-2' remains available for languages it does not support. See "
+                            + SpeechModelDocs
+                    )
+                );
             }
 
             if (assemblyai == null)
@@ -768,7 +1274,7 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
                 warnings.Add(
                     new DeprecatedWarning(
                         string.Join(", ", deprecatedBoost),
-                        "'wordBoost' and 'boostParam' are deprecated and are rejected by 'universal-3-pro' / 'universal-3-5-pro' and 'slam-1'. Use 'keytermsPrompt' instead."
+                        "'wordBoost' and 'boostParam' are deprecated and are rejected by 'assemblyai-stt-3-7' and 'universal-3-5-pro'. Use 'keytermsPrompt' instead."
                     )
                 );
             }
@@ -835,18 +1341,6 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
             {
                 return document.RootElement.Clone();
             }
-        }
-
-        private static JsonElement? AssemblyAIObject(
-            IReadOnlyDictionary<string, JsonElement>? providerOptions
-        )
-        {
-            return
-                providerOptions != null
-                && providerOptions.TryGetValue(ProviderId, out var value)
-                && value.ValueKind == JsonValueKind.Object
-                ? value
-                : null;
         }
 
         private static bool Present(JsonElement element, string name, out JsonElement value)

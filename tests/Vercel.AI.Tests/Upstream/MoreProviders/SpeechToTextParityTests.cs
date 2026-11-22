@@ -39,49 +39,22 @@ public sealed class SpeechToTextParityTests
 
     [Fact]
     [UpstreamTest(
-        AssemblyAIModelTest + "should pass the legacy model via the speech_model parameter",
-        Coverage = UpstreamCoverage.Covered
-    )]
-    public async Task AssemblyAI_sends_best_as_speech_model_with_a_deprecation()
-    {
-        var handler = AssemblyAIHandler();
-        var result = await AssemblyAI(handler)
-            .Transcription("best")
-            .TranscribeAsync(Audio(), null, CancellationToken.None);
-        var body = AssemblyAISubmitBody(handler);
-        Assert.Equal(
-            "https://storage.assemblyai.com/mock-upload-url",
-            body.GetProperty("audio_url").GetString()
-        );
-        Assert.Equal("best", body.GetProperty("speech_model").GetString());
-        Assert.False(body.TryGetProperty("speech_models", out _));
-        var deprecation = Assert.IsType<DeprecatedWarning>(Assert.Single(result.Warnings));
-        Assert.Equal("model 'best'", deprecation.Setting);
-        Assert.Contains("universal-3-5-pro", deprecation.Message, StringComparison.Ordinal);
-        Assert.Contains(
-            "https://www.assemblyai.com/docs/pre-recorded-audio/select-the-speech-model",
-            deprecation.Message,
-            StringComparison.Ordinal
-        );
-    }
-
-    [Fact]
-    [UpstreamTest(
         AssemblyAIModelTest + "should pass newer models via the speech_models parameter",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "e6ad3867b8bfa5efcabe2cf0e737385c726d8fea"
     )]
     public async Task AssemblyAI_sends_newer_models_in_speech_models()
     {
         var handler = AssemblyAIHandler();
         var result = await AssemblyAI(handler)
-            .Transcription("universal-3-5-pro")
+            .Transcription("assemblyai-stt-3-7")
             .TranscribeAsync(Audio(), null, CancellationToken.None);
         var body = AssemblyAISubmitBody(handler);
         Assert.Equal(
             "https://storage.assemblyai.com/mock-upload-url",
             body.GetProperty("audio_url").GetString()
         );
-        Assert.Equal("[\"universal-3-5-pro\"]", body.GetProperty("speech_models").GetRawText());
+        Assert.Equal("[\"assemblyai-stt-3-7\"]", body.GetProperty("speech_models").GetRawText());
         Assert.False(body.TryGetProperty("speech_model", out _));
         Assert.Empty(result.Warnings);
     }
@@ -89,53 +62,66 @@ public sealed class SpeechToTextParityTests
     [Fact]
     [UpstreamTest(
         AssemblyAIModelTest
-            + "should route universal-3-pro via speech_models and nudge to universal-3-5-pro",
-        Coverage = UpstreamCoverage.Covered
+            + "should route deprecated universal-3-5-pro via speech_models with a deprecation warning",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "e6ad3867b8bfa5efcabe2cf0e737385c726d8fea"
     )]
-    public async Task AssemblyAI_nudges_universal_3_pro_toward_its_replacement()
+    public async Task AssemblyAI_routes_deprecated_universal_3_5_pro_via_speech_models_with_a_deprecation_warning()
     {
         var handler = AssemblyAIHandler();
         var result = await AssemblyAI(handler)
-            .Transcription("universal-3-pro")
+            .Transcription("universal-3-5-pro")
             .TranscribeAsync(Audio(), null, CancellationToken.None);
         var body = AssemblyAISubmitBody(handler);
-        Assert.Equal("[\"universal-3-pro\"]", body.GetProperty("speech_models").GetRawText());
+        Assert.Equal("[\"universal-3-5-pro\"]", body.GetProperty("speech_models").GetRawText());
         Assert.False(body.TryGetProperty("speech_model", out _));
-        var nudge = result.Warnings.OfType<OtherWarning>().First();
-        Assert.Contains("universal-3-5-pro", nudge.Message, StringComparison.Ordinal);
-        Assert.Contains("replace 'universal-3-pro'", nudge.Message, StringComparison.Ordinal);
+        var warning = Assert.IsType<DeprecatedWarning>(Assert.Single(result.Warnings));
+        Assert.Equal("model 'universal-3-5-pro'", warning.Setting);
+        Assert.Equal(
+            "AssemblyAI has deprecated 'universal-3-5-pro'. Use 'assemblyai-stt-3-7' instead. See documentation: https://www.assemblyai.com/docs/pre-recorded-audio/select-the-speech-model",
+            warning.Message
+        );
     }
 
     [Fact]
     [UpstreamTest(
-        AssemblyAIModelTest + "should nudge universal-2 users toward universal-3-5-pro",
-        Coverage = UpstreamCoverage.Covered
+        AssemblyAIModelTest
+            + "should nudge universal-2 users toward assemblyai-stt-3-7 without deprecating it",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "e6ad3867b8bfa5efcabe2cf0e737385c726d8fea"
     )]
-    public async Task AssemblyAI_nudges_universal_2_without_claiming_a_replacement()
+    public async Task AssemblyAI_nudges_universal_2_users_toward_assemblyai_stt_3_7_without_deprecating_it()
     {
         var result = await AssemblyAI(AssemblyAIHandler())
             .Transcription("universal-2")
             .TranscribeAsync(Audio(), null, CancellationToken.None);
-        var nudge = result.Warnings.OfType<OtherWarning>().First();
-        Assert.Contains("universal-3-5-pro", nudge.Message, StringComparison.Ordinal);
-        Assert.DoesNotContain("replace 'universal-3-pro'", nudge.Message, StringComparison.Ordinal);
+        var warning = Assert.IsType<OtherWarning>(Assert.Single(result.Warnings));
+        Assert.Equal(
+            "'assemblyai-stt-3-7' is AssemblyAI's latest flagship model; 'universal-2' remains available for languages it does not support. See https://www.assemblyai.com/docs/pre-recorded-audio/select-the-speech-model",
+            warning.Message
+        );
     }
 
-    [Fact]
+    [Theory]
+    [InlineData("best")]
+    [InlineData("slam-1")]
+    [InlineData("nano")]
+    [InlineData("universal-3-pro")]
     [UpstreamTest(
-        AssemblyAIModelTest + "should not special-case the removed nano model",
-        Coverage = UpstreamCoverage.Covered
+        AssemblyAIModelTest + "should not special-case the removed %s model",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "e6ad3867b8bfa5efcabe2cf0e737385c726d8fea"
     )]
-    public async Task AssemblyAI_sends_nano_in_speech_models_without_a_deprecation()
+    public async Task AssemblyAI_should_not_special_case_the_removed_model(string modelId)
     {
         var handler = AssemblyAIHandler();
         var result = await AssemblyAI(handler)
-            .Transcription("nano")
+            .Transcription(modelId)
             .TranscribeAsync(Audio(), null, CancellationToken.None);
         var body = AssemblyAISubmitBody(handler);
-        Assert.Equal("[\"nano\"]", body.GetProperty("speech_models").GetRawText());
+        Assert.Equal("[\"" + modelId + "\"]", body.GetProperty("speech_models").GetRawText());
         Assert.False(body.TryGetProperty("speech_model", out _));
-        Assert.Empty(result.Warnings.OfType<DeprecatedWarning>());
+        Assert.Empty(result.Warnings);
     }
 
     [Fact]
@@ -147,14 +133,14 @@ public sealed class SpeechToTextParityTests
     {
         var handler = AssemblyAIHandler();
         await AssemblyAI(handler)
-            .Transcription("universal-3-5-pro")
+            .Transcription("assemblyai-stt-3-7")
             .TranscribeAsync(
                 Audio(),
                 AssemblyAIRequest("{\"languageDetection\":true,\"punctuate\":false}"),
                 CancellationToken.None
             );
         var body = AssemblyAISubmitBody(handler);
-        Assert.Equal("[\"universal-3-5-pro\"]", body.GetProperty("speech_models").GetRawText());
+        Assert.Equal("[\"assemblyai-stt-3-7\"]", body.GetProperty("speech_models").GetRawText());
         Assert.True(body.GetProperty("language_detection").GetBoolean());
         Assert.False(body.GetProperty("punctuate").GetBoolean());
     }
@@ -168,7 +154,7 @@ public sealed class SpeechToTextParityTests
     public async Task AssemblyAI_returns_diarization_and_audio_intelligence_metadata()
     {
         var result = await AssemblyAI(AssemblyAIHandler())
-            .Transcription("universal-3-5-pro")
+            .Transcription("assemblyai-stt-3-7")
             .TranscribeAsync(Audio(), null, CancellationToken.None);
         Assert.NotNull(result.ProviderMetadata);
         var metadata = result.ProviderMetadata!.Value.GetProperty("assemblyai");
@@ -194,7 +180,7 @@ public sealed class SpeechToTextParityTests
     public async Task AssemblyAI_keeps_the_raw_transcript_as_the_response_body()
     {
         var result = await AssemblyAI(AssemblyAIHandler())
-            .Transcription("universal-3-5-pro")
+            .Transcription("assemblyai-stt-3-7")
             .TranscribeAsync(Audio(), null, CancellationToken.None);
         using var body = JsonDocument.Parse(result.Response.Body);
         Assert.Equal(
@@ -207,19 +193,19 @@ public sealed class SpeechToTextParityTests
 
     [Fact]
     [UpstreamTest(
-        AssemblyAIModelTest + "should pass the Universal-3-Pro input params",
+        AssemblyAIModelTest + "should pass the prompted-model input params",
         Coverage = UpstreamCoverage.Covered
     )]
-    public async Task AssemblyAI_sends_the_universal_3_pro_input_params()
+    public async Task AssemblyAI_sends_the_prompted_model_input_params()
     {
         var handler = AssemblyAIHandler();
         var options =
             "{\"prompt\":\"This is a conversation about the AI SDK.\",\"keytermsPrompt\":[\"Vercel\",\"AI SDK\"],\"temperature\":0.2,\"removeAudioTags\":\"speaker\",\"domain\":\"medical-v1\"}";
         await AssemblyAI(handler)
-            .Transcription("universal-3-5-pro")
+            .Transcription("assemblyai-stt-3-7")
             .TranscribeAsync(Audio(), AssemblyAIRequest(options), CancellationToken.None);
         var body = AssemblyAISubmitBody(handler);
-        Assert.Equal("[\"universal-3-5-pro\"]", body.GetProperty("speech_models").GetRawText());
+        Assert.Equal("[\"assemblyai-stt-3-7\"]", body.GetProperty("speech_models").GetRawText());
         Assert.Equal(
             "This is a conversation about the AI SDK.",
             body.GetProperty("prompt").GetString()
@@ -246,7 +232,7 @@ public sealed class SpeechToTextParityTests
             + "\"redactPiiReturnUnredacted\":true,"
             + "\"redactStaticEntities\":{\"INTERNAL_TOOL\":[\"Bearclaw\"]}}";
         await AssemblyAI(handler)
-            .Transcription("universal-3-5-pro")
+            .Transcription("assemblyai-stt-3-7")
             .TranscribeAsync(Audio(), AssemblyAIRequest(options), CancellationToken.None);
         var body = AssemblyAISubmitBody(handler);
         Assert.Equal(
@@ -276,7 +262,7 @@ public sealed class SpeechToTextParityTests
     public async Task AssemblyAI_deprecates_word_boost_and_boost_param()
     {
         var result = await AssemblyAI(AssemblyAIHandler())
-            .Transcription("universal-3-5-pro")
+            .Transcription("assemblyai-stt-3-7")
             .TranscribeAsync(
                 Audio(),
                 AssemblyAIRequest("{\"wordBoost\":[\"Vercel\"],\"boostParam\":\"high\"}"),
@@ -296,7 +282,7 @@ public sealed class SpeechToTextParityTests
     public async Task AssemblyAI_deprecates_boost_param_alone()
     {
         var result = await AssemblyAI(AssemblyAIHandler())
-            .Transcription("universal-3-5-pro")
+            .Transcription("assemblyai-stt-3-7")
             .TranscribeAsync(
                 Audio(),
                 AssemblyAIRequest("{\"boostParam\":\"high\"}"),
@@ -316,7 +302,7 @@ public sealed class SpeechToTextParityTests
     public async Task AssemblyAI_warns_when_redaction_options_lack_redact_pii()
     {
         var result = await AssemblyAI(AssemblyAIHandler())
-            .Transcription("universal-3-5-pro")
+            .Transcription("assemblyai-stt-3-7")
             .TranscribeAsync(
                 Audio(),
                 AssemblyAIRequest("{\"redactStaticEntities\":{\"TOOL\":[\"Vercel\"]}}"),
@@ -338,7 +324,7 @@ public sealed class SpeechToTextParityTests
         var options =
             "{\"redactPii\":true,\"redactPiiAudioOptions\":{\"overrideAudioRedactionMethod\":\"silence\"}}";
         var result = await AssemblyAI(AssemblyAIHandler())
-            .Transcription("universal-3-5-pro")
+            .Transcription("assemblyai-stt-3-7")
             .TranscribeAsync(Audio(), AssemblyAIRequest(options), CancellationToken.None);
         Assert.Contains(result.Warnings.OfType<OtherWarning>(), warning =>
             warning.Message.Contains("redactPiiAudio", StringComparison.Ordinal)
@@ -353,7 +339,7 @@ public sealed class SpeechToTextParityTests
     public async Task AssemblyAI_warns_when_language_code_and_detection_are_combined()
     {
         var result = await AssemblyAI(AssemblyAIHandler())
-            .Transcription("universal-3-5-pro")
+            .Transcription("assemblyai-stt-3-7")
             .TranscribeAsync(
                 Audio(),
                 AssemblyAIRequest("{\"languageCode\":\"en\",\"languageDetection\":true}"),
@@ -372,7 +358,7 @@ public sealed class SpeechToTextParityTests
     public async Task AssemblyAI_converts_word_timings_to_seconds()
     {
         var result = await AssemblyAI(AssemblyAIHandler())
-            .Transcription("best")
+            .Transcription("assemblyai-stt-3-7")
             .TranscribeAsync(Audio(), null, CancellationToken.None);
         var segment = result.Segments[0];
         Assert.Equal("Hello,", segment.Text);
@@ -388,7 +374,7 @@ public sealed class SpeechToTextParityTests
     public async Task AssemblyAI_returns_the_transcript_text()
     {
         var result = await AssemblyAI(AssemblyAIHandler())
-            .Transcription("best")
+            .Transcription("assemblyai-stt-3-7")
             .TranscribeAsync(Audio(), null, CancellationToken.None);
         Assert.Equal("Hello, world!", result.Text);
     }
@@ -422,7 +408,7 @@ public sealed class SpeechToTextParityTests
 
         var error = await Assert.ThrowsAsync<AuthenticationException>(() =>
             AssemblyAI(handler)
-                .Transcription("best")
+                .Transcription("assemblyai-stt-3-7")
                 .TranscribeAsync(Audio(), null, CancellationToken.None)
         );
 
@@ -442,10 +428,10 @@ public sealed class SpeechToTextParityTests
             ("x-ratelimit-remaining", "123")
         );
         var result = await AssemblyAI(handler, () => DateTimeOffset.UnixEpoch)
-            .Transcription("best")
+            .Transcription("assemblyai-stt-3-7")
             .TranscribeAsync(Audio(), null, CancellationToken.None);
         Assert.Equal(DateTimeOffset.UnixEpoch, result.Response.Timestamp);
-        Assert.Equal("best", result.Response.ModelId);
+        Assert.Equal("assemblyai-stt-3-7", result.Response.ModelId);
         Assert.Equal("application/json", Header(result.Response.Headers, "content-type"));
         Assert.Equal("test-request-id", Header(result.Response.Headers, "x-request-id"));
         Assert.Equal("123", Header(result.Response.Headers, "x-ratelimit-remaining"));
@@ -459,10 +445,10 @@ public sealed class SpeechToTextParityTests
     public async Task AssemblyAI_uses_the_injected_clock_and_model_id()
     {
         var result = await AssemblyAI(AssemblyAIHandler(), () => DateTimeOffset.UnixEpoch)
-            .Transcription("best")
+            .Transcription("assemblyai-stt-3-7")
             .TranscribeAsync(Audio(), null, CancellationToken.None);
         Assert.Equal(DateTimeOffset.UnixEpoch, result.Response.Timestamp);
-        Assert.Equal("best", result.Response.ModelId);
+        Assert.Equal("assemblyai-stt-3-7", result.Response.ModelId);
     }
 
     [Fact]
