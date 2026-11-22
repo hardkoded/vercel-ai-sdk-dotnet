@@ -57,8 +57,9 @@ public static class ApiKeys
         CancellationToken cancellationToken = default
     )
     {
-        var resolved =
-            apiKey is null ? null : await apiKey.ResolveAsync(cancellationToken).ConfigureAwait(false);
+        var resolved = apiKey is null
+            ? null
+            : await apiKey.ResolveAsync(cancellationToken).ConfigureAwait(false);
         return Require(resolved, environmentVariable, additionalEnvironmentVariables ?? []);
     }
 

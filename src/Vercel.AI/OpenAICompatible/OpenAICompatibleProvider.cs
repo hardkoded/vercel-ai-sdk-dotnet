@@ -188,10 +188,9 @@ public class OpenAICompatibleProvider : ProviderBase
     /// <summary>Resolves the API key. A missing key is omitted unless <see cref="OpenAICompatibleOptions.RequireApiKey"/> is set.</summary>
     protected virtual async Task<string?> ResolveApiKeyAsync(CancellationToken cancellationToken)
     {
-        var apiKey =
-            Options.ApiKey is null
-                ? null
-                : await Options.ApiKey.ResolveAsync(cancellationToken).ConfigureAwait(false);
+        var apiKey = Options.ApiKey is null
+            ? null
+            : await Options.ApiKey.ResolveAsync(cancellationToken).ConfigureAwait(false);
         if (!string.IsNullOrWhiteSpace(apiKey))
         {
             return apiKey;
@@ -791,7 +790,11 @@ public sealed class OpenAICompatibleEmbeddingModel : IEmbeddingModel
             .PostJsonAsync(
                 Endpoint ?? _provider.EmbeddingsUri(ModelId),
                 body.ToJsonString(),
-                (await _provider.CreateHeadersAsync(call.Headers, cancellationToken).ConfigureAwait(false)),
+                (
+                    await _provider
+                        .CreateHeadersAsync(call.Headers, cancellationToken)
+                        .ConfigureAwait(false)
+                ),
                 cancellationToken
             )
             .ConfigureAwait(false);
@@ -980,7 +983,11 @@ public sealed class OpenAICompatibleImageModel : IImageModel
             warnings.Add(new CallWarning("unsupported", "seed", null));
         }
 
-        var headers = (await _provider.CreateHeadersAsync(options.Headers, cancellationToken).ConfigureAwait(false));
+        var headers = (
+            await _provider
+                .CreateHeadersAsync(options.Headers, cancellationToken)
+                .ConfigureAwait(false)
+        );
         ProviderTextResponse response;
         Uri requestUri;
         if (options.Files != null && options.Files.Count > 0)

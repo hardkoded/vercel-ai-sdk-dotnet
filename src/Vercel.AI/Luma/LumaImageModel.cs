@@ -217,7 +217,10 @@ public sealed class LumaImageModel : IImageModel
         }
 
         var timestamp = _clock();
-        var headers = ProviderExchange.Merge(await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false), request.Headers);
+        var headers = ProviderExchange.Merge(
+            await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false),
+            request.Headers
+        );
         var submitted = await ProviderExchange
             .SendAsync(
                 _provider.HttpClient,

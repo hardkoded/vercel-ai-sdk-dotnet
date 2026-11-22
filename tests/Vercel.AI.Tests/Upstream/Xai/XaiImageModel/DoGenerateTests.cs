@@ -212,8 +212,13 @@ public sealed class DoGenerateTests
     public async Task Should_pass_headers()
     {
         var handler = Server();
-        var model = CreateModel(handler, () =>
-            new Dictionary<string, string?> { ["Custom-Provider-Header"] = "provider-header-value" }
+        var model = CreateModel(handler, _ =>
+            Task.FromResult<IReadOnlyDictionary<string, string?>>(
+                new Dictionary<string, string?>
+                {
+                    ["Custom-Provider-Header"] = "provider-header-value",
+                }
+            )
         );
 
         await model.DoGenerateAsync(

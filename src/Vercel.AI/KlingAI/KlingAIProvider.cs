@@ -103,10 +103,9 @@ public sealed class KlingAIProvider : OpenAICompatibleProvider
     protected override async Task<string?> ResolveApiKeyAsync(CancellationToken cancellationToken)
     {
         var kling = Options as KlingAIOptions;
-        var apiKey =
-            Options.ApiKey is null
-                ? null
-                : await Options.ApiKey.ResolveAsync(cancellationToken).ConfigureAwait(false);
+        var apiKey = Options.ApiKey is null
+            ? null
+            : await Options.ApiKey.ResolveAsync(cancellationToken).ConfigureAwait(false);
         return KlingAIAuth.ResolveAuthToken(apiKey, kling?.AccessKey, kling?.SecretKey);
     }
 
