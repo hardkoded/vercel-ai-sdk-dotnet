@@ -75,10 +75,9 @@ public sealed class TogetherAIProvider : OpenAICompatibleProvider
     protected override async Task<string?> ResolveApiKeyAsync(CancellationToken cancellationToken)
     {
         ApiKeyDeprecationWarning = null;
-        var apiKey =
-            Options.ApiKey is null
-                ? null
-                : await Options.ApiKey.ResolveAsync(cancellationToken).ConfigureAwait(false);
+        var apiKey = Options.ApiKey is null
+            ? null
+            : await Options.ApiKey.ResolveAsync(cancellationToken).ConfigureAwait(false);
         if (!string.IsNullOrWhiteSpace(apiKey))
         {
             return apiKey;

@@ -218,7 +218,10 @@ public sealed class AlibabaProvider : OpenAICompatibleProvider
                 ["input"] = new JsonObject { ["texts"] = texts },
                 ["parameters"] = parameters,
             };
-            var headers = ProviderExchange.Merge(await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false), request.Headers);
+            var headers = ProviderExchange.Merge(
+                await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false),
+                request.Headers
+            );
             var response = await ProviderExchange
                 .SendAsync(
                     _provider._httpClient,

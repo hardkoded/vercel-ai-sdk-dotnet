@@ -2127,6 +2127,21 @@ Each add-on reports `success`, `is_empty`, `exec_time`, and `error` next to its 
 
 When Gladia reports `status: "error"`, `TranscribeAsync` throws `AiSdkException`. If the response has `error_code` (the HTTP status code of the failed request), the message is `Transcription job failed with error code <code>.`, otherwise `Transcription job failed.`
 
+## Async provider credentials
+
+`OpenAICompatibleOptions.ApiKey` is a `Resolvable<string>?` (upstream `apiKey?: Resolvable<string>`). It accepts a string, a `Task<string>`, or `Resolvable<string>.From(...)` with a synchronous callback (`Func<string>`), an asynchronous callback (`Func<Task<string>>`), or a callback that takes the call's `CancellationToken` (`Func<CancellationToken, Task<string>>`). A callback runs before each request, so it can return a refreshed credential. A callback is responsible for its own caching and refreshing. A `Task<string>` resolves to the same key every time. This applies to every provider built on `OpenAICompatibleOptions`, including OpenAI-compatible, Alibaba, AssemblyAI, Baseten, Black Forest Labs, ByteDance, Cerebras, DeepInfra, DeepSeek, Deepgram, ElevenLabs, Fireworks, Gladia, GMI Cloud, Groq, HeyGen, Hugging Face, Hume, Liquid, Mistral (including realtime sessions), Moonshot, Perplexity, Prodia, QuiverAI, Rev.ai, Together AI, and Voyage.
+
+```csharp
+var provider = FireworksProvider.Create(
+    new OpenAICompatibleOptions
+    {
+        ApiKey = Resolvable<string>.From(async ct => await tokenCache.GetAsync(ct)),
+    }
+);
+```
+
+`OpenAICompatibleProvider.CreateHeadersAsync(callHeaders, cancellationToken)` (upstream `getHeaders`) resolves the key and builds the request headers. It replaces the synchronous `CreateHeaders`, and `ResolveApiKeyAsync(cancellationToken)` replaces `ResolveApiKey`. A key that resolves to an empty value is treated as missing, so the environment variable still applies. `DeepgramOptions.ApiKeyProvider` is removed: set `ApiKey = Resolvable<string>.From(...)` instead.
+
 ## Cartesia streaming transcription
 
 `CartesiaProvider.TranscriptionModel(id)` streams live audio with Ink 2 over Cartesia's WebSocket API (`/stt/turns/websocket`, or `/stt/websocket` when turn detection is off). Pass the model to `StreamTranscribe.Start`. Ink Whisper (and dated snapshots such as `ink-whisper-2025-06-04`) is batch-only: streaming it throws `UnsupportedFunctionalityException`. Any other id streams, and calling `DoGenerateAsync` on a streaming id throws `UnsupportedFunctionalityException`. `CartesiaModelCatalog.GetCartesiaTranscriptionModelEntry(id).Streaming` reports which.
@@ -2180,7 +2195,7 @@ Console.WriteLine(await result.Text);
 
 - **Input audio.** `AudioFormat` maps to `SharedV4AudioFormat`: a media type and a sample rate. Chunks are raw 16-bit little-endian PCM (`audio/pcm`), G.711 μ-law (`audio/pcmu`), or G.711 A-law (`audio/pcma`). `Rate` must be a positive integer. A string given to `AudioChunkStream.Write` is base64 audio. Empty chunks are skipped. Completing the stream flushes the remaining transcript before the result finishes. Idle connections send keepalive messages, and cancellation closes the socket and cancels the audio source (`AudioChunkStream(onCancel)`). Reading pauses while more than 1 MiB is queued on the socket.
 - **Authentication.** The provider sends the API key as WebSocket subprotocols (`token`, key), so no custom header is needed. Never put a key in the URL. To use a short-lived token, set an `Authorization: Bearer <token>` header on the provider or on the call. Any other scheme throws `InvalidArgumentException`. `TranscriptionStreamStart.Request.Body` holds the URL without credentials.
-- **API key.** `DeepgramOptions.ApiKeyProvider` resolves the key asynchronously on every call (batch and streaming), like upstream's resolvable `apiKey`. It wins over `ApiKey` and `DEEPGRAM_API_KEY`. An `Authorization` header in `Headers` still wins.
+- **API key.** `ApiKey` is a `Resolvable<string>`: a string, a `Task<string>`, or `Resolvable<string>.From(...)` with a sync or async callback. The provider resolves it on every call (batch and streaming), like upstream's resolvable `apiKey`. An `Authorization` header in `Headers` still wins.
 - **Sample rate.** `AudioFormat.Rate` is a `double?`, like upstream's `rate: number`. Deepgram streaming accepts only positive integer rates and rejects others such as `1.5`.
 - **Custom WebSocket.** `DeepgramOptions.WebSocket` takes a `WebSocketFactory` that returns an `IWebSocketLike`. It defaults to `ClientWebSocket`. `ConnectToWebSocket.Connect`, `WebSocketUtils.ToWebSocketUrl`, and `WebSocketUtils.WaitForWebSocketBufferDrainAsync` are the shared transport helpers that providers build on.
 - **Options.** Live transcription supports `language`, `smartFormat`, `punctuate`, `diarize`, `fillerWords`, `redact`, `replace`, `search`, and `keyterm`. Batch-only options produce `unsupported` warnings, unless they are `false`. The `providerOptions.deepgram.streaming` object accepts `interimResults` (bool), `endpointing` (a number of milliseconds, or `false`), `channels` (integer), `multichannel` (bool), `vadEvents` (bool), and `utteranceEndMs` (integer, at least 1000). Batch calls (`DoGenerateAsync`) warn about `streaming`.

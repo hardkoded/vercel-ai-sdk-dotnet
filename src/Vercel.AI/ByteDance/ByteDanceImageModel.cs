@@ -160,7 +160,10 @@ public sealed class ByteDanceImageModel : IImageModel, IImageCaller
                 HttpMethod.Post,
                 ApiKeys.Combine(_provider.Options.BaseUrl, "/images/generations"),
                 ProviderExchange.Json(body.ToJsonString()),
-                ProviderExchange.Merge(await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false), call.Headers),
+                ProviderExchange.Merge(
+                    await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false),
+                    call.Headers
+                ),
                 cancellationToken
             )
             .ConfigureAwait(false);

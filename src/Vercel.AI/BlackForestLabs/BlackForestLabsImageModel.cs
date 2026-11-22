@@ -228,7 +228,14 @@ public sealed class BlackForestLabsImageModel : IImageModel, IImageCaller
         call = call ?? throw new ArgumentNullException(nameof(call));
         var (body, warnings, options) = GetArgs(call);
         var timestamp = _clock();
-        var headers = (await _provider.CreateHeadersAsync(call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value), cancellationToken).ConfigureAwait(false));
+        var headers = (
+            await _provider
+                .CreateHeadersAsync(
+                    call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value),
+                    cancellationToken
+                )
+                .ConfigureAwait(false)
+        );
         var baseUrl = _provider.Options.BaseUrl.TrimEnd('/');
 
         var submitUrl = baseUrl + "/" + ModelId;

@@ -112,7 +112,11 @@ public sealed class QuiverAIImageModel : IImageModel, IImageCaller
                 HttpMethod.Post,
                 ApiKeys.Combine(_provider.Options.BaseUrl, OperationPath(options.Operation)),
                 body.ToJsonString(),
-                (await _provider.CreateHeadersAsync(headers, cancellationToken).ConfigureAwait(false)),
+                (
+                    await _provider
+                        .CreateHeadersAsync(headers, cancellationToken)
+                        .ConfigureAwait(false)
+                ),
                 cancellationToken
             )
             .ConfigureAwait(false);

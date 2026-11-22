@@ -10,6 +10,7 @@ using Vercel.AI.Mistral;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 using Vercel.AI.Tests.MoreProviders;
 using static Vercel.AI.Tests.Upstream.Mistral.MistralRealtimeModel.MistralRealtimeModelTestSupport;
 
@@ -192,6 +193,33 @@ public sealed class MistralRealtimeFactoryTests
         await CreateProvider(handler).ExperimentalRealtime.CloseSessionAsync(SessionId);
 
         Assert.Equal(HttpMethod.Delete, Assert.Single(handler.Calls).Method);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Id + "resolves async credentials for each create and close request",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "7716e189ee4d50b24661b2fe4cfe25130643529b"
+    )]
+    public async Task Resolves_async_credentials_for_each_create_and_close_request()
+    {
+        var handler = SessionHandler();
+        var keys = new Queue<string>(["create-key", "close-key"]);
+        var calls = 0;
+        var custom = CreateProvider(handler, options => options.ApiKey = Resolvable<string>.From(
+                () =>
+                {
+                    calls++;
+                    return Task.FromResult(keys.Dequeue());
+                }
+            ));
+
+        await custom.ExperimentalRealtime.CreateSessionAsync("mistral-small-latest");
+        await custom.ExperimentalRealtime.CloseSessionAsync(SessionId);
+
+        Assert.Equal("Bearer create-key", handler.Calls[0].Header("authorization"));
+        Assert.Equal("Bearer close-key", handler.Calls[1].Header("authorization"));
+        Assert.Equal(2, calls);
     }
 
     [Theory]

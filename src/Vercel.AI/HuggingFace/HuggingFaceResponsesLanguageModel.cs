@@ -59,7 +59,11 @@ public sealed class HuggingFaceResponsesLanguageModel : ILanguageModel
             .PostJsonAsync(
                 ResponsesUri(),
                 body.ToJsonString(),
-                (await _provider.CreateHeadersAsync(options.Headers, cancellationToken).ConfigureAwait(false)),
+                (
+                    await _provider
+                        .CreateHeadersAsync(options.Headers, cancellationToken)
+                        .ConfigureAwait(false)
+                ),
                 cancellationToken
             )
             .ConfigureAwait(false);
@@ -94,7 +98,11 @@ public sealed class HuggingFaceResponsesLanguageModel : ILanguageModel
             .PostSseAsync(
                 ResponsesUri(),
                 requestJson,
-                (await _provider.CreateHeadersAsync(options.Headers, cancellationToken).ConfigureAwait(false)),
+                (
+                    await _provider
+                        .CreateHeadersAsync(options.Headers, cancellationToken)
+                        .ConfigureAwait(false)
+                ),
                 cancellationToken
             )
             .ConfigureAwait(false);

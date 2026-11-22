@@ -55,7 +55,11 @@ public sealed class DeepInfraImageModel : IImageModel
                 .PostMultipartAsync(
                     EditUri(),
                     BuildEditForm(options, warnings),
-                    (await _provider.CreateHeadersAsync(options.Headers, cancellationToken).ConfigureAwait(false)),
+                    (
+                        await _provider
+                            .CreateHeadersAsync(options.Headers, cancellationToken)
+                            .ConfigureAwait(false)
+                    ),
                     cancellationToken
                 )
                 .ConfigureAwait(false);
@@ -92,7 +96,11 @@ public sealed class DeepInfraImageModel : IImageModel
             .PostJsonAsync(
                 new Uri(origin + "/" + ModelId),
                 body.ToJsonString(),
-                (await _provider.CreateHeadersAsync(options.Headers, cancellationToken).ConfigureAwait(false)),
+                (
+                    await _provider
+                        .CreateHeadersAsync(options.Headers, cancellationToken)
+                        .ConfigureAwait(false)
+                ),
                 cancellationToken
             )
             .ConfigureAwait(false);

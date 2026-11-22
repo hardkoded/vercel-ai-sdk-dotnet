@@ -278,7 +278,14 @@ public sealed class GroqTranscriptionModel
             }
         }
 
-        var requestHeaders = (await _provider.CreateHeadersAsync(headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value), cancellationToken).ConfigureAwait(false));
+        var requestHeaders = (
+            await _provider
+                .CreateHeadersAsync(
+                    headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value),
+                    cancellationToken
+                )
+                .ConfigureAwait(false)
+        );
         var response = await _provider
             .Http.SendBinaryAsync(
                 HttpMethod.Post,

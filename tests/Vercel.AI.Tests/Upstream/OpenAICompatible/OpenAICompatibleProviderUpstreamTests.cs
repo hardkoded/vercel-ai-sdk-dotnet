@@ -7,6 +7,7 @@ using System.Text.Json.Nodes;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.Tests;
 
@@ -46,7 +47,7 @@ public sealed class OpenAICompatibleProviderUpstreamTests
         "packages/openai-compatible/src/openai-compatible-provider.test.ts::OpenAICompatibleProvider > createOpenAICompatible::should create headers without authorization when no apiKey provided",
         Coverage = UpstreamCoverage.Covered
     )]
-    public void Missing_key_omits_authorization()
+    public async Task Missing_key_omits_authorization()
     {
         var provider = Provider(
             new UpstreamCapture(),
@@ -55,7 +56,7 @@ public sealed class OpenAICompatibleProviderUpstreamTests
             "https://api.example.com"
         );
         provider.Options.Headers["custom-header"] = "value";
-        var headers = provider.CreateHeaders();
+        var headers = await provider.CreateHeadersAsync(CancellationToken.None);
         Assert.False(headers.ContainsKey("Authorization"));
         Assert.Equal("value", headers["custom-header"]);
         Assert.Equal("ai-sdk/openai-compatible/" + AiSdkVersion.Version, headers["User-Agent"]);
@@ -66,13 +67,16 @@ public sealed class OpenAICompatibleProviderUpstreamTests
         "packages/openai-compatible/src/openai-compatible-provider.test.ts::OpenAICompatibleProvider > model creation methods::should create chat model with correct configuration",
         Coverage = UpstreamCoverage.Covered
     )]
-    public void Chat_model_uses_the_chat_provider_id_and_query()
+    public async Task Chat_model_uses_the_chat_provider_id_and_query()
     {
         var provider = Configured("test-provider");
         var model = (OpenAICompatibleLanguageModel)provider.LanguageModel("chat-model");
         Assert.Equal("chat-model", model.ModelId);
         Assert.Equal("test-provider.chat", model.Provider);
-        Assert.Equal("Bearer test-api-key", provider.CreateHeaders()["Authorization"]);
+        Assert.Equal(
+            "Bearer test-api-key",
+            (await provider.CreateHeadersAsync(CancellationToken.None))["Authorization"]
+        );
         Assert.Contains("Custom-Param=value", provider.ChatUri("chat-model").Query);
     }
 
@@ -339,7 +343,7 @@ public sealed class OpenAICompatibleProviderUpstreamTests
             {
                 ProviderName = name,
                 BaseUrl = baseUrl,
-                ApiKey = key,
+                ApiKey = key is null ? null : Resolvable<string>.From(key),
             },
             capture
         );
