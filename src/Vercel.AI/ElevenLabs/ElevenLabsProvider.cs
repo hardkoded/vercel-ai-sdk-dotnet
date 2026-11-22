@@ -844,7 +844,22 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
         {
             options = options ?? throw new ArgumentNullException(nameof(options));
             var result = await GenerateAsync(
-                    new ElevenLabsSpeechRequest(options.Text) { Voice = options.Voice },
+                    new ElevenLabsSpeechRequest(options.Text)
+                    {
+                        Voice = options.Voice,
+                        OutputFormat = options.OutputFormat ?? "mp3_44100_128",
+                        Instructions = options.Instructions,
+                        Language = options.Language,
+                        Speed = options.Speed,
+                        ProviderOptions = options.ProviderOptions is { Count: > 0 } providerOptions
+                            ? JsonSerializer.SerializeToElement(providerOptions)
+                            : null,
+                        Headers = options.Headers is { } headers
+                            ? headers
+                                .Where(header => header.Value != null)
+                                .ToDictionary(header => header.Key, header => header.Value!)
+                            : null,
+                    },
                     cancellationToken
                 )
                 .ConfigureAwait(false);
@@ -859,8 +874,627 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
         {
             request = request ?? throw new ArgumentNullException(nameof(request));
             var timestamp = _provider.Now();
+            var config = ElevenLabsModelCatalog.GetElevenLabsSpeechModelEntry(ModelId);
+            var args =
+                config.Music || config.SoundEffects
+                    ? GetAudioGenerationArgs(request, config)
+                    : GetArgs(request, config);
+            var body = args.Body;
+            var warnings = args.Warnings;
+            var withTimestamps = args.WithTimestamps;
+            var path =
+                args.Path
+                + (withTimestamps ? "/with-timestamps" : string.Empty)
+                + (args.Query.Count > 0 ? "?" + string.Join("&", args.Query) : string.Empty);
+            var json = body.ToJsonString();
+            var uri = ApiKeys.Combine(_provider.Options.BaseUrl, path);
+            var response = await _provider
+                .SendAsync(
+                    uri,
+                    ProviderExchange.Json(json),
+                    body,
+                    ProviderExchange.Merge(
+                        await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false),
+                        request.Headers
+                    ),
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
+            var mediaType = "audio/mpeg";
+            response.Headers.TryGetValue("Content-Type", out var contentType);
+            if (
+                contentType != null
+                && contentType.StartsWith("audio/", StringComparison.OrdinalIgnoreCase)
+            )
+            {
+                var separator = contentType.IndexOf(';');
+                mediaType = (
+                    separator >= 0 ? contentType.Substring(0, separator) : contentType
+                ).Trim();
+            }
+
+            var metadata = new JsonObject();
+            if (!string.IsNullOrEmpty(args.OutputFormat))
+            {
+                metadata["outputFormat"] = args.OutputFormat;
+            }
+
+            if (args.RequestedDurationMs is { } requestedDurationMs)
+            {
+                metadata["requestedDurationMs"] = requestedDurationMs;
+            }
+
+            var audio = response.Bytes;
+            JsonElement? rawBody = null;
+            if (args.Path == "/v1/music/detailed")
+            {
+                var (music, raw) = ElevenLabsMusicResponse.ParseMusicTimestampsResponse(
+                    response.Bytes,
+                    contentType ?? string.Empty
+                );
+                rawBody = raw;
+                audio = music.Audio;
+                mediaType = DetailedMediaType(args.OutputFormat);
+                if (music.WordTimestamps != null)
+                {
+                    metadata["wordTimestamps"] = new JsonArray(
+                        music
+                            .WordTimestamps.Select(word =>
+                                (JsonNode?)
+                                    new JsonObject
+                                    {
+                                        ["word"] = word.Word,
+                                        ["startMs"] = word.StartMs,
+                                        ["endMs"] = word.EndMs,
+                                    }
+                            )
+                            .ToArray()
+                    );
+                }
+            }
+            else if (withTimestamps)
+            {
+                var envelope = ReadTimestampsEnvelope(response.Body, uri.ToString(), body);
+                rawBody = envelope.Raw;
+                audio = envelope.Audio;
+                mediaType = DetailedMediaType(args.OutputFormat);
+                if (envelope.Alignment != null)
+                {
+                    metadata["alignment"] = envelope.Alignment;
+                }
+
+                if (envelope.NormalizedAlignment != null)
+                {
+                    metadata["normalizedAlignment"] = envelope.NormalizedAlignment;
+                }
+
+                if (envelope.VoiceSegments != null)
+                {
+                    metadata["voiceSegments"] = envelope.VoiceSegments;
+                }
+            }
+
+            return new ElevenLabsSpeechResult(
+                audio,
+                mediaType,
+                warnings,
+                json,
+                new ElevenLabsResponse(timestamp, ModelId, response.Headers, rawBody),
+                JsonSerializer.SerializeToElement(new JsonObject { ["elevenlabs"] = metadata })
+            );
+        }
+
+        /// <summary>Text to Dialogue from explicit inputs, or a single text/voice input for v4. Maps to <c>getDialogueArgs</c>.</summary>
+        private SpeechArgs GetDialogueArgs(
+            ElevenLabsSpeechRequest request,
+            ElevenLabsSpeechRequestConfig config,
+            JsonElement? elevenlabs,
+            List<ModelWarning> warnings
+        )
+        {
+            if (!config.Dialogue)
+            {
+                throw new Operations.UnsupportedFunctionalityException(
+                    "dialogue with " + ModelId,
+                    "ElevenLabs dialogue requires an eleven_v3 or eleven_v4 model; "
+                        + ModelId
+                        + " is not one."
+                );
+            }
+
+            var explicitInputs = Child(elevenlabs, "inputs");
+            if (
+                explicitInputs is { } rawInputs
+                && (rawInputs.ValueKind != JsonValueKind.Array || rawInputs.GetArrayLength() == 0)
+            )
+            {
+                throw new InvalidArgumentError(
+                    "providerOptions.elevenlabs.inputs",
+                    rawInputs.ToString(),
+                    "inputs must be a non-empty array."
+                );
+            }
+
+            var inputs = new JsonArray();
+            if (explicitInputs is { } given)
+            {
+                foreach (var input in given.EnumerateArray())
+                {
+                    if (
+                        input.ValueKind != JsonValueKind.Object
+                        || Child(input, "text") is not { ValueKind: JsonValueKind.String } inputText
+                        || Child(input, "voiceId")
+                            is not { ValueKind: JsonValueKind.String } inputVoice
+                    )
+                    {
+                        throw new InvalidArgumentError(
+                            "providerOptions.elevenlabs.inputs",
+                            input.ToString(),
+                            "Each dialogue input needs a text and a voiceId."
+                        );
+                    }
+
+                    inputs.Add(
+                        new JsonObject
+                        {
+                            ["text"] = inputText.GetString(),
+                            ["voice_id"] = inputVoice.GetString(),
+                        }
+                    );
+                }
+            }
+            else
+            {
+                inputs.Add(
+                    new JsonObject
+                    {
+                        ["text"] = request.Text,
+                        ["voice_id"] = string.IsNullOrEmpty(request.Voice)
+                            ? ElevenLabsSpeechRequest.DefaultVoiceId
+                            : request.Voice,
+                    }
+                );
+            }
+
+            if (request.Text.Length > 0 && explicitInputs != null)
+            {
+                warnings.Add(
+                    new OtherWarning(
+                        "ElevenLabs dialogue uses providerOptions.elevenlabs.inputs; the text prompt was ignored."
+                    )
+                );
+            }
+
+            var voiceSettings = Child(elevenlabs, "voiceSettings");
+            var ignored = new List<string>();
+            if (!string.IsNullOrEmpty(request.Instructions))
+            {
+                ignored.Add("instructions");
+            }
+
+            if (request.Speed != null)
+            {
+                ignored.Add("speed");
+            }
+
+            if (explicitInputs != null && !string.IsNullOrEmpty(request.Voice))
+            {
+                ignored.Add("voice");
+            }
+
+            if (Child(elevenlabs, "applyLanguageTextNormalization") != null)
+            {
+                ignored.Add("providerOptions.elevenlabs.applyLanguageTextNormalization");
+            }
+
+            if (Child(voiceSettings, "style") != null)
+            {
+                ignored.Add("providerOptions.elevenlabs.voiceSettings.style");
+            }
+
+            if (Child(voiceSettings, "useSpeakerBoost") != null)
+            {
+                ignored.Add("providerOptions.elevenlabs.voiceSettings.useSpeakerBoost");
+            }
+
+            foreach (var feature in ignored)
+            {
+                warnings.Add(
+                    new UnsupportedWarning(
+                        feature,
+                        "ElevenLabs dialogue does not support " + feature + "; it was ignored."
+                    )
+                );
+            }
+
+            var query = new List<string>
+            {
+                "output_format="
+                    + Uri.EscapeDataString(ToElevenLabsOutputFormat(request.OutputFormat)),
+            };
+            AddEnableLogging(elevenlabs, query);
+
+            var settings = new JsonObject();
+            CopyNumber(voiceSettings, "stability", settings, "stability");
+
+            // Text-to-Dialogue names this setting `similarity`.
+            CopyNumber(voiceSettings, "similarityBoost", settings, "similarity");
+
+            var body = new JsonObject { ["inputs"] = inputs, ["model_id"] = ModelId };
+            var language = request.Language ?? Child(elevenlabs, "languageCode")?.GetString();
+            if (language != null)
+            {
+                body["language_code"] = language;
+            }
+
+            if (settings.Count > 0)
+            {
+                body["settings"] = settings;
+            }
+
+            if (Child(elevenlabs, "previousText") is { ValueKind: JsonValueKind.String } previous)
+            {
+                body["previous_text"] = previous.GetString();
+            }
+
+            if (Child(elevenlabs, "nextText") is { ValueKind: JsonValueKind.String } next)
+            {
+                body["future_text"] = next.GetString();
+            }
+
+            if (
+                Child(elevenlabs, "pronunciationDictionaryLocators") is
+                { ValueKind: JsonValueKind.Array } locators
+            )
+            {
+                body["pronunciation_dictionary_locators"] = ToLocators(locators);
+            }
+
+            CopyNumber(elevenlabs, "seed", body, "seed");
+            CopyRaw(elevenlabs, "applyTextNormalization", body, "apply_text_normalization");
+            CopyRaw(elevenlabs, "previousRequestIds", body, "previous_request_ids");
+            CopyRaw(elevenlabs, "nextRequestIds", body, "next_request_ids");
+            return new SpeechArgs(
+                "/v1/text-to-dialogue",
+                body,
+                query,
+                ToElevenLabsOutputFormat(request.OutputFormat),
+                ReadFlag(elevenlabs, "withTimestamps"),
+                null,
+                warnings
+            );
+        }
+
+        /// <summary>Music (<c>/v1/music</c>) and sound effects (<c>/v1/sound-generation</c>). Maps to <c>getAudioGenerationArgs</c>.</summary>
+        private SpeechArgs GetAudioGenerationArgs(
+            ElevenLabsSpeechRequest request,
+            ElevenLabsSpeechRequestConfig config
+        )
+        {
+            var warnings = new List<ModelWarning>();
+            var isMusic = config.Music;
+            var label = isMusic ? "music" : "sound effects";
+            var elevenlabs = ElevenLabsObject(request.ProviderOptions);
+
+            var ignoredCallOptions = new List<string>();
+            if (request.Instructions != null)
+            {
+                ignoredCallOptions.Add("instructions");
+            }
+
+            if (request.Language != null)
+            {
+                ignoredCallOptions.Add("language");
+            }
+
+            if (request.Speed != null)
+            {
+                ignoredCallOptions.Add("speed");
+            }
+
+            if (request.Voice != null)
+            {
+                ignoredCallOptions.Add("voice");
+            }
+
+            foreach (var feature in ignoredCallOptions)
+            {
+                warnings.Add(
+                    new UnsupportedWarning(
+                        feature,
+                        "ElevenLabs "
+                            + label
+                            + " models do not support "
+                            + feature
+                            + "; it was ignored."
+                    )
+                );
+            }
+
+            var ignoredProviderOptions = ElevenLabsModelCatalog
+                .ElevenLabsTextToSpeechOnlyOptions.Concat(
+                    isMusic
+                        ? ElevenLabsModelCatalog.ElevenLabsSoundEffectsOnlyOptions
+                        : ElevenLabsModelCatalog.ElevenLabsMusicOnlyOptions
+                )
+                .Concat(isMusic ? [] : new[] { "seed", "withTimestamps" });
+            foreach (var option in ignoredProviderOptions)
+            {
+                if (Child(elevenlabs, option) != null)
+                {
+                    warnings.Add(
+                        new UnsupportedWarning(
+                            "providerOptions.elevenlabs." + option,
+                            "ElevenLabs "
+                                + label
+                                + " models do not support "
+                                + option
+                                + "; it was ignored."
+                        )
+                    );
+                }
+            }
+
+            var outputFormat = ToElevenLabsOutputFormat(request.OutputFormat);
+            var query = new List<string> { "output_format=" + Uri.EscapeDataString(outputFormat) };
+            AddEnableLogging(elevenlabs, query);
+
+            JsonObject body;
+            double? requestedDurationMs;
+            var withTimestamps = ReadFlag(elevenlabs, "withTimestamps");
+            if (isMusic)
+            {
+                var compositionPlan = Child(elevenlabs, "compositionPlan");
+                if (compositionPlan is { } plan)
+                {
+                    // The API rejects prompt-only options alongside a composition plan.
+                    foreach (var option in new[] { "forceInstrumental", "musicLengthMs" })
+                    {
+                        if (Child(elevenlabs, option) != null)
+                        {
+                            throw new InvalidArgumentError(
+                                "providerOptions.elevenlabs." + option,
+                                null,
+                                "ElevenLabs music "
+                                    + option
+                                    + " cannot be combined with compositionPlan."
+                            );
+                        }
+                    }
+
+                    if (request.Text.Length > 0)
+                    {
+                        warnings.Add(
+                            new OtherWarning(
+                                "ElevenLabs music uses providerOptions.elevenlabs.compositionPlan; the text prompt was ignored."
+                            )
+                        );
+                    }
+
+                    requestedDurationMs = GetCompositionPlanDurationMs(plan);
+                }
+                else
+                {
+                    requestedDurationMs = ReadNumber(elevenlabs, "musicLengthMs");
+                }
+
+                body = new JsonObject();
+                if (compositionPlan is { } composition)
+                {
+                    body["composition_plan"] = JsonNode.Parse(composition.GetRawText());
+                }
+                else
+                {
+                    body["prompt"] = request.Text;
+                }
+
+                body["model_id"] = ModelId;
+                CopyNumber(elevenlabs, "musicLengthMs", body, "music_length_ms");
+                CopyRaw(elevenlabs, "forceInstrumental", body, "force_instrumental");
+                CopyNumber(elevenlabs, "seed", body, "seed");
+                if (withTimestamps)
+                {
+                    body["with_timestamps"] = true;
+                }
+            }
+            else
+            {
+                var durationSeconds = Child(elevenlabs, "durationSeconds");
+                requestedDurationMs = ReadNumber(elevenlabs, "durationSeconds") * 1000;
+                body = new JsonObject { ["text"] = request.Text, ["model_id"] = ModelId };
+                CopyNumber(elevenlabs, "durationSeconds", body, "duration_seconds");
+                if (ReadNumber(elevenlabs, "promptInfluence") is { } promptInfluence)
+                {
+                    body["prompt_influence"] = promptInfluence;
+                }
+
+                if (Child(elevenlabs, "loop") != null)
+                {
+                    body["loop"] = ReadFlag(elevenlabs, "loop");
+                }
+            }
+
+            return new SpeechArgs(
+                isMusic
+                    ? (withTimestamps ? "/v1/music/detailed" : "/v1/music")
+                    : "/v1/sound-generation",
+                body,
+                query,
+                outputFormat,
+                false,
+                requestedDurationMs,
+                warnings
+            );
+        }
+
+        private static bool ReadFlag(JsonElement? options, string name)
+        {
+            if (Child(options, name) is not { } value)
+            {
+                return false;
+            }
+
+            return value.ValueKind is JsonValueKind.True or JsonValueKind.False
+                ? value.GetBoolean()
+                : throw new InvalidArgumentError(
+                    "providerOptions.elevenlabs." + name,
+                    value.ToString(),
+                    name + " must be a boolean."
+                );
+        }
+
+        private static double? ReadNumber(JsonElement? options, string name)
+        {
+            if (Child(options, name) is not { } value)
+            {
+                return null;
+            }
+
+            return value.ValueKind == JsonValueKind.Number
+                ? value.GetDouble()
+                : throw new InvalidArgumentError(
+                    "providerOptions.elevenlabs." + name,
+                    value.ToString(),
+                    name + " must be a number."
+                );
+        }
+
+        private static string DetailedMediaType(string? outputFormat) =>
+            (outputFormat ?? string.Empty).Split('_')[0] switch
+            {
+                "wav" => "audio/wav",
+                "pcm" => "audio/pcm",
+                "opus" => "audio/opus",
+                "ulaw" or "alaw" => "audio/basic",
+                _ => "audio/mpeg",
+            };
+
+        private static void AddEnableLogging(JsonElement? elevenlabs, List<string> query)
+        {
+            if (Child(elevenlabs, "enableLogging") != null)
+            {
+                query.Add(
+                    "enable_logging=" + (ReadFlag(elevenlabs, "enableLogging") ? "true" : "false")
+                );
+            }
+        }
+
+        private static JsonArray ToLocators(JsonElement locators)
+        {
+            var array = new JsonArray();
+            foreach (var locator in locators.EnumerateArray())
+            {
+                var item = new JsonObject
+                {
+                    ["pronunciation_dictionary_id"] = Child(locator, "pronunciationDictionaryId")
+                        ?.GetString(),
+                };
+                if (
+                    Child(locator, "versionId") is { ValueKind: JsonValueKind.String } version
+                    && version.GetString()!.Length > 0
+                )
+                {
+                    item["version_id"] = version.GetString();
+                }
+
+                array.Add(item);
+            }
+
+            return array;
+        }
+
+        private static string? ToOutputFormat(string? requested) =>
+            string.IsNullOrEmpty(requested) ? requested : ToElevenLabsOutputFormat(requested!);
+
+        /// <summary>Maps a portable output format to an ElevenLabs <c>output_format</c>. Maps to <c>toElevenLabsOutputFormat</c>.</summary>
+        private static string ToElevenLabsOutputFormat(string outputFormat) =>
+            OutputFormats.TryGetValue(outputFormat, out var mapped) ? mapped : outputFormat;
+
+        /// <summary>
+        /// Total length of a music composition plan: <c>sections</c> (music_v1) or <c>chunks</c> (music_v2+).
+        /// Null when the plan has no parts. Maps to <c>getCompositionPlanDurationMs</c>.
+        /// </summary>
+        private static double? GetCompositionPlanDurationMs(JsonElement plan)
+        {
+            var durations = new List<double>();
+            if (plan.TryGetProperty("sections", out var sections))
+            {
+                foreach (var section in sections.EnumerateArray())
+                {
+                    durations.Add(section.GetProperty("duration_ms").GetDouble());
+                }
+            }
+            else if (plan.TryGetProperty("chunks", out var chunks))
+            {
+                foreach (var chunk in chunks.EnumerateArray())
+                {
+                    // Audio reference chunks reuse a time range of an earlier song.
+                    durations.Add(
+                        chunk.TryGetProperty("duration_ms", out var duration)
+                            ? duration.GetDouble()
+                            : chunk.GetProperty("range").GetProperty("end_ms").GetDouble()
+                                - chunk.GetProperty("range").GetProperty("start_ms").GetDouble()
+                    );
+                }
+            }
+
+            return durations.Count == 0 || durations.Any(duration => duration <= 0)
+                ? null
+                : durations.Sum();
+        }
+
+        private sealed record SpeechArgs(
+            string Path,
+            JsonObject Body,
+            List<string> Query,
+            string? OutputFormat,
+            bool WithTimestamps,
+            double? RequestedDurationMs,
+            List<ModelWarning> Warnings
+        );
+
+        private SpeechArgs GetArgs(
+            ElevenLabsSpeechRequest request,
+            ElevenLabsSpeechRequestConfig config
+        )
+        {
             var warnings = new List<ModelWarning>();
             var elevenlabs = ElevenLabsObject(request.ProviderOptions);
+            foreach (var option in new[] { "streaming", "dialogue" })
+            {
+                if (Child(elevenlabs, option) != null)
+                {
+                    warnings.Add(
+                        new UnsupportedWarning(
+                            $"providerOptions.elevenlabs.{option}",
+                            $"{(option == "streaming" ? "Streaming" : "Dialogue")} options apply only to streaming speech (experimental_streamSpeech) and were ignored."
+                        )
+                    );
+                }
+            }
+
+            foreach (
+                var option in ElevenLabsModelCatalog.ElevenLabsMusicOnlyOptions.Concat(
+                    ElevenLabsModelCatalog.ElevenLabsSoundEffectsOnlyOptions
+                )
+            )
+            {
+                if (Child(elevenlabs, option) != null)
+                {
+                    warnings.Add(
+                        new UnsupportedWarning(
+                            $"providerOptions.elevenlabs.{option}",
+                            $"ElevenLabs speech models do not support {option}; it was ignored."
+                        )
+                    );
+                }
+            }
+
+            if (Child(elevenlabs, "inputs") != null || config.DefaultDialogue)
+            {
+                return GetDialogueArgs(request, config, elevenlabs, warnings);
+            }
+
             var body = new JsonObject { ["text"] = request.Text, ["model_id"] = ModelId };
             var query = new List<string>();
             var requestedOutputFormat = request.OutputFormat;
@@ -948,9 +1582,11 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
                 body,
                 "apply_language_text_normalization"
             );
-            if (Child(elevenlabs, "enableLogging") is { } enableLogging)
+            if (Child(elevenlabs, "enableLogging") != null)
             {
-                query.Add("enable_logging=" + (enableLogging.GetBoolean() ? "true" : "false"));
+                query.Add(
+                    "enable_logging=" + (ReadFlag(elevenlabs, "enableLogging") ? "true" : "false")
+                );
             }
 
             if (voiceSettings.Count > 0)
@@ -971,75 +1607,14 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
             var voice = string.IsNullOrEmpty(request.Voice)
                 ? ElevenLabsSpeechRequest.DefaultVoiceId
                 : request.Voice!;
-            var withTimestamps = Child(elevenlabs, "withTimestamps")?.GetBoolean() == true;
-            var path =
-                "/v1/text-to-speech/"
-                + Uri.EscapeDataString(voice)
-                + (withTimestamps ? "/with-timestamps" : string.Empty)
-                + (query.Count > 0 ? "?" + string.Join("&", query) : string.Empty);
-            var json = body.ToJsonString();
-            var uri = ApiKeys.Combine(_provider.Options.BaseUrl, path);
-            var response = await _provider
-                .SendAsync(
-                    uri,
-                    ProviderExchange.Json(json),
-                    body,
-                    ProviderExchange.Merge(
-                        await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false),
-                        request.Headers
-                    ),
-                    cancellationToken
-                )
-                .ConfigureAwait(false);
-            var mediaType = "audio/mpeg";
-            if (
-                response.Headers.TryGetValue("Content-Type", out var contentType)
-                && contentType.StartsWith("audio/", StringComparison.OrdinalIgnoreCase)
-            )
-            {
-                var separator = contentType.IndexOf(';');
-                mediaType = (
-                    separator >= 0 ? contentType.Substring(0, separator) : contentType
-                ).Trim();
-            }
-
-            var outputFormat = OutputFormats.TryGetValue(
-                requestedOutputFormat ?? string.Empty,
-                out var native
-            )
-                ? native
-                : requestedOutputFormat;
-            var metadata = new JsonObject();
-            if (!string.IsNullOrEmpty(outputFormat))
-            {
-                metadata["outputFormat"] = outputFormat;
-            }
-
-            var audio = response.Bytes;
-            JsonElement? rawBody = null;
-            if (withTimestamps)
-            {
-                var envelope = ReadTimestampsEnvelope(response.Body, uri.ToString(), body);
-                rawBody = envelope.Raw;
-                audio = envelope.Audio;
-                if (envelope.Alignment != null)
-                {
-                    metadata["alignment"] = envelope.Alignment;
-                }
-
-                if (envelope.NormalizedAlignment != null)
-                {
-                    metadata["normalizedAlignment"] = envelope.NormalizedAlignment;
-                }
-            }
-
-            return new ElevenLabsSpeechResult(
-                audio,
-                mediaType,
-                warnings,
-                json,
-                new ElevenLabsResponse(timestamp, ModelId, response.Headers, rawBody),
-                JsonSerializer.SerializeToElement(new JsonObject { ["elevenlabs"] = metadata })
+            return new SpeechArgs(
+                "/v1/text-to-speech/" + Uri.EscapeDataString(voice),
+                body,
+                query,
+                ToOutputFormat(requestedOutputFormat),
+                ReadFlag(elevenlabs, "withTimestamps"),
+                null,
+                warnings
             );
         }
 
@@ -1047,7 +1622,8 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
             byte[] Audio,
             JsonElement Raw,
             JsonObject? Alignment,
-            JsonObject? NormalizedAlignment
+            JsonObject? NormalizedAlignment,
+            JsonArray? VoiceSegments
         ) ReadTimestampsEnvelope(string text, string url, object requestBodyValues)
         {
             ApiException Invalid(Exception cause) =>
@@ -1084,13 +1660,71 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
                     Convert.FromBase64String(audioBase64.GetString()!),
                     raw,
                     ToAlignmentMetadata(raw, "alignment"),
-                    ToAlignmentMetadata(raw, "normalized_alignment")
+                    ToAlignmentMetadata(raw, "normalized_alignment"),
+                    ToVoiceSegments(raw)
                 );
             }
             catch (Exception error) when (error is TypeValidationException or FormatException)
             {
                 throw Invalid(error);
             }
+        }
+
+        private static string SegmentString(JsonElement root, JsonElement segment, string name) =>
+            segment.ValueKind == JsonValueKind.Object
+            && segment.TryGetProperty(name, out var value)
+            && value.ValueKind == JsonValueKind.String
+                ? value.GetString()!
+                : throw new TypeValidationException(
+                    "Type validation failed: voice_segments." + name + " must be a string.",
+                    root
+                );
+
+        private static double SegmentNumber(JsonElement root, JsonElement segment, string name) =>
+            segment.ValueKind == JsonValueKind.Object
+            && segment.TryGetProperty(name, out var value)
+            && value.ValueKind == JsonValueKind.Number
+                ? value.GetDouble()
+                : throw new TypeValidationException(
+                    "Type validation failed: voice_segments." + name + " must be a number.",
+                    root
+                );
+
+        private static JsonArray? ToVoiceSegments(JsonElement root)
+        {
+            if (
+                !root.TryGetProperty("voice_segments", out var segments)
+                || segments.ValueKind != JsonValueKind.Array
+            )
+            {
+                return null;
+            }
+
+            var array = new JsonArray();
+            foreach (var segment in segments.EnumerateArray())
+            {
+                array.Add(
+                    new JsonObject
+                    {
+                        ["voiceId"] = SegmentString(root, segment, "voice_id"),
+                        ["startTimeSeconds"] = SegmentNumber(root, segment, "start_time_seconds"),
+                        ["endTimeSeconds"] = SegmentNumber(root, segment, "end_time_seconds"),
+                        ["characterStartIndex"] = SegmentNumber(
+                            root,
+                            segment,
+                            "character_start_index"
+                        ),
+                        ["characterEndIndex"] = SegmentNumber(root, segment, "character_end_index"),
+                        ["dialogueInputIndex"] = SegmentNumber(
+                            root,
+                            segment,
+                            "dialogue_input_index"
+                        ),
+                    }
+                );
+            }
+
+            return array;
         }
 
         private static JsonObject? ToAlignmentMetadata(JsonElement root, string name)
