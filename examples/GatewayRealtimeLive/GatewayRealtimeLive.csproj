@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <Description>Holds a Live conversation with a Gateway Live model over a server WebSocket.</Description>
+    </PropertyGroup>
+</Project>

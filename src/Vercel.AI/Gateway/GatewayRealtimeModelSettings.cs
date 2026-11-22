@@ -23,6 +23,9 @@ public static class GatewayRealtimeModelId
     /// <summary><c>openai/gpt-live-1</c>.</summary>
     public const string OpenaiGptLive1 = "openai/gpt-live-1";
 
+    /// <summary><c>openai/gpt-live-1.1</c>.</summary>
+    public const string OpenaiGptLive11 = "openai/gpt-live-1.1";
+
     /// <summary><c>openai/gpt-realtime-1.5</c>.</summary>
     public const string OpenaiGptRealtime15 = "openai/gpt-realtime-1.5";
 
@@ -37,4 +40,32 @@ public static class GatewayRealtimeModelId
 
     /// <summary><c>spacexai/grok-voice-3.0</c>.</summary>
     public const string SpacexaiGrokVoice30 = "spacexai/grok-voice-3.0";
+}
+
+/// <summary>
+/// Realtime model ids that use the continuous Live API by default. Maps to <c>gatewayLiveModelIds</c> and
+/// <c>GatewayKnownLiveModelId</c>. Other ids use the realtime API unless <see cref="GatewayRealtimeApi.Live"/> is passed.
+/// </summary>
+public static class GatewayKnownLiveModelId
+{
+    /// <summary>Maps to <c>gatewayLiveModelIds</c>.</summary>
+    public static IReadOnlyList<string> GatewayLiveModelIds { get; } =
+    [GatewayRealtimeModelId.OpenaiGptLive1, GatewayRealtimeModelId.OpenaiGptLive11];
+}
+
+/// <summary>The Gateway API a realtime model id is routed to. Maps to <c>GatewayRealtimeOptions.api</c>.</summary>
+public enum GatewayRealtimeApi
+{
+    /// <summary><c>'live'</c>: the continuous Live API on <c>/live-model</c>.</summary>
+    Live,
+
+    /// <summary><c>'realtime'</c>: the turn-based realtime API on <c>/realtime-model</c>.</summary>
+    Realtime,
+}
+
+/// <summary>Maps to <c>GatewayRealtimeOptions</c>.</summary>
+public sealed class GatewayRealtimeOptions
+{
+    /// <summary>Selects the Gateway API for the model id, including for new Live models. Maps to <c>api</c>.</summary>
+    public GatewayRealtimeApi? Api { get; init; }
 }

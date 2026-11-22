@@ -139,26 +139,46 @@ public sealed class GatewayProvider
 
     /// <summary>
     /// Returns a realtime model. Maps to <c>experimental_realtime(modelId)</c>. Building the model touches no credential;
-    /// only minting a client secret and server connections resolve the Gateway credential.
+    /// only minting a client secret and server connections resolve the Gateway credential. Known Live model ids return a
+    /// <see cref="GatewayRealtimeModelLive"/>.
     /// </summary>
     public override IRealtimeModel RealtimeModel(string modelId)
     {
-        return CreateRealtimeModel(modelId);
+        return CreateRealtimeModel(modelId, null);
     }
 
     /// <summary>
-    /// Mints a client secret for a realtime model and returns it with the WebSocket URL. Maps to
+    /// Returns a turn-based realtime model or, for Live model ids or <see cref="GatewayRealtimeApi.Live"/>, a continuous
+    /// <see cref="GatewayRealtimeModelLive"/>. Maps to <c>experimental_realtime(modelId, options)</c>.
+    /// </summary>
+    public IRealtimeModel ExperimentalRealtime(string modelId, GatewayRealtimeOptions? options)
+    {
+        return CreateRealtimeModel(modelId, options);
+    }
+
+    /// <summary>
+    /// Mints a client secret for a realtime model and returns it with the WebSocket URL. A Live model gets a Live-bound
+    /// secret (<c>routeKind: 'live'</c>); realtime mints omit <c>routeKind</c>. Maps to
     /// <c>experimental_realtime.getToken</c>.
     /// </summary>
     public async Task<GatewayRealtimeClientSecret> ExperimentalRealtimeGetTokenAsync(
         string model,
         int? expiresAfterSeconds = null,
-        CancellationToken cancellationToken = default
+        CancellationToken cancellationToken = default,
+        GatewayRealtimeOptions? options = null
     )
     {
-        return await CreateRealtimeModel(model)
-            .DoCreateClientSecretAsync(expiresAfterSeconds, cancellationToken)
-            .ConfigureAwait(false);
+        return CreateRealtimeModel(model, options) switch
+        {
+            GatewayRealtimeModelLive live => await live.DoCreateClientSecretAsync(
+                    expiresAfterSeconds,
+                    cancellationToken
+                )
+                .ConfigureAwait(false),
+            var realtime => await ((GatewayRealtimeModel)realtime)
+                .DoCreateClientSecretAsync(expiresAfterSeconds, cancellationToken)
+                .ConfigureAwait(false),
+        };
     }
 
     /// <summary>
@@ -735,18 +755,60 @@ public sealed class GatewayProvider
         return ApiKeys.Combine(Options.BaseUrl, path);
     }
 
-    private GatewayRealtimeModel CreateRealtimeModel(string modelId)
+    private IRealtimeModel CreateRealtimeModel(string modelId, GatewayRealtimeOptions? options)
     {
-        return new GatewayRealtimeModel(
-            modelId,
-            new GatewayRealtimeModelConfig(
-                "gateway.realtime",
-                Options.BaseUrl.TrimEnd('/'),
-                GetHeadersAsync,
-                MintClientSecretAsync,
-                Options.TeamIdOrSlug
+        var baseUrl = Options.BaseUrl.TrimEnd('/');
+        return ResolveGatewayRealtimeApi(modelId, options) == GatewayRealtimeApi.Live
+            ? new GatewayRealtimeModelLive(
+                modelId,
+                new GatewayRealtimeModelLiveConfig(
+                    "gateway.live",
+                    baseUrl,
+                    GetHeadersAsync,
+                    (id, expiresAfterSeconds, routeKind, cancellationToken) =>
+                        MintClientSecretAsync(
+                            id,
+                            expiresAfterSeconds,
+                            routeKind,
+                            cancellationToken
+                        ),
+                    Options.TeamIdOrSlug
+                )
             )
-        );
+            : new GatewayRealtimeModel(
+                modelId,
+                new GatewayRealtimeModelConfig(
+                    "gateway.realtime",
+                    baseUrl,
+                    GetHeadersAsync,
+                    MintClientSecretAsync,
+                    Options.TeamIdOrSlug
+                )
+            );
+    }
+
+    private static GatewayRealtimeApi ResolveGatewayRealtimeApi(
+        string modelId,
+        GatewayRealtimeOptions? options
+    )
+    {
+        if (options?.Api is { } api)
+        {
+            if (api != GatewayRealtimeApi.Live && api != GatewayRealtimeApi.Realtime)
+            {
+                throw new InvalidArgumentException(
+                    "api",
+                    api,
+                    "AI Gateway realtime api must be \"live\" or \"realtime\"."
+                );
+            }
+
+            return api;
+        }
+
+        return GatewayKnownLiveModelId.GatewayLiveModelIds.Contains(modelId)
+            ? GatewayRealtimeApi.Live
+            : GatewayRealtimeApi.Realtime;
     }
 }
 
