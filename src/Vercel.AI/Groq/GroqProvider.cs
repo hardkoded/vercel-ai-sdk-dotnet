@@ -5,6 +5,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.Groq;
 
@@ -39,6 +41,63 @@ public sealed class GroqProvider : OpenAICompatibleProvider
     /// <inheritdoc />
     public override ITranscriptionModel TranscriptionModel(string modelId) =>
         new GroqTranscriptionModel(this, modelId);
+
+    private static string? ResolveReasoningEffort(
+        string modelId,
+        string? reasoning,
+        string? providerEffort,
+        IList<CallWarning> warnings
+    )
+    {
+        if (providerEffort != null || !ReasoningMap.IsCustomReasoning(reasoning))
+        {
+            return providerEffort;
+        }
+
+        var supportsNoneReasoning = modelId == "qwen/qwen3.6-27b";
+
+        // GPT-OSS models always reason, so reasoning "none" maps to the lowest effort. Other models do not reason,
+        // so there is nothing to disable.
+        var alwaysReasons = modelId.StartsWith("openai/gpt-oss", StringComparison.Ordinal);
+        if (reasoning == "none" && !supportsNoneReasoning && !alwaysReasons)
+        {
+            warnings.Add(
+                new CallWarning(
+                    "unsupported",
+                    "reasoning",
+                    "reasoning \"" + reasoning + "\" is not supported by this model."
+                )
+            );
+            return null;
+        }
+
+        var effortMap = new Dictionary<string, string>
+        {
+            { "low", "low" },
+            { "medium", "medium" },
+            { "high", "high" },
+        };
+        if (supportsNoneReasoning)
+        {
+            effortMap["none"] = "none";
+        }
+
+        var mappingWarnings = new List<ModelWarning>();
+        var effort = ReasoningMap.MapReasoningToProviderEffort(
+            reasoning,
+            effortMap,
+            mappingWarnings
+        );
+        foreach (var warning in mappingWarnings)
+        {
+            if (ReasoningMap.ToCallWarning(warning) is { } callWarning)
+            {
+                warnings.Add(callWarning);
+            }
+        }
+
+        return effort;
+    }
 
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)
     {
@@ -81,7 +140,7 @@ public sealed class GroqProvider : OpenAICompatibleProvider
             body["messages"] = ConvertToGroqChatMessages.Convert(call.Prompt);
             return body;
         };
-        options.TransformRequestBody = OpenAICompatibleTransforms.Groq;
+        options.ResolveReasoningEffort ??= ResolveReasoningEffort;
         return options;
     }
 }

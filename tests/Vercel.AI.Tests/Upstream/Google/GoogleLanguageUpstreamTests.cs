@@ -712,14 +712,24 @@ public sealed class GoogleLanguageUpstreamTests
 
     [Fact]
     [UpstreamTest(
-        "packages/google/src/google-language-model.test.ts::doGenerate > top-level reasoning option > Gemini 3 models (thinkingLevel)::should map reasoning \"none\" to thinkingLevel \"low\"",
-        Coverage = UpstreamCoverage.Covered
+        "packages/google/src/google-language-model.test.ts::doGenerate > top-level reasoning option > Gemini 3 models (thinkingLevel)::should map reasoning \"none\" to thinkingLevel \"low\" with compatibility warning",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2"
     )]
     public void Maps_reasoning_none_to_thinkingLevel_low()
     {
+        var options = Hello();
+        options.Reasoning = "none";
+        var prepared = Prep("gemini-3-pro-preview", options);
         GoogleUpstream.JsonEqual(
-            Thinking("gemini-3-pro-preview", "none"),
+            prepared.Body["generationConfig"]!["thinkingConfig"]!,
             "{\"thinkingLevel\":\"low\"}"
+        );
+        Assert.Contains(prepared.Warnings, warning =>
+            warning.Type == "compatibility"
+            && warning.Feature == "reasoning"
+            && warning.Details
+                == "reasoning \"none\" is not directly supported by this model. mapped to effort \"low\"."
         );
     }
 
@@ -844,12 +854,39 @@ public sealed class GoogleLanguageUpstreamTests
 
     [Fact]
     [UpstreamTest(
-        "packages/google/src/google-language-model.test.ts::doGenerate > top-level reasoning option > Gemini 2.5 models (thinkingBudget)::should map reasoning \"none\" to thinkingBudget 0",
-        Coverage = UpstreamCoverage.Covered
+        "packages/google/src/google-language-model.test.ts::doGenerate > top-level reasoning option > Gemini 2.5 models (thinkingBudget)::should map reasoning \"none\" to the minimum thinkingBudget for Gemini 2.5 Pro",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2"
     )]
-    public void Maps_none_reasoning_to_a_zero_thinking_budget()
+    public void Maps_none_reasoning_to_the_minimum_thinking_budget_for_Gemini_2_5_Pro()
     {
-        GoogleUpstream.JsonEqual(Thinking("gemini-2.5-pro", "none"), "{\"thinkingBudget\":0}");
+        var options = Hello();
+        options.Reasoning = "none";
+        var prepared = Prep("gemini-2.5-pro", options);
+        GoogleUpstream.JsonEqual(
+            prepared.Body["generationConfig"]!["thinkingConfig"]!,
+            "{\"thinkingBudget\":128}"
+        );
+        Assert.Contains(prepared.Warnings, warning =>
+            warning.Type == "compatibility"
+            && warning.Feature == "reasoning"
+            && warning.Details
+                == "reasoning \"none\" is not supported by this model. mapped to the minimum reasoning budget of 128 tokens."
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/google/src/google-language-model.test.ts::doGenerate > top-level reasoning option > Gemini 2.5 models (thinkingBudget)::should map reasoning \"none\" to thinkingBudget 0 for models that can disable thinking",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2"
+    )]
+    public void Maps_none_reasoning_to_a_zero_thinking_budget_for_models_that_can_disable_thinking()
+    {
+        GoogleUpstream.JsonEqual(
+            Thinking("gemini-2.5-flash-lite", "none"),
+            "{\"thinkingBudget\":0}"
+        );
     }
 
     [Fact]

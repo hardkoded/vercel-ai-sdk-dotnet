@@ -341,33 +341,12 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
         var warnings = new List<OpenAICallWarning>();
         var openai = ProviderOptionsFor(options.ProviderOptions, providerOptionsName);
         var capabilities = OpenAILanguageModelCapabilities.ForModel(modelId);
-        var effort = OpenAIJson.String(openai, "reasoningEffort");
-        if (
-            effort == null
-            && !string.IsNullOrEmpty(options.Reasoning)
-            && options.Reasoning != "provider-default"
-        )
-        {
-            effort = options.Reasoning;
-        }
-
-        if (
-            effort != null
-            && capabilities.SupportedReasoningEfforts != null
-            && !Contains(capabilities.SupportedReasoningEfforts, effort)
-        )
-        {
-            warnings.Add(
-                new OpenAICallWarning(
-                    "unsupported",
-                    "reasoningEffort",
-                    modelId
-                        + " only supports the following reasoning efforts: "
-                        + string.Join(", ", capabilities.SupportedReasoningEfforts)
-                )
-            );
-            effort = null;
-        }
+        var effort = OpenAILanguageModelCapabilities.ResolveOpenAIReasoningEffort(
+            OpenAIJson.String(openai, "reasoningEffort"),
+            options.Reasoning,
+            capabilities.SupportedReasoningEfforts,
+            warnings
+        );
 
         // An explicit null reasoningSummary turns the default off.
         var summaryExplicit =

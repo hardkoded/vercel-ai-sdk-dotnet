@@ -111,12 +111,13 @@ public sealed class OpenResponsesProvider : ProviderBase
 /// <summary>Posts to <c>/responses</c>.</summary>
 public sealed class OpenResponsesLanguageModel : ILanguageModel
 {
+    // The Open Responses efforts, plus "max", which is passed through so that compatible servers can interpret it.
     private static readonly Dictionary<string, string> ReasoningEffortMap = new Dictionary<
         string,
         string
     >
     {
-        { "minimal", "low" },
+        { "none", "none" },
         { "low", "low" },
         { "medium", "medium" },
         { "high", "high" },
@@ -366,28 +367,18 @@ public sealed class OpenResponsesLanguageModel : ILanguageModel
             providerSummary = OpenAIJson.String(configured, "reasoningSummary");
         }
 
-        var effort = providerEffort;
-        if (effort == null && ReasoningMap.IsCustomReasoning(options.Reasoning))
+        var mappingWarnings = new List<ModelWarning>();
+        var effort = ReasoningMap.MapReasoningToProviderEffort(
+            options.Reasoning,
+            ReasoningEffortMap,
+            mappingWarnings,
+            providerEffort
+        );
+        foreach (var warning in mappingWarnings)
         {
-            if (options.Reasoning == "none")
+            if (ReasoningMap.ToCallWarning(warning) is { } callWarning)
             {
-                effort = "none";
-            }
-            else
-            {
-                var mappingWarnings = new List<ModelWarning>();
-                effort = ReasoningMap.MapReasoningToProviderEffort(
-                    options.Reasoning!,
-                    ReasoningEffortMap,
-                    mappingWarnings
-                );
-                foreach (var warning in mappingWarnings)
-                {
-                    if (ReasoningMap.ToCallWarning(warning) is { } callWarning)
-                    {
-                        warnings.Add(callWarning);
-                    }
-                }
+                warnings.Add(callWarning);
             }
         }
 

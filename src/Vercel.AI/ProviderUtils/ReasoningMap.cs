@@ -59,13 +59,16 @@ public static class ReasoningMap
     }
 
     /// <summary>
-    /// Maps a reasoning level through <paramref name="effortMap"/>. An unsupported level maps to the next lower supported
-    /// level, or the next higher one. Maps to <c>mapReasoningToProviderEffort</c>.
+    /// Maps a reasoning value to a provider effort string. A <paramref name="providerOptionsEffort"/> is returned
+    /// unchanged. Otherwise an omitted or <c>provider-default</c> reasoning returns <c>null</c>. An unsupported value maps
+    /// to the next lower supported level, or the next higher one if there is no lower level. <c>none</c> is never a
+    /// fallback, so an unsupported <c>none</c> maps to the lowest supported level. Maps to <c>mapReasoningToProviderEffort</c>.
     /// </summary>
     public static string? MapReasoningToProviderEffort(
-        string reasoning,
+        string? reasoning,
         IReadOnlyDictionary<string, string> effortMap,
-        IList<ModelWarning> warnings
+        IList<ModelWarning> warnings,
+        string? providerOptionsEffort = null
     )
     {
         if (effortMap is null)
@@ -78,8 +81,19 @@ public static class ReasoningMap
             throw new ArgumentNullException(nameof(warnings));
         }
 
+        if (providerOptionsEffort is not null)
+        {
+            return providerOptionsEffort;
+        }
+
+        if (!IsCustomReasoning(reasoning))
+        {
+            return null;
+        }
+
+        // IndexOf is -1 for "none", so every level is a higher fallback.
         var index = Array.IndexOf(ReasoningLevels, reasoning);
-        var candidates = new List<string> { reasoning };
+        var candidates = new List<string> { reasoning! };
         for (var i = Math.Max(index, 0) - 1; i >= 0; i--)
         {
             candidates.Add(ReasoningLevels[i]);
@@ -128,8 +142,12 @@ public static class ReasoningMap
         return mapped;
     }
 
-    /// <summary>Maps a reasoning level to a token budget. Maps to <c>mapReasoningToProviderBudget</c>.</summary>
-    public static int? MapReasoningToProviderBudget(
+    /// <summary>
+    /// Maps a reasoning value to a token budget. Levels missing from <paramref name="budgetPercentages"/> use the default
+    /// percentages. Handle <c>none</c> before calling when the model can disable reasoning. Otherwise <c>none</c> maps to
+    /// <paramref name="minReasoningBudget"/> with a compatibility warning. Maps to <c>mapReasoningToProviderBudget</c>.
+    /// </summary>
+    public static int MapReasoningToProviderBudget(
         string reasoning,
         int maxOutputTokens,
         int maxReasoningBudget,
@@ -143,17 +161,25 @@ public static class ReasoningMap
             throw new ArgumentNullException(nameof(warnings));
         }
 
-        var percentages = budgetPercentages ?? DefaultBudgetPercentages;
-        double pct;
-        if (!percentages.TryGetValue(reasoning, out pct))
+        if (reasoning == "none")
         {
             warnings.Add(
-                new UnsupportedWarning(
+                new CompatibilityWarning(
                     "reasoning",
-                    "reasoning \"" + reasoning + "\" is not supported by this model."
+                    "reasoning \"none\" is not supported by this model. mapped to the minimum reasoning budget of "
+                        + minReasoningBudget.ToString(
+                            System.Globalization.CultureInfo.InvariantCulture
+                        )
+                        + " tokens."
                 )
             );
-            return null;
+            return minReasoningBudget;
+        }
+
+        double pct;
+        if (budgetPercentages is null || !budgetPercentages.TryGetValue(reasoning, out pct))
+        {
+            pct = DefaultBudgetPercentages[reasoning];
         }
 
         var scaled = (int)Math.Round(maxOutputTokens * pct, MidpointRounding.AwayFromZero);

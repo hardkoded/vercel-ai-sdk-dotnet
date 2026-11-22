@@ -23,7 +23,6 @@ internal static class PerplexityAgent
         { "medium", "medium" },
         { "high", "high" },
         { "xhigh", "xhigh" },
-        { "max", "xhigh" },
     };
 
     private static readonly string[] Recency = { "hour", "day", "week", "month", "year" };
@@ -59,32 +58,19 @@ internal static class PerplexityAgent
 
     public static string? MapReasoningEffort(string? reasoning, IList<CallWarning> warnings)
     {
-        if (string.IsNullOrEmpty(reasoning))
-        {
-            return null;
-        }
-
-        if (string.Equals(reasoning, "none", StringComparison.Ordinal))
-        {
-            warnings.Add(new CallWarning("unsupported", "reasoning \"none\"", null));
-            return null;
-        }
-
-        if (!EffortMap.ContainsKey(reasoning))
-        {
-            warnings.Add(new CallWarning("unsupported", "reasoning \"" + reasoning + "\"", null));
-            return null;
-        }
-
+        // Reasoning cannot be disabled, so reasoning "none" maps to the lowest effort.
         var mappingWarnings = new List<ModelWarning>();
         var effort = ReasoningMap.MapReasoningToProviderEffort(
             reasoning,
             EffortMap,
             mappingWarnings
         );
-        foreach (var warning in mappingWarnings.OfType<CompatibilityWarning>())
+        foreach (var warning in mappingWarnings)
         {
-            warnings.Add(new CallWarning(warning.Type, warning.Feature, warning.Details));
+            if (ReasoningMap.ToCallWarning(warning) is { } callWarning)
+            {
+                warnings.Add(callWarning);
+            }
         }
 
         return effort;

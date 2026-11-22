@@ -1478,7 +1478,6 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
 
         var modelWarnings = new List<ModelWarning>();
         BedrockReasoningConfig? result = user;
-        var hasPortableReasoning = reasoning != "none";
         var isNovaReasoningModel =
             modelId.IndexOf("amazon.nova-2-lite-v1:0", StringComparison.Ordinal) >= 0;
         var supportsPortableReasoning = isOpenAIModel || isNovaReasoningModel || user != null;
@@ -1490,10 +1489,19 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
             }
             else if (capabilities.SupportsAdaptiveThinking)
             {
+                var effortMap = ReasoningEffortMap.ToDictionary(
+                    pair => pair.Key,
+                    pair => pair.Value
+                );
+                if (capabilities.SupportsXhighEffort)
+                {
+                    effortMap["xhigh"] = "xhigh";
+                }
+
                 var effort = user?.MaxReasoningEffort
                     ?? ReasoningMap.MapReasoningToProviderEffort(
                         reasoning!,
-                        ReasoningEffortMap,
+                        effortMap,
                         modelWarnings
                     );
                 result = new BedrockReasoningConfig
@@ -1511,24 +1519,35 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
                         capabilities.MaxOutputTokens,
                         modelWarnings
                     );
-                if (budget != null)
+                result = new BedrockReasoningConfig
                 {
-                    result = new BedrockReasoningConfig
-                    {
-                        Type = "enabled",
-                        BudgetTokens = budget,
-                    }.MergeUser(user);
-                }
+                    Type = "enabled",
+                    BudgetTokens = budget,
+                }.MergeUser(user);
             }
         }
-        else if (hasPortableReasoning)
+        else if (reasoning == "none" && isNovaReasoningModel)
+        {
+            // Nova 2 reasoning is disabled unless a reasoning effort is sent, so there is nothing to add.
+        }
+        else
         {
             if (supportsPortableReasoning)
             {
+                // OpenAI efforts such as "none" are sent as reasoning_effort even though they are not accepted
+                // in the reasoningConfig provider option.
                 var effort = user?.MaxReasoningEffort
                     ?? ReasoningMap.MapReasoningToProviderEffort(
-                        reasoning!,
-                        isNovaReasoningModel ? NovaReasoningEffortMap : ReasoningEffortMap,
+                        reasoning,
+                        isNovaReasoningModel ? NovaReasoningEffortMap
+                            : isOpenAIModel
+                                ? (
+                                    modelId.IndexOf("openai.gpt-oss-", StringComparison.Ordinal)
+                                    >= 0
+                                        ? OpenAIGptOssReasoningEffortMap
+                                        : OpenAIReasoningEffortMap
+                                )
+                            : ReasoningEffortMap,
                         modelWarnings
                     );
                 result = new BedrockReasoningConfig
@@ -1573,28 +1592,46 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
         return result;
     }
 
+    // Effort maps only list the supported levels. Other levels are mapped to the closest supported level by
+    // ReasoningMap.MapReasoningToProviderEffort.
     private static readonly IReadOnlyDictionary<string, string> ReasoningEffortMap = new Dictionary<
         string,
         string
     >
     {
-        { "minimal", "low" },
         { "low", "low" },
         { "medium", "medium" },
         { "high", "high" },
-        { "xhigh", "max" },
         { "max", "max" },
     };
 
     private static readonly IReadOnlyDictionary<string, string> NovaReasoningEffortMap =
         new Dictionary<string, string>
         {
-            { "minimal", "low" },
             { "low", "low" },
             { "medium", "medium" },
             { "high", "high" },
-            { "xhigh", "high" },
-            { "max", "high" },
+        };
+
+    private static readonly IReadOnlyDictionary<string, string> OpenAIGptOssReasoningEffortMap =
+        new Dictionary<string, string>
+        {
+            { "low", "low" },
+            { "medium", "medium" },
+            { "high", "high" },
+        };
+
+    // The reasoning efforts of other OpenAI models are not known, so reasoning values are sent directly.
+    private static readonly IReadOnlyDictionary<string, string> OpenAIReasoningEffortMap =
+        new Dictionary<string, string>
+        {
+            { "none", "none" },
+            { "minimal", "minimal" },
+            { "low", "low" },
+            { "medium", "medium" },
+            { "high", "high" },
+            { "xhigh", "xhigh" },
+            { "max", "max" },
         };
 
     /// <summary>Reads provider options from <c>amazonBedrock</c>, then <c>bedrock</c>, then <c>amazon-bedrock</c>.</summary>

@@ -44,15 +44,23 @@ public sealed class DoGenerateTopLevelReasoningParameterTests
 
     [Fact]
     [UpstreamTest(
-        Prefix + "should map reasoning \"xhigh\" to effort \"max\" for newer Anthropic models",
-        Coverage = UpstreamCoverage.Covered
+        Prefix
+            + "should map reasoning \"xhigh\" to effort \"high\" for newer Anthropic models without xhigh effort",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2"
     )]
-    public async Task Should_map_reasoning_xhigh_to_effort_max_for_newer_Anthropic_models()
+    public async Task Should_map_reasoning_xhigh_to_effort_high_for_newer_Anthropic_models_without_xhigh_effort()
     {
-        var (_, body) = await Generate(NewerAnthropicModelId, "xhigh");
+        var (result, body) = await Generate(NewerAnthropicModelId, "xhigh");
 
         AssertEqual("{\"type\":\"adaptive\"}", Field(body, "thinking")!.Value);
-        Assert.Equal("max", Field(body, "output_config")!.Value.GetProperty("effort").GetString());
+        Assert.Equal("high", Field(body, "output_config")!.Value.GetProperty("effort").GetString());
+        Assert.Contains(result.Warnings, warning =>
+            warning.Type == "compatibility"
+            && warning.Feature == "reasoning"
+            && warning.Message
+                == "reasoning \"xhigh\" is not directly supported by this model. mapped to effort \"high\"."
+        );
     }
 
     [Fact]
@@ -116,13 +124,34 @@ public sealed class DoGenerateTopLevelReasoningParameterTests
         Assert.Equal(1024, Field(body, "thinking")!.Value.GetProperty("budget_tokens").GetInt32());
     }
 
+    [Fact]
+    [UpstreamTest(
+        Prefix
+            + "should map reasoning \"max\" to reasoning_effort \"high\" for OpenAI gpt-oss models",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2"
+    )]
+    public async Task Should_map_reasoning_max_to_reasoning_effort_high_for_OpenAI_gpt_oss_models()
+    {
+        var (result, body) = await Generate(OpenAiModelId, "max");
+
+        Assert.Equal("high", Field(body, "reasoning_effort")!.Value.GetString());
+        var warning = Assert.Single(result.Warnings);
+        Assert.Equal("compatibility", warning.Type);
+        Assert.Equal("reasoning", warning.Feature);
+        Assert.Equal(
+            "reasoning \"max\" is not directly supported by this model. mapped to effort \"high\".",
+            warning.Message
+        );
+    }
+
     [Theory]
     [InlineData("medium")]
-    [InlineData("max")]
     [UpstreamTest(
         Prefix
             + "should map reasoning \"%s\" directly to reasoning_effort for OpenAI gpt-oss models",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2"
     )]
     public async Task Should_map_reasoning_directly_to_reasoning_effort_for_OpenAI_gpt_oss_models(
         string reasoning
@@ -326,14 +355,66 @@ public sealed class DoGenerateTopLevelReasoningParameterTests
 
     [Fact]
     [UpstreamTest(
-        Prefix + "should handle reasoning \"none\" for OpenAI models",
-        Coverage = UpstreamCoverage.Covered
+        Prefix
+            + "should send reasoning \"none\" directly for OpenAI models with unknown reasoning efforts",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2"
     )]
-    public async Task Should_handle_reasoning_none_for_OpenAI_models()
+    public async Task Should_send_reasoning_none_directly_for_OpenAI_models_with_unknown_reasoning_efforts()
     {
-        var (_, body) = await Generate(OpenAiModelId, "none");
+        var (result, body) = await Generate("us.openai.gpt-5.6-luna", "none");
 
-        Assert.Null(Field(body, "reasoning_effort"));
+        AssertEqual("{\"effort\":\"none\"}", Field(body, "reasoning")!.Value);
+        Assert.Empty(result.Warnings);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should disable reasoning for Nova 2 models with reasoning \"none\"",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2"
+    )]
+    public async Task Should_disable_reasoning_for_Nova_2_models_with_reasoning_none()
+    {
+        var (result, body) = await Generate(NovaModelId, "none");
+
+        // Nova 2 reasoning is disabled unless a reasoning effort is sent.
+        Assert.Null(Field(body, "reasoningConfig"));
+        Assert.Empty(result.Warnings);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should warn for reasoning \"none\" on models without reasoning configuration",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2"
+    )]
+    public async Task Should_warn_for_reasoning_none_on_models_without_reasoning_configuration()
+    {
+        var (result, _) = await Generate("us.amazon.nova-micro-v1:0", "none");
+
+        Assert.Contains(result.Warnings, warning =>
+            warning.Type == "unsupported" && warning.Feature == "reasoning"
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should map reasoning \"none\" to the lowest effort for OpenAI models",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2"
+    )]
+    public async Task Should_map_reasoning_none_to_the_lowest_effort_for_OpenAI_models()
+    {
+        var (result, body) = await Generate(OpenAiModelId, "none");
+
+        Assert.Equal("low", Field(body, "reasoning_effort")!.Value.GetString());
+        Assert.Contains(result.Warnings, warning =>
+            warning.Type == "compatibility"
+            && warning.Feature == "reasoning"
+            && warning.Message
+                == "reasoning \"none\" is not directly supported by this model. mapped to effort \"low\"."
+        );
     }
 
     private static Task<(LanguageModelGenerateResult Result, JsonElement Body)> Generate(

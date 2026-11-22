@@ -338,10 +338,11 @@ public sealed class ReasoningAndModelOptionsTests
     [Fact]
     [UpstreamTest(
         Reasoning
-            + "mapReasoningToProviderBudget::returns undefined with unsupported warning for key missing from custom budgetPercentages",
-        Coverage = UpstreamCoverage.Covered
+            + "mapReasoningToProviderBudget::uses the default percentage for a level missing from custom budgetPercentages",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2"
     )]
-    public void Missing_custom_budget_key_returns_null()
+    public void Missing_custom_budget_key_uses_the_default_percentage()
     {
         var warnings = new List<ModelWarning>();
         var result = ReasoningMap.MapReasoningToProviderBudget(
@@ -351,9 +352,85 @@ public sealed class ReasoningAndModelOptionsTests
             warnings,
             budgetPercentages: new Dictionary<string, double> { ["medium"] = 0.5 }
         );
-        Assert.Null(result);
-        var warning = Assert.IsType<UnsupportedWarning>(Assert.Single(warnings));
-        Assert.Equal("reasoning \"high\" is not supported by this model.", warning.Details);
+        Assert.Equal(38400, result);
+        Assert.Empty(warnings);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Reasoning + "mapReasoningToProviderBudget::maps \"none\" to the minimum reasoning budget",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2"
+    )]
+    public void None_maps_to_the_minimum_reasoning_budget()
+    {
+        var warnings = new List<ModelWarning>();
+        var result = ReasoningMap.MapReasoningToProviderBudget(
+            "none",
+            64000,
+            64000,
+            warnings,
+            minReasoningBudget: 128
+        );
+        Assert.Equal(128, result);
+        var warning = Assert.IsType<CompatibilityWarning>(Assert.Single(warnings));
+        Assert.Equal("reasoning", warning.Feature);
+        Assert.Equal(
+            "reasoning \"none\" is not supported by this model. mapped to the minimum reasoning budget of 128 tokens.",
+            warning.Details
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Reasoning + "mapReasoningToProviderEffort::returns the provider options effort unchanged",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2"
+    )]
+    public void Returns_the_provider_options_effort_unchanged()
+    {
+        var warnings = new List<ModelWarning>();
+        var map = new Dictionary<string, string> { ["low"] = "low", ["high"] = "high" };
+        Assert.Equal(
+            "turbo",
+            ReasoningMap.MapReasoningToProviderEffort("xhigh", map, warnings, "turbo")
+        );
+        Assert.Empty(warnings);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Reasoning
+            + "mapReasoningToProviderEffort::maps the reasoning value when the provider options effort is null",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2"
+    )]
+    public void Maps_the_reasoning_value_when_the_provider_options_effort_is_null()
+    {
+        var warnings = new List<ModelWarning>();
+        Assert.Equal(
+            "high",
+            ReasoningMap.MapReasoningToProviderEffort("high", EffortMap(), warnings, null)
+        );
+        Assert.Empty(warnings);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("provider-default")]
+    [UpstreamTest(
+        Reasoning
+            + "mapReasoningToProviderEffort::returns undefined with no warning for %s reasoning",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2"
+    )]
+    public void Omitted_or_provider_default_reasoning_returns_null_with_no_warning(
+        string? reasoning
+    )
+    {
+        var warnings = new List<ModelWarning>();
+        Assert.Null(ReasoningMap.MapReasoningToProviderEffort(reasoning, EffortMap(), warnings));
+        Assert.Empty(warnings);
     }
 
     [Fact]

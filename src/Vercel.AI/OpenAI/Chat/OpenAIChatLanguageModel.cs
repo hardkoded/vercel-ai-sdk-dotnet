@@ -734,31 +734,12 @@ public sealed class OpenAIChatLanguageModel : ILanguageModel
         List<OpenAICallWarning> warnings
     )
     {
-        var effort = OpenAIJson.String(openai, "reasoningEffort");
-        if (effort == null && !string.IsNullOrEmpty(reasoning) && reasoning != "provider-default")
-        {
-            effort = reasoning;
-        }
-
-        if (
-            effort != null
-            && capabilities.SupportedReasoningEfforts != null
-            && !Contains(capabilities.SupportedReasoningEfforts, effort)
-        )
-        {
-            warnings.Add(
-                new OpenAICallWarning(
-                    "unsupported",
-                    "reasoningEffort",
-                    modelId
-                        + " only supports the following reasoning efforts: "
-                        + string.Join(", ", capabilities.SupportedReasoningEfforts)
-                )
-            );
-            return null;
-        }
-
-        return effort;
+        return OpenAILanguageModelCapabilities.ResolveOpenAIReasoningEffort(
+            OpenAIJson.String(openai, "reasoningEffort"),
+            reasoning,
+            capabilities.SupportedReasoningEfforts,
+            warnings
+        );
     }
 
     private static bool Contains(IReadOnlyList<string> values, string effort)
