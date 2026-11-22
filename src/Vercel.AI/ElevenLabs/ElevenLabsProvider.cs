@@ -932,6 +932,7 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
                 );
                 rawBody = raw;
                 audio = music.Audio;
+                mediaType = DetailedMediaType(args.OutputFormat);
                 if (music.WordTimestamps != null)
                 {
                     metadata["wordTimestamps"] = new JsonArray(
@@ -1010,11 +1011,24 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
             {
                 foreach (var input in given.EnumerateArray())
                 {
+                    if (
+                        Child(input, "text") is not { ValueKind: JsonValueKind.String } inputText
+                        || Child(input, "voiceId")
+                            is not { ValueKind: JsonValueKind.String } inputVoice
+                    )
+                    {
+                        throw new InvalidArgumentError(
+                            "providerOptions.elevenlabs.inputs",
+                            input.ToString(),
+                            "Each dialogue input needs a text and a voiceId."
+                        );
+                    }
+
                     inputs.Add(
                         new JsonObject
                         {
-                            ["text"] = Child(input, "text")?.GetString(),
-                            ["voice_id"] = Child(input, "voiceId")?.GetString(),
+                            ["text"] = inputText.GetString(),
+                            ["voice_id"] = inputVoice.GetString(),
                         }
                     );
                 }
@@ -1134,7 +1148,7 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
                 body,
                 query,
                 ToElevenLabsOutputFormat(request.OutputFormat),
-                Child(elevenlabs, "withTimestamps")?.GetBoolean() == true,
+                ReadFlag(elevenlabs, "withTimestamps"),
                 null,
                 warnings
             );
@@ -1212,7 +1226,7 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
 
             JsonObject body;
             double? requestedDurationMs;
-            var withTimestamps = Child(elevenlabs, "withTimestamps")?.GetBoolean() == true;
+            var withTimestamps = ReadFlag(elevenlabs, "withTimestamps");
             if (isMusic)
             {
                 var compositionPlan = Child(elevenlabs, "compositionPlan");
@@ -1246,7 +1260,7 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
                 }
                 else
                 {
-                    requestedDurationMs = Child(elevenlabs, "musicLengthMs")?.GetDouble();
+                    requestedDurationMs = ReadNumber(elevenlabs, "musicLengthMs");
                 }
 
                 body = new JsonObject();
@@ -1271,7 +1285,7 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
             else
             {
                 var durationSeconds = Child(elevenlabs, "durationSeconds");
-                requestedDurationMs = durationSeconds?.GetDouble() * 1000;
+                requestedDurationMs = ReadNumber(elevenlabs, "durationSeconds") * 1000;
                 body = new JsonObject { ["text"] = request.Text, ["model_id"] = ModelId };
                 CopyNumber(elevenlabs, "durationSeconds", body, "duration_seconds");
                 CopyNumber(elevenlabs, "promptInfluence", body, "prompt_influence");
@@ -1289,11 +1303,55 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
             );
         }
 
+        private static bool ReadFlag(JsonElement? options, string name)
+        {
+            if (Child(options, name) is not { } value)
+            {
+                return false;
+            }
+
+            return value.ValueKind is JsonValueKind.True or JsonValueKind.False
+                ? value.GetBoolean()
+                : throw new InvalidArgumentError(
+                    "providerOptions.elevenlabs." + name,
+                    value.ToString(),
+                    name + " must be a boolean."
+                );
+        }
+
+        private static double? ReadNumber(JsonElement? options, string name)
+        {
+            if (Child(options, name) is not { } value)
+            {
+                return null;
+            }
+
+            return value.ValueKind == JsonValueKind.Number
+                ? value.GetDouble()
+                : throw new InvalidArgumentError(
+                    "providerOptions.elevenlabs." + name,
+                    value.ToString(),
+                    name + " must be a number."
+                );
+        }
+
+        private static string DetailedMediaType(string? outputFormat) =>
+            (outputFormat ?? string.Empty).Split('_')[0] switch
+            {
+                "wav" => "audio/wav",
+                "pcm" => "audio/pcm",
+                "opus" => "audio/opus",
+                "ulaw" or "alaw" => "audio/basic",
+                _ => "audio/mpeg",
+            };
+
         private static void AddEnableLogging(JsonElement? elevenlabs, List<string> query)
         {
-            if (Child(elevenlabs, "enableLogging") is { } enableLogging)
+            if (Child(elevenlabs, "enableLogging") != null)
             {
-                query.Add("enable_logging=" + (enableLogging.GetBoolean() ? "true" : "false"));
+                query.Add(
+                    "enable_logging=" + (ReadFlag(elevenlabs, "enableLogging") ? "true" : "false")
+                );
             }
         }
 
@@ -1502,9 +1560,11 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
                 body,
                 "apply_language_text_normalization"
             );
-            if (Child(elevenlabs, "enableLogging") is { } enableLogging)
+            if (Child(elevenlabs, "enableLogging") != null)
             {
-                query.Add("enable_logging=" + (enableLogging.GetBoolean() ? "true" : "false"));
+                query.Add(
+                    "enable_logging=" + (ReadFlag(elevenlabs, "enableLogging") ? "true" : "false")
+                );
             }
 
             if (voiceSettings.Count > 0)
@@ -1530,7 +1590,7 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
                 body,
                 query,
                 ToOutputFormat(requestedOutputFormat),
-                Child(elevenlabs, "withTimestamps")?.GetBoolean() == true,
+                ReadFlag(elevenlabs, "withTimestamps"),
                 null,
                 warnings
             );
