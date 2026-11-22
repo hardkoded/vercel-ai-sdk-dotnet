@@ -332,7 +332,8 @@ internal sealed class StreamTextErrorHandling
 
             if (TelemetryDispatcher.Create(options).OnError is { } telemetryOnError)
             {
-                await telemetryOnError(error, cancellationToken).ConfigureAwait(false);
+                await telemetryOnError(new TelemetryErrorEvent(null, error), cancellationToken)
+                    .ConfigureAwait(false);
             }
 
             return result;

@@ -28,7 +28,7 @@ Deprecated alias of [DecisionModelEvent](/api/Vercel.AI.Operations/DecisionModel
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/EvaluateAliases.cs#L280)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/EvaluateAliases.cs#L283)
 
 ## Constructors
 
@@ -61,4 +61,4 @@ Creates a model event.
 | `recordOutputs` | [bool?](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 | `functionId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/EvaluateAliases.cs#L284)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/EvaluateAliases.cs#L287)

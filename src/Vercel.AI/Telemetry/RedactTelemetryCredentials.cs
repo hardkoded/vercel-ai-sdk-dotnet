@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Vercel.AI.ProviderUtils;
+using Vercel.AI.Util;
 
 namespace Vercel.AI;
 
@@ -12,6 +13,8 @@ namespace Vercel.AI;
 /// </summary>
 internal static class RedactTelemetryCredentialsHelper
 {
+    private const string Redacted = "[redacted]";
+
     /// <summary>Redacts the request and response bodies of every step of the result. Maps to <c>redactTelemetryCredentials</c>.</summary>
     internal static GenerateTextResult RedactTelemetryCredentials(GenerateTextResult value)
     {
@@ -54,5 +57,18 @@ internal static class RedactTelemetryCredentialsHelper
                 : null
         );
         return step.WithRedactedMetadata(request, response);
+    }
+
+    /// <summary>Replaces a download error with a copy that has no URL. Any other error is returned as is.</summary>
+    internal static Exception RedactTelemetryCredentials(Exception error)
+    {
+        return error is DownloadError download
+            ? new DownloadError(
+                Redacted,
+                "Failed to download a file.",
+                download.StatusCode,
+                download.StatusText
+            )
+            : error;
     }
 }

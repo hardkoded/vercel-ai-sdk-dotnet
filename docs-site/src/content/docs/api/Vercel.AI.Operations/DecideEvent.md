@@ -69,6 +69,23 @@ Creates an event.
 
 ## Properties
 
+<a id="Vercel_AI_Operations_DecideEvent_AiVersion_"></a>
+<a id="Vercel_AI_Operations_DecideEvent_AiVersion"></a>
+
+### AiVersion
+
+
+```csharp
+public string? AiVersion { get; init; }
+```
+
+
+The version of the AI SDK that emitted this event. Present only on telemetry events.
+
+**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L355)
+
 <a id="Vercel_AI_Operations_DecideEvent_Answers_"></a>
 <a id="Vercel_AI_Operations_DecideEvent_Answers"></a>
 
@@ -118,7 +135,7 @@ Present only on telemetry events.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L361)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L364)
 
 <a id="Vercel_AI_Operations_DecideEvent_Headers_"></a>
 <a id="Vercel_AI_Operations_DecideEvent_Headers"></a>
@@ -288,7 +305,7 @@ Present only on telemetry events.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L355)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L358)
 
 <a id="Vercel_AI_Operations_DecideEvent_RecordOutputs_"></a>
 <a id="Vercel_AI_Operations_DecideEvent_RecordOutputs"></a>
@@ -305,7 +322,7 @@ Present only on telemetry events.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L358)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L361)
 
 <a id="Vercel_AI_Operations_DecideEvent_RuntimeContext_"></a>
 <a id="Vercel_AI_Operations_DecideEvent_RuntimeContext"></a>

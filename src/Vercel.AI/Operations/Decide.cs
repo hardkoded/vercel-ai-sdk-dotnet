@@ -351,6 +351,9 @@ public class DecideEvent
     /// <summary>Warnings, once the call has finished.</summary>
     public IReadOnlyList<OperationWarning>? Warnings { get; }
 
+    /// <summary>The version of the AI SDK that emitted this event. Present only on telemetry events.</summary>
+    public string? AiVersion { get; init; }
+
     /// <summary>Present only on telemetry events.</summary>
     public bool? RecordInputs { get; }
 
@@ -416,6 +419,9 @@ public class DecisionModelEvent
     /// <summary>Provider usage before total tokens are derived.</summary>
     public OperationUsage? Usage { get; }
 
+    /// <summary>The version of the AI SDK that emitted this event. Present only on telemetry events.</summary>
+    public string? AiVersion { get; init; }
+
     /// <summary>Telemetry input recording flag.</summary>
     public bool? RecordInputs { get; }
 
@@ -425,66 +431,6 @@ public class DecisionModelEvent
     /// <summary>Telemetry function id.</summary>
     public string? FunctionId { get; }
 }
-
-#pragma warning disable CS0618
-/// <summary>Telemetry callbacks. Generic <c>onStart</c> and <c>onEnd</c> are not invoked.</summary>
-public class DecideTelemetry
-{
-    /// <summary><c>experimental_onDecideStart</c>.</summary>
-    public Func<DecideEvent, Task>? OnDecideStart { get; set; }
-
-    /// <summary><c>experimental_onDecideEnd</c>.</summary>
-    public Func<DecideEvent, Task>? OnDecideEnd { get; set; }
-
-    /// <summary><c>experimental_onDecisionModelCallStart</c>.</summary>
-    public Func<DecisionModelEvent, Task>? OnDecisionModelCallStart { get; set; }
-
-    /// <summary><c>experimental_onDecisionModelCallEnd</c>.</summary>
-    public Func<DecisionModelEvent, Task>? OnDecisionModelCallEnd { get; set; }
-
-    /// <summary>Deprecated alias of <see cref="OnDecideStart"/>. It runs only when <see cref="OnDecideStart"/> is not set.</summary>
-    [Obsolete("Use OnDecideStart instead.")]
-    public Func<EvaluateEvent, Task>? OnEvaluateStart { get; set; }
-
-    /// <summary>Deprecated alias of <see cref="OnDecideEnd"/>. It runs only when <see cref="OnDecideEnd"/> is not set.</summary>
-    [Obsolete("Use OnDecideEnd instead.")]
-    public Func<EvaluateEvent, Task>? OnEvaluateEnd { get; set; }
-
-    /// <summary>Deprecated alias of <see cref="OnDecisionModelCallStart"/>. It runs only when <see cref="OnDecisionModelCallStart"/> is not set.</summary>
-    [Obsolete("Use OnDecisionModelCallStart instead.")]
-    public Func<EvaluateModelEvent, Task>? OnModelStart { get; set; }
-
-    /// <summary>Deprecated alias of <see cref="OnDecisionModelCallEnd"/>. It runs only when <see cref="OnDecisionModelCallEnd"/> is not set.</summary>
-    [Obsolete("Use OnDecisionModelCallEnd instead.")]
-    public Func<EvaluateModelEvent, Task>? OnModelEnd { get; set; }
-
-    internal Func<EvaluateEvent, Task>? LegacyOnStart => OnEvaluateStart;
-
-    internal Func<EvaluateEvent, Task>? LegacyOnEnd => OnEvaluateEnd;
-
-    internal Func<EvaluateModelEvent, Task>? LegacyOnModelStart => OnModelStart;
-
-    internal Func<EvaluateModelEvent, Task>? LegacyOnModelEnd => OnModelEnd;
-
-    /// <summary><c>onError</c>.</summary>
-    public Func<string, Exception, Task>? OnError { get; set; }
-
-    /// <summary>Keys copied into telemetry runtime context. Null yields an empty context.</summary>
-    public IReadOnlyDictionary<string, bool>? IncludeRuntimeContext { get; set; }
-
-    /// <summary>Copied onto telemetry events.</summary>
-    public bool? RecordInputs { get; set; }
-
-    /// <summary>Copied onto telemetry events.</summary>
-    public bool? RecordOutputs { get; set; }
-
-    /// <summary>Copied onto telemetry events.</summary>
-    public string? FunctionId { get; set; }
-
-    /// <summary>When false, telemetry callbacks are skipped.</summary>
-    public bool IsEnabled { get; set; } = true;
-}
-#pragma warning restore CS0618
 
 /// <summary>Decision result.</summary>
 public class DecisionResult
@@ -573,8 +519,8 @@ public sealed class DecideRequest : OperationRequest
     /// <summary>Called when the decision completes. Receives the full runtime context.</summary>
     public Func<DecideEvent, Task>? OnEnd { get; set; }
 
-    /// <summary>Telemetry. Generic operation callbacks on the integration are not called.</summary>
-    public DecideTelemetry? Telemetry { get; set; }
+    /// <summary>Telemetry configuration.</summary>
+    public TelemetryOptions? Telemetry { get; set; }
 }
 
 /// <summary>Decides typed questions. Maps to <c>experimental_decide</c>.</summary>
@@ -623,8 +569,10 @@ public static class Decide
         var maxRetries = OperationRetry.ResolveMaxRetries(request.MaxRetries);
         var context = request.RuntimeContext ?? new Dictionary<string, object?>();
         var providerOptions = request.ProviderOptions ?? OperationJson.Parse("{}");
-        var telemetry = request.Telemetry;
-        var enabled = telemetry == null || telemetry.IsEnabled;
+        var telemetryDispatcher =
+            DecideRestrictedTelemetryDispatcher.CreateRestrictedTelemetryDispatcher(
+                request.Telemetry
+            );
         var userStart = new DecideEvent(
             callId,
             "ai.decide",
@@ -640,19 +588,7 @@ public static class Decide
             reasoning: request.Reasoning
         );
         await OperationCallbacks.NotifyAsync(userStart, request.OnStart).ConfigureAwait(false);
-        if (enabled)
-        {
-            await NotifyTelemetryAsync(
-                    WithTelemetry(
-                        userStart,
-                        Filter(context, telemetry?.IncludeRuntimeContext),
-                        telemetry
-                    ),
-                    telemetry?.OnDecideStart,
-                    telemetry?.LegacyOnStart
-                )
-                .ConfigureAwait(false);
-        }
+        await telemetryDispatcher.OnStartAsync(userStart, token).ConfigureAwait(false);
 
         try
         {
@@ -665,20 +601,11 @@ public static class Decide
                 model.Provider,
                 model.ModelId,
                 preparedState,
-                questions,
-                recordInputs: telemetry?.RecordInputs,
-                recordOutputs: telemetry?.RecordOutputs,
-                functionId: telemetry?.FunctionId
+                questions
             );
-            if (enabled)
-            {
-                await NotifyTelemetryAsync(
-                        modelEvent,
-                        telemetry?.OnDecisionModelCallStart,
-                        telemetry?.LegacyOnModelStart
-                    )
-                    .ConfigureAwait(false);
-            }
+            await telemetryDispatcher
+                .ExperimentalOnDecisionModelCallStartAsync(modelEvent, token)
+                .ConfigureAwait(false);
 
             var headers = OperationHeaders.WithUserAgent(request.Headers, AiSdkVersion.UserAgent);
             var result = await OperationRetry
@@ -717,27 +644,21 @@ public static class Decide
                 throw new DecisionRefusalError(refused, model.Provider, model.ModelId);
             }
 
-            if (enabled)
-            {
-                await NotifyTelemetryAsync(
-                        new DecisionModelEvent(
-                            callId,
-                            "ai.decide.doDecide",
-                            model.Provider,
-                            model.ModelId,
-                            preparedState,
-                            questions,
-                            result.Answers,
-                            result.Usage,
-                            telemetry?.RecordInputs,
-                            telemetry?.RecordOutputs,
-                            telemetry?.FunctionId
-                        ),
-                        telemetry?.OnDecisionModelCallEnd,
-                        telemetry?.LegacyOnModelEnd
-                    )
-                    .ConfigureAwait(false);
-            }
+            await telemetryDispatcher
+                .ExperimentalOnDecisionModelCallEndAsync(
+                    new DecisionModelEvent(
+                        callId,
+                        "ai.decide.doDecide",
+                        model.Provider,
+                        model.ModelId,
+                        preparedState,
+                        questions,
+                        result.Answers,
+                        result.Usage
+                    ),
+                    token
+                )
+                .ConfigureAwait(false);
 
             WarningLog.Write(result.Warnings, model.Provider, model.ModelId);
             var input = result.Usage?.InputTokens;
@@ -782,35 +703,16 @@ public static class Decide
                 reasoning: request.Reasoning
             );
             await OperationCallbacks.NotifyAsync(end, request.OnEnd).ConfigureAwait(false);
-            if (enabled)
-            {
-                await NotifyTelemetryAsync(
-                        WithTelemetry(
-                            end,
-                            Filter(context, telemetry?.IncludeRuntimeContext),
-                            telemetry
-                        ),
-                        telemetry?.OnDecideEnd,
-                        telemetry?.LegacyOnEnd
-                    )
-                    .ConfigureAwait(false);
-            }
+            await telemetryDispatcher.OnEndAsync(end, token).ConfigureAwait(false);
 
             return decision;
         }
         catch (Exception error)
         {
-            if (enabled && telemetry?.OnError != null)
-            {
-                try
-                {
-                    await telemetry.OnError(callId, error).ConfigureAwait(false);
-                }
-                catch (Exception)
-                {
-                    // Callback failures are isolated.
-                }
-            }
+            // The failure being reported may be a cancellation, so delivery ignores the token.
+            await telemetryDispatcher
+                .OnErrorAsync(callId, error, CancellationToken.None)
+                .ConfigureAwait(false);
 
             throw;
         }
@@ -1152,82 +1054,5 @@ public static class Decide
 
         var set = new HashSet<string>(leftList);
         return rightList.All(set.Contains);
-    }
-
-    private static IReadOnlyDictionary<string, object?> Filter(
-        IReadOnlyDictionary<string, object?> context,
-        IReadOnlyDictionary<string, bool>? include
-    )
-    {
-        if (include == null)
-        {
-            return new Dictionary<string, object?>();
-        }
-
-        var filtered = new Dictionary<string, object?>();
-        foreach (var pair in include)
-        {
-            if (pair.Value && context.TryGetValue(pair.Key, out var value))
-            {
-                filtered[pair.Key] = value;
-            }
-        }
-
-        return filtered;
-    }
-
-#pragma warning disable CS0618
-    private static Task NotifyTelemetryAsync(
-        DecideEvent source,
-        Func<DecideEvent, Task>? current,
-        Func<EvaluateEvent, Task>? deprecated
-    )
-    {
-        return current != null ? OperationCallbacks.NotifyAsync(source, current)
-            : deprecated != null
-                ? OperationCallbacks.NotifyAsync(EvaluateEvent.From(source), deprecated)
-            : Task.CompletedTask;
-    }
-
-    private static Task NotifyTelemetryAsync(
-        DecisionModelEvent source,
-        Func<DecisionModelEvent, Task>? current,
-        Func<EvaluateModelEvent, Task>? deprecated
-    )
-    {
-        return current != null ? OperationCallbacks.NotifyAsync(source, current)
-            : deprecated != null
-                ? OperationCallbacks.NotifyAsync(EvaluateModelEvent.From(source), deprecated)
-            : Task.CompletedTask;
-    }
-
-#pragma warning restore CS0618
-
-    private static DecideEvent WithTelemetry(
-        DecideEvent source,
-        IReadOnlyDictionary<string, object?> context,
-        DecideTelemetry? telemetry
-    )
-    {
-        return new DecideEvent(
-            source.CallId,
-            source.OperationId,
-            context,
-            source.Provider,
-            source.ModelId,
-            source.State,
-            source.Questions,
-            source.MaxRetries,
-            source.Headers,
-            source.ProviderOptions,
-            source.Answers,
-            source.Usage,
-            source.Warnings,
-            telemetry?.RecordInputs,
-            telemetry?.RecordOutputs,
-            telemetry?.FunctionId,
-            source.MaxOutputTokens,
-            source.Reasoning
-        );
     }
 }

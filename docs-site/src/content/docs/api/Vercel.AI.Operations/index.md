@@ -43,7 +43,6 @@ Speech, image, video, embeddings, transcription, and other operations.
 | [Decide](/api/Vercel.AI.Operations/Decide/) | Decides typed questions. Maps to experimentaldecide. |
 | [DecideEvent](/api/Vercel.AI.Operations/DecideEvent/) | Lifecycle event for decide. |
 | [DecideRequest](/api/Vercel.AI.Operations/DecideRequest/) | Options for CancellationToken). |
-| [DecideTelemetry](/api/Vercel.AI.Operations/DecideTelemetry/) | Telemetry callbacks. Generic onStart and onEnd are not invoked. |
 | [DecisionAnswer](/api/Vercel.AI.Operations/DecisionAnswer/) | One model answer. Numbers are returned unchanged. |
 | [DecisionBooleanCriteria](/api/Vercel.AI.Operations/DecisionBooleanCriteria/) | Optional descriptions of the true and false outcomes of a boolean question. A side that is never set is left out of the wire request. A side set to null is sent as null. |
 | [DecisionBox](/api/Vercel.AI.Operations/DecisionBox/) | Edges in [0, 1], measured from the image's top-left corner. |
@@ -90,7 +89,6 @@ Speech, image, video, embeddings, transcription, and other operations.
 | [EvaluateModelEvent](/api/Vercel.AI.Operations/EvaluateModelEvent/) | Deprecated alias of DecisionModelEvent. |
 | [EvaluateRequest](/api/Vercel.AI.Operations/EvaluateRequest/) | Deprecated alias of DecideRequest. |
 | [EvaluateResult](/api/Vercel.AI.Operations/EvaluateResult/) | Deprecated alias of DecisionResult. |
-| [EvaluateTelemetry](/api/Vercel.AI.Operations/EvaluateTelemetry/) | Deprecated alias of DecideTelemetry. |
 | [EvaluationAnswer](/api/Vercel.AI.Operations/EvaluationAnswer/) | Deprecated alias of DecisionAnswer. |
 | [EvaluationModelCall](/api/Vercel.AI.Operations/EvaluationModelCall/) | Deprecated alias of DecisionModelCall. |
 | [EvaluationModelResult](/api/Vercel.AI.Operations/EvaluationModelResult/) | Deprecated alias of DecisionModelResult. |
@@ -98,16 +96,20 @@ Speech, image, video, embeddings, transcription, and other operations.
 | [EvaluationRounding](/api/Vercel.AI.Operations/EvaluationRounding/) | Deprecated alias of DecisionRounding. |
 | [EvaluationUnsupportedQuestionTypeException](/api/Vercel.AI.Operations/EvaluationUnsupportedQuestionTypeException/) | Deprecated alias of DecisionUnsupportedQuestionTypeException. |
 | [Extract](/api/Vercel.AI.Operations/Extract/) | Extracts typed field values from one shared state. Maps to experimentalextract. |
+| [ExtractEndEvent](/api/Vercel.AI.Operations/ExtractEndEvent/) | Event passed to OnEnd for extraction operations. Maps to ExtractEndEvent. Called when the operation completes successfully. |
 | [ExtractionAnswer](/api/Vercel.AI.Operations/ExtractionAnswer/) | One model answer. Maps to ExtractionModelV4Answer. The value member is split by type: Text for text, date, time, and datetime, Number for number and duration, and TextItems or NumberItems for list. All are null when the state has no value for the field. |
 | [ExtractionField](/api/Vercel.AI.Operations/ExtractionField/) | A typed value to extract from the shared state. Maps to ExtractionModelV4Field. |
 | [ExtractionItem](/api/Vercel.AI.Operations/ExtractionItem/) | One entry of a list answer. Maps to the items member of a list ExtractionModelV4Answer. |
 | [ExtractionLanguageModel](/api/Vercel.AI.Operations/ExtractionLanguageModel/) | Adapts structured language-model output to typed field extraction. Maps to ExtractionLanguageModel. |
 | [ExtractionLanguageModelOptions](/api/Vercel.AI.Operations/ExtractionLanguageModelOptions/) | The wrapped model, provider id, and field limit that cross a workflow boundary for ExtractionLanguageModel. |
 | [ExtractionModelCall](/api/Vercel.AI.Operations/ExtractionModelCall/) | Arguments for doExtract. Maps to ExtractionModelV4CallOptions. |
+| [ExtractionModelCallEndEvent](/api/Vercel.AI.Operations/ExtractionModelCallEndEvent/) | Event fired after the extraction model response has been validated. Maps to ExtractionModelCallEndEvent. Contains the result of the logical model call, including any retries. |
+| [ExtractionModelCallStartEvent](/api/Vercel.AI.Operations/ExtractionModelCallStartEvent/) | Event fired when the extraction model call begins. Maps to ExtractionModelCallStartEvent. The logical model call includes any provider retries. |
 | [ExtractionModelResult](/api/Vercel.AI.Operations/ExtractionModelResult/) | Model response for doExtract. Maps to ExtractionModelV4Result. |
 | [ExtractionResult](/api/Vercel.AI.Operations/ExtractionResult/) | Extraction result. Maps to ExtractionResult. |
 | [ExtractionSource](/api/Vercel.AI.Operations/ExtractionSource/) | Where in the state a value was found. Maps to ExtractionModelV4Source. |
 | [ExtractRequest](/api/Vercel.AI.Operations/ExtractRequest/) | Options for CancellationToken). |
+| [ExtractStartEvent](/api/Vercel.AI.Operations/ExtractStartEvent/) | Event passed to OnStart for extraction operations. Maps to ExtractStartEvent in extract/extract-events.ts. Called when the operation begins, before the extraction model is called. |
 | [GeneratedAudio](/api/Vercel.AI.Operations/GeneratedAudio/) | Generated speech audio. |
 | [GeneratedImage](/api/Vercel.AI.Operations/GeneratedImage/) | A generated image file. |
 | [GeneratedVideo](/api/Vercel.AI.Operations/GeneratedVideo/) | A generated video file. |

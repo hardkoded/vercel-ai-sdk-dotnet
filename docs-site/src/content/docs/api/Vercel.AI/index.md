@@ -46,6 +46,7 @@ Client, text generation, streaming, tools, and agents.
 | [GenerateSpeechOptions](/api/Vercel.AI/GenerateSpeechOptions/) | Speech options. |
 | [GenerateTextOptions](/api/Vercel.AI/GenerateTextOptions/) | Options for CancellationToken). Property names follow generateText. |
 | [GenerateTextResult](/api/Vercel.AI/GenerateTextResult/) | Result of generateText. |
+| [GenerateTextResult&lt;TOutput&gt;](/api/Vercel.AI/GenerateTextResult-1/) | Result of generateText whose parsed output has the type of the OutputSpec%601 of the call. Maps to GenerateTextResult<TOOLS, OUTPUT>. |
 | [GenerateTextStartEvent](/api/Vercel.AI/GenerateTextStartEvent/) | Passed to OnStart when the generation begins, before any model call. Maps to GenerateTextStartEvent. |
 | [GenerateTextStepStartEvent](/api/Vercel.AI/GenerateTextStepStartEvent/) | Passed to OnStepStart when a step begins, before the provider is called. Maps to GenerateTextStepStartEvent. |
 | [GenerateVideoOptions](/api/Vercel.AI/GenerateVideoOptions/) | Video options. |
@@ -92,6 +93,7 @@ Client, text generation, streaming, tools, and agents.
 | [StartStepPart](/api/Vercel.AI/StartStepPart/) | A step started. It comes before the parts of that step. |
 | [SteeringMessagePart](/api/Vercel.AI/SteeringMessagePart/) | Experimental. A steering message that was added to the run before the step with the given number. Streamed before the output of that step. Maps to the steering-message stream part. StreamText emits it when it delivers a message sent with ExperimentalSteering. |
 | [StepFinishPart](/api/Vercel.AI/StepFinishPart/) | A step finished. |
+| [StepModel](/api/Vercel.AI/StepModel/) | Information about the model that produced a step. Maps to the model object of StepResult. |
 | [StepPerformance](/api/Vercel.AI/StepPerformance/) | Performance metrics for one step. Maps to StepResultPerformance. |
 | [StepResponse](/api/Vercel.AI/StepResponse/) | Response information of one step. Maps to LanguageModelResponseMetadata & { messages, body? } on StepResult.response. |
 | [StepResult](/api/Vercel.AI/StepResult/) | One language-model step, including any tool results from that step. |
@@ -103,9 +105,12 @@ Client, text generation, streaming, tools, and agents.
 | [StreamTextOnErrorResult](/api/Vercel.AI/StreamTextOnErrorResult/) | The result of OnErrorRetry. Maps to { retry?: boolean }. |
 | [StreamTextOptions](/api/Vercel.AI/StreamTextOptions/) | Options for CancellationToken). |
 | [StreamTextResult](/api/Vercel.AI/StreamTextResult/) | Result of streamText. Enumerating Stream(CancellationToken) or awaiting Text consumes the same buffered events. |
+| [StreamTextResult&lt;TOutput&gt;](/api/Vercel.AI/StreamTextResult-1/) | Result of streamText whose parsed output has the type of the OutputSpec%601 of the call. Maps to StreamTextResult<TOOLS, OUTPUT>. |
 | [StreamTextSingleConsumerResult](/api/Vercel.AI/StreamTextSingleConsumerResult/) | A single-consumer view of a text generation, without replay or final content members. Maps to StreamTextSingleConsumerResult. Choose one stream projection. A second one throws. |
 | [StreamTextTransformOptions](/api/Vercel.AI/StreamTextTransformOptions/) | The options a StreamTextTransform receives. Maps to the argument of StreamTextTransform. |
+| [TelemetryErrorEvent](/api/Vercel.AI/TelemetryErrorEvent/) | The event an integration receives in OnError. Upstream passes the plain object { callId, error, aiVersion } to onError; the port needs a type for it. |
 | [TelemetryOptions](/api/Vercel.AI/TelemetryOptions/) | Telemetry configuration. Maps to TelemetryOptions in telemetry/telemetry-options.ts. |
+| [TelemetryRegistry](/api/Vercel.AI/TelemetryRegistry/) | Globally registered telemetry integrations. Maps to telemetry-registry.ts and globalThis.AISDKTELEMETRYINTEGRATIONS. |
 | [TextDeltaPart](/api/Vercel.AI/TextDeltaPart/) | Text delta. Maps to text-delta. |
 | [TextEndPart](/api/Vercel.AI/TextEndPart/) | A text block ended. Maps to text-end. |
 | [TextStartPart](/api/Vercel.AI/TextStartPart/) | A text block started. Maps to text-start. |
@@ -118,6 +123,8 @@ Client, text generation, streaming, tools, and agents.
 | [ToolExecutionEndEvent](/api/Vercel.AI/ToolExecutionEndEvent/) | Passed to OnToolExecutionEnd after a tool ran. |
 | [ToolExecutionOptions](/api/Vercel.AI/ToolExecutionOptions/) | The options a tool receives when it runs. Maps to the second argument of execute. |
 | [ToolExecutionStartEvent](/api/Vercel.AI/ToolExecutionStartEvent/) | Passed to OnToolExecutionStart before a tool runs. |
+| [ToolInputAvailableOptions](/api/Vercel.AI/ToolInputAvailableOptions/) | The options of OnInputAvailable. Maps to { input } & ToolExecutionOptions. |
+| [ToolInputDeltaOptions](/api/Vercel.AI/ToolInputDeltaOptions/) | The options of OnInputDelta. Maps to { inputTextDelta } & ToolExecutionOptions. |
 | [ToolInputDeltaPart](/api/Vercel.AI/ToolInputDeltaPart/) | A streamed tool-input fragment. |
 | [ToolInputEndPart](/api/Vercel.AI/ToolInputEndPart/) | The model finished streaming tool input. |
 | [ToolInputStartPart](/api/Vercel.AI/ToolInputStartPart/) | The model started streaming tool input. |
@@ -138,6 +145,7 @@ Client, text generation, streaming, tools, and agents.
 | [IAiClient](/api/Vercel.AI/IAiClient/) | Core AI SDK client. Maps to the ai package functions. |
 | [IAiTelemetry](/api/Vercel.AI/IAiTelemetry/) | Telemetry hook invoked around generate and stream calls. |
 | [ILanguageModelMiddleware](/api/Vercel.AI/ILanguageModelMiddleware/) | Wraps doGenerate and doStream. Maps to language-model middleware. |
+| [ITelemetry](/api/Vercel.AI/ITelemetry/) | Implement this interface to create custom telemetry integrations. A callback is optional: return null from a property to skip it. Maps to Telemetry in telemetry/telemetry.ts. Only onEnd, onLanguageModelCallStart, onLanguageModelCallEnd, onError and the extract and decide callbacks are ported so far. |
 
 ## Delegates
 

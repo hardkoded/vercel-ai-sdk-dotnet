@@ -849,7 +849,8 @@ internal static class Generation
 
             if (TelemetryDispatcher.Create(options).OnError is { } telemetryOnError)
             {
-                await telemetryOnError(error, callerToken).ConfigureAwait(false);
+                await telemetryOnError(new TelemetryErrorEvent(null, error), callerToken)
+                    .ConfigureAwait(false);
             }
 
             if (!ReferenceEquals(error, exception))

@@ -4,6 +4,7 @@
 
 using System.Text.Json;
 using Vercel.AI.GenerateObject;
+using Vercel.AI.Operations;
 
 namespace Vercel.AI;
 
@@ -38,9 +39,6 @@ internal sealed class TelemetryDispatcher
     /// <summary>Maps to <c>onAbort</c>. Null when no integration has it.</summary>
     public Func<StreamAbortContext, CancellationToken, Task>? OnAbort { get; init; }
 
-    /// <summary>Maps to <c>onError</c>. Null when no integration has it.</summary>
-    public Func<Exception, CancellationToken, Task>? OnError { get; init; }
-
     /// <summary>Maps to <c>onObjectStepStart</c>. Null when no integration has it.</summary>
     public Func<
         GenerateObjectStepStartEvent,
@@ -67,6 +65,45 @@ internal sealed class TelemetryDispatcher
         CancellationToken,
         Task
     >? OnLanguageModelCallEnd { get; init; }
+
+    /// <summary>Maps to <c>onError</c>. Null when no integration has it.</summary>
+    public Func<TelemetryErrorEvent, CancellationToken, Task>? OnError { get; init; }
+
+    /// <summary>Maps to <c>experimental_onDecideStart</c>, or the deprecated <c>experimental_onEvaluateStart</c>. Null when no integration has it.</summary>
+    public Func<DecideEvent, CancellationToken, Task>? OnDecideStart { get; init; }
+
+    /// <summary>Maps to <c>experimental_onDecisionModelCallStart</c>, or the deprecated <c>experimental_onEvaluationModelCallStart</c>. Null when no integration has it.</summary>
+    public Func<
+        DecisionModelEvent,
+        CancellationToken,
+        Task
+    >? OnDecisionModelCallStart { get; init; }
+
+    /// <summary>Maps to <c>experimental_onDecisionModelCallEnd</c>, or the deprecated <c>experimental_onEvaluationModelCallEnd</c>. Null when no integration has it.</summary>
+    public Func<DecisionModelEvent, CancellationToken, Task>? OnDecisionModelCallEnd { get; init; }
+
+    /// <summary>Maps to <c>experimental_onDecideEnd</c>, or the deprecated <c>experimental_onEvaluateEnd</c>. Null when no integration has it.</summary>
+    public Func<DecideEvent, CancellationToken, Task>? OnDecideEnd { get; init; }
+
+    /// <summary>Maps to <c>experimental_onExtractStart</c>. Null when no integration has it.</summary>
+    public Func<ExtractStartEvent, CancellationToken, Task>? OnExtractStart { get; init; }
+
+    /// <summary>Maps to <c>experimental_onExtractionModelCallStart</c>. Null when no integration has it.</summary>
+    public Func<
+        ExtractionModelCallStartEvent,
+        CancellationToken,
+        Task
+    >? OnExtractionModelCallStart { get; init; }
+
+    /// <summary>Maps to <c>experimental_onExtractionModelCallEnd</c>. Null when no integration has it.</summary>
+    public Func<
+        ExtractionModelCallEndEvent,
+        CancellationToken,
+        Task
+    >? OnExtractionModelCallEnd { get; init; }
+
+    /// <summary>Maps to <c>experimental_onExtractEnd</c>. Null when no integration has it.</summary>
+    public Func<ExtractEndEvent, CancellationToken, Task>? OnExtractEnd { get; init; }
 
     /// <summary>The integrations a call resolves: the per-call ones, or the global ones. Maps to the lookup in <c>createTelemetryDispatcher</c>.</summary>
     internal static IReadOnlyList<ITelemetry> ResolveIntegrations(TelemetryOptions? telemetry)
@@ -109,6 +146,7 @@ internal sealed class TelemetryDispatcher
         }
 
         var integrations = ResolveIntegrations(telemetry);
+#pragma warning disable CS0618 // the deprecated evaluate callbacks keep working like upstream
         return new TelemetryDispatcher
         {
             HasIntegrations = integrations.Count > 0,
@@ -191,8 +229,85 @@ internal sealed class TelemetryDispatcher
                     context.Exception
                 )
             ),
-            OnError = Merge(integrations.Select(i => i.OnError)),
+            OnError = Filter(Merge(integrations.Select(i => i.OnError)), (TelemetryErrorEvent e) =>
+                FilterTelemetryEventHelper.FilterTelemetryEvent(e, telemetry)
+            ),
+            OnDecideStart = Filter(
+                Merge(
+                    integrations.Select(i =>
+                        i.OnDecideStart
+                        ?? Adapt<DecideEvent, EvaluateEvent>(i.OnEvaluateStart, EvaluateEvent.From)
+                    )
+                ),
+                (DecideEvent e) => FilterTelemetryEventHelper.FilterTelemetryEvent(e, telemetry)
+            ),
+            OnDecisionModelCallStart = Filter(
+                Merge(
+                    integrations.Select(i =>
+                        i.OnDecisionModelCallStart
+                        ?? Adapt<DecisionModelEvent, EvaluateModelEvent>(
+                            i.OnEvaluationModelCallStart,
+                            EvaluateModelEvent.From
+                        )
+                    )
+                ),
+                (DecisionModelEvent e) =>
+                    FilterTelemetryEventHelper.FilterTelemetryEvent(e, telemetry)
+            ),
+            OnDecisionModelCallEnd = Filter(
+                Merge(
+                    integrations.Select(i =>
+                        i.OnDecisionModelCallEnd
+                        ?? Adapt<DecisionModelEvent, EvaluateModelEvent>(
+                            i.OnEvaluationModelCallEnd,
+                            EvaluateModelEvent.From
+                        )
+                    )
+                ),
+                (DecisionModelEvent e) =>
+                    FilterTelemetryEventHelper.FilterTelemetryEvent(e, telemetry)
+            ),
+            OnDecideEnd = Filter(
+                Merge(
+                    integrations.Select(i =>
+                        i.OnDecideEnd
+                        ?? Adapt<DecideEvent, EvaluateEvent>(i.OnEvaluateEnd, EvaluateEvent.From)
+                    )
+                ),
+                (DecideEvent e) => FilterTelemetryEventHelper.FilterTelemetryEvent(e, telemetry)
+            ),
+            OnExtractStart = Filter(
+                Merge(integrations.Select(i => i.OnExtractStart)),
+                (ExtractStartEvent e) =>
+                    FilterTelemetryEventHelper.FilterTelemetryEvent(e, telemetry)
+            ),
+            OnExtractionModelCallStart = Filter(
+                Merge(integrations.Select(i => i.OnExtractionModelCallStart)),
+                (ExtractionModelCallStartEvent e) =>
+                    FilterTelemetryEventHelper.FilterTelemetryEvent(e, telemetry)
+            ),
+            OnExtractionModelCallEnd = Filter(
+                Merge(integrations.Select(i => i.OnExtractionModelCallEnd)),
+                (ExtractionModelCallEndEvent e) =>
+                    FilterTelemetryEventHelper.FilterTelemetryEvent(e, telemetry)
+            ),
+            OnExtractEnd = Filter(
+                Merge(integrations.Select(i => i.OnExtractEnd)),
+                (ExtractEndEvent e) => FilterTelemetryEventHelper.FilterTelemetryEvent(e, telemetry)
+            ),
         };
+#pragma warning restore CS0618
+    }
+
+    // Maps a deprecated callback, which takes a subclass of the event, onto the current event type.
+    private static Func<TEvent, CancellationToken, Task>? Adapt<TEvent, TLegacy>(
+        Func<TLegacy, CancellationToken, Task>? legacy,
+        Func<TEvent, TLegacy> convert
+    )
+    {
+        return legacy == null
+            ? null
+            : (e, cancellationToken) => legacy(convert(e), cancellationToken);
     }
 
     // Adds the telemetry settings and the SDK version to an event, then strips the inputs and outputs the call does not record. Maps to augmentEvent.

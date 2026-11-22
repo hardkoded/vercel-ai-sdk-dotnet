@@ -4,6 +4,7 @@
 
 using Vercel.AI.Operations;
 using Vercel.AI.Prompt;
+using Vercel.AI.Tests.Upstream.Telemetry;
 using Vercel.AI.Util;
 using static Vercel.AI.Tests.DecisionFixtures;
 using static Vercel.AI.Tests.Upstream.Operations.Decide.DecideSupport;
@@ -57,31 +58,37 @@ public sealed class TelemetryTests
                     userStarts.Add(item);
                     return Task.CompletedTask;
                 },
-                Telemetry = new DecideTelemetry
+                Telemetry = new TelemetryOptions
                 {
                     RecordInputs = false,
                     RecordOutputs = true,
                     FunctionId = "evaluate-test",
-                    OnDecideStart = item =>
-                    {
-                        telemetryStarts.Add(item);
-                        return Task.CompletedTask;
-                    },
-                    OnDecideEnd = item =>
-                    {
-                        telemetryEnds.Add(item);
-                        return Task.CompletedTask;
-                    },
-                    OnDecisionModelCallStart = item =>
-                    {
-                        modelStarts.Add(item);
-                        return Task.CompletedTask;
-                    },
-                    OnDecisionModelCallEnd = item =>
-                    {
-                        modelEnds.Add(item);
-                        return Task.CompletedTask;
-                    },
+                    Integrations =
+                    [
+                        new TestTelemetry
+                        {
+                            OnDecideStart = (item, _) =>
+                            {
+                                telemetryStarts.Add(item);
+                                return Task.CompletedTask;
+                            },
+                            OnDecideEnd = (item, _) =>
+                            {
+                                telemetryEnds.Add(item);
+                                return Task.CompletedTask;
+                            },
+                            OnDecisionModelCallStart = (item, _) =>
+                            {
+                                modelStarts.Add(item);
+                                return Task.CompletedTask;
+                            },
+                            OnDecisionModelCallEnd = (item, _) =>
+                            {
+                                modelEnds.Add(item);
+                                return Task.CompletedTask;
+                            },
+                        },
+                    ],
                 },
             }
         );
@@ -121,14 +128,20 @@ public sealed class TelemetryTests
                     ["requestId"] = "request-1",
                     ["secret"] = "hidden",
                 },
-                Telemetry = new DecideTelemetry
+                Telemetry = new TelemetryOptions
                 {
                     IncludeRuntimeContext = new Dictionary<string, bool> { ["requestId"] = true },
-                    OnDecideStart = item =>
-                    {
-                        seen = item;
-                        return Task.CompletedTask;
-                    },
+                    Integrations =
+                    [
+                        new TestTelemetry
+                        {
+                            OnDecideStart = (item, _) =>
+                            {
+                                seen = item;
+                                return Task.CompletedTask;
+                            },
+                        },
+                    ],
                 },
             }
         );
@@ -157,14 +170,20 @@ public sealed class TelemetryTests
                     Questions = SampleQuestions(),
                     MaxRetries = 0,
                     GenerateCallId = () => "test-call-id",
-                    Telemetry = new DecideTelemetry
+                    Telemetry = new TelemetryOptions
                     {
-                        OnError = (id, exception) =>
-                        {
-                            callId = id;
-                            seen = exception;
-                            return Task.CompletedTask;
-                        },
+                        Integrations =
+                        [
+                            new TestTelemetry
+                            {
+                                OnError = (item, _) =>
+                                {
+                                    callId = item.CallId;
+                                    seen = item.Error;
+                                    return Task.CompletedTask;
+                                },
+                            },
+                        ],
                     },
                 }
             )
