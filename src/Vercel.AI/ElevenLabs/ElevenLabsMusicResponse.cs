@@ -102,10 +102,10 @@ public static class ElevenLabsMusicResponse
     }
 
     /// <summary>Reads a <c>multipart/mixed</c> detailed music body: JSON metadata and audio.</summary>
-    internal static (ElevenLabsMusicTimestampsResponse Value, JsonElement Raw) ParseMusicTimestampsResponse(
-        byte[] bytes,
-        string contentType
-    )
+    internal static (
+        ElevenLabsMusicTimestampsResponse Value,
+        JsonElement Raw
+    ) ParseMusicTimestampsResponse(byte[] bytes, string contentType)
     {
         {
             var boundary = BoundaryPattern.Match(contentType);

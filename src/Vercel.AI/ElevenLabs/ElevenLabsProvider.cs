@@ -851,10 +851,9 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
                         Instructions = options.Instructions,
                         Language = options.Language,
                         Speed = options.Speed,
-                        ProviderOptions =
-                            options.ProviderOptions is { Count: > 0 } providerOptions
-                                ? JsonSerializer.SerializeToElement(providerOptions)
-                                : null,
+                        ProviderOptions = options.ProviderOptions is { Count: > 0 } providerOptions
+                            ? JsonSerializer.SerializeToElement(providerOptions)
+                            : null,
                         Headers = options.Headers is { } headers
                             ? headers
                                 .Where(header => header.Value != null)
@@ -903,7 +902,10 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
                 .ConfigureAwait(false);
             var mediaType = "audio/mpeg";
             response.Headers.TryGetValue("Content-Type", out var contentType);
-            if (contentType != null && contentType.StartsWith("audio/", StringComparison.OrdinalIgnoreCase))
+            if (
+                contentType != null
+                && contentType.StartsWith("audio/", StringComparison.OrdinalIgnoreCase)
+            )
             {
                 var separator = contentType.IndexOf(';');
                 mediaType = (
@@ -981,7 +983,6 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
                 JsonSerializer.SerializeToElement(new JsonObject { ["elevenlabs"] = metadata })
             );
         }
-
 
         /// <summary>Text to Dialogue from explicit inputs, or a single text/voice input for v4. Maps to <c>getDialogueArgs</c>.</summary>
         private SpeechArgs GetDialogueArgs(
@@ -1108,7 +1109,8 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
 
             var query = new List<string>
             {
-                "output_format=" + Uri.EscapeDataString(ToElevenLabsOutputFormat(request.OutputFormat)),
+                "output_format="
+                    + Uri.EscapeDataString(ToElevenLabsOutputFormat(request.OutputFormat)),
             };
             AddEnableLogging(elevenlabs, query);
 
@@ -1200,7 +1202,11 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
                 warnings.Add(
                     new UnsupportedWarning(
                         feature,
-                        "ElevenLabs " + label + " models do not support " + feature + "; it was ignored."
+                        "ElevenLabs "
+                            + label
+                            + " models do not support "
+                            + feature
+                            + "; it was ignored."
                     )
                 );
             }
@@ -1309,7 +1315,9 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
             }
 
             return new SpeechArgs(
-                isMusic ? (withTimestamps ? "/v1/music/detailed" : "/v1/music") : "/v1/sound-generation",
+                isMusic
+                    ? (withTimestamps ? "/v1/music/detailed" : "/v1/music")
+                    : "/v1/sound-generation",
                 body,
                 query,
                 outputFormat,
@@ -1445,7 +1453,6 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
             List<ModelWarning> Warnings
         );
 
-
         private SpeechArgs GetArgs(
             ElevenLabsSpeechRequest request,
             ElevenLabsSpeechRequestConfig config
@@ -1467,10 +1474,9 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
             }
 
             foreach (
-                var option in ElevenLabsModelCatalog
-                    .ElevenLabsMusicOnlyOptions.Concat(
-                        ElevenLabsModelCatalog.ElevenLabsSoundEffectsOnlyOptions
-                    )
+                var option in ElevenLabsModelCatalog.ElevenLabsMusicOnlyOptions.Concat(
+                    ElevenLabsModelCatalog.ElevenLabsSoundEffectsOnlyOptions
+                )
             )
             {
                 if (Child(elevenlabs, option) != null)
@@ -1611,7 +1617,6 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
                 warnings
             );
         }
-
 
         private static (
             byte[] Audio,
