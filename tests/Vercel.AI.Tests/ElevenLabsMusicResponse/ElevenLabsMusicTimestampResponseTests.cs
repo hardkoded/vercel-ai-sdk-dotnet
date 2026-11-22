@@ -107,8 +107,14 @@ public sealed class ElevenLabsMusicTimestampResponseTests
         Assert.Equal(120, word.StartMs);
         Assert.Equal(945, word.EndMs);
         Assert.Equal(
-            "Hello 🌍",
-            result.RawValue.GetProperty("words_timestamps")[0].GetProperty("word").GetString()
+            DefaultMetadata,
+            JsonSerializer.Serialize(
+                result.RawValue,
+                new JsonSerializerOptions
+                {
+                    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Default,
+                }
+            )
         );
         Assert.Equal("test-song", result.ResponseHeaders["song-id"]);
     }

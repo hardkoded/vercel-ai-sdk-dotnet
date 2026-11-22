@@ -863,14 +863,15 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
             var elevenlabs = ElevenLabsObject(request.ProviderOptions);
             var body = new JsonObject { ["text"] = request.Text, ["model_id"] = ModelId };
             var query = new List<string>();
-            if (!string.IsNullOrEmpty(request.OutputFormat))
+            var requestedOutputFormat = request.OutputFormat;
+            if (!string.IsNullOrEmpty(requestedOutputFormat))
             {
                 query.Add(
                     "output_format="
                         + Uri.EscapeDataString(
-                            OutputFormats.TryGetValue(request.OutputFormat, out var mapped)
+                            OutputFormats.TryGetValue(requestedOutputFormat, out var mapped)
                                 ? mapped
-                                : request.OutputFormat
+                                : requestedOutputFormat
                         )
                 );
             }
@@ -1000,11 +1001,11 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
             }
 
             var outputFormat = OutputFormats.TryGetValue(
-                request.OutputFormat ?? string.Empty,
+                requestedOutputFormat ?? string.Empty,
                 out var native
             )
                 ? native
-                : request.OutputFormat;
+                : requestedOutputFormat;
             var metadata = new JsonObject();
             if (!string.IsNullOrEmpty(outputFormat))
             {

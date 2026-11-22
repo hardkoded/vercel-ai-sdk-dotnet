@@ -161,9 +161,9 @@ public sealed class DoGenerateTests
             new ElevenLabsSpeechRequest("Hi")
             {
                 ProviderOptions = Options(
-                    "{\"elevenlabs\":{\"withTimestamps\":"
-                        + (withTimestamps is null ? "null" : "false")
-                        + "}}"
+                    withTimestamps is null
+                        ? "{\"elevenlabs\":{}}"
+                        : "{\"elevenlabs\":{\"withTimestamps\":false}}"
                 ),
             },
             CancellationToken.None
