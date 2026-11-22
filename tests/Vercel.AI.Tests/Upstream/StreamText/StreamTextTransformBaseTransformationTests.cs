@@ -539,8 +539,7 @@ public sealed class StreamTextTransformBaseTransformationTests
     [Fact]
     [UpstreamTest(
         Base + "it should send transformed chunks to onChunk",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The model sends a response-metadata part (id-0, epoch) instead of upstream's mockId and frozen system time, because streamText ignores GenerateId and has no clock hook for the response timestamp (#1567). Tool-call input is compared as JSON."
+        Note = "Tool-call input is compared as JSON."
     )]
     public async Task It_should_send_transformed_chunks_to_onChunk()
     {
@@ -551,11 +550,6 @@ public sealed class StreamTextTransformBaseTransformationTests
                 new StreamTextOptions
                 {
                     Model = CallsModel.Single([
-                        new ResponseMetadataStreamPart(
-                            "id-0",
-                            "mock-model-id",
-                            DateTimeOffset.UnixEpoch
-                        ),
                         new TextStartStreamPart("1"),
                         new TextDeltaStreamPart("1", "Hello"),
                         new ReasoningStartStreamPart("2"),
@@ -573,6 +567,11 @@ public sealed class StreamTextTransformBaseTransformationTests
                     ]),
                     Tools = [Tool1()],
                     Prompt = "test-input",
+                    GenerateId =
+                        Vercel.AI.Tests.Upstream.GenerateText.StreamText.ToolExecutionApprovalStreamSupport.StreamMockId(
+                            "id"
+                        ),
+                    CurrentDate = () => DateTimeOffset.UnixEpoch,
                     GenerateCallId = () => "test-telemetry-call-id",
                     NowMs = () => 0,
                     OnChunk = (chunk, _) =>
