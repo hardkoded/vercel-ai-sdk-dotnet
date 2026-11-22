@@ -264,6 +264,18 @@ public sealed class GatewayProvider
     }
 #pragma warning restore CS0618
 
+    /// <summary>Reranking model routed through <c>/reranking-model</c>.</summary>
+    public override IRerankingModel RerankingModel(string modelId)
+    {
+        return new GatewayRerankingModel(this, modelId);
+    }
+
+    /// <summary>Alias of <see cref="RerankingModel"/>. Maps to <c>reranking</c>. Returns the concrete model so it can be passed to <c>RerankRequest.Model</c>.</summary>
+    public GatewayRerankingModel Reranking(string modelId)
+    {
+        return new GatewayRerankingModel(this, modelId);
+    }
+
     /// <summary>Extraction model routed through <c>/extraction-model</c>. Maps to <c>extractionModel</c>.</summary>
     public GatewayExtractionModel ExtractionModel(string modelId)
     {

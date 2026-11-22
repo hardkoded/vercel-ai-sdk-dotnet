@@ -1943,6 +1943,20 @@ Validation is strict and returns no partial results. `Extract.ExtractAsync` thro
 
 `OpenAIProvider.ExtractionModel(id)` (Responses API, provider id `openai.extraction`), `AnthropicProvider.ExtractionModel(id)` (Messages, `anthropic.extraction`), and `GoogleProvider.ExtractionModel(id)` (Gemini, `google.extraction`) return an `ExtractionLanguageModel`. It wraps a V4 `ILanguageModel` and sends one structured-output request with reasoning `none`. Each field gets a nullable schema (`anyOf` the typed value and `null`) under an internal key (`f0`, `f1`, and so on), and the answers are mapped back to the field ids. Field options and `ReferenceDate` go in the prompt. An empty string or list becomes `null`. The adapter returns `null` for missing values and never returns `PNull`, `Confidence`, `Guess`, or `Source`. Image and PDF files pass through, and any other file media type throws `UnsupportedFunctionalityException` before the model is called. A finish reason of `content-filter` returns a refusal for each field. Any other finish reason except `stop`, invalid JSON, and a missing or extra value throw `InvalidResponseDataException`. `new ExtractionLanguageModel(model, provider, maxFieldsPerCall)` (a positive integer, or `double.PositiveInfinity` for no limit, the default) splits larger field maps into parallel calls of at most `maxFieldsPerCall` fields, because Anthropic caps structured output at 16 union parameters (`AnthropicProvider.ExtractionModel` sets 16). The answers are merged, usage is summed, and the response and provider metadata come from the first call. When one call fails, the whole extraction fails and the other calls are cancelled, and a caller cancel reaches every call. `ExtractionLanguageModel.Serialize(model)` and `Deserialize(options)` work like their `DecisionLanguageModel` counterparts.
 
+## Gateway reranking models
+
+`GatewayProvider.RerankingModel(id)` returns an `IRerankingModel`. `Reranking(id)` (upstream `rerankingModel` and `reranking`) returns the concrete `GatewayRerankingModel`, which `RerankRequest.Model` accepts. It posts `{ documents, query, topN, providerOptions }` to `{base}/reranking-model` with the `ai-reranking-model-specification-version: 4` and `ai-model-id` headers, and leaves out `topN` and `providerOptions` when you did not set them. The response `warnings`, `providerMetadata`, and headers come back on the `RerankModelResponse`. Reranking models re-score candidate documents after an initial retrieval step, which helps retrieval-augmented generation pipelines.
+
+```csharp
+var result = await Rerank.RerankAsync(new RerankRequest
+{
+    Model = GatewayProvider.Create().Reranking("cohere/rerank-v3.5"),
+    Query = "What is the capital of France?",
+    Documents = ["Paris is the capital of France.", "Berlin is the capital of Germany.", "Madrid is the capital of Spain."],
+    TopN = 2,
+});
+```
+
 ## Gateway extraction models
 
 `GatewayProvider.ExtractionModel(id)` (alias `Extraction(id)`, upstream `extractionModel` and `extraction`) returns a `GatewayExtractionModel`. It posts `{ stateParts, fields, referenceDate, maxOutputTokens, reasoning, providerOptions }` to `{base}/extraction-model` with the `ai-extraction-model-specification-version: 4` and `ai-model-id` headers, and leaves out each option you did not set. The `fields` are the `ExtractionField` values as given.
