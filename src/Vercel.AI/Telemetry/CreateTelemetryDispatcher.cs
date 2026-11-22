@@ -113,7 +113,8 @@ internal sealed class TelemetryDispatcher
                         FilterIncludedContextHelper.FilterToolsContext(
                             e.ToolsContext,
                             telemetry?.IncludeToolsContext
-                        )
+                        ),
+                        e.Steps.Select(step => FilterStep(step, telemetry)).ToList()
                     )
             ),
             OnToolExecutionStart = Filter<ToolExecutionStartEvent>(

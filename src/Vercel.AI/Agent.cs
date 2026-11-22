@@ -138,7 +138,9 @@ public sealed class Agent : IAgent
         prepared.ExperimentalSteering = experimentalSteering ?? prepared.ExperimentalSteering;
         prepared.OnStepEnd = MergeCallbacks(Options.OnStepEnd, prepared.OnStepEnd);
         prepared.OnStart = MergeCallbacks(Options.OnStart, prepared.OnStart);
-        prepared.OnEnd = MergeCallbacks(Options.OnEnd, prepared.OnEnd);
+#pragma warning disable CS0618 // OnFinish is the deprecated alias of OnEnd
+        prepared.OnEnd = MergeCallbacks(Options.OnEnd, prepared.OnEnd ?? prepared.OnFinish);
+#pragma warning restore CS0618
 
         return await _client.GenerateTextAsync(prepared, cancellationToken).ConfigureAwait(false);
     }
@@ -281,7 +283,9 @@ public sealed class Agent : IAgent
                 ExperimentalSandbox = prepared.ExperimentalSandbox,
                 OnStepEnd = MergeCallbacks(Options.OnStepEnd, onStepEnd ?? prepared.OnStepEnd),
                 OnStart = MergeCallbacks(Options.OnStart, prepared.OnStart),
-                OnEnd = MergeCallbacks(Options.OnEnd, prepared.OnEnd),
+#pragma warning disable CS0618 // OnFinish is the deprecated alias of OnEnd
+                OnEnd = MergeCallbacks(Options.OnEnd, prepared.OnEnd ?? prepared.OnFinish),
+#pragma warning restore CS0618
                 Telemetry = prepared.Telemetry,
                 ExperimentalTelemetry = prepared.ExperimentalTelemetry,
 #pragma warning disable CS0618 // OnFinish is the deprecated alias of OnEnd
@@ -342,7 +346,7 @@ public sealed class Agent : IAgent
             {
                 await callback(result, cancellationToken).ConfigureAwait(false);
             }
-            catch (Exception)
+            catch (Exception exception) when (exception is not OperationCanceledException)
             {
                 // Promise.allSettled
             }

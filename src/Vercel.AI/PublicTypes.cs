@@ -1833,7 +1833,13 @@ public sealed class GenerateTextStepStartEvent
     public IReadOnlyList<string>? ToolOrder { get; init; }
 
     /// <summary>Results of the previous steps, empty for the first step. Maps to <c>steps</c>.</summary>
-    public IReadOnlyList<StepResult> Steps { get; init; } = [];
+    public IReadOnlyList<StepResult> Steps
+    {
+        get => _steps;
+        init => _steps = value;
+    }
+
+    private IReadOnlyList<StepResult> _steps = [];
 
     /// <summary>Additional provider-specific options for this step. Maps to <c>providerOptions</c>.</summary>
     public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; init; }
@@ -1861,10 +1867,12 @@ public sealed class GenerateTextStepStartEvent
     // A copy of the event with other contexts. Telemetry hands integrations the filtered contexts and leaves the original event alone.
     internal GenerateTextStepStartEvent WithContexts(
         IReadOnlyDictionary<string, object?> runtimeContext,
-        IReadOnlyDictionary<string, JsonElement> toolsContext
+        IReadOnlyDictionary<string, JsonElement> toolsContext,
+        IReadOnlyList<StepResult> steps
     )
     {
         var copy = (GenerateTextStepStartEvent)MemberwiseClone();
+        copy._steps = steps;
         copy._runtimeContext = runtimeContext;
         copy._toolsContext = toolsContext;
         return copy;

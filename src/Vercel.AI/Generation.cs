@@ -1307,7 +1307,8 @@ internal static class Generation
                                     initialMessages,
                                     Vercel.AI.Operations.OperationRetry.ResolveMaxRetries(
                                         options.MaxRetries
-                                    )
+                                    ),
+                                    "ai.streamText"
                                 ),
                                 cancellationToken
                             ),
@@ -1328,7 +1329,8 @@ internal static class Generation
                             initialMessages,
                             Vercel.AI.Operations.OperationRetry.ResolveMaxRetries(
                                 options.MaxRetries
-                            )
+                            ),
+                            "ai.streamText"
                         ),
                         cancellationToken
                     )
@@ -1505,7 +1507,7 @@ internal static class Generation
                         Messages = stepMessages.Skip(instructionCount).ToArray(),
                         Tools = options.Tools,
                         ToolChoice = streamOptions.ToolChoice,
-                        ActiveTools = options.ActiveTools,
+                        ActiveTools = streamOptions.ActiveTools,
                         ToolOrder = streamOptions.ToolOrder,
                         Steps = steps.ToArray(),
                         ProviderOptions = streamOptions.ProviderOptions,
@@ -4183,11 +4185,13 @@ internal static class Generation
         ILanguageModel model,
         Instructions? initialInstructions,
         IReadOnlyList<ModelMessage> initialMessages,
-        int resolvedMaxRetries
+        int resolvedMaxRetries,
+        string operationId = "ai.generateText"
     ) =>
         new GenerateTextStartEvent
         {
             CallId = callId,
+            OperationId = operationId,
             Provider = model.Provider,
             ModelId = model.ModelId,
             Instructions = initialInstructions,
