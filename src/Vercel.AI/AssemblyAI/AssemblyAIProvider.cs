@@ -499,7 +499,10 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
 
             var options = _provider.Options as AssemblyAIOptions;
             var started = options?.Clock != null ? options.Clock() : DateTimeOffset.UtcNow;
-            var headers = ProviderExchange.Merge(await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false), request?.Headers);
+            var headers = ProviderExchange.Merge(
+                await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false),
+                request?.Headers
+            );
             var uploadContent = new ByteArrayContent(audio.Data);
             uploadContent.Headers.ContentType = new MediaTypeHeaderValue(
                 "application/octet-stream"

@@ -124,8 +124,14 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
     {
         options = options ?? new LanguageModelCallOptions();
         var prepared = Prepare(options, stream: false);
+        var headers = await _provider
+            .CreateHeadersAsync(
+                _provider.Options.PrepareCallHeaders?.Invoke(options) ?? options.Headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         var response = await _provider
-            .PostJsonAsync(RequestUri(), prepared.Json, prepared.Headers, cancellationToken)
+            .PostJsonAsync(RequestUri(), prepared.Json, headers, cancellationToken)
             .ConfigureAwait(false);
         using var document = JsonDocument.Parse(
             string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body
@@ -307,8 +313,14 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
     {
         options = options ?? new LanguageModelCallOptions();
         var prepared = Prepare(options, stream: true);
+        var headers = await _provider
+            .CreateHeadersAsync(
+                _provider.Options.PrepareCallHeaders?.Invoke(options) ?? options.Headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         var sse = await _provider
-            .PostSseAsync(RequestUri(), prepared.Json, prepared.Headers, cancellationToken)
+            .PostSseAsync(RequestUri(), prepared.Json, headers, cancellationToken)
             .ConfigureAwait(false);
         try
         {
@@ -820,7 +832,6 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
 
         return new PreparedRequest(
             body,
-            (await _provider.CreateHeadersAsync(_provider.Options.PrepareCallHeaders?.Invoke(options) ?? options.Headers, cancellationToken).ConfigureAwait(false)),
             warnings,
             metadataKey,
             jsonResponse && _provider.Options.JsonTextOverridesToolCalls,
@@ -1453,7 +1464,6 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
     {
         public PreparedRequest(
             JsonObject body,
-            Dictionary<string, string?> headers,
             List<CallWarning> warnings,
             string metadataKey,
             bool jsonTextOverridesToolCalls,
@@ -1463,7 +1473,6 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
             JsonResponseToolName = jsonResponseToolName;
             Body = body;
             Json = body.ToJsonString();
-            Headers = headers;
             Warnings = warnings;
             MetadataKey = metadataKey;
             JsonTextOverridesToolCalls = jsonTextOverridesToolCalls;
@@ -1472,8 +1481,6 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
         public JsonObject Body { get; }
 
         public string Json { get; }
-
-        public Dictionary<string, string?> Headers { get; }
 
         public List<CallWarning> Warnings { get; }
 

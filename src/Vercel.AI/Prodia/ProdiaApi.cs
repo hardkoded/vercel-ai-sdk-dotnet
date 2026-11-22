@@ -51,7 +51,10 @@ internal static class ProdiaApi
         CancellationToken cancellationToken
     )
     {
-        var headers = ProviderExchange.Merge((await provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false)), callHeaders);
+        var headers = ProviderExchange.Merge(
+            await provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false),
+            callHeaders
+        );
         headers["Accept"] = accept;
         var response = await ProviderExchange
             .SendAsync(

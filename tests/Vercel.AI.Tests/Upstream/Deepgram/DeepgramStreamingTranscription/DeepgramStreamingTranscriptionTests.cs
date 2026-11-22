@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Deepgram;
 using Vercel.AI.Operations;
+using Vercel.AI.ProviderUtils;
 using Vercel.AI.Tests.Upstream.ProviderUtils;
 
 namespace Vercel.AI.Tests.Upstream.Deepgram.DeepgramStreamingTranscription;
@@ -29,7 +30,7 @@ public sealed class DeepgramStreamingTranscriptionTests
         MockWebSocket.Reset();
         var options = new DeepgramOptions
         {
-            ApiKeyProvider = _ => Task.FromResult("resolved-key"),
+            ApiKey = Resolvable<string>.From(() => Task.FromResult("resolved-key")),
             WebSocket = MockWebSocket.Factory,
         };
         options.Headers["X-Provider"] = "provider";

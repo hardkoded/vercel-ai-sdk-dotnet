@@ -76,11 +76,14 @@ public sealed class OpenAICompatibleCompletionLanguageModel : ILanguageModel
     {
         options = options ?? new LanguageModelCallOptions();
         var prepared = Prepare(options, stream: false);
+        var headers = await _provider
+            .CreateHeadersAsync(options.Headers, cancellationToken)
+            .ConfigureAwait(false);
         var response = await _provider
             .PostJsonAsync(
                 _provider.CompletionsUri(_requestModelId ?? ModelId),
                 prepared.Json,
-                prepared.Headers,
+                headers,
                 cancellationToken
             )
             .ConfigureAwait(false);
@@ -139,11 +142,14 @@ public sealed class OpenAICompatibleCompletionLanguageModel : ILanguageModel
     {
         options = options ?? new LanguageModelCallOptions();
         var prepared = Prepare(options, stream: true);
+        var headers = await _provider
+            .CreateHeadersAsync(options.Headers, cancellationToken)
+            .ConfigureAwait(false);
         var sse = await _provider
             .PostSseAsync(
                 _provider.CompletionsUri(_requestModelId ?? ModelId),
                 prepared.Json,
-                prepared.Headers,
+                headers,
                 cancellationToken
             )
             .ConfigureAwait(false);
@@ -403,11 +409,7 @@ public sealed class OpenAICompatibleCompletionLanguageModel : ILanguageModel
             }
         }
 
-        return new Prepared(
-            body.ToJsonString(),
-            (await _provider.CreateHeadersAsync(options.Headers, cancellationToken).ConfigureAwait(false)),
-            warnings
-        );
+        return new Prepared(body.ToJsonString(), warnings);
     }
 
     private static CompletionSettings ReadSettings(
@@ -648,20 +650,13 @@ public sealed class OpenAICompatibleCompletionLanguageModel : ILanguageModel
 
     private sealed class Prepared
     {
-        public Prepared(
-            string json,
-            Dictionary<string, string?> headers,
-            List<CallWarning> warnings
-        )
+        public Prepared(string json, List<CallWarning> warnings)
         {
             Json = json;
-            Headers = headers;
             Warnings = warnings;
         }
 
         public string Json { get; }
-
-        public Dictionary<string, string?> Headers { get; }
 
         public List<CallWarning> Warnings { get; }
     }

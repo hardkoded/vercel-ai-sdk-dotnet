@@ -165,7 +165,10 @@ public sealed class DecisionHeyGenModel : IDecisionCaller
                     HttpMethod.Post,
                     ApiKeys.Combine(_provider.Options.BaseUrl, "v3/models/decisions"),
                     ProviderExchange.Json(body.ToJsonString()),
-                    ProviderExchange.Merge(await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false), call.Headers),
+                    ProviderExchange.Merge(
+                        await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false),
+                        call.Headers
+                    ),
                     cancellationToken
                 )
                 .ConfigureAwait(false);

@@ -175,7 +175,11 @@ public sealed class PerplexityDecisionModel : IDecisionCaller
             .PostJsonAsync(
                 ApiKeys.Combine(_provider.Options.BaseUrl, "v1/decisions"),
                 body.ToJsonString(),
-                (await _provider.CreateHeadersAsync(headers, cancellationToken).ConfigureAwait(false)),
+                (
+                    await _provider
+                        .CreateHeadersAsync(headers, cancellationToken)
+                        .ConfigureAwait(false)
+                ),
                 cancellationToken
             )
             .ConfigureAwait(false);

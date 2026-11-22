@@ -454,7 +454,10 @@ public sealed class RevAIProvider : OpenAICompatibleProvider
             CancellationToken cancellationToken
         )
         {
-            var headers = ProviderExchange.Merge(await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false), request?.Headers);
+            var headers = ProviderExchange.Merge(
+                await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false),
+                request?.Headers
+            );
             ProviderExchange.AddUserAgent(headers, "revai");
             return headers;
         }

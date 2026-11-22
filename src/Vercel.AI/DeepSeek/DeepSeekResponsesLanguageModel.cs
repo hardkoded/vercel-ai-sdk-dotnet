@@ -65,7 +65,11 @@ public sealed class DeepSeekResponsesLanguageModel : ILanguageModel
                 HttpMethod.Post,
                 uri,
                 prepared.Body.ToJsonString(),
-                (await _provider.CreateHeadersAsync(options?.Headers, cancellationToken).ConfigureAwait(false)),
+                (
+                    await _provider
+                        .CreateHeadersAsync(options?.Headers, cancellationToken)
+                        .ConfigureAwait(false)
+                ),
                 cancellationToken
             )
             .ConfigureAwait(false);
@@ -124,7 +128,11 @@ public sealed class DeepSeekResponsesLanguageModel : ILanguageModel
             .Http.OpenSseResponseAsync(
                 RequestUri(),
                 json,
-                (await _provider.CreateHeadersAsync(options?.Headers, cancellationToken).ConfigureAwait(false)),
+                (
+                    await _provider
+                        .CreateHeadersAsync(options?.Headers, cancellationToken)
+                        .ConfigureAwait(false)
+                ),
                 cancellationToken
             )
             .ConfigureAwait(false);

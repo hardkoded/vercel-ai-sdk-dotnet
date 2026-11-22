@@ -183,14 +183,14 @@ public sealed class TogetherAIUpstreamTests
         "packages/togetherai/src/togetherai-provider.test.ts::TogetherAIProvider > createTogetherAI::should fall back to TOGETHER_AI_API_KEY with deprecation warning",
         Coverage = UpstreamCoverage.Covered
     )]
-    public void The_legacy_environment_variable_warns()
+    public async Task The_legacy_environment_variable_warns()
     {
-        WithEnvironment("TOGETHER_API_KEY", null, () =>
+        await WithEnvironmentAsync("TOGETHER_API_KEY", null, async () =>
         {
-            WithEnvironment("TOGETHER_AI_API_KEY", "legacy-key", () =>
+            await WithEnvironmentAsync("TOGETHER_AI_API_KEY", "legacy-key", async () =>
             {
                 var provider = TogetherAIProvider.Create();
-                var headers = provider.CreateHeaders();
+                var headers = await provider.CreateHeadersAsync(CancellationToken.None);
                 Assert.Equal("Bearer legacy-key", headers["Authorization"]);
                 Assert.Equal(
                     "TOGETHER_AI_API_KEY is deprecated and will be removed in a future release. Please use TOGETHER_API_KEY instead.",
@@ -205,14 +205,17 @@ public sealed class TogetherAIUpstreamTests
         "packages/togetherai/src/togetherai-provider.test.ts::TogetherAIProvider > createTogetherAI::should prefer TOGETHER_API_KEY over TOGETHER_AI_API_KEY",
         Coverage = UpstreamCoverage.Covered
     )]
-    public void The_preferred_environment_variable_wins()
+    public async Task The_preferred_environment_variable_wins()
     {
-        WithEnvironment("TOGETHER_API_KEY", "preferred", () =>
+        await WithEnvironmentAsync("TOGETHER_API_KEY", "preferred", async () =>
         {
-            WithEnvironment("TOGETHER_AI_API_KEY", "legacy-key", () =>
+            await WithEnvironmentAsync("TOGETHER_AI_API_KEY", "legacy-key", async () =>
             {
                 var provider = TogetherAIProvider.Create();
-                Assert.Equal("Bearer preferred", provider.CreateHeaders()["Authorization"]);
+                Assert.Equal(
+                    "Bearer preferred",
+                    (await provider.CreateHeadersAsync(CancellationToken.None))["Authorization"]
+                );
                 Assert.Null(provider.ApiKeyDeprecationWarning);
             });
         });
@@ -223,14 +226,17 @@ public sealed class TogetherAIUpstreamTests
         "packages/togetherai/src/togetherai-provider.test.ts::TogetherAIProvider > createTogetherAI::should prefer explicit apiKey over TOGETHER_AI_API_KEY",
         Coverage = UpstreamCoverage.Covered
     )]
-    public void An_explicit_key_wins()
+    public async Task An_explicit_key_wins()
     {
-        WithEnvironment("TOGETHER_AI_API_KEY", "legacy-key", () =>
+        await WithEnvironmentAsync("TOGETHER_AI_API_KEY", "legacy-key", async () =>
         {
             var provider = TogetherAIProvider.Create(
                 new OpenAICompatibleOptions { ApiKey = "explicit" }
             );
-            Assert.Equal("Bearer explicit", provider.CreateHeaders()["Authorization"]);
+            Assert.Equal(
+                "Bearer explicit",
+                (await provider.CreateHeadersAsync(CancellationToken.None))["Authorization"]
+            );
             Assert.Null(provider.ApiKeyDeprecationWarning);
         });
     }
@@ -792,15 +798,18 @@ public sealed class TogetherAIUpstreamTests
         "packages/togetherai/src/togetherai-provider.test.ts::TogetherAIProvider > createTogetherAI::should create a TogetherAIProvider instance with default options",
         Coverage = UpstreamCoverage.Covered
     )]
-    public void Default_options_read_the_together_api_key()
+    public async Task Default_options_read_the_together_api_key()
     {
-        WithEnvironment("TOGETHER_AI_API_KEY", null, () =>
+        await WithEnvironmentAsync("TOGETHER_AI_API_KEY", null, async () =>
         {
-            WithEnvironment("TOGETHER_API_KEY", "env-key", () =>
+            await WithEnvironmentAsync("TOGETHER_API_KEY", "env-key", async () =>
             {
                 var provider = TogetherAIProvider.Create();
                 Assert.Equal("TOGETHER_API_KEY", provider.Options.ApiKeyEnvironmentVariable);
-                Assert.Equal("Bearer env-key", provider.CreateHeaders()["Authorization"]);
+                Assert.Equal(
+                    "Bearer env-key",
+                    (await provider.CreateHeadersAsync(CancellationToken.None))["Authorization"]
+                );
             });
         });
     }
@@ -810,7 +819,7 @@ public sealed class TogetherAIUpstreamTests
         "packages/togetherai/src/togetherai-provider.test.ts::TogetherAIProvider > createTogetherAI::should create a TogetherAIProvider instance with custom options",
         Coverage = UpstreamCoverage.Covered
     )]
-    public void Custom_options_set_the_key_base_url_and_headers()
+    public async Task Custom_options_set_the_key_base_url_and_headers()
     {
         var options = new OpenAICompatibleOptions
         {
@@ -819,7 +828,7 @@ public sealed class TogetherAIUpstreamTests
         };
         options.Headers["Custom-Header"] = "value";
         var provider = TogetherAIProvider.Create(options);
-        var headers = provider.CreateHeaders();
+        var headers = await provider.CreateHeadersAsync(CancellationToken.None);
         Assert.Equal("Bearer custom-key", headers["Authorization"]);
         Assert.Equal("value", headers["Custom-Header"]);
         Assert.Equal("https://custom.url", provider.Options.BaseUrl);
@@ -999,6 +1008,20 @@ public sealed class TogetherAIUpstreamTests
         try
         {
             action();
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(name, previous);
+        }
+    }
+
+    private static async Task WithEnvironmentAsync(string name, string? value, Func<Task> action)
+    {
+        var previous = Environment.GetEnvironmentVariable(name);
+        Environment.SetEnvironmentVariable(name, value);
+        try
+        {
+            await action();
         }
         finally
         {

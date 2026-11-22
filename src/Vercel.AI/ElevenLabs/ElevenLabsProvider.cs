@@ -971,7 +971,10 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
                     uri,
                     ProviderExchange.Json(json),
                     body,
-                    ProviderExchange.Merge(await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false), request.Headers),
+                    ProviderExchange.Merge(
+                        await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false),
+                        request.Headers
+                    ),
                     cancellationToken
                 )
                 .ConfigureAwait(false);
@@ -1142,7 +1145,10 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
                     uri,
                     form,
                     new Dictionary<string, string> { ["model_id"] = ModelId },
-                    ProviderExchange.Merge(await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false), request?.Headers),
+                    ProviderExchange.Merge(
+                        await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false),
+                        request?.Headers
+                    ),
                     cancellationToken
                 )
                 .ConfigureAwait(false);
