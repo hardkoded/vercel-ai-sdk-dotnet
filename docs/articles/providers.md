@@ -1869,6 +1869,8 @@ On a continuation the request omits `system` and the tool definitions, even when
 
 ### Computer toolset factory
 
+`AnthropicTools.Factories` maps each Anthropic provider tool id to a factory that returns the tool with its default arguments and its input schema. `AmazonBedrockProvider.Tools` returns it. The Bedrock `toolConfig` reads the schema of an Anthropic provider tool from the factory called with default arguments, so a computer toolset member you disable is still in that schema.
+
 `AnthropicTools.ComputerToolset20260801(configs, name)` declares `anthropic.computer_toolset_20260801` with a local input schema. `configs` maps a member name (see `AnthropicTools.ComputerToolset20260801Members`) to an `AnthropicComputerToolsetMemberConfig` with `Enabled` (default `true`) and `DeferLoading` (default `false`). Members you omit keep their defaults, including `zoom`. The input schema drops every member with `Enabled = false` from the `action` enum, so a call to it fails input validation. An unknown member name throws `ArgumentException`.
 
 ```csharp
