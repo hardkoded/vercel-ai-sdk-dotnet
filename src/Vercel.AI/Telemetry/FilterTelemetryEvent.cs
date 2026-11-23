@@ -377,7 +377,11 @@ internal static class FilterTelemetryEventHelper
             source.Usage,
             telemetry?.RecordInputs,
             telemetry?.RecordOutputs,
-            telemetry?.FunctionId
+            telemetry?.FunctionId,
+            source.Warnings,
+            source.Rounding,
+            source.ProviderMetadata,
+            source.Response
         )
         {
             AiVersion = AiSdkVersion.Version,

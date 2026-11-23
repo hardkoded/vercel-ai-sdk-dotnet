@@ -422,7 +422,8 @@ internal sealed class TelemetryDispatcher
                 Merge(integrations.Select(i => i.OnAbort)),
                 context => new StreamAbortContext(
                     context.Steps.Select(step => FilterStep(step, telemetry)).ToList(),
-                    context.Exception
+                    context.Exception,
+                    context.CallId
                 )
             ),
             OnError = Filter(Merge(integrations.Select(i => i.OnError)), (TelemetryErrorEvent e) =>

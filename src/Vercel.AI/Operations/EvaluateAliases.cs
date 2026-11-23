@@ -295,7 +295,11 @@ public sealed class EvaluateModelEvent : DecisionModelEvent
         OperationUsage? usage = null,
         bool? recordInputs = null,
         bool? recordOutputs = null,
-        string? functionId = null
+        string? functionId = null,
+        IReadOnlyList<OperationWarning>? warnings = null,
+        DecisionRounding? rounding = null,
+        System.Text.Json.JsonElement? providerMetadata = null,
+        ProviderResponse? response = null
     )
         : base(
             callId,
@@ -308,7 +312,11 @@ public sealed class EvaluateModelEvent : DecisionModelEvent
             usage,
             recordInputs,
             recordOutputs,
-            functionId
+            functionId,
+            warnings,
+            rounding,
+            providerMetadata,
+            response
         ) { }
 
     internal static EvaluateModelEvent From(DecisionModelEvent e)
@@ -325,7 +333,11 @@ public sealed class EvaluateModelEvent : DecisionModelEvent
                 e.Usage,
                 e.RecordInputs,
                 e.RecordOutputs,
-                e.FunctionId
+                e.FunctionId,
+                e.Warnings,
+                e.Rounding,
+                e.ProviderMetadata,
+                e.Response
             )
             {
                 AiVersion = e.AiVersion,

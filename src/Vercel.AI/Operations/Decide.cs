@@ -379,7 +379,11 @@ public class DecisionModelEvent
         OperationUsage? usage = null,
         bool? recordInputs = null,
         bool? recordOutputs = null,
-        string? functionId = null
+        string? functionId = null,
+        IReadOnlyList<OperationWarning>? warnings = null,
+        DecisionRounding? rounding = null,
+        JsonElement? providerMetadata = null,
+        ProviderResponse? response = null
     )
     {
         CallId = callId;
@@ -390,6 +394,10 @@ public class DecisionModelEvent
         Questions = questions;
         Answers = answers;
         Usage = usage;
+        Warnings = warnings;
+        Rounding = rounding;
+        ProviderMetadata = providerMetadata;
+        Response = response;
         RecordInputs = recordInputs;
         RecordOutputs = recordOutputs;
         FunctionId = functionId;
@@ -418,6 +426,18 @@ public class DecisionModelEvent
 
     /// <summary>Provider usage before total tokens are derived.</summary>
     public OperationUsage? Usage { get; }
+
+    /// <summary>Warnings from the decision model. Present on the end event.</summary>
+    public IReadOnlyList<OperationWarning>? Warnings { get; }
+
+    /// <summary>Provider-declared decimal precision. Present on the end event.</summary>
+    public DecisionRounding? Rounding { get; }
+
+    /// <summary>Provider-specific metadata. Present on the end event.</summary>
+    public JsonElement? ProviderMetadata { get; }
+
+    /// <summary>Raw response metadata from the provider. Present on the end event.</summary>
+    public ProviderResponse? Response { get; }
 
     /// <summary>The version of the AI SDK that emitted this event. Present only on telemetry events.</summary>
     public string? AiVersion { get; init; }
@@ -665,7 +685,11 @@ public static class Decide
                                     preparedState,
                                     questions,
                                     result.Answers,
-                                    result.Usage
+                                    result.Usage,
+                                    warnings: result.Warnings,
+                                    rounding: result.Rounding,
+                                    providerMetadata: result.ProviderMetadata,
+                                    response: result.Response
                                 ),
                                 token
                             )
