@@ -28,10 +28,9 @@ Telemetry integration that records GenAI spans on an [ActivitySource](https://le
 **Implements:** [ITelemetry](/api/Vercel.AI/ITelemetry/)
 
 Only the callbacks [ITelemetry](/api/Vercel.AI/ITelemetry/) has are ported: text generation (root, step, model call, and tool spans), decide, and
-extract. The embed, rerank, speech, transcription, object, durable, and inference duration parts of upstream need events the port
-does not emit yet.
+extract. The embed, rerank, speech, transcription, object, and durable parts of upstream need events the port does not emit yet.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L23)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L25)
 
 ## Constructors
 
@@ -54,7 +53,7 @@ Creates the integration.
 | --- | --- | --- |
 | `options` | [OpenTelemetryOptions](/api/Vercel.AI.OpenTelemetry/OpenTelemetryOptions/) | Options. Null uses the defaults. |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L39)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L74)
 
 ## Properties
 
@@ -74,7 +73,7 @@ associated with the model work. Maps to `executeLanguageModelCall`.
 
 **Value:** [IExecuteLanguageModelCall](/api/Vercel.AI/IExecuteLanguageModelCall/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L256)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L291)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_ExecuteTool_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_ExecuteTool"></a>
@@ -92,7 +91,7 @@ span. Maps to `executeTool`.
 
 **Value:** [IExecuteTool](/api/Vercel.AI/IExecuteTool/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L259)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L294)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnAbort_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnAbort"></a>
@@ -109,7 +108,7 @@ Called when a streamed generation is aborted before it completes. Maps to `onAbo
 
 **Value:** [Func&lt;StreamAbortContext, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L102)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L137)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnDecideEnd_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnDecideEnd"></a>
@@ -126,7 +125,7 @@ Called when an experimental decision completes. Maps to `experimental_onDecideEn
 
 **Value:** [Func&lt;DecideEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L170)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L205)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnDecideStart_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnDecideStart"></a>
@@ -143,7 +142,7 @@ Called when an experimental decision begins. Maps to `experimental_onDecideStart
 
 **Value:** [Func&lt;DecideEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L146)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L181)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnDecisionModelCallEnd_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnDecisionModelCallEnd"></a>
@@ -160,7 +159,7 @@ Called after the decision model response has been validated. Maps to `experiment
 
 **Value:** [Func&lt;DecisionModelEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L162)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L197)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnDecisionModelCallStart_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnDecisionModelCallStart"></a>
@@ -177,7 +176,7 @@ Called before the decision model call begins. Maps to `experimental_onDecisionMo
 
 **Value:** [Func&lt;DecisionModelEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L154)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L189)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnEmbedEnd_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnEmbedEnd"></a>
@@ -194,7 +193,7 @@ Called after each `doEmbed` call of `embed` and `embedMany`. Maps to `onEmbedEnd
 
 **Value:** [Func&lt;EmbeddingModelCallEndEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L236)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L271)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnEmbedStart_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnEmbedStart"></a>
@@ -211,7 +210,7 @@ Called before each `doEmbed` call of `embed` and `embedMany`. Maps to `onEmbedSt
 
 **Value:** [Func&lt;EmbeddingModelCallStartEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L233)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L268)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnEnd_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnEnd"></a>
@@ -229,7 +228,7 @@ an [EmbedEndEvent](/api/Vercel.AI.Operations/EmbedEndEvent/), a [RerankEndEvent]
 
 **Value:** [Func&lt;IOperationEndEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L118)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L153)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnError_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnError"></a>
@@ -246,7 +245,7 @@ Called when an unrecoverable error occurs during the generation. Maps to `onErro
 
 **Value:** [Func&lt;TelemetryErrorEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L110)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L145)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnEvaluateEnd_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnEvaluateEnd"></a>
@@ -268,7 +267,7 @@ Deprecated alias of [OnDecideEnd](/api/Vercel.AI/ITelemetry/#Vercel_AI_ITelemetr
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L190)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L225)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnEvaluateStart_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnEvaluateStart"></a>
@@ -290,7 +289,7 @@ Deprecated alias of [OnDecideStart](/api/Vercel.AI/ITelemetry/#Vercel_AI_ITeleme
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L178)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L213)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnEvaluationModelCallEnd_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnEvaluationModelCallEnd"></a>
@@ -312,7 +311,7 @@ Deprecated alias of [OnDecisionModelCallEnd](/api/Vercel.AI/ITelemetry/#Vercel_A
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L186)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L221)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnEvaluationModelCallStart_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnEvaluationModelCallStart"></a>
@@ -334,7 +333,7 @@ Deprecated alias of [OnDecisionModelCallStart](/api/Vercel.AI/ITelemetry/#Vercel
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L182)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L217)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnExtractEnd_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnExtractEnd"></a>
@@ -351,7 +350,7 @@ Called when an experimental extraction completes. Maps to `experimental_onExtrac
 
 **Value:** [Func&lt;ExtractEndEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L222)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L257)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnExtractStart_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnExtractStart"></a>
@@ -368,7 +367,7 @@ Called when an experimental extraction begins. Maps to `experimental_onExtractSt
 
 **Value:** [Func&lt;ExtractStartEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L194)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L229)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnExtractionModelCallEnd_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnExtractionModelCallEnd"></a>
@@ -385,7 +384,7 @@ Called after the extraction model response has been validated. Maps to `experime
 
 **Value:** [Func&lt;ExtractionModelCallEndEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L214)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L249)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnExtractionModelCallStart_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnExtractionModelCallStart"></a>
@@ -402,7 +401,7 @@ Called before the extraction model call begins. Maps to `experimental_onExtracti
 
 **Value:** [Func&lt;ExtractionModelCallStartEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L202)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L237)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnLanguageModelCallEnd_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnLanguageModelCallEnd"></a>
@@ -419,7 +418,7 @@ Called after each provider model call returns, before tools run. Maps to `onLang
 
 **Value:** [Func&lt;LanguageModelCallEndEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L138)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L173)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnLanguageModelCallStart_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnLanguageModelCallStart"></a>
@@ -436,7 +435,7 @@ Called before each provider model call. Maps to `onLanguageModelCallStart`.
 
 **Value:** [Func&lt;LanguageModelCallStartEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L130)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L165)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnObjectStepEnd_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnObjectStepEnd"></a>
@@ -453,7 +452,7 @@ Called after the model call of `generateObject` and `streamObject`. Maps to `onO
 
 **Value:** [Func&lt;GenerateObjectStepEndEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L64)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L99)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnObjectStepStart_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnObjectStepStart"></a>
@@ -470,7 +469,7 @@ Called before the model call of `generateObject` and `streamObject`. Maps to `on
 
 **Value:** [Func&lt;GenerateObjectStepStartEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L61)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L96)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnRerankEnd_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnRerankEnd"></a>
@@ -487,7 +486,7 @@ Called after the `doRerank` call of `rerank`. Maps to `onRerankEnd`.
 
 **Value:** [Func&lt;RerankingModelCallEndEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L242)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L277)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnRerankStart_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnRerankStart"></a>
@@ -504,7 +503,7 @@ Called before the `doRerank` call of `rerank`. Maps to `onRerankStart`.
 
 **Value:** [Func&lt;RerankingModelCallStartEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L239)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L274)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnStart_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnStart"></a>
@@ -521,7 +520,7 @@ Called when an operation begins, before any model call. Maps to `onStart`. Recei
 
 **Value:** [Func&lt;IOperationStartEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L49)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L84)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnStepEnd_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnStepEnd"></a>
@@ -538,7 +537,7 @@ Called when a step completes. Maps to `onStepEnd`.
 
 **Value:** [Func&lt;StepResult, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L91)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L126)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnStepError_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnStepError"></a>
@@ -555,7 +554,7 @@ Called when a step ends with an error before it produces a step result. Maps to 
 
 **Value:** [Func&lt;GenerateTextStepErrorEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L230)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L265)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnStepFinish_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnStepFinish"></a>
@@ -572,7 +571,7 @@ Deprecated alias of [OnStepEnd](/api/Vercel.AI/ITelemetry/#Vercel_AI_ITelemetry_
 
 **Value:** [Func&lt;StepResult, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L99)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L134)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnStepStart_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnStepStart"></a>
@@ -589,7 +588,7 @@ Called when a step begins, before the provider is called. Maps to `onStepStart`.
 
 **Value:** [Func&lt;GenerateTextStepStartEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L67)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L102)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnStreamTranscriptionEnd_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnStreamTranscriptionEnd"></a>
@@ -606,7 +605,7 @@ Called when a stream transcription completes. Maps to `experimental_onStreamTran
 
 **Value:** [Func&lt;StreamTranscriptionEndEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L252)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L287)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnStreamTranscriptionStart_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnStreamTranscriptionStart"></a>
@@ -623,7 +622,7 @@ Called when a stream transcription begins. Maps to `experimental_onStreamTranscr
 
 **Value:** [Func&lt;StreamTranscriptionStartEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L245)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L280)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnToolExecutionEnd_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnToolExecutionEnd"></a>
@@ -640,7 +639,7 @@ Called when a tool execution completes, with a result or an error. Maps to `onTo
 
 **Value:** [Func&lt;ToolExecutionEndEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L83)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L118)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnToolExecutionStart_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetry_OnToolExecutionStart"></a>
@@ -657,4 +656,4 @@ Called when a tool execution begins, before the tool runs. Maps to `onToolExecut
 
 **Value:** [Func&lt;ToolExecutionStartEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L75)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L110)

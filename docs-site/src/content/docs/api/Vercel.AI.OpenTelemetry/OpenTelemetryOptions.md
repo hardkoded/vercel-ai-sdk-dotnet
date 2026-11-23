@@ -168,6 +168,23 @@ Emit runtime context values.
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L120)
 
+<a id="Vercel_AI_OpenTelemetry_OpenTelemetryOptions_ToolChoice_"></a>
+<a id="Vercel_AI_OpenTelemetry_OpenTelemetryOptions_ToolChoice"></a>
+
+### ToolChoice
+
+
+```csharp
+public bool? ToolChoice { get; set; }
+```
+
+
+Emit the tool choice of a step as `ai.prompt.toolChoice`. Maps to `toolChoice`.
+
+**Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L126)
+
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetryOptions_Tracer_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetryOptions_Tracer"></a>
 
