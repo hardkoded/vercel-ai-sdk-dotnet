@@ -23,7 +23,7 @@ One FastAPI validation issue from an ElevenLabs `detail` array.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L55)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L56)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Loose fields ElevenLabs included in the issue.
 
 **Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L80)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L81)
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsValidationIssue_Location_"></a>
 <a id="Vercel_AI_ElevenLabs_ElevenLabsValidationIssue_Location"></a>
@@ -59,7 +59,7 @@ Path components from `loc`.
 
 **Value:** [IReadOnlyList&lt;ElevenLabsErrorLocation&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L74)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L75)
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsValidationIssue_Message_"></a>
 <a id="Vercel_AI_ElevenLabs_ElevenLabsValidationIssue_Message"></a>
@@ -76,7 +76,7 @@ Validation message from `msg`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L71)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L72)
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsValidationIssue_Type_"></a>
 <a id="Vercel_AI_ElevenLabs_ElevenLabsValidationIssue_Type"></a>
@@ -93,4 +93,4 @@ Validation issue type.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L77)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L78)
