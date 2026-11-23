@@ -169,6 +169,9 @@ public sealed class EmbeddingCapabilities
 /// <summary>Upstream <c>ModelCapabilities.image</c>.</summary>
 public sealed class ImageCapabilities
 {
+    /// <summary>A human-readable model description. Not in the upstream type; upstream Fal entries spread it into <c>capabilities.image</c>.</summary>
+    public string? Description { get; init; }
+
     /// <summary>Upstream <c>sizes</c>, when it is a list. Null when <see cref="SizesDescription"/> is used.</summary>
     public IReadOnlyList<string>? Sizes { get; init; }
 
@@ -332,6 +335,9 @@ public sealed class SpeechTranslationCapabilities
 /// <summary>Upstream <c>ModelCapabilities.speech</c>.</summary>
 public sealed class SpeechCapabilities
 {
+    /// <summary>A human-readable model description. Not in the upstream type; upstream Fal entries spread it into <c>capabilities.speech</c>.</summary>
+    public string? Description { get; init; }
+
     /// <summary>Upstream <c>instructions</c>.</summary>
     public ModelCapability Instructions { get; init; } = ModelCapability.Unknown;
 }
