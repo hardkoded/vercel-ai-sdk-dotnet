@@ -31,7 +31,7 @@ An agent that takes options on each call. Maps to `ToolLoopAgent` with a `CALL_O
 
 **Implements:** `IAgent&lt;TCallOptions&gt;`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L1057)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L1065)
 
 ## Constructors
 
@@ -55,7 +55,7 @@ Creates an agent. The default stop condition is 10 steps.
 | `options` | `AgentOptions&lt;TCallOptions&gt;` |  |
 | `client` | [IAiClient](/api/Vercel.AI/IAiClient/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L1066)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L1074)
 
 ## Properties
 
@@ -74,7 +74,7 @@ Agent options.
 
 **Value:** `AgentOptions&lt;TCallOptions&gt;`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L1078)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L1086)
 
 <a id="Vercel_AI_Agent_1_Tools_"></a>
 <a id="Vercel_AI_Agent_1_Tools"></a>
@@ -91,7 +91,7 @@ The tools of the agent. Maps to `tools`.
 
 **Value:** [IReadOnlyList&lt;Tool&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L1081)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L1089)
 
 ## Methods
 
@@ -121,7 +121,7 @@ Generates a reply to &lt;code class="paramref"&gt;messages&lt;/code&gt; with &lt
 
 **Returns:** [Task&lt;GenerateTextResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L1107)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L1115)
 
 <a id="Vercel_AI_Agent_1_GenerateAsync_System_String__0_System_Threading_CancellationToken_Vercel_AI_Prompt_TimeoutConfiguration_Vercel_AI_GenerateText_ISteering_Vercel_AI_ProviderUtils_ISandboxSession_"></a>
 
@@ -149,7 +149,7 @@ Generates a reply to &lt;code class="paramref"&gt;prompt&lt;/code&gt; with &lt;c
 
 **Returns:** [Task&lt;GenerateTextResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L1087)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L1095)
 
 <a id="Vercel_AI_Agent_1_Stream_"></a>
 <a id="Vercel_AI_Agent_1_Stream_System_Collections_Generic_IReadOnlyList_Vercel_AI_Provider_ModelMessage___0_System_Threading_CancellationToken_Vercel_AI_Util_AbortSignal_Vercel_AI_Prompt_TimeoutConfiguration_Vercel_AI_GenerateText_ISteering_System_Func_Vercel_AI_StepResult_System_Threading_CancellationToken_System_Threading_Tasks_Task__Vercel_AI_ProviderUtils_ISandboxSession_"></a>
@@ -179,7 +179,7 @@ Streams a reply to &lt;code class="paramref"&gt;messages&lt;/code&gt; with &lt;c
 
 **Returns:** [StreamTextResult](/api/Vercel.AI/StreamTextResult/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L1154)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L1162)
 
 <a id="Vercel_AI_Agent_1_Stream_System_String__0_System_Threading_CancellationToken_Vercel_AI_Util_AbortSignal_Vercel_AI_Prompt_TimeoutConfiguration_Vercel_AI_GenerateText_ISteering_Vercel_AI_ProviderUtils_ISandboxSession_"></a>
 
@@ -207,4 +207,4 @@ Streams a reply to &lt;code class="paramref"&gt;prompt&lt;/code&gt; with &lt;cod
 
 **Returns:** [StreamTextResult](/api/Vercel.AI/StreamTextResult/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L1131)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L1139)

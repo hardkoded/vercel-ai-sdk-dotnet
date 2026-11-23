@@ -1596,6 +1596,15 @@ public class GenerateTextOptions
     public Func<GenerateTextStepStartEvent, CancellationToken, Task>? OnStepStart { get; set; }
 
     /// <summary>
+    /// Called when a step that started fails before it produces a step result, that is when the provider call throws or rejects,
+    /// or, for <c>GenerateTextAsync</c>, when the call is cancelled or times out. <see cref="OnStepEnd"/> is not called for such a step.
+    /// For <c>StreamTextAsync</c> it is also called when the model stream ends without output; a provider error part still ends the
+    /// step with <see cref="OnStepEnd"/>, and a cancel or a timeout ends it with <see cref="StreamTextOptions.OnAbort"/>.
+    /// An exception it throws is ignored. Maps to <c>onStepError</c>.
+    /// </summary>
+    public Func<GenerateTextStepErrorEvent, CancellationToken, Task>? OnStepError { get; set; }
+
+    /// <summary>
     /// Called immediately before each provider model call begins. An exception it throws is ignored.
     /// Maps to <c>onLanguageModelCallStart</c>.
     /// </summary>

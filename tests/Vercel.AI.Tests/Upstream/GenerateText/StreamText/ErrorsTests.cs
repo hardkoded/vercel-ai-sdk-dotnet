@@ -7,6 +7,7 @@ using System.Threading.Channels;
 using Vercel.AI.AspNetCore;
 using Vercel.AI.GenerateText;
 using Vercel.AI.Operations;
+using Vercel.AI.Prompt;
 using Vercel.AI.Provider;
 using Vercel.AI.Tests.Upstream.GenerateTextSteering;
 using Vercel.AI.Tests.Upstream.StreamText;
@@ -390,6 +391,465 @@ public sealed class ErrorsTests
         AssertNoFinish(await Assert.ThrowsAsync<NoOutputGeneratedException>(() => result.Usage));
         AssertNoFinish(Assert.IsType<NoOutputGeneratedException>(Assert.Single(errors)));
         Assert.Single(stepFinishes);
+    }
+
+    private static List<GenerateTextStepErrorEvent> StepErrors(
+        out Func<GenerateTextStepErrorEvent, CancellationToken, Task> callback
+    )
+    {
+        var events = new List<GenerateTextStepErrorEvent>();
+        callback = (e, _) =>
+        {
+            events.Add(e);
+            return Task.CompletedTask;
+        };
+        return events;
+    }
+
+    private static async IAsyncEnumerable<LanguageModelStreamPart> StartOnlyStream()
+    {
+        yield return new StreamStartStreamPart(null);
+        await Task.CompletedTask;
+    }
+
+    private static async IAsyncEnumerable<LanguageModelStreamPart> ThrowingStream(Exception error)
+    {
+        yield return new StreamStartStreamPart(null);
+        yield return new TextStartStreamPart("1");
+        yield return new TextDeltaStreamPart("1", "Hello");
+        await Task.Yield();
+        throw error;
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should call onStepError when provider stream closes before finish chunk",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
+    )]
+    public async Task Should_call_onStepError_when_provider_stream_closes_before_finish_chunk()
+    {
+        var stepStarts = new List<GenerateTextStepStartEvent>();
+        var stepErrors = StepErrors(out var onStepError);
+        var stepEnds = 0;
+
+        var result = Client()
+            .StreamTextAsync(
+                new StreamTextOptions
+                {
+                    Model =
+                        new Vercel.AI.Tests.StreamText.StreamTextAbortSupport.ScriptedStreamModel(
+                            StartOnlyStream
+                        ),
+                    Prompt = "test-input",
+                    OnError = (_, _) => Task.CompletedTask,
+                    OnStepStart = (e, _) =>
+                    {
+                        stepStarts.Add(e);
+                        return Task.CompletedTask;
+                    },
+                    OnStepError = onStepError,
+                    OnStepEnd = (_, _) =>
+                    {
+                        stepEnds++;
+                        return Task.CompletedTask;
+                    },
+                }
+            );
+
+        await ConsumeIgnoringErrorsAsync(result);
+        await Assert.ThrowsAsync<NoOutputGeneratedException>(() => result.Text);
+
+        Assert.Single(stepStarts);
+        Assert.Equal(0, stepEnds);
+        var stepError = Assert.Single(stepErrors);
+        Assert.Equal(stepStarts[0].StepNumber, stepError.StepNumber);
+        Assert.Equal(stepStarts[0].CallId, stepError.CallId);
+        Assert.Equal(NoFinishMessage, stepError.Error.Message);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should call onStepError when the provider call throws",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
+    )]
+    public async Task Should_call_onStepError_when_the_provider_call_throws()
+    {
+        var stepErrors = StepErrors(out var onStepError);
+        var providerError = new InvalidOperationException("provider failure");
+
+        var result = Client()
+            .StreamTextAsync(
+                new StreamTextOptions
+                {
+                    Model = new StepErrorModel(doStream: (_, _) => throw providerError),
+                    Prompt = "test-input",
+                    MaxRetries = 0,
+                    OnError = (_, _) => Task.CompletedTask,
+                    OnStepError = onStepError,
+                }
+            );
+
+        await ConsumeIgnoringErrorsAsync(result);
+        await Assert.ThrowsAnyAsync<Exception>(() => result.Text);
+
+        var stepError = Assert.Single(stepErrors);
+        Assert.Equal(0, stepError.StepNumber);
+        Assert.Same(providerError, stepError.Error);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix
+            + "should report the step error to telemetry before onError when the provider call throws",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
+    )]
+    public async Task Should_report_the_step_error_to_telemetry_before_onError_when_the_provider_call_throws()
+    {
+        var events = new List<string>();
+
+        var result = Client()
+            .StreamTextAsync(
+                new StreamTextOptions
+                {
+                    Model = new StepErrorModel(
+                        doStream: (_, _) => throw new InvalidOperationException("provider failure")
+                    ),
+                    Prompt = "test-input",
+                    MaxRetries = 0,
+                    OnError = (_, _) => Task.CompletedTask,
+                    Telemetry = new TelemetryOptions
+                    {
+                        Integrations =
+                        [
+                            new Vercel.AI.Tests.Upstream.Telemetry.TestTelemetry
+                            {
+                                OnStepError = (_, _) =>
+                                {
+                                    events.Add("onStepError");
+                                    return Task.CompletedTask;
+                                },
+                                OnError = (_, _) =>
+                                {
+                                    events.Add("onError");
+                                    return Task.CompletedTask;
+                                },
+                                OnEnd = (_, _) =>
+                                {
+                                    events.Add("onEnd");
+                                    return Task.CompletedTask;
+                                },
+                            },
+                        ],
+                    },
+                }
+            );
+
+        await ConsumeIgnoringErrorsAsync(result);
+        await Assert.ThrowsAnyAsync<Exception>(() => result.Text);
+
+        Assert.Equal(new[] { "onStepError", "onError" }, events);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should call onStepError when the provider stream errors",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
+    )]
+    public async Task Should_call_onStepError_when_the_provider_stream_errors()
+    {
+        var stepErrors = StepErrors(out var onStepError);
+        var stepEnds = 0;
+        var providerError = new InvalidOperationException("provider stream failure");
+
+        var result = Client()
+            .StreamTextAsync(
+                new StreamTextOptions
+                {
+                    Model = new StepErrorModel(
+                        doStream: (_, _) => StepErrorModel.StreamOf(ThrowingStream(providerError))
+                    ),
+                    Prompt = "test-input",
+                    OnError = (_, _) => Task.CompletedTask,
+                    OnStepEnd = (_, _) =>
+                    {
+                        stepEnds++;
+                        return Task.CompletedTask;
+                    },
+                    OnStepError = onStepError,
+                }
+            );
+
+        await ConsumeIgnoringErrorsAsync(result);
+        await Assert.ThrowsAnyAsync<Exception>(() => result.Text);
+
+        Assert.Equal(0, stepEnds);
+        var stepError = Assert.Single(stepErrors);
+        Assert.Equal(0, stepError.StepNumber);
+        Assert.Same(providerError, stepError.Error);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should report the error of the failed step instead of an earlier step error",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
+    )]
+    public async Task Should_report_the_error_of_the_failed_step_instead_of_an_earlier_step_error()
+    {
+        var stepErrors = StepErrors(out var onStepError);
+        var responseCount = 0;
+
+        var result = Client()
+            .StreamTextAsync(
+                new StreamTextOptions
+                {
+                    Model =
+                        new Vercel.AI.Tests.StreamText.StreamTextAbortSupport.ScriptedStreamModel(
+                            () =>
+                                responseCount++ == 0 ? EarlierErrorStream() : StartOnlyStream()
+                        ),
+                    Tools = new[] { Tool1() },
+                    Prompt = "test-input",
+                    StopWhen = StopWhen.IsStepCount(3),
+                    OnError = (_, _) => Task.CompletedTask,
+                    OnStepError = onStepError,
+                }
+            );
+
+        await ConsumeIgnoringErrorsAsync(result);
+        await Assert.ThrowsAnyAsync<Exception>(() => result.Text);
+
+        var stepError = Assert.Single(stepErrors);
+        Assert.Equal(1, stepError.StepNumber);
+        Assert.IsType<NoOutputGeneratedException>(stepError.Error);
+    }
+
+    private static async IAsyncEnumerable<LanguageModelStreamPart> EarlierErrorStream()
+    {
+        yield return new StreamStartStreamPart(null);
+        yield return new ErrorStreamPart("earlier step error");
+        yield return new ToolCallStreamPart("call-1", "tool1", "{ \"value\": \"value\" }");
+        yield return new FinishStreamPart(
+            FinishReason.ToolCalls,
+            new LanguageModelUsage(3, 10, 13)
+        );
+        await Task.CompletedTask;
+    }
+
+    [Theory]
+    [InlineData("an abort")]
+    [InlineData("the total timeout")]
+    [InlineData("the step timeout")]
+    [UpstreamTest(
+        Prefix + "should end the step with onAbort instead of onStepError on %s",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
+    )]
+    public async Task Should_end_the_step_with_onAbort_instead_of_onStepError(string setup)
+    {
+        var stepErrors = StepErrors(out var onStepError);
+        var aborts = 0;
+        var abortController = new Vercel.AI.Util.AbortController();
+
+        var result = Client()
+            .StreamTextAsync(
+                new StreamTextOptions
+                {
+                    Model = new StepErrorModel(
+                        doStream: (_, token) =>
+                        {
+                            if (setup == "an abort")
+                            {
+                                abortController.Abort();
+                            }
+
+                            return StepErrorModel.HangUntilAborted<LanguageModelStreamResult>(
+                                token
+                            );
+                        }
+                    ),
+                    Prompt = "test-input",
+                    MaxRetries = 0,
+                    AbortSignal = setup == "an abort" ? abortController.Signal : null,
+                    Timeout = setup switch
+                    {
+                        "the total timeout" => new TimeoutConfiguration { TotalMs = 10 },
+                        "the step timeout" => new TimeoutConfiguration { StepMs = 10 },
+                        _ => null,
+                    },
+                    OnError = (_, _) => Task.CompletedTask,
+                    OnAbort = (_, _) =>
+                    {
+                        Interlocked.Increment(ref aborts);
+                        return Task.CompletedTask;
+                    },
+                    OnStepError = onStepError,
+                }
+            );
+
+        await ConsumeIgnoringErrorsAsync(result);
+
+        Assert.Equal(1, aborts);
+        Assert.Empty(stepErrors);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should end the step with onStepEnd when stream retries run out",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
+    )]
+    public async Task Should_end_the_step_with_onStepEnd_when_stream_retries_run_out()
+    {
+        var stepStarts = 0;
+        var stepEnds = new List<StepResult>();
+        var stepErrors = StepErrors(out var onStepError);
+        var attempts = 0;
+
+        var result = Client()
+            .StreamTextAsync(
+                new StreamTextOptions
+                {
+                    Model = new StepErrorModel(
+                        doStream: (_, _) =>
+                        {
+                            attempts++;
+                            return StepErrorModel.StreamOf(FailureStream($"failure {attempts}"));
+                        }
+                    ),
+                    Prompt = "test-input",
+                    MaxRetries = 0,
+                    StreamRetries = 2,
+                    OnError = (_, _) => Task.CompletedTask,
+                    OnStepStart = (_, _) =>
+                    {
+                        stepStarts++;
+                        return Task.CompletedTask;
+                    },
+                    OnStepEnd = (step, _) =>
+                    {
+                        stepEnds.Add(step);
+                        return Task.CompletedTask;
+                    },
+                    OnStepError = onStepError,
+                }
+            );
+
+        await ConsumeIgnoringErrorsAsync(result);
+
+        Assert.Equal(3, attempts);
+        Assert.Equal(1, stepStarts);
+        Assert.Equal(FinishReason.Error, Assert.Single(stepEnds).FinishReason);
+        Assert.Empty(stepErrors);
+    }
+
+    private static async IAsyncEnumerable<LanguageModelStreamPart> FailureStream(string message)
+    {
+        yield return new StreamStartStreamPart(null);
+        yield return new ErrorStreamPart(message);
+        await Task.CompletedTask;
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should not call onStepError when the step completes",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
+    )]
+    public async Task Should_not_call_onStepError_when_the_step_completes()
+    {
+        var stepErrors = StepErrors(out var onStepError);
+
+        var result = Client()
+            .StreamTextAsync(
+                new StreamTextOptions
+                {
+                    Model =
+                        new Vercel.AI.Tests.StreamText.StreamTextAbortSupport.ScriptedStreamModel(
+                            TextStream
+                        ),
+                    Prompt = "test-input",
+                    OnStepError = onStepError,
+                }
+            );
+
+        await ConsumeAsync(result);
+
+        Assert.Equal("done", await result.Text);
+        Assert.Empty(stepErrors);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix
+            + "should report a provider failure on a continuation step to onStepError and end the call once",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
+    )]
+    public async Task Should_report_a_provider_failure_on_a_continuation_step_to_onStepError_and_end_the_call_once()
+    {
+        var stepErrors = StepErrors(out var onStepError);
+        var telemetryStepErrors = StepErrors(out var telemetryOnStepError);
+        var telemetryErrors = 0;
+        var telemetryEnds = 0;
+        var providerError = new InvalidOperationException("provider failure");
+        var responseCount = 0;
+
+        var result = Client()
+            .StreamTextAsync(
+                new StreamTextOptions
+                {
+                    Model = new StepErrorModel(
+                        doStream: (_, _) =>
+                            responseCount++ > 0
+                                ? throw providerError
+                                : StepErrorModel.StreamOf(
+                                    Vercel.AI.Tests.StreamText.StreamTextAbortSupport.FirstStep()
+                                )
+                    ),
+                    Tools = new[] { Tool1() },
+                    Prompt = "test-input",
+                    MaxRetries = 0,
+                    StopWhen = StopWhen.IsStepCount(3),
+                    OnError = (_, _) => Task.CompletedTask,
+                    OnStepError = onStepError,
+                    Telemetry = new TelemetryOptions
+                    {
+                        Integrations =
+                        [
+                            new Vercel.AI.Tests.Upstream.Telemetry.TestTelemetry
+                            {
+                                OnStepError = telemetryOnStepError,
+                                OnError = (_, _) =>
+                                {
+                                    telemetryErrors++;
+                                    return Task.CompletedTask;
+                                },
+                                OnEnd = (_, _) =>
+                                {
+                                    telemetryEnds++;
+                                    return Task.CompletedTask;
+                                },
+                            },
+                        ],
+                    },
+                }
+            );
+
+        await ConsumeIgnoringErrorsAsync(result);
+
+        var stepError = Assert.Single(stepErrors);
+        Assert.Equal(1, stepError.StepNumber);
+        Assert.Same(providerError, stepError.Error);
+        var telemetryStepError = Assert.Single(telemetryStepErrors);
+        Assert.Equal(1, telemetryStepError.StepNumber);
+        Assert.Same(providerError, telemetryStepError.Error);
+        Assert.Equal(0, telemetryErrors);
+        Assert.Equal(1, telemetryEnds);
     }
 
     private static void AssertNoFinish(Exception error)

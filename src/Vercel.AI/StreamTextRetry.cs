@@ -315,7 +315,8 @@ internal sealed class StreamTextErrorHandling
         StreamTextOptions options,
         Exception error,
         CancellationToken cancellationToken,
-        bool swallow
+        bool swallow,
+        bool reportToTelemetry = true
     )
     {
         try
@@ -330,7 +331,10 @@ internal sealed class StreamTextErrorHandling
                 await options.OnError(error, cancellationToken).ConfigureAwait(false);
             }
 
-            if (TelemetryDispatcher.Create(options).OnError is { } telemetryOnError)
+            if (
+                reportToTelemetry
+                && TelemetryDispatcher.Create(options).OnError is { } telemetryOnError
+            )
             {
                 await telemetryOnError(new TelemetryErrorEvent(null, error), cancellationToken)
                     .ConfigureAwait(false);
