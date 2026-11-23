@@ -88,12 +88,12 @@ public sealed class CreateTelemetryDispatcherExecuteLanguageModelCallTests
         var observed = new List<LanguageModelStreamResult>();
         var integration = new StreamReplacingWrapper(observed);
         var dispatcher = Vercel.AI.TelemetryDispatcher.Create(
-            CreateTelemetryDispatcherTests.Options(
-                [.. Enumerable.Repeat<ITelemetry>(
+            CreateTelemetryDispatcherTests.Options([
+                .. Enumerable.Repeat<ITelemetry>(
                     new TestTelemetry { ExecuteLanguageModelCall = integration },
                     integrationCount
-                )]
-            )
+                ),
+            ])
         );
 
         var result = await dispatcher.ExecuteLanguageModelCallAsync(
@@ -103,11 +103,17 @@ public sealed class CreateTelemetryDispatcherExecuteLanguageModelCallTests
         );
 
         Assert.Same(original, result);
-        Assert.Equal("test-token", result.Request!.Body!.Value.GetProperty("credential").GetString());
+        Assert.Equal(
+            "test-token",
+            result.Request!.Body!.Value.GetProperty("credential").GetString()
+        );
         Assert.Equal(integrationCount, observed.Count);
         foreach (var value in observed)
         {
-            Assert.Equal("[redacted]", value.Request!.Body!.Value.GetProperty("credential").GetString());
+            Assert.Equal(
+                "[redacted]",
+                value.Request!.Body!.Value.GetProperty("credential").GetString()
+            );
         }
 
         var parts = new List<string>();
@@ -121,7 +127,8 @@ public sealed class CreateTelemetryDispatcherExecuteLanguageModelCallTests
 
     [Fact]
     [UpstreamTest(
-        Id + "redacts provider error metadata for nested integrations and preserves the application error",
+        Id
+            + "redacts provider error metadata for nested integrations and preserves the application error",
         Coverage = UpstreamCoverage.Covered,
         Commit = "bd0f9e4ebda0d23a849e37860e2a1aebac9a9eef"
     )]
@@ -130,9 +137,8 @@ public sealed class CreateTelemetryDispatcherExecuteLanguageModelCallTests
         var error = new ApiCallError(
             "provider failed",
             "https://example.test",
-            TelemetryRedaction.WithTelemetryRedaction(
-                Credential("test-token"),
-                body => Credential("[redacted]")
+            TelemetryRedaction.WithTelemetryRedaction(Credential("test-token"), body =>
+                Credential("[redacted]")
             )
         );
         var observed = new List<Exception>();

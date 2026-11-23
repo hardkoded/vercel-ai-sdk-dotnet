@@ -169,33 +169,27 @@ internal sealed class TelemetryDispatcher
         {
             return Restore(
                 await wrapper
-                    .ExecuteAsync(
-                        new ExecuteLanguageModelCallOptions<T>(
-                            augmented,
-                            async () =>
+                    .ExecuteAsync(new ExecuteLanguageModelCallOptions<T>(augmented, async () =>
+                        {
+                            try
                             {
-                                try
-                                {
-                                    return Redact(await inner().ConfigureAwait(false));
-                                }
-                                catch (Exception error) when (error is not OperationCanceledException)
-                                {
-                                    var redacted =
-                                        RedactTelemetryCredentialsHelper.RedactTelemetryCredentials(
-                                            error
-                                        );
-                                    if (!ReferenceEquals(redacted, error))
-                                    {
-                                        originals.Add((redacted, error));
-                                        throw redacted;
-                                    }
-
-                                    throw;
-                                }
+                                return Redact(await inner().ConfigureAwait(false));
                             }
-                        ),
-                        cancellationToken
-                    )
+                            catch (Exception error) when (error is not OperationCanceledException)
+                            {
+                                var redacted =
+                                    RedactTelemetryCredentialsHelper.RedactTelemetryCredentials(
+                                        error
+                                    );
+                                if (!ReferenceEquals(redacted, error))
+                                {
+                                    originals.Add((redacted, error));
+                                    throw redacted;
+                                }
+
+                                throw;
+                            }
+                        }), cancellationToken)
                     .ConfigureAwait(false)
             );
         }
@@ -205,8 +199,8 @@ internal sealed class TelemetryDispatcher
             {
                 if (ReferenceEquals(redacted, error) && original is Exception originalError)
                 {
-                    System.Runtime.ExceptionServices.ExceptionDispatchInfo
-                        .Capture(originalError)
+                    System
+                        .Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(originalError)
                         .Throw();
                 }
             }
