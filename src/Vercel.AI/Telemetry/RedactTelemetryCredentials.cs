@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 using Vercel.AI.Util;
 
@@ -59,16 +60,60 @@ internal static class RedactTelemetryCredentialsHelper
         return step.WithRedactedMetadata(request, response);
     }
 
+    /// <summary>
+    /// Redacts a model-call result or error before a nested integration sees it. Any other value is returned as is.
+    /// Maps to <c>redactTelemetryCredentials</c>.
+    /// </summary>
+    internal static T RedactTelemetryCredentials<T>(T value)
+    {
+        object? redacted = value switch
+        {
+            LanguageModelStreamResult { Request.RedactBody: not null } stream =>
+                stream.WithTelemetryRequest(
+                    new LanguageModelStreamRequest(stream.Request.RedactTelemetryBody())
+                    {
+                        Url = stream.Request.Url,
+                    }
+                ),
+            LanguageModelGenerateResult generate
+                when generate.Request?.RedactBody != null || generate.RedactRawResponse != null =>
+                generate.WithRedactedTelemetry(),
+            Exception error => RedactTelemetryCredentials(error),
+            _ => value,
+        };
+        return (T)redacted!;
+    }
+
     /// <summary>Replaces a download error with a copy that has no URL. Any other error is returned as is.</summary>
     internal static Exception RedactTelemetryCredentials(Exception error)
     {
-        return error is DownloadError download
-            ? new DownloadError(
-                Redacted,
-                "Failed to download a file.",
-                download.StatusCode,
-                download.StatusText
-            )
-            : error;
+        switch (error)
+        {
+            case DownloadError download:
+                return new DownloadError(
+                    Redacted,
+                    "Failed to download a file.",
+                    download.StatusCode,
+                    download.StatusText
+                );
+            case ApiCallError { RequestBodyValues: TelemetryRedactedValue body } api
+                when api.GetType() == typeof(ApiCallError):
+                // Provider errors carry the same request body outside the request metadata.
+                return new ApiCallError(
+                    api.Message,
+                    api.Url,
+                    TelemetryRedaction.RedactTelemetryValue(body) is { } redacted
+                        ? redacted
+                        : new object(),
+                    api.StatusCode,
+                    api.ResponseHeaders,
+                    api.ResponseBody,
+                    api.InnerException,
+                    api.IsRetryable,
+                    api.Data
+                );
+            default:
+                return error;
+        }
     }
 }
