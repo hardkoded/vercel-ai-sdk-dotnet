@@ -84,9 +84,22 @@ KIND_TITLE = {
     "decision": "Decision",
 }
 PLACEHOLDER = re.compile(
-    r"no-such|some-model|unknown|nonexistent|invalid|bogus|fake|dummy|mock|^test|^my-|custom|placeholder|^model$|^id$|^x$|^m$|^embed$",
+    r"any-model|model-id|no-such|some-model|unknown|nonexistent|invalid|bogus|fake|dummy|mock|^test|^my-|custom|placeholder|^model$|^id$|^x$|^m$|^embed$",
     re.I,
 )
+
+# Providers whose Create() needs arguments.
+PROVIDER_EXPR = {
+    "OpenAICompatible": 'OpenAICompatibleProvider.Create(new OpenAICompatibleOptions { ProviderName = "example", BaseUrl = "https://api.example.com/v1" })',
+}
+CALLERS = {
+    "embedding": "IEmbeddingCaller",
+    "image": "IImageCaller",
+    "speech": "ISpeechCaller",
+    "transcription": "ITranscriptionCaller",
+    "video": "IVideoCaller",
+    "reranking": "IRerankCaller",
+}
 
 METHOD_TO_KIND = {m: k for k, ms in KINDS.items() for m in ms}
 CALL = re.compile(r"\.(" + "|".join(sorted(METHOD_TO_KIND, key=len, reverse=True)) + r')\("([^"{}$\\]+)"\)')
@@ -109,10 +122,8 @@ def find_providers():
         candidates = []
         for path in sorted(glob.glob(os.path.join(directory, "*Provider.cs"))):
             text = open(path, encoding="utf-8-sig").read()
-            for match in re.finditer(r"public (?:sealed |partial )*class (\w+Provider)\b", text):
-                cls = match.group(1)
-                if re.search(r"public static \w+ Create\(", text) and f"class {cls}" in text:
-                    candidates.append(cls)
+            for match in re.finditer(r"public (?:sealed |abstract |partial )*class (\w+Provider)\b", text):
+                candidates.append(match.group(1))
         if not candidates:
             continue
         preferred = [c for c in candidates if c == f"{name}Provider"] or candidates
@@ -132,9 +143,18 @@ def provider_for_test(path, names):
     return best
 
 
+# Evidence the tests do not carry: the quickstart (docs/articles/quickstart.md) calls the Gateway with this id.
+SEED = {("Gateway", "language", "LanguageModel"): ["openai/gpt-6-astra"]}
+
+
 def collect_models(providers):
     found = {name: collections.defaultdict(collections.Counter) for name in providers}
     methods = {name: collections.defaultdict(collections.Counter) for name in providers}
+    for (name, kind, method), ids in SEED.items():
+        if name in providers:
+            for model_id in ids:
+                found[name][kind][model_id] += 1
+                methods[name][kind][method] += 1
     for path in glob.glob(os.path.join(ROOT, "tests", "**", "*.cs"), recursive=True):
         name = provider_for_test(path, providers)
         if name is None:
@@ -149,6 +169,35 @@ def collect_models(providers):
 
 
 PROMPTS = {
+    "decision": [
+        "var model = {P}.{M}(\"{ID}\");",
+        "var result = await Decide.DecideAsync(",
+        "    new DecideRequest",
+        "    {",
+        "        Model = model,",
+        "        State = \"I was charged twice for my subscription. Please refund the duplicate.\",",
+        "        Questions = new Dictionary<string, DecisionQuestion>",
+        "        {",
+        "            [\"category\"] = new(",
+        "                \"choice\",",
+        "                \"Which team should handle this request?\",",
+        "                new DecisionChoiceCriteria(",
+        "                    new Dictionary<string, DecisionInput?>",
+        "                    {",
+        "                        [\"billing\"] = \"Charges, invoices, and refunds\",",
+        "                        [\"technical\"] = \"Bugs and outages\",",
+        "                    }",
+        "                )",
+        "            ),",
+        "        },",
+        "    }",
+        ");",
+        "",
+        "foreach (var answer in result.Answers)",
+        "{",
+        "    Console.WriteLine($\"{answer.Key}: {answer.Value.Choice}\");",
+        "}",
+    ],
     "language": [
         "var model = {P}.{M}(\"{ID}\");",
         "var result = await Ai.GenerateTextAsync(",
@@ -244,92 +293,181 @@ def render(lines, provider, method, model_id):
     return "\n".join(lines).replace("{P}", provider).replace("{M}", method).replace("{ID}", model_id)
 
 
-def example_variants(info, kind, method_order, model_id):
-    """Yields (snippet, uses_operation) candidates for one kind, most useful first."""
-    provider = f"{info['cls']}.Create()"
-    for method in method_order:
+def provider_expr(info):
+    return PROVIDER_EXPR.get(info["dir"], f"{info['cls']}.Create()")
+
+
+def implemented_methods(info, kind, methods):
+    """Keeps the factory methods that the provider source implements (does not just throw NoSuchModel)."""
+    declared = collections.defaultdict(list)
+    inherits_compatible = False
+    for path in glob.glob(os.path.join(SRC, info["dir"], "*.cs")):
+        text = open(path, encoding="utf-8-sig").read()
+        if re.search(r"class \w+ : OpenAICompatibleProvider", text):
+            inherits_compatible = True
+        for match in re.finditer(r"public (?:override |virtual |new |static )*[\w.<>?]+ (\w+)\(\s*string modelId", text):
+            tail = text[match.end() : match.end() + 1500]
+            end = re.search(r"\n    (?:public|internal|private|protected) ", tail)
+            body = tail[: end.start()] if end else tail
+            # Not implemented only when the first statement throws, as in `{ throw new NoSuchModelError(...)`.
+            throw_only = re.match(r"[^{=;]*(?:\{|=>)\s*throw\b", body) is not None
+            declared[match.group(1)].append(not throw_only)
+    kept = []
+    for method in methods:
+        if method in declared:
+            if any(declared[method]):
+                kept.append(method)
+        elif kind == "language" and method == "LanguageModel" and inherits_compatible:
+            kept.append(method)
+    return kept
+
+
+def variants(info, kind, methods, model_id):
+    """Candidate examples for one kind, as {variant_key: (snippet, probe_expression or None)}."""
+    out = collections.OrderedDict()
+    provider = provider_expr(info)
+    for method in methods:
         if kind in PROMPTS:
-            yield render(PROMPTS[kind], provider, method, model_id), True
-    for method in method_order:
-        yield render(CREATE_ONLY, provider, method, model_id), False
+            out[f"{method}|direct"] = (render(PROMPTS[kind], provider, method, model_id), None)
+            if kind in CALLERS:
+                caller = CALLERS[kind]
+                cast = render(PROMPTS[kind], provider, method, model_id).replace(
+                    f"= {provider}.{method}(", f"= ({caller}){provider}.{method}(", 1
+                )
+                out[f"{method}|cast"] = (cast, f"{provider}.{method}(\"{model_id}\") is {caller}")
+    for method in methods:
+        out[f"{method}|create"] = (render(CREATE_ONLY, provider, method, model_id), None)
+    return out
 
 
-def compile_check(candidates):
-    """candidates: {key: snippet}. Returns the set of keys that compile."""
+def build_and_probe(snippets, probes):
+    """Compiles every snippet and probe. Returns (compiling snippet keys, probe keys that are true)."""
     work = tempfile.mkdtemp(prefix="model-pages-")
     try:
-        namespaces = sorted({f"Vercel.AI.{k.split('|')[0]}" for k in candidates})
-        proj = os.path.join(work, "Check.csproj")
-        open(proj, "w").write(
-            f"""<Project Sdk="Microsoft.NET.Sdk">
+        namespaces = sorted({f"Vercel.AI.{k.split('|')[0]}" for k in list(snippets) + list(probes)})
+        with open(os.path.join(work, "Check.csproj"), "w") as handle:
+            handle.write(
+                f"""<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Library</OutputType>
+    <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <NoWarn>$(NoWarn);CS0618;CS8321</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="{os.path.join(SRC, 'Vercel.AI.csproj')}" />
   </ItemGroup>
 </Project>
 """
-        )
-        keys = sorted(candidates)
-        body = []
-        for i, key in enumerate(keys):
-            snippet = candidates[key]
-            ns = f"Vercel.AI.{key.split('|')[0]}"
-            indented = "\n".join("        " + line if line else "" for line in snippet.splitlines())
-            body.append(f"    // {key}\n    public static async Task M{i}()\n    {{\n{indented}\n    }}\n")
+            )
         usings = "\n".join(USINGS + [f"using {n};" for n in namespaces])
-        cs = f"{usings}\n\nnamespace Check;\n\npublic static class Snippets\n{{\n" + "\n".join(body) + "}\n"
-        open(os.path.join(work, "Snippets.cs"), "w").write(cs)
-        result = subprocess.run(
-            ["dotnet", "build", proj, "-nologo", "-v", "q", "-clp:NoSummary"],
-            capture_output=True,
-            text=True,
+        body = []
+        for i, key in enumerate(sorted(snippets)):
+            indented = "\n".join("        " + line if line else "" for line in snippets[key].splitlines())
+            body.append(f"    // @@{key}\n    public static async Task S{i}()\n    {{\n{indented}\n    }}\n")
+        probe_lines = [
+            f"        Probe(\"{key}\", () => {probes[key]}); // @@{key}" for key in sorted(probes)
+        ]
+        cs = (
+            f"{usings}\n\nnamespace Check;\n\npublic static class Program\n{{\n"
+            "    public static void Main()\n    {\n" + "\n".join(probe_lines) + "\n    }\n\n"
+            "    private static void Probe(string key, Func<bool> check)\n    {\n"
+            "        try { Console.WriteLine(key + \"\\t\" + check()); }\n"
+            "        catch (Exception) { Console.WriteLine(key + \"\\tFalse\"); }\n    }\n\n"
+            + "\n".join(body)
+            + "}\n"
         )
+        with open(os.path.join(work, "Program.cs"), "w") as handle:
+            handle.write(cs)
         lines = cs.splitlines()
-        failed = set()
-        for match in re.finditer(r"Snippets\.cs\((\d+),\d+\): error (CS\d+)", result.stdout):
-            line_no = int(match.group(1))
-            for j in range(line_no - 1, -1, -1):
-                if lines[j].startswith("    // "):
-                    failed.add(lines[j][7:].strip())
-                    break
-        if result.returncode != 0 and not failed:
-            sys.stderr.write(result.stdout[-4000:])
-            raise SystemExit("compile check failed without a snippet error")
-        return set(keys) - failed
+
+        def failing():
+            built = subprocess.run(
+                ["dotnet", "build", work, "-nologo", "-v", "q", "-clp:NoSummary"],
+                capture_output=True,
+                text=True,
+                cwd=work,
+            )
+            keys = set()
+            for match in re.finditer(r"Program\.cs\((\d+),\d+\): error", built.stdout):
+                for j in range(int(match.group(1)) - 1, -1, -1):
+                    marker = re.search(r"// @@(.+)$", lines[j])
+                    if marker:
+                        keys.add(marker.group(1).strip())
+                        break
+            if built.returncode != 0 and not keys:
+                sys.stderr.write(built.stdout[-4000:])
+                raise SystemExit("build failed without a snippet error")
+            return built.returncode == 0, keys
+
+        bad = set()
+        for _ in range(6):
+            ok, keys = failing()
+            if ok:
+                break
+            bad |= keys
+            # Rewrite the file without the failing snippets and probes.
+            cs = rebuild(usings, snippets, probes, bad)
+            with open(os.path.join(work, "Program.cs"), "w") as handle:
+                handle.write(cs)
+            lines = cs.splitlines()
+        else:
+            raise SystemExit("could not get a clean build")
+        run = subprocess.run(["dotnet", "run", "--no-build", "--project", work], capture_output=True, text=True, cwd=work)
+        true_probes = {line.split("\t")[0] for line in run.stdout.splitlines() if line.endswith("\tTrue")}
+        return set(snippets) - bad, true_probes
     finally:
         shutil.rmtree(work, ignore_errors=True)
 
 
+def rebuild(usings, snippets, probes, bad):
+    body = []
+    for i, key in enumerate(sorted(snippets)):
+        if key in bad:
+            continue
+        indented = "\n".join("        " + line if line else "" for line in snippets[key].splitlines())
+        body.append(f"    // @@{key}\n    public static async Task S{i}()\n    {{\n{indented}\n    }}\n")
+    probe_lines = [
+        f"        Probe(\"{key}\", () => {probes[key]}); // @@{key}" for key in sorted(probes) if key not in bad
+    ]
+    return (
+        f"{usings}\n\nnamespace Check;\n\npublic static class Program\n{{\n"
+        "    public static void Main()\n    {\n" + "\n".join(probe_lines) + "\n    }\n\n"
+        "    private static void Probe(string key, Func<bool> check)\n    {\n"
+        "        try { Console.WriteLine(key + \"\\t\" + check()); }\n"
+        "        catch (Exception) { Console.WriteLine(key + \"\\tFalse\"); }\n    }\n\n"
+        + "\n".join(body)
+        + "}\n"
+    )
+
+
 def main():
-    compile_enabled = "--no-compile" not in sys.argv
     providers = find_providers()
     found, methods = collect_models(providers)
 
     plan = {}
-    candidates = {}
+    snippets = {}
+    probes = {}
     for name, info in providers.items():
-        kinds = {k: v for k, v in found[name].items() if v}
-        if not kinds:
-            continue
-        plan[name] = {}
-        for kind, counter in kinds.items():
+        for kind, counter in found[name].items():
+            observed = [m for m, _ in methods[name][kind].most_common()]
+            kept = implemented_methods(info, kind, observed)
+            if not kept:
+                continue
             ids = [i for i, _ in counter.most_common(6)]
-            method_order = [m for m, _ in methods[name][kind].most_common()]
-            plan[name][kind] = {"ids": ids, "methods": method_order}
-            for index, (snippet, op) in enumerate(example_variants(info, kind, method_order, ids[0])):
-                candidates[f"{name}|{kind}|{index}"] = snippet
+            plan.setdefault(name, {})[kind] = {"ids": ids, "methods": sorted(kept), "order": kept}
+            for key, (snippet, probe) in variants(info, kind, kept, ids[0]).items():
+                full = f"{name}|{kind}|{key}"
+                snippets[full] = snippet
+                if probe:
+                    probes[full] = probe
 
-    ok = compile_check(candidates) if compile_enabled else set(candidates)
+    ok, true_probes = build_and_probe(snippets, probes)
 
     shutil.rmtree(OUT, ignore_errors=True)
     os.makedirs(OUT)
-    index_rows = []
+    rows = []
     for name, kinds in sorted(plan.items(), key=lambda kv: display(kv[0]).lower()):
         info = providers[name]
         chosen = None
@@ -337,26 +475,30 @@ def main():
         for kind in KINDS:
             if kind not in kinds:
                 continue
-            rich = len(kinds[kind]["methods"]) if kind in PROMPTS else 0
-            for index in range(len(kinds[kind]["methods"]) * 2):
-                key = f"{name}|{kind}|{index}"
-                if key not in ok:
-                    continue
-                if index < rich:
-                    chosen = (kind, candidates[key])
-                elif fallback is None:
-                    fallback = (kind, candidates[key])
-                break
+            for method in kinds[kind]["order"]:
+                direct = f"{name}|{kind}|{method}|direct"
+                cast = f"{name}|{kind}|{method}|cast"
+                if direct in ok:
+                    chosen = (kind, snippets[direct])
+                elif cast in ok and cast in true_probes:
+                    chosen = (kind, snippets[cast])
+                if chosen:
+                    break
             if chosen:
                 break
-        chosen = chosen or fallback
-        write_page(name, info, kinds, chosen)
-        index_rows.append((name, kinds))
-    write_index(index_rows)
-    print(f"Wrote {len(index_rows)} provider pages to {os.path.relpath(OUT, ROOT)}")
+            if fallback is None:
+                for method in kinds[kind]["order"]:
+                    create = f"{name}|{kind}|{method}|create"
+                    if create in ok:
+                        fallback = (kind, snippets[create])
+                        break
+        write_page(name, info, kinds, chosen or fallback, chosen is None)
+        rows.append((name, kinds))
+    write_index(rows)
+    print(f"Wrote {len(rows)} provider pages to {os.path.relpath(OUT, ROOT)}")
 
 
-def write_page(name, info, kinds, chosen):
+def write_page(name, info, kinds, chosen, create_only=False):
     title = display(name)
     cls = info["cls"]
     lines = [f"# {title}", ""]
@@ -370,7 +512,7 @@ def write_page(name, info, kinds, chosen):
         "",
         "## Models",
         "",
-        "| Kind | Factory method | Model ids used in this port's tests |",
+        "| Kind | Factory method | Model ids in this port's tests and docs |",
         "| --- | --- | --- |",
     ]
     for kind in KINDS:
@@ -382,7 +524,7 @@ def write_page(name, info, kinds, chosen):
         lines.append(f"| {KIND_TITLE[kind]} | {methods} | {ids} |")
     lines += [
         "",
-        "A model id in the table is one that the tests exercise. It is not the complete list of ids the provider accepts. Pass any id that the provider documents.",
+        "A model id in the table is one that the tests or docs use. It is not the complete list of ids the provider accepts. Pass any id that the provider documents.",
         "",
         "## Example",
         "",
@@ -391,6 +533,11 @@ def write_page(name, info, kinds, chosen):
         kind, snippet = chosen
         lines += [f"{KIND_TITLE[kind]} model:", "", "```csharp", f"using {info['ns']};", ""]
         lines += [snippet, "```", ""]
+        if create_only:
+            lines += [
+                "This model does not plug into the shared `Generate*` helpers. Call the model through the members the API reference lists for its type.",
+                "",
+            ]
     lines += ["See the [Providers](providers.md) guide for authentication and provider options.", ""]
     with open(os.path.join(OUT, slug(name) + ".md"), "w", encoding="utf-8") as handle:
         handle.write("\n".join(lines))
@@ -400,7 +547,7 @@ def write_index(rows):
     lines = [
         "# Models",
         "",
-        "One page per provider, with the model kinds this port implements, the model ids its tests use, a link to the upstream model catalog, and a C# example.",
+        "One page per provider, with the model kinds this port implements, the model ids its tests and docs use, a link to the upstream model catalog, and a C# example.",
         "",
         f"The upstream catalog is the [Vercel AI Gateway models page]({CATALOG}).",
         "",
