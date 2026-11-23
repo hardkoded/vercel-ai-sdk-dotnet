@@ -23,7 +23,7 @@ Generated speech audio.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L116)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L121)
 
 ## Constructors
 
@@ -53,7 +53,7 @@ Creates generated audio.
 | --- | --- |
 | [InvalidResponseDataException](/api/Vercel.AI.Operations/InvalidResponseDataException/) | The media type has an empty subtype, such as `audio/`. |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L120)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L125)
 
 ## Properties
 
@@ -72,7 +72,7 @@ Audio bytes.
 
 **Value:** [byte\[\]](https://learn.microsoft.com/dotnet/api/system.byte)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L141)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L146)
 
 <a id="Vercel_AI_Operations_GeneratedAudio_Format_"></a>
 <a id="Vercel_AI_Operations_GeneratedAudio_Format"></a>
@@ -89,7 +89,7 @@ Format subtype. `audio/mpeg` stays `mp3`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L147)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L152)
 
 <a id="Vercel_AI_Operations_GeneratedAudio_MediaType_"></a>
 <a id="Vercel_AI_Operations_GeneratedAudio_MediaType"></a>
@@ -106,4 +106,4 @@ Media type.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L144)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L149)

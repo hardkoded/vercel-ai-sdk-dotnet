@@ -23,7 +23,7 @@ Upstream `ModelCapabilities.reranking.documents`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L249)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L252)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Object documents.
 
 **Value:** [ModelCapability](/api/Vercel.AI/ModelCapability/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L255)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L258)
 
 <a id="Vercel_AI_RerankingDocumentCapabilities_Text_"></a>
 <a id="Vercel_AI_RerankingDocumentCapabilities_Text"></a>
@@ -59,4 +59,4 @@ Text documents.
 
 **Value:** [ModelCapability](/api/Vercel.AI/ModelCapability/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L252)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L255)

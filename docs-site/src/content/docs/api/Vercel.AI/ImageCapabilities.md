@@ -27,6 +27,23 @@ Upstream `ModelCapabilities.image`.
 
 ## Properties
 
+<a id="Vercel_AI_ImageCapabilities_Description_"></a>
+<a id="Vercel_AI_ImageCapabilities_Description"></a>
+
+### Description
+
+
+```csharp
+public string? Description { get; init; }
+```
+
+
+A human-readable model description. Not in the upstream type; upstream Fal entries spread it into `capabilities.image`.
+
+**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L173)
+
 <a id="Vercel_AI_ImageCapabilities_FileInput_"></a>
 <a id="Vercel_AI_ImageCapabilities_FileInput"></a>
 
@@ -42,7 +59,7 @@ Upstream `fileInput`.
 
 **Value:** [ModelCapability](/api/Vercel.AI/ModelCapability/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L179)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L182)
 
 <a id="Vercel_AI_ImageCapabilities_MaskInput_"></a>
 <a id="Vercel_AI_ImageCapabilities_MaskInput"></a>
@@ -59,7 +76,7 @@ Upstream `maskInput`.
 
 **Value:** [ModelCapability](/api/Vercel.AI/ModelCapability/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L182)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L185)
 
 <a id="Vercel_AI_ImageCapabilities_MaxImagesPerCall_"></a>
 <a id="Vercel_AI_ImageCapabilities_MaxImagesPerCall"></a>
@@ -76,7 +93,7 @@ Upstream `maxImagesPerCall`.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L185)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L188)
 
 <a id="Vercel_AI_ImageCapabilities_Sizes_"></a>
 <a id="Vercel_AI_ImageCapabilities_Sizes"></a>
@@ -93,7 +110,7 @@ Upstream `sizes`, when it is a list. Null when [SizesDescription](#Vercel_AI_Ima
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L173)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L176)
 
 <a id="Vercel_AI_ImageCapabilities_SizesDescription_"></a>
 <a id="Vercel_AI_ImageCapabilities_SizesDescription"></a>
@@ -110,4 +127,4 @@ Upstream `sizes`, when it is `{ description }`. Null when [Sizes](#Vercel_AI_Ima
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L176)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L179)

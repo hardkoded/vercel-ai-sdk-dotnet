@@ -271,4 +271,95 @@ public sealed class RecordInputsRecordOutputsFilteringTests
         Assert.DoesNotContain("secret", download.StackTrace ?? string.Empty);
         Assert.Contains("secret", error.Url);
     }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "treats text as input for speech and as output elsewhere",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "15bfd6b262f688cfb8281dbdb32c7dffe082337e"
+    )]
+    public async Task Treats_text_as_input_for_speech_and_as_output_elsewhere()
+    {
+        IOperationStartEvent? speechDelivered = null;
+        await Vercel
+            .AI.TelemetryDispatcher.Create(
+                new TelemetryOptions
+                {
+                    RecordInputs = false,
+                    Integrations =
+                    [
+                        new TestTelemetry
+                        {
+                            OnStart = (e, _) =>
+                            {
+                                speechDelivered = e;
+                                return Task.CompletedTask;
+                            },
+                        },
+                    ],
+                }
+            )
+            .OnStart!(
+                new GenerateSpeechStartEvent(
+                    "call-1",
+                    "provider",
+                    "model",
+                    "secret narration",
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    2,
+                    null,
+                    OperationJson.Parse("{}")
+                ),
+                CancellationToken.None
+            );
+        Assert.Equal(string.Empty, ((GenerateSpeechStartEvent)speechDelivered!).Text);
+
+        GenerateTextResult? textDelivered = null;
+        var usage = new LanguageModelUsage(1, 1, 2);
+        var step = new StepResult(
+            "generated reply",
+            null,
+            [],
+            [],
+            FinishReason.Stop,
+            usage,
+            [],
+            content: [new GeneratedText("generated reply")]
+        );
+        await Vercel
+            .AI.TelemetryDispatcher.Create(
+                new TelemetryOptions
+                {
+                    RecordInputs = false,
+                    Integrations =
+                    [
+                        new TestTelemetry
+                        {
+                            OnEnd = (e, _) =>
+                            {
+                                textDelivered = (GenerateTextResult)e;
+                                return Task.CompletedTask;
+                            },
+                        },
+                    ],
+                }
+            )
+            .OnEnd!(
+                new GenerateTextResult(
+                    "generated reply",
+                    null,
+                    [step],
+                    FinishReason.Stop,
+                    usage,
+                    null,
+                    []
+                ),
+                CancellationToken.None
+            );
+        Assert.Equal("generated reply", textDelivered!.Text);
+    }
 }

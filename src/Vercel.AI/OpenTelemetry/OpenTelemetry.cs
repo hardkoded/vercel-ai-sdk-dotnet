@@ -17,11 +17,11 @@ namespace Vercel.AI.OpenTelemetry;
 /// <see cref="TelemetryRegistry.RegisterTelemetry"/>.
 /// </summary>
 /// <remarks>
-/// Only the callbacks <see cref="ITelemetry"/> has are ported: text generation (root, step, model call, and tool spans), decide, and
-/// extract. The embed, rerank, speech, transcription, object, durable, and inference duration parts of upstream need events the port
-/// does not emit yet.
+/// Only the callbacks <see cref="ITelemetry"/> has are ported: text generation (root, step, model call, and tool spans), embed,
+/// rerank, speech, transcription, decide, and extract. The object, durable, and inference duration parts of upstream need events
+/// the port does not emit yet.
 /// </remarks>
-public sealed class OpenTelemetry : ITelemetry
+public class OpenTelemetry : ITelemetry
 {
     private static readonly Lazy<ActivitySource> DefaultTracer = new(() =>
         new ActivitySource("gen_ai")
@@ -50,9 +50,45 @@ public sealed class OpenTelemetry : ITelemetry
     public Func<IOperationStartEvent, CancellationToken, Task>? OnStart =>
         (e, _) =>
         {
-            if (e is GenerateTextStartEvent start)
+            switch (e)
             {
-                OnGenerateStart(start);
+                case GenerateSpeechStartEvent speech:
+                    OnAudioOperationStart(
+                        speech.CallId,
+                        speech.OperationId,
+                        speech.Provider,
+                        speech.ModelId,
+                        speech.RecordInputs,
+                        speech.RecordOutputs,
+                        speech.FunctionId,
+                        speech.Headers,
+                        audio: null,
+                        speech.Text
+                    );
+                    break;
+                case TranscriptionStartEvent transcription:
+                    OnAudioOperationStart(
+                        transcription.CallId,
+                        transcription.OperationId,
+                        transcription.Provider,
+                        transcription.ModelId,
+                        transcription.RecordInputs,
+                        transcription.RecordOutputs,
+                        transcription.FunctionId,
+                        transcription.Headers,
+                        transcription.Audio,
+                        text: null
+                    );
+                    break;
+                case EmbedStartEvent embed:
+                    OnEmbedOperationStart(embed);
+                    break;
+                case RerankStartEvent rerank:
+                    OnRerankOperationStart(rerank);
+                    break;
+                case GenerateTextStartEvent start:
+                    OnGenerateStart(start);
+                    break;
             }
 
             return Task.CompletedTask;
@@ -119,9 +155,42 @@ public sealed class OpenTelemetry : ITelemetry
     public Func<IOperationEndEvent, CancellationToken, Task>? OnEnd =>
         (e, _) =>
         {
-            if (e is GenerateTextResult result)
+            if (!TryGetCallState(CallIdOf(e), out var state) || state.RootSpan is null)
             {
-                OnGenerateEnd(result);
+                return Task.CompletedTask;
+            }
+
+            switch (e)
+            {
+                case EmbedEndEvent embed:
+                    OnEmbedOperationEnd(embed);
+                    break;
+                case RerankEndEvent rerank:
+                    OnRerankOperationEnd(rerank);
+                    break;
+                case GenerateSpeechEndEvent speech:
+                    OnAudioOperationEnd(
+                        speech.CallId,
+                        inputAudio: null,
+                        outputAudio: speech.Audio,
+                        transcript: null,
+                        speech.Usage,
+                        speech.ProviderMetadata
+                    );
+                    break;
+                case TranscriptionEndEvent transcription:
+                    OnAudioOperationEnd(
+                        transcription.CallId,
+                        inputAudio: transcription.Audio,
+                        outputAudio: null,
+                        transcription.Text,
+                        transcription.Usage,
+                        transcription.ProviderMetadata
+                    );
+                    break;
+                case GenerateTextResult result:
+                    OnGenerateEnd(result);
+                    break;
             }
 
             return Task.CompletedTask;
@@ -143,8 +212,30 @@ public sealed class OpenTelemetry : ITelemetry
             return Task.CompletedTask;
         };
 
+#pragma warning disable CS0618 // The current hooks call the deprecated ones on purpose.
+    // The current hooks route through the deprecated ones, so a subclass that overrides a deprecated hook keeps working.
     /// <inheritdoc />
-    public Func<DecideEvent, CancellationToken, Task>? OnDecideStart =>
+    public virtual Func<DecideEvent, CancellationToken, Task>? OnDecideStart =>
+        (e, ct) => OnEvaluateStart?.Invoke(EvaluateEvent.From(e), ct) ?? Task.CompletedTask;
+
+    /// <inheritdoc />
+    public virtual Func<DecisionModelEvent, CancellationToken, Task>? OnDecisionModelCallStart =>
+        (e, ct) =>
+            OnEvaluationModelCallStart?.Invoke(EvaluateModelEvent.From(e), ct)
+            ?? Task.CompletedTask;
+
+    /// <inheritdoc />
+    public virtual Func<DecisionModelEvent, CancellationToken, Task>? OnDecisionModelCallEnd =>
+        (e, ct) =>
+            OnEvaluationModelCallEnd?.Invoke(EvaluateModelEvent.From(e), ct) ?? Task.CompletedTask;
+
+    /// <inheritdoc />
+    public virtual Func<DecideEvent, CancellationToken, Task>? OnDecideEnd =>
+        (e, ct) => OnEvaluateEnd?.Invoke(EvaluateEvent.From(e), ct) ?? Task.CompletedTask;
+
+    /// <inheritdoc />
+    [Obsolete("Use OnDecideStart instead.")]
+    public virtual Func<EvaluateEvent, CancellationToken, Task>? OnEvaluateStart =>
         (e, _) =>
         {
             OnDecideOperationStart(e);
@@ -152,7 +243,8 @@ public sealed class OpenTelemetry : ITelemetry
         };
 
     /// <inheritdoc />
-    public Func<DecisionModelEvent, CancellationToken, Task>? OnDecisionModelCallStart =>
+    [Obsolete("Use OnDecisionModelCallStart instead.")]
+    public virtual Func<EvaluateModelEvent, CancellationToken, Task>? OnEvaluationModelCallStart =>
         (e, _) =>
         {
             OnDecisionModelCallStartCore(e);
@@ -160,7 +252,8 @@ public sealed class OpenTelemetry : ITelemetry
         };
 
     /// <inheritdoc />
-    public Func<DecisionModelEvent, CancellationToken, Task>? OnDecisionModelCallEnd =>
+    [Obsolete("Use OnDecisionModelCallEnd instead.")]
+    public virtual Func<EvaluateModelEvent, CancellationToken, Task>? OnEvaluationModelCallEnd =>
         (e, _) =>
         {
             OnDecisionModelCallEndCore(e);
@@ -168,28 +261,15 @@ public sealed class OpenTelemetry : ITelemetry
         };
 
     /// <inheritdoc />
-    public Func<DecideEvent, CancellationToken, Task>? OnDecideEnd =>
+    [Obsolete("Use OnDecideEnd instead.")]
+    public virtual Func<EvaluateEvent, CancellationToken, Task>? OnEvaluateEnd =>
         (e, _) =>
         {
             OnDecideOperationEnd(e);
             return Task.CompletedTask;
         };
 
-    /// <inheritdoc />
-    [Obsolete("Use OnDecideStart instead.")]
-    public Func<EvaluateEvent, CancellationToken, Task>? OnEvaluateStart => null;
-
-    /// <inheritdoc />
-    [Obsolete("Use OnDecisionModelCallStart instead.")]
-    public Func<EvaluateModelEvent, CancellationToken, Task>? OnEvaluationModelCallStart => null;
-
-    /// <inheritdoc />
-    [Obsolete("Use OnDecisionModelCallEnd instead.")]
-    public Func<EvaluateModelEvent, CancellationToken, Task>? OnEvaluationModelCallEnd => null;
-
-    /// <inheritdoc />
-    [Obsolete("Use OnDecideEnd instead.")]
-    public Func<EvaluateEvent, CancellationToken, Task>? OnEvaluateEnd => null;
+#pragma warning restore CS0618
 
     /// <inheritdoc />
     public Func<ExtractStartEvent, CancellationToken, Task>? OnExtractStart =>
@@ -231,27 +311,74 @@ public sealed class OpenTelemetry : ITelemetry
     public Func<GenerateTextStepErrorEvent, CancellationToken, Task>? OnStepError => null;
 
     /// <inheritdoc />
-    public Func<EmbeddingModelCallStartEvent, CancellationToken, Task>? OnEmbedStart => null;
+    public Func<EmbeddingModelCallStartEvent, CancellationToken, Task>? OnEmbedStart =>
+        (e, _) =>
+        {
+            OnEmbedStartCore(e);
+            return Task.CompletedTask;
+        };
 
     /// <inheritdoc />
-    public Func<EmbeddingModelCallEndEvent, CancellationToken, Task>? OnEmbedEnd => null;
+    public Func<EmbeddingModelCallEndEvent, CancellationToken, Task>? OnEmbedEnd =>
+        (e, _) =>
+        {
+            OnEmbedEndCore(e);
+            return Task.CompletedTask;
+        };
 
     /// <inheritdoc />
-    public Func<RerankingModelCallStartEvent, CancellationToken, Task>? OnRerankStart => null;
+    public Func<RerankingModelCallStartEvent, CancellationToken, Task>? OnRerankStart =>
+        (e, _) =>
+        {
+            OnRerankStartCore(e);
+            return Task.CompletedTask;
+        };
 
     /// <inheritdoc />
-    public Func<RerankingModelCallEndEvent, CancellationToken, Task>? OnRerankEnd => null;
+    public Func<RerankingModelCallEndEvent, CancellationToken, Task>? OnRerankEnd =>
+        (e, _) =>
+        {
+            OnRerankEndCore(e);
+            return Task.CompletedTask;
+        };
 
     /// <inheritdoc />
     public Func<
         StreamTranscriptionStartEvent,
         CancellationToken,
         Task
-    >? OnStreamTranscriptionStart => null;
+    >? OnStreamTranscriptionStart =>
+        (e, _) =>
+        {
+            OnAudioOperationStart(
+                e.CallId,
+                e.OperationId,
+                e.Provider,
+                e.ModelId,
+                e.RecordInputs,
+                e.RecordOutputs,
+                e.FunctionId,
+                e.Headers,
+                e.Audio,
+                text: null
+            );
+            return Task.CompletedTask;
+        };
 
     /// <inheritdoc />
     public Func<StreamTranscriptionEndEvent, CancellationToken, Task>? OnStreamTranscriptionEnd =>
-        null;
+        (e, _) =>
+        {
+            OnAudioOperationEnd(
+                e.CallId,
+                inputAudio: e.Audio,
+                outputAudio: null,
+                e.Text,
+                e.Usage,
+                e.ProviderMetadata
+            );
+            return Task.CompletedTask;
+        };
 
     /// <inheritdoc />
     public IExecuteLanguageModelCall? ExecuteLanguageModelCall => null;
@@ -298,6 +425,17 @@ public sealed class OpenTelemetry : ITelemetry
         span.Stop();
         Activity.Current = current == span ? span.Parent : current;
     }
+
+    private static string? CallIdOf(IOperationEndEvent e) =>
+        e switch
+        {
+            GenerateTextResult result => result.CallId,
+            EmbedEndEvent embed => embed.CallId,
+            RerankEndEvent rerank => rerank.CallId,
+            GenerateSpeechEndEvent speech => speech.CallId,
+            TranscriptionEndEvent transcription => transcription.CallId,
+            _ => null,
+        };
 
     private bool TryGetCallState(string? callId, out CallState state)
     {
@@ -469,6 +607,11 @@ public sealed class OpenTelemetry : ITelemetry
             ),
             parent
         );
+
+        if (rootSpan is null)
+        {
+            return;
+        }
 
         _callStates[e.CallId] = new CallState(e.OperationId, telemetry)
         {
@@ -908,6 +1051,11 @@ public sealed class OpenTelemetry : ITelemetry
             Activity.Current?.Context ?? default
         );
 
+        if (rootSpan is null)
+        {
+            return;
+        }
+
         _callStates[e.CallId] = new CallState(e.OperationId, telemetry)
         {
             RootSpan = rootSpan,
@@ -1004,9 +1152,16 @@ public sealed class OpenTelemetry : ITelemetry
                     state.Telemetry,
                     new Dictionary<string, object?>
                     {
+                        ["gen_ai.response.id"] = e.Response?.Id,
+                        ["gen_ai.response.model"] = e.Response?.ModelId,
                         ["gen_ai.usage.input_tokens"] = e.Usage?.InputTokens,
                         ["gen_ai.usage.output_tokens"] = e.Usage?.OutputTokens,
                     }
+                ),
+                _supplementalAttributes.Select(
+                    state.Telemetry,
+                    SupplementalGroup.ProviderMetadata,
+                    ProviderMetadataAttributes(e.ProviderMetadata)
                 ),
                 _supplementalAttributes.Select(
                     state.Telemetry,
@@ -1085,6 +1240,11 @@ public sealed class OpenTelemetry : ITelemetry
             ),
             Activity.Current?.Context ?? default
         );
+
+        if (rootSpan is null)
+        {
+            return;
+        }
 
         _callStates[e.CallId] = new CallState(e.OperationId, telemetry)
         {
@@ -1205,17 +1365,513 @@ public sealed class OpenTelemetry : ITelemetry
         state.ExtractionSpan = null;
     }
 
+    private void OnAudioOperationStart(
+        string callId,
+        string operationId,
+        string provider,
+        string modelId,
+        bool? recordInputs,
+        bool? recordOutputs,
+        string? functionId,
+        IReadOnlyDictionary<string, string>? headers,
+        TranscriptionAudioInfo? audio,
+        string? text
+    )
+    {
+        var telemetry = SelectionOf(recordInputs, recordOutputs);
+        var operationName = GenAiConventions.MapOperationName(operationId);
+        var baseSupplemental = _supplementalAttributes.Select(
+            telemetry,
+            SupplementalGroup.Headers,
+            SupplementalAttributeHelpers.GetHeaderAttributes(NullableValues(headers))
+        );
+
+        var attributes = Merge(
+            TelemetryAttributes.SelectAttributes(
+                telemetry,
+                new Dictionary<string, object?>
+                {
+                    ["gen_ai.operation.name"] = operationName,
+                    ["gen_ai.provider.name"] = GenAiConventions.MapProviderName(provider),
+                    ["gen_ai.request.model"] = modelId,
+                    ["gen_ai.agent.name"] = functionId,
+                    ["gen_ai.output.type"] = operationId == "ai.generateSpeech" ? "speech" : "text",
+                    ["gen_ai.request.stream"] = operationId == "ai.streamTranscribe",
+                    ["gen_ai.input.messages"] = text is null
+                        ? null
+                        : In(() => TextMessages("user", text)),
+                    ["ai.request.text"] = text is null ? null : In(() => text),
+                    ["ai.request.audio.size"] = audio?.ByteLength is { } byteLength
+                        ? In(() => byteLength)
+                        : null,
+                    ["ai.request.audio.media_type"] = audio is null
+                        ? null
+                        : In(() => audio.MediaType),
+                }
+            ),
+            baseSupplemental
+        );
+
+        var rootSpan = StartSpan(
+            operationName + " " + modelId,
+            ActivityKind.Client,
+            GetSpanAttributes(
+                attributes,
+                OpenTelemetrySpanType.Operation,
+                operationId,
+                callId,
+                null
+            ),
+            Activity.Current?.Context ?? default
+        );
+
+        if (rootSpan is null)
+        {
+            return;
+        }
+
+        _callStates[callId] = new CallState(operationId, telemetry)
+        {
+            RootSpan = rootSpan,
+            Provider = provider,
+            ModelId = modelId,
+            BaseSupplementalAttributes = baseSupplemental,
+        };
+    }
+
+    private void OnAudioOperationEnd(
+        string callId,
+        TranscriptionAudioInfo? inputAudio,
+        GenerateSpeechAudioInfo? outputAudio,
+        string? transcript,
+        System.Text.Json.JsonElement? usage,
+        System.Text.Json.JsonElement? providerMetadata
+    )
+    {
+        if (!TryGetCallState(callId, out var state) || state.RootSpan is null)
+        {
+            return;
+        }
+
+        var attributes = new Dictionary<string, object?>
+        {
+            ["ai.request.audio.size"] = inputAudio?.ByteLength is { } inputSize
+                ? In(() => inputSize)
+                : null,
+            ["ai.request.audio.media_type"] = inputAudio is null
+                ? null
+                : In(() => inputAudio.MediaType),
+            ["ai.response.text"] = transcript is null ? null : Out(() => transcript),
+            ["gen_ai.output.messages"] = transcript is null
+                ? null
+                : Out(() => TextMessages("assistant", transcript)),
+            ["ai.response.audio.size"] = outputAudio is null
+                ? null
+                : Out(() => outputAudio.ByteLength),
+            ["ai.response.audio.media_type"] = outputAudio is null
+                ? null
+                : Out(() => outputAudio.MediaType),
+            ["ai.response.audio.format"] = outputAudio is null
+                ? null
+                : Out(() => outputAudio.Format),
+        };
+        foreach (
+            var pair in ProviderUsageAttributes.GetProviderUsageAttributes(usage, "gen_ai.usage")
+        )
+        {
+            attributes[pair.Key] = pair.Value;
+        }
+
+        SetAttributes(
+            state.RootSpan,
+            Merge(
+                TelemetryAttributes.SelectAttributes(state.Telemetry, attributes),
+                _supplementalAttributes.Select(
+                    state.Telemetry,
+                    SupplementalGroup.Usage,
+                    new Dictionary<string, object?>
+                    {
+                        ["ai.response.usage"] = usage is { } value ? value.GetRawText() : null,
+                    }
+                ),
+                _supplementalAttributes.Select(
+                    state.Telemetry,
+                    SupplementalGroup.ProviderMetadata,
+                    ProviderMetadataAttributes(providerMetadata)
+                )
+            )
+        );
+
+        End(state.RootSpan);
+        _callStates.TryRemove(callId, out _);
+    }
+
+    private static string TextMessages(string role, string content) =>
+        System.Text.Json.JsonSerializer.Serialize(
+            new[] { new { role, parts = new[] { new { type = "text", content } } } }
+        );
+
+    private static IEnumerable<KeyValuePair<string, string?>>? NullableValues(
+        IEnumerable<KeyValuePair<string, string>>? headers
+    ) => headers?.Select(pair => new KeyValuePair<string, string?>(pair.Key, pair.Value));
+
+    private static readonly System.Text.Json.JsonSerializerOptions JsonOptions = new()
+    {
+        // A vector with NaN must not make the span handlers throw and leave spans open.
+        NumberHandling = System
+            .Text
+            .Json
+            .Serialization
+            .JsonNumberHandling
+            .AllowNamedFloatingPointLiterals,
+    };
+
+    private static string Json(object? value) =>
+        System.Text.Json.JsonSerializer.Serialize(value, JsonOptions);
+
+    private void OnEmbedOperationStart(EmbedStartEvent e)
+    {
+        var telemetry = SelectionOf(e.RecordInputs, e.RecordOutputs);
+        var runtimeContext = e.RuntimeContext;
+        var baseSupplemental = Merge(
+            _supplementalAttributes.Select(
+                telemetry,
+                SupplementalGroup.RuntimeContext,
+                SupplementalAttributeHelpers.GetRuntimeContextAttributes(runtimeContext)
+            ),
+            _supplementalAttributes.Select(
+                telemetry,
+                SupplementalGroup.Headers,
+                SupplementalAttributeHelpers.GetHeaderAttributes(NullableValues(e.Headers))
+            )
+        );
+        var isMany = e.OperationId == "ai.embedMany";
+        var operationName = GenAiConventions.MapOperationName(e.OperationId);
+
+        var attributes = Merge(
+            TelemetryAttributes.SelectAttributes(
+                telemetry,
+                new Dictionary<string, object?>
+                {
+                    ["gen_ai.operation.name"] = operationName,
+                    ["gen_ai.provider.name"] = GenAiConventions.MapProviderName(e.Provider),
+                    ["gen_ai.request.model"] = e.ModelId,
+                }
+            ),
+            baseSupplemental,
+            _supplementalAttributes.Select(
+                telemetry,
+                SupplementalGroup.Embedding,
+                isMany
+                    ? new Dictionary<string, object?>
+                    {
+                        ["ai.values"] = In(() => (e.Value.Many ?? []).Select(Json).ToArray()),
+                    }
+                    : new Dictionary<string, object?> { ["ai.value"] = In(() => Json(e.Value.One)) }
+            )
+        );
+
+        var rootSpan = StartSpan(
+            operationName + " " + e.ModelId,
+            ActivityKind.Client,
+            GetSpanAttributes(
+                attributes,
+                OpenTelemetrySpanType.Operation,
+                e.OperationId,
+                e.CallId,
+                runtimeContext
+            ),
+            Activity.Current?.Context ?? default
+        );
+
+        if (rootSpan is null)
+        {
+            return;
+        }
+
+        _callStates[e.CallId] = new CallState(e.OperationId, telemetry)
+        {
+            RootSpan = rootSpan,
+            Settings = new Dictionary<string, object?> { ["maxRetries"] = e.MaxRetries },
+            Provider = e.Provider,
+            ModelId = e.ModelId,
+            RuntimeContext = runtimeContext,
+            BaseSupplementalAttributes = baseSupplemental,
+        };
+    }
+
+    private void OnEmbedOperationEnd(EmbedEndEvent e)
+    {
+        if (!TryGetCallState(e.CallId, out var state) || state.RootSpan is null)
+        {
+            return;
+        }
+
+        var isMany = state.OperationId == "ai.embedMany";
+        SetAttributes(
+            state.RootSpan,
+            _supplementalAttributes.Select(
+                state.Telemetry,
+                SupplementalGroup.Embedding,
+                isMany
+                    ? new Dictionary<string, object?>
+                    {
+                        ["ai.embeddings"] = Out(() =>
+                            (e.Embedding.Many ?? []).Select(Json).ToArray()
+                        ),
+                    }
+                    : new Dictionary<string, object?>
+                    {
+                        ["ai.embedding"] = Out(() => Json(e.Embedding.One)),
+                    }
+            )
+        );
+
+        End(state.RootSpan);
+        _callStates.TryRemove(e.CallId, out _);
+    }
+
+    private void OnEmbedStartCore(EmbeddingModelCallStartEvent e)
+    {
+        if (!TryGetCallState(e.CallId, out var state) || state.RootSpan is null)
+        {
+            return;
+        }
+
+        var attributes = Merge(
+            TelemetryAttributes.SelectAttributes(
+                state.Telemetry,
+                new Dictionary<string, object?>
+                {
+                    ["gen_ai.operation.name"] = "embeddings",
+                    ["gen_ai.provider.name"] = GenAiConventions.MapProviderName(state.Provider),
+                    ["gen_ai.request.model"] = state.ModelId,
+                }
+            ),
+            state.BaseSupplementalAttributes,
+            _supplementalAttributes.Select(
+                state.Telemetry,
+                SupplementalGroup.Embedding,
+                new Dictionary<string, object?>
+                {
+                    ["ai.values"] = In(() => e.Values.Select(Json).ToArray()),
+                }
+            )
+        );
+
+        var embedSpan = StartSpan(
+            "embeddings " + state.ModelId,
+            ActivityKind.Client,
+            GetSpanAttributes(
+                attributes,
+                OpenTelemetrySpanType.Embedding,
+                state.OperationId,
+                e.CallId,
+                state.RuntimeContext
+            ),
+            state.RootSpan.Context
+        );
+        if (embedSpan is not null)
+        {
+            state.EmbedSpans[e.EmbedCallId] = embedSpan;
+        }
+    }
+
+    private void OnEmbedEndCore(EmbeddingModelCallEndEvent e)
+    {
+        if (
+            !TryGetCallState(e.CallId, out var state)
+            || !state.EmbedSpans.TryGetValue(e.EmbedCallId, out var span)
+        )
+        {
+            return;
+        }
+
+        SetAttributes(
+            span,
+            Merge(
+                TelemetryAttributes.SelectAttributes(
+                    state.Telemetry,
+                    new Dictionary<string, object?>
+                    {
+                        ["gen_ai.usage.input_tokens"] = e.Usage.Tokens,
+                    }
+                ),
+                _supplementalAttributes.Select(
+                    state.Telemetry,
+                    SupplementalGroup.Embedding,
+                    new Dictionary<string, object?>
+                    {
+                        ["ai.embeddings"] = Out(() => e.Embeddings.Select(Json).ToArray()),
+                    }
+                )
+            )
+        );
+
+        End(span);
+        state.EmbedSpans.TryRemove(e.EmbedCallId, out _);
+    }
+
+    private void OnRerankOperationStart(RerankStartEvent e)
+    {
+        var telemetry = SelectionOf(e.RecordInputs, e.RecordOutputs);
+        var runtimeContext = e.RuntimeContext;
+        var baseSupplemental = Merge(
+            _supplementalAttributes.Select(
+                telemetry,
+                SupplementalGroup.RuntimeContext,
+                SupplementalAttributeHelpers.GetRuntimeContextAttributes(runtimeContext)
+            ),
+            _supplementalAttributes.Select(
+                telemetry,
+                SupplementalGroup.Headers,
+                SupplementalAttributeHelpers.GetHeaderAttributes(NullableValues(e.Headers))
+            )
+        );
+
+        var attributes = Merge(
+            TelemetryAttributes.SelectAttributes(
+                telemetry,
+                new Dictionary<string, object?>
+                {
+                    ["gen_ai.operation.name"] = "rerank",
+                    ["gen_ai.provider.name"] = GenAiConventions.MapProviderName(e.Provider),
+                    ["gen_ai.request.model"] = e.ModelId,
+                }
+            ),
+            baseSupplemental,
+            _supplementalAttributes.Select(
+                telemetry,
+                SupplementalGroup.Reranking,
+                new Dictionary<string, object?>
+                {
+                    ["ai.documents"] = In(() => e.Documents.Select(Json).ToArray()),
+                }
+            )
+        );
+
+        var rootSpan = StartSpan(
+            "rerank " + e.ModelId,
+            ActivityKind.Client,
+            GetSpanAttributes(
+                attributes,
+                OpenTelemetrySpanType.Operation,
+                e.OperationId,
+                e.CallId,
+                runtimeContext
+            ),
+            Activity.Current?.Context ?? default
+        );
+
+        if (rootSpan is null)
+        {
+            return;
+        }
+
+        _callStates[e.CallId] = new CallState(e.OperationId, telemetry)
+        {
+            RootSpan = rootSpan,
+            Settings = new Dictionary<string, object?> { ["maxRetries"] = e.MaxRetries },
+            Provider = e.Provider,
+            ModelId = e.ModelId,
+            RuntimeContext = runtimeContext,
+            BaseSupplementalAttributes = baseSupplemental,
+        };
+    }
+
+    private void OnRerankOperationEnd(RerankEndEvent e)
+    {
+        if (!TryGetCallState(e.CallId, out var state) || state.RootSpan is null)
+        {
+            return;
+        }
+
+        End(state.RootSpan);
+        _callStates.TryRemove(e.CallId, out _);
+    }
+
+    private void OnRerankStartCore(RerankingModelCallStartEvent e)
+    {
+        if (!TryGetCallState(e.CallId, out var state) || state.RootSpan is null)
+        {
+            return;
+        }
+
+        var attributes = Merge(
+            TelemetryAttributes.SelectAttributes(
+                state.Telemetry,
+                new Dictionary<string, object?>
+                {
+                    ["gen_ai.operation.name"] = "rerank",
+                    ["gen_ai.provider.name"] = GenAiConventions.MapProviderName(state.Provider),
+                    ["gen_ai.request.model"] = state.ModelId,
+                }
+            ),
+            state.BaseSupplementalAttributes,
+            _supplementalAttributes.Select(
+                state.Telemetry,
+                SupplementalGroup.Reranking,
+                new Dictionary<string, object?>
+                {
+                    ["ai.documents"] = In(() => e.Documents.Select(Json).ToArray()),
+                }
+            )
+        );
+
+        state.RerankSpan = StartSpan(
+            "rerank " + state.ModelId,
+            ActivityKind.Client,
+            GetSpanAttributes(
+                attributes,
+                OpenTelemetrySpanType.Reranking,
+                state.OperationId,
+                e.CallId,
+                state.RuntimeContext
+            ),
+            state.RootSpan.Context
+        );
+    }
+
+    private void OnRerankEndCore(RerankingModelCallEndEvent e)
+    {
+        if (!TryGetCallState(e.CallId, out var state) || state.RerankSpan is null)
+        {
+            return;
+        }
+
+        SetAttributes(
+            state.RerankSpan,
+            _supplementalAttributes.Select(
+                state.Telemetry,
+                SupplementalGroup.Reranking,
+                new Dictionary<string, object?>
+                {
+                    ["ai.ranking.type"] = e.DocumentsType,
+                    ["ai.ranking"] = Out(() =>
+                        e
+                            .Ranking.Select(r =>
+                                Json(new { index = r.Index, relevanceScore = r.RelevanceScore })
+                            )
+                            .ToArray()
+                    ),
+                }
+            )
+        );
+
+        End(state.RerankSpan);
+        state.RerankSpan = null;
+    }
+
     private void OnAbortCore(StreamAbortContext e)
     {
-        var callId = e.Steps.Count > 0 ? e.Steps[e.Steps.Count - 1].CallId : null;
-        if (!TryGetCallState(callId, out var state) || state.RootSpan is null)
+        if (!TryGetCallState(e.CallId, out var state) || state.RootSpan is null)
         {
             return;
         }
 
         EndOpenSpans(state, null);
         End(state.RootSpan);
-        _callStates.TryRemove(callId!, out _);
+        _callStates.TryRemove(e.CallId, out _);
     }
 
     private void OnErrorCore(TelemetryErrorEvent e)
@@ -1259,6 +1915,14 @@ public sealed class OpenTelemetry : ITelemetry
         state.InferenceSpan = null;
         Finish(state.StepSpan);
         state.StepSpan = null;
+        foreach (var embedSpan in state.EmbedSpans.Values)
+        {
+            Finish(embedSpan);
+        }
+
+        state.EmbedSpans.Clear();
+        Finish(state.RerankSpan);
+        state.RerankSpan = null;
         Finish(state.DecisionSpan);
         state.DecisionSpan = null;
         Finish(state.ExtractionSpan);
@@ -1281,7 +1945,8 @@ public sealed class OpenTelemetry : ITelemetry
     ) =>
         new()
         {
-            ["ai.response.providerMetadata"] = providerMetadata is { } value
+            ["ai.response.providerMetadata"] = providerMetadata
+                is { ValueKind: not System.Text.Json.JsonValueKind.Undefined } value
                 ? value.GetRawText()
                 : null,
         };
@@ -1307,6 +1972,11 @@ public sealed class OpenTelemetry : ITelemetry
         public Activity? InferenceSpan { get; set; }
 
         public List<JsonObject>? InferenceToolDefinitions { get; set; }
+
+        public ConcurrentDictionary<string, Activity> EmbedSpans { get; } =
+            new(StringComparer.Ordinal);
+
+        public Activity? RerankSpan { get; set; }
 
         public Activity? DecisionSpan { get; set; }
 

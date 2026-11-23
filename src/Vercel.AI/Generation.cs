@@ -1326,7 +1326,11 @@ internal static class Generation
             // An abort that follows the consumer's cancellation still reaches onAbort, like upstream's same-tick cancel-then-abort.
             abort.OnLateAbort = async error =>
             {
-                var context = new StreamAbortContext(recorder.SnapshotSteps(), error);
+                var context = new StreamAbortContext(
+                    recorder.SnapshotSteps(),
+                    error,
+                    recorder.CallId
+                );
                 if (options.OnAbort is { } onAbort)
                 {
                     await onAbort(context, CancellationToken.None).ConfigureAwait(false);
@@ -2341,7 +2345,13 @@ internal static class Generation
 
             if (abort.Error is { } abortError)
             {
-                await FinishAbortAsync(options, buffer, recorder.SnapshotSteps(), abortError)
+                await FinishAbortAsync(
+                        options,
+                        buffer,
+                        recorder.SnapshotSteps(),
+                        abortError,
+                        recorder.CallId
+                    )
                     .ConfigureAwait(false);
                 return;
             }
@@ -2403,7 +2413,8 @@ internal static class Generation
         StreamTextOptions options,
         PartBuffer buffer,
         IReadOnlyList<StepResult> steps,
-        Exception error
+        Exception error,
+        string callId
     )
     {
         Exception? callbackError = null;
@@ -2412,7 +2423,7 @@ internal static class Generation
         {
             try
             {
-                var context = new StreamAbortContext(steps.ToArray(), error);
+                var context = new StreamAbortContext(steps.ToArray(), error, callId);
                 if (options.OnAbort != null)
                 {
                     await options.OnAbort(context, CancellationToken.None).ConfigureAwait(false);

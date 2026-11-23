@@ -436,7 +436,7 @@ Gets the models the Gateway offers (upstream `getAvailableModels`). The result i
 
 **Returns:** [Task&lt;GatewayFetchMetadataResponse&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L400)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L401)
 
 <a id="Vercel_AI_Gateway_GatewayProvider_GetCreditsAsync_"></a>
 <a id="Vercel_AI_Gateway_GatewayProvider_GetCreditsAsync_System_Threading_CancellationToken_"></a>
@@ -459,7 +459,7 @@ Gets the credit balance of the account (upstream `getCredits`).
 
 **Returns:** [Task&lt;GatewayCreditsResponse&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L442)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L443)
 
 <a id="Vercel_AI_Gateway_GatewayProvider_GetGenerationInfoAsync_"></a>
 <a id="Vercel_AI_Gateway_GatewayProvider_GetGenerationInfoAsync_Vercel_AI_Gateway_GatewayGenerationInfoParams_System_Threading_CancellationToken_"></a>
@@ -483,7 +483,7 @@ Gets the info of one generation, including its cost breakdown.
 
 **Returns:** [Task&lt;GatewayGenerationInfo&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L463)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L464)
 
 <a id="Vercel_AI_Gateway_GatewayProvider_GetSpendReportAsync_"></a>
 <a id="Vercel_AI_Gateway_GatewayProvider_GetSpendReportAsync_Vercel_AI_Gateway_GatewaySpendReportParams_System_Threading_CancellationToken_"></a>
@@ -507,7 +507,7 @@ Gets the spend report of the account (upstream `getSpendReport`).
 
 **Returns:** [Task&lt;GatewaySpendReportResponse&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L452)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L453)
 
 <a id="Vercel_AI_Gateway_GatewayProvider_ImageModel_"></a>
 <a id="Vercel_AI_Gateway_GatewayProvider_ImageModel_System_String_"></a>

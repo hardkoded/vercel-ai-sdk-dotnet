@@ -86,7 +86,7 @@ The `GenerateTextResult` that `OnEnd` receives also exposes `CallId`, `StepNumbe
 
 Cancel the `CancellationToken` you passed to `StreamTextAsync`, or set `StreamTextOptions.AbortSignal` to cancel with a reason. The call rejects `Text`, `Steps`, `FinishReason`, and `Usage` at once. It does not wait for your callbacks or for the provider to close the response. A reason that is an exception is the exception the tasks fault with. A token faults them with an `OperationCanceledException`.
 
-The stream ends with an `AbortPart` after `OnAbort` returns. `OnAbort` receives the steps that finished before the cancel and the exception. `OnError` and `OnEnd` are not called.
+The stream ends with an `AbortPart` after `OnAbort` returns. `OnAbort` receives the call id (`CallId`), the steps that finished before the cancel, and the exception. `OnError` and `OnEnd` are not called.
 
 ```csharp
 var controller = new AbortController();
