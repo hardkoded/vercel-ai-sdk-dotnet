@@ -969,63 +969,59 @@ public sealed class StreamTranscribeResult
                 providerOptions
             );
             await _telemetry
-                .RunInTracingChannelSpan(
-                    "streamTranscribe",
-                    startEvent,
-                    async () =>
+                .RunInTracingChannelSpan("streamTranscribe", startEvent, async () =>
+                {
+                    if (_telemetry.OnStreamTranscriptionStart is { } onStart)
                     {
-                        if (_telemetry.OnStreamTranscriptionStart is { } onStart)
-                        {
-                            await onStart(startEvent, cancellationToken).ConfigureAwait(false);
-                        }
-
-                        var start = await model
-                            .DoStreamAsync(
-                                new TranscriptionStreamCall(
-                                    countedAudio,
-                                    request.InputAudioFormat,
-                                    providerOptions,
-                                    (IReadOnlyDictionary<string, string?>)headers,
-                                    request.IncludeRawChunks,
-                                    cancellationToken,
-                                    request.AbortReason
-                                ),
-                                cancellationToken
-                            )
-                            .ConfigureAwait(false);
-                        if (start == null)
-                        {
-                            throw Unsupported(model, request.ModelWasString);
-                        }
-
-                        stream = start.Stream;
-                        _response = new ProviderResponse(
-                            start.Response?.Headers,
-                            null,
-                            start.Response?.Id,
-                            start.Response?.Timestamp ?? _startedAt,
-                            start.Response?.ModelId ?? model.ModelId
-                        );
-                        await foreach (
-                            var part in start.Stream.ReadAsync(cancellationToken).ConfigureAwait(false)
-                        )
-                        {
-                            Accept(part);
-                            if (part.Type == "finish")
-                            {
-                                await NotifyEndAsync(model, request, part, cancellationToken)
-                                    .ConfigureAwait(false);
-                            }
-                        }
-
-                        if (_text.IsPending)
-                        {
-                            throw new NoTranscriptGeneratedException(new[] { CurrentResponse() });
-                        }
-
-                        return true;
+                        await onStart(startEvent, cancellationToken).ConfigureAwait(false);
                     }
-                )
+
+                    var start = await model
+                        .DoStreamAsync(
+                            new TranscriptionStreamCall(
+                                countedAudio,
+                                request.InputAudioFormat,
+                                providerOptions,
+                                (IReadOnlyDictionary<string, string?>)headers,
+                                request.IncludeRawChunks,
+                                cancellationToken,
+                                request.AbortReason
+                            ),
+                            cancellationToken
+                        )
+                        .ConfigureAwait(false);
+                    if (start == null)
+                    {
+                        throw Unsupported(model, request.ModelWasString);
+                    }
+
+                    stream = start.Stream;
+                    _response = new ProviderResponse(
+                        start.Response?.Headers,
+                        null,
+                        start.Response?.Id,
+                        start.Response?.Timestamp ?? _startedAt,
+                        start.Response?.ModelId ?? model.ModelId
+                    );
+                    await foreach (
+                        var part in start.Stream.ReadAsync(cancellationToken).ConfigureAwait(false)
+                    )
+                    {
+                        Accept(part);
+                        if (part.Type == "finish")
+                        {
+                            await NotifyEndAsync(model, request, part, cancellationToken)
+                                .ConfigureAwait(false);
+                        }
+                    }
+
+                    if (_text.IsPending)
+                    {
+                        throw new NoTranscriptGeneratedException(new[] { CurrentResponse() });
+                    }
+
+                    return true;
+                })
                 .ConfigureAwait(false);
 
             _queue.Complete(null);
@@ -1045,7 +1041,10 @@ public sealed class StreamTranscribeResult
                 {
                     try
                     {
-                        await onError(new TelemetryErrorEvent(_callId, reason), CancellationToken.None)
+                        await onError(
+                                new TelemetryErrorEvent(_callId, reason),
+                                CancellationToken.None
+                            )
                             .ConfigureAwait(false);
                     }
                     catch (Exception)

@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
-using Vercel.AI.Tests.Upstream.Telemetry;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
+using Vercel.AI.Tests.Upstream.Telemetry;
 using Vercel.AI.Util;
 using static Vercel.AI.Tests.Upstream.Operations.Transcribe.TranscribeSupport;
 using StreamTranscribeOperation = Vercel.AI.Operations.StreamTranscribe;
