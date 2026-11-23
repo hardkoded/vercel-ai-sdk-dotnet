@@ -55,7 +55,11 @@ internal static class ProviderUsageAttributes
     {
         if (value.ValueKind == JsonValueKind.Number)
         {
-            var number = value.GetDouble();
+            if (!value.TryGetDouble(out var number))
+            {
+                return;
+            }
+
             if (!double.IsNaN(number) && !double.IsInfinity(number) && path.Count > 0)
             {
                 // Whole numbers stay integers, like the token counts of the other spans.

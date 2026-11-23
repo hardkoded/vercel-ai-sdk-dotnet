@@ -1509,7 +1509,7 @@ public sealed class OpenTelemetry : ITelemetry
             )
         );
 
-        state.EmbedSpans[e.EmbedCallId] = StartSpan(
+        var embedSpan = StartSpan(
             "embeddings " + state.ModelId,
             ActivityKind.Client,
             GetSpanAttributes(
@@ -1520,7 +1520,11 @@ public sealed class OpenTelemetry : ITelemetry
                 state.RuntimeContext
             ),
             state.RootSpan.Context
-        )!;
+        );
+        if (embedSpan is not null)
+        {
+            state.EmbedSpans[e.EmbedCallId] = embedSpan;
+        }
     }
 
     private void OnEmbedEndCore(EmbeddingModelCallEndEvent e)
@@ -1555,7 +1559,7 @@ public sealed class OpenTelemetry : ITelemetry
         );
 
         End(span);
-        state.EmbedSpans.Remove(e.EmbedCallId);
+        state.EmbedSpans.TryRemove(e.EmbedCallId, out _);
     }
 
     private void OnRerankOperationStart(RerankStartEvent e)
@@ -1812,7 +1816,8 @@ public sealed class OpenTelemetry : ITelemetry
 
         public Activity? InferenceSpan { get; set; }
 
-        public Dictionary<string, Activity> EmbedSpans { get; } = new(StringComparer.Ordinal);
+        public ConcurrentDictionary<string, Activity> EmbedSpans { get; } =
+            new(StringComparer.Ordinal);
 
         public Activity? RerankSpan { get; set; }
 
