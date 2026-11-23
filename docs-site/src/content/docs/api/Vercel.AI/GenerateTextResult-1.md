@@ -15,7 +15,7 @@ Namespace: [Vercel.AI](/api/Vercel.AI/)
 
 
 ```csharp
-public sealed class GenerateTextResult<TOutput> : GenerateTextResult
+public sealed class GenerateTextResult<TOutput> : GenerateTextResult, IOperationEndEvent
 ```
 
 
@@ -30,7 +30,9 @@ Maps to `GenerateTextResult<TOOLS, OUTPUT>`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [GenerateTextResult](/api/Vercel.AI/GenerateTextResult/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2374)
+**Implements:** [IOperationEndEvent](/api/Vercel.AI/IOperationEndEvent/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2458)
 
 ## Properties
 
@@ -50,4 +52,4 @@ A mismatch with &lt;code class="typeparamref"&gt;TOutput&lt;/code&gt; throws [Js
 
 **Value:** `TOutput`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2391)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2475)

@@ -7,6 +7,7 @@ using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.Testing;
 using Vercel.AI.Tests.StreamText;
+using Vercel.AI.Tests.Upstream.Telemetry;
 
 namespace Vercel.AI.Tests;
 
@@ -133,9 +134,16 @@ public sealed class AuditRegressionTests
                     Model = new FailingEmbedder(),
                     Value = "a",
                     MaxRetries = 0,
-                    Telemetry = new EmbedTelemetry
+                    Telemetry = new TelemetryOptions
                     {
-                        OnError = (_, _) => throw new ApplicationException("telemetry failed"),
+                        Integrations =
+                        [
+                            new TestTelemetry
+                            {
+                                OnError = (_, _) =>
+                                    throw new ApplicationException("telemetry failed"),
+                            },
+                        ],
                     },
                 }
             )

@@ -47,10 +47,48 @@ public interface ITelemetry
     /// <summary>Called when an unrecoverable error occurs during the generation. Maps to <c>onError</c>.</summary>
     Func<TelemetryErrorEvent, CancellationToken, Task>? OnError { get; }
 
+    /// <summary>Called when a step ends with an error before it produces a step result. Maps to <c>onStepError</c>.</summary>
+    Func<GenerateTextStepErrorEvent, CancellationToken, Task>? OnStepError { get; }
+
     /// <summary>
-    /// Called when an operation completes. Maps to <c>onEnd</c>. Receives a <see cref="GenerateTextResult"/> or a <see cref="GenerateObjectEndEvent{T}"/>.
+    /// Called when an operation completes. Maps to <c>onEnd</c>. Receives a <see cref="GenerateTextResult"/>, a <see cref="GenerateObjectEndEvent{T}"/>,
+    /// an <see cref="EmbedEndEvent"/>, a <see cref="RerankEndEvent"/> or a <see cref="TranscriptionEndEvent"/>.
     /// </summary>
     Func<IOperationEndEvent, CancellationToken, Task>? OnEnd { get; }
+
+    /// <summary>Called before each <c>doEmbed</c> call of <c>embed</c> and <c>embedMany</c>. Maps to <c>onEmbedStart</c>.</summary>
+    Func<EmbeddingModelCallStartEvent, CancellationToken, Task>? OnEmbedStart { get; }
+
+    /// <summary>Called after each <c>doEmbed</c> call of <c>embed</c> and <c>embedMany</c>. Maps to <c>onEmbedEnd</c>.</summary>
+    Func<EmbeddingModelCallEndEvent, CancellationToken, Task>? OnEmbedEnd { get; }
+
+    /// <summary>Called before the <c>doRerank</c> call of <c>rerank</c>. Maps to <c>onRerankStart</c>.</summary>
+    Func<RerankingModelCallStartEvent, CancellationToken, Task>? OnRerankStart { get; }
+
+    /// <summary>Called after the <c>doRerank</c> call of <c>rerank</c>. Maps to <c>onRerankEnd</c>.</summary>
+    Func<RerankingModelCallEndEvent, CancellationToken, Task>? OnRerankEnd { get; }
+
+    /// <summary>Called when a stream transcription begins. Maps to <c>experimental_onStreamTranscriptionStart</c>.</summary>
+    Func<
+        StreamTranscriptionStartEvent,
+        CancellationToken,
+        Task
+    >? OnStreamTranscriptionStart { get; }
+
+    /// <summary>Called when a stream transcription completes. Maps to <c>experimental_onStreamTranscriptionEnd</c>.</summary>
+    Func<StreamTranscriptionEndEvent, CancellationToken, Task>? OnStreamTranscriptionEnd { get; }
+
+    /// <summary>
+    /// Runs the provider call of a model call in an integration-specific context, so auto-instrumented provider requests can be
+    /// associated with the model work. Maps to <c>executeLanguageModelCall</c>.
+    /// </summary>
+    IExecuteLanguageModelCall? ExecuteLanguageModelCall { get; }
+
+    /// <summary>
+    /// Runs the <c>execute</c> function of a tool in an integration-specific context, so nested calls become children of the tool
+    /// span. Maps to <c>executeTool</c>.
+    /// </summary>
+    IExecuteTool? ExecuteTool { get; }
 
     /// <summary>Called before each provider model call. Maps to <c>onLanguageModelCallStart</c>.</summary>
     Func<LanguageModelCallStartEvent, CancellationToken, Task>? OnLanguageModelCallStart { get; }
@@ -101,6 +139,81 @@ public interface ITelemetry
 
     /// <summary>Called when an experimental extraction completes. Maps to <c>experimental_onExtractEnd</c>.</summary>
     Func<ExtractEndEvent, CancellationToken, Task>? OnExtractEnd { get; }
+}
+
+/// <summary>
+/// The wrapper an integration provides as <see cref="ITelemetry.ExecuteLanguageModelCall"/>. Upstream types it as a generic function,
+/// which a C# delegate property cannot express.
+/// </summary>
+public interface IExecuteLanguageModelCall
+{
+    /// <summary>Runs <see cref="ExecuteLanguageModelCallOptions{T}.Execute"/> and returns its result.</summary>
+    Task<T> ExecuteAsync<T>(
+        ExecuteLanguageModelCallOptions<T> options,
+        CancellationToken cancellationToken
+    );
+}
+
+/// <summary>
+/// The wrapper an integration provides as <see cref="ITelemetry.ExecuteTool"/>. Upstream types it as a generic function, which a C#
+/// delegate property cannot express.
+/// </summary>
+public interface IExecuteTool
+{
+    /// <summary>Runs <see cref="ExecuteToolOptions{T}.Execute"/> and returns its result.</summary>
+    Task<T> ExecuteAsync<T>(ExecuteToolOptions<T> options, CancellationToken cancellationToken);
+}
+
+/// <summary>
+/// The options of <see cref="ITelemetry.ExecuteLanguageModelCall"/>: the model-call start event as context, the call id and the
+/// function that performs the model call. Maps to <c>Partial&lt;LanguageModelCallStartEvent&gt; &amp; { callId, execute }</c>.
+/// </summary>
+public sealed class ExecuteLanguageModelCallOptions<T>
+{
+    /// <summary>Creates the options.</summary>
+    public ExecuteLanguageModelCallOptions(
+        LanguageModelCallStartEvent @event,
+        Func<Task<T>> execute
+    )
+    {
+        Event = @event;
+        Execute = execute;
+    }
+
+    /// <summary>The start event of the model call, as the integrations see it.</summary>
+    public LanguageModelCallStartEvent Event { get; }
+
+    /// <summary>Id of the model call. Maps to <c>callId</c>.</summary>
+    public string CallId => Event.CallId;
+
+    /// <summary>Performs the model call. Maps to <c>execute</c>.</summary>
+    public Func<Task<T>> Execute { get; }
+}
+
+/// <summary>
+/// The options of <see cref="ITelemetry.ExecuteTool"/>: the tool-execution start event as context, the ids and the function that
+/// runs the tool. Maps to <c>Partial&lt;ToolExecutionStartEvent&gt; &amp; { callId, toolCallId, execute }</c>.
+/// </summary>
+public sealed class ExecuteToolOptions<T>
+{
+    /// <summary>Creates the options.</summary>
+    public ExecuteToolOptions(ToolExecutionStartEvent @event, Func<Task<T>> execute)
+    {
+        Event = @event;
+        Execute = execute;
+    }
+
+    /// <summary>The start event of the tool execution, as the integrations see it.</summary>
+    public ToolExecutionStartEvent Event { get; }
+
+    /// <summary>Id of the generation call. Maps to <c>callId</c>.</summary>
+    public string? CallId => Event.CallId;
+
+    /// <summary>Id of the tool call. Maps to <c>toolCallId</c>.</summary>
+    public string ToolCallId => Event.ToolCall.ToolCallId;
+
+    /// <summary>Runs the tool. Maps to <c>execute</c>.</summary>
+    public Func<Task<T>> Execute { get; }
 }
 
 /// <summary>

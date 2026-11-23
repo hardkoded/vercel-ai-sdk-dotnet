@@ -1605,6 +1605,15 @@ public class GenerateTextOptions
     public Func<GenerateTextStepStartEvent, CancellationToken, Task>? OnStepStart { get; set; }
 
     /// <summary>
+    /// Called when a step that started fails before it produces a step result, that is when the provider call throws or rejects,
+    /// or, for <c>GenerateTextAsync</c>, when the call is cancelled or times out. <see cref="OnStepEnd"/> is not called for such a step.
+    /// For <c>StreamTextAsync</c> it is also called when the model stream ends without output; a provider error part still ends the
+    /// step with <see cref="OnStepEnd"/>, and a cancel or a timeout ends it with <see cref="StreamTextOptions.OnAbort"/>.
+    /// An exception it throws is ignored. Maps to <c>onStepError</c>.
+    /// </summary>
+    public Func<GenerateTextStepErrorEvent, CancellationToken, Task>? OnStepError { get; set; }
+
+    /// <summary>
     /// Called immediately before each provider model call begins. An exception it throws is ignored.
     /// Maps to <c>onLanguageModelCallStart</c>.
     /// </summary>
@@ -1844,8 +1853,31 @@ public sealed class GenerateTextStartEvent : IOperationStartEvent
 }
 
 /// <summary>Passed to <see cref="GenerateTextOptions.OnStepStart"/> when a step begins, before the provider is called. Maps to <c>GenerateTextStepStartEvent</c>.</summary>
-public sealed class GenerateTextStepStartEvent
+public class GenerateTextStepStartEvent
 {
+    /// <summary>Creates an empty event.</summary>
+    public GenerateTextStepStartEvent() { }
+
+    /// <summary>Creates an event with the values of <paramref name="source"/>.</summary>
+    protected GenerateTextStepStartEvent(GenerateTextStepStartEvent source)
+    {
+        CallId = source.CallId;
+        Provider = source.Provider;
+        ModelId = source.ModelId;
+        StepNumber = source.StepNumber;
+        Instructions = source.Instructions;
+        Messages = source.Messages;
+        Tools = source.Tools;
+        ToolChoice = source.ToolChoice;
+        ActiveTools = source.ActiveTools;
+        ToolOrder = source.ToolOrder;
+        _steps = source._steps;
+        ProviderOptions = source.ProviderOptions;
+        Output = source.Output;
+        _runtimeContext = source._runtimeContext;
+        _toolsContext = source._toolsContext;
+    }
+
     /// <summary>Unique identifier for this generation call, used to correlate events. Maps to <c>callId</c>.</summary>
     public string CallId { get; init; } = string.Empty;
 
@@ -1921,6 +1953,23 @@ public sealed class GenerateTextStepStartEvent
         copy._toolsContext = toolsContext;
         return copy;
     }
+}
+
+/// <summary>
+/// Passed to <see cref="ITelemetry.OnStepError"/> when a step that started fails before it produces a step result. Carries the step
+/// start event of the failed step and the error. Maps to <c>GenerateTextStepErrorEvent</c>.
+/// </summary>
+public sealed class GenerateTextStepErrorEvent : GenerateTextStepStartEvent
+{
+    /// <summary>Creates an event.</summary>
+    public GenerateTextStepErrorEvent(GenerateTextStepStartEvent step, Exception error)
+        : base(step)
+    {
+        Error = error;
+    }
+
+    /// <summary>The error that ended the step. Maps to <c>error</c>.</summary>
+    public Exception Error { get; }
 }
 
 /// <summary>Passed to <see cref="GenerateTextOptions.OnLanguageModelCallStart"/> before the model is called.</summary>
@@ -2052,6 +2101,18 @@ public class ToolExecutionStartEvent
 
     /// <summary>The messages the model received in the step that made the call.</summary>
     public IReadOnlyList<ModelMessage> Messages { get; }
+
+    /// <summary>Copied from <see cref="TelemetryOptions.RecordInputs"/>. Set only on events sent to telemetry integrations. Maps to <c>recordInputs</c>.</summary>
+    public bool? RecordInputs { get; init; }
+
+    /// <summary>Copied from <see cref="TelemetryOptions.RecordOutputs"/>. Set only on events sent to telemetry integrations. Maps to <c>recordOutputs</c>.</summary>
+    public bool? RecordOutputs { get; init; }
+
+    /// <summary>Copied from <see cref="TelemetryOptions.FunctionId"/>. Set only on events sent to telemetry integrations. Maps to <c>functionId</c>.</summary>
+    public string? FunctionId { get; init; }
+
+    /// <summary>The version of the SDK that emitted the event. Set only on events sent to telemetry integrations. Maps to <c>aiVersion</c>.</summary>
+    public string? AiVersion { get; init; }
 }
 
 /// <summary>Passed to <see cref="GenerateTextOptions.OnToolExecutionEnd"/> after a tool ran.</summary>

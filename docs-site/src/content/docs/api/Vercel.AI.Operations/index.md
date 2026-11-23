@@ -74,7 +74,8 @@ Speech, image, video, embeddings, transcription, and other operations.
 | [DownloadException](/api/Vercel.AI.Operations/DownloadException/) | Downloading generated media failed. |
 | [Embed](/api/Vercel.AI.Operations/Embed/) | Embeds one value. Maps to embed. |
 | [EmbeddingModelCall](/api/Vercel.AI.Operations/EmbeddingModelCall/) | Arguments for one doEmbed call. |
-| [EmbeddingModelCallEvent](/api/Vercel.AI.Operations/EmbeddingModelCallEvent/) | One inner doEmbed telemetry event. |
+| [EmbeddingModelCallEndEvent](/api/Vercel.AI.Operations/EmbeddingModelCallEndEvent/) | Event fired after an individual doEmbed call. Maps to EmbeddingModelCallEndEvent. |
+| [EmbeddingModelCallStartEvent](/api/Vercel.AI.Operations/EmbeddingModelCallStartEvent/) | Event fired before an individual doEmbed call. Maps to EmbeddingModelCallStartEvent. |
 | [EmbeddingModelResponse](/api/Vercel.AI.Operations/EmbeddingModelResponse/) | One embedding returned by a model call. |
 | [EmbedEndEvent](/api/Vercel.AI.Operations/EmbedEndEvent/) | End event for embed and embedMany. |
 | [EmbedMany](/api/Vercel.AI.Operations/EmbedMany/) | Embeds many values, splitting on count and UTF-8 byte limits. Maps to embedMany. |
@@ -83,7 +84,6 @@ Speech, image, video, embeddings, transcription, and other operations.
 | [EmbedRequest](/api/Vercel.AI.Operations/EmbedRequest/) | Options for CancellationToken). |
 | [EmbedResult](/api/Vercel.AI.Operations/EmbedResult/) | Result of CancellationToken). |
 | [EmbedStartEvent](/api/Vercel.AI.Operations/EmbedStartEvent/) | Start event for embed and embedMany. |
-| [EmbedTelemetry](/api/Vercel.AI.Operations/EmbedTelemetry/) | Telemetry callbacks for an embedding operation. |
 | [Evaluate](/api/Vercel.AI.Operations/Evaluate/) | Deprecated alias of Decide. |
 | [EvaluateEvent](/api/Vercel.AI.Operations/EvaluateEvent/) | Deprecated alias of DecideEvent. |
 | [EvaluateModelEvent](/api/Vercel.AI.Operations/EvaluateModelEvent/) | Deprecated alias of DecisionModelEvent. |
@@ -160,8 +160,9 @@ Speech, image, video, embeddings, transcription, and other operations.
 | [RankedDocument](/api/Vercel.AI.Operations/RankedDocument/) | One document in the reranked order. |
 | [Rerank](/api/Vercel.AI.Operations/Rerank/) | Reranks documents. Maps to rerank. |
 | [RerankEndEvent](/api/Vercel.AI.Operations/RerankEndEvent/) | End event for rerank. |
+| [RerankingModelCallEndEvent](/api/Vercel.AI.Operations/RerankingModelCallEndEvent/) | Event fired after the doRerank call. Maps to RerankingModelCallEndEvent. |
+| [RerankingModelCallStartEvent](/api/Vercel.AI.Operations/RerankingModelCallStartEvent/) | Event fired before the doRerank call. Maps to RerankingModelCallStartEvent. |
 | [RerankModelCall](/api/Vercel.AI.Operations/RerankModelCall/) | Arguments for doRerank. |
-| [RerankModelCallEvent](/api/Vercel.AI.Operations/RerankModelCallEvent/) | Inner rerank telemetry event. |
 | [RerankModelDocuments](/api/Vercel.AI.Operations/RerankModelDocuments/) | Documents sent to a reranking model. |
 | [RerankModelRank](/api/Vercel.AI.Operations/RerankModelRank/) | One ranked index from the model. |
 | [RerankModelResponse](/api/Vercel.AI.Operations/RerankModelResponse/) | Model response for doRerank. |
@@ -169,7 +170,6 @@ Speech, image, video, embeddings, transcription, and other operations.
 | [RerankResponseInfo](/api/Vercel.AI.Operations/RerankResponseInfo/) | Response metadata for a rerank call. |
 | [RerankResult](/api/Vercel.AI.Operations/RerankResult/) | Result of CancellationToken). |
 | [RerankStartEvent](/api/Vercel.AI.Operations/RerankStartEvent/) | Start event for rerank. |
-| [RerankTelemetry](/api/Vercel.AI.Operations/RerankTelemetry/) | Telemetry callbacks for rerank. |
 | [RetryableCallException](/api/Vercel.AI.Operations/RetryableCallException/) | A provider HTTP failure that may be retried. |
 | [SearchableTool](/api/Vercel.AI.Operations/SearchableTool/) | A tool the search step can hide until it is discovered. |
 | [SkillFile](/api/Vercel.AI.Operations/SkillFile/) | One file inside a skill upload. |
@@ -196,6 +196,8 @@ Speech, image, video, embeddings, transcription, and other operations.
 | [StreamTranscribe](/api/Vercel.AI.Operations/StreamTranscribe/) | Streams a transcript. Maps to streamTranscribe. |
 | [StreamTranscribeRequest](/api/Vercel.AI.Operations/StreamTranscribeRequest/) | Options for CancellationToken). |
 | [StreamTranscribeResult](/api/Vercel.AI.Operations/StreamTranscribeResult/) | Streaming transcription result. |
+| [StreamTranscriptionEndEvent](/api/Vercel.AI.Operations/StreamTranscriptionEndEvent/) | Event passed to telemetry when CancellationToken) completes. Maps to StreamTranscriptionEndEvent. |
+| [StreamTranscriptionStartEvent](/api/Vercel.AI.Operations/StreamTranscriptionStartEvent/) | Event passed to telemetry when CancellationToken) begins. Maps to StreamTranscriptionStartEvent. |
 | [StreamTranslate](/api/Vercel.AI.Operations/StreamTranslate/) | Streams a speech translation. Maps to streamTranslate. |
 | [StreamTranslateRequest](/api/Vercel.AI.Operations/StreamTranslateRequest/) | Options for CancellationToken). |
 | [StreamTranslateResult](/api/Vercel.AI.Operations/StreamTranslateResult/) | Streaming translation result. |
@@ -213,7 +215,6 @@ Speech, image, video, embeddings, transcription, and other operations.
 | [Transcribe](/api/Vercel.AI.Operations/Transcribe/) | Transcribes audio. Maps to transcribe. |
 | [TranscribeRequest](/api/Vercel.AI.Operations/TranscribeRequest/) | Options for CancellationToken). |
 | [TranscribeResult](/api/Vercel.AI.Operations/TranscribeResult/) | Transcription result. |
-| [TranscribeTelemetry](/api/Vercel.AI.Operations/TranscribeTelemetry/) | Telemetry callbacks for CancellationToken). |
 | [TranscriptionAudioInfo](/api/Vercel.AI.Operations/TranscriptionAudioInfo/) | Metadata about the input audio on a transcription telemetry event. |
 | [TranscriptionEndEvent](/api/Vercel.AI.Operations/TranscriptionEndEvent/) | Event passed to telemetry when CancellationToken) completes. Raw audio is not included. Maps to TranscriptionEndEvent. |
 | [TranscriptionModelCall](/api/Vercel.AI.Operations/TranscriptionModelCall/) | Arguments for a transcription doGenerate. |

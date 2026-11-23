@@ -23,7 +23,7 @@ A tool call.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [TextStreamPart](/api/Vercel.AI/TextStreamPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2696)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2780)
 
 ## Constructors
 
@@ -46,7 +46,7 @@ Creates a tool-call part.
 | --- | --- | --- |
 | `call` | [GeneratedToolCall](/api/Vercel.AI.Provider/GeneratedToolCall/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2699)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2783)
 
 ## Properties
 
@@ -65,4 +65,4 @@ Tool call.
 
 **Value:** [GeneratedToolCall](/api/Vercel.AI.Provider/GeneratedToolCall/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2706)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2790)

@@ -23,7 +23,7 @@ Options for `CancellationToken)`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [OperationRequest](/api/Vercel.AI.Operations/OperationRequest/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L432)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L464)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Requested output dimensions. Must be a positive integer. Support depends on the 
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L441)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L473)
 
 <a id="Vercel_AI_Operations_EmbedManyRequest_ExperimentalOnEnd_"></a>
 <a id="Vercel_AI_Operations_EmbedManyRequest_ExperimentalOnEnd"></a>
@@ -59,7 +59,7 @@ Deprecated alias of [OnEnd](#Vercel_AI_Operations_EmbedManyRequest_OnEnd).
 
 **Value:** [Func&lt;EmbedEndEvent, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L456)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L488)
 
 <a id="Vercel_AI_Operations_EmbedManyRequest_ExperimentalOnStart_"></a>
 <a id="Vercel_AI_Operations_EmbedManyRequest_ExperimentalOnStart"></a>
@@ -76,7 +76,7 @@ Deprecated alias of [OnStart](#Vercel_AI_Operations_EmbedManyRequest_OnStart).
 
 **Value:** [Func&lt;EmbedStartEvent, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L450)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L482)
 
 <a id="Vercel_AI_Operations_EmbedManyRequest_ExperimentalTelemetry_"></a>
 <a id="Vercel_AI_Operations_EmbedManyRequest_ExperimentalTelemetry"></a>
@@ -85,15 +85,15 @@ Deprecated alias of [OnStart](#Vercel_AI_Operations_EmbedManyRequest_OnStart).
 
 
 ```csharp
-public EmbedTelemetry? ExperimentalTelemetry { get; set; }
+public TelemetryOptions? ExperimentalTelemetry { get; set; }
 ```
 
 
 Deprecated alias of [Telemetry](#Vercel_AI_Operations_EmbedManyRequest_Telemetry).
 
-**Value:** [EmbedTelemetry](/api/Vercel.AI.Operations/EmbedTelemetry/)
+**Value:** [TelemetryOptions](/api/Vercel.AI/TelemetryOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L462)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L494)
 
 <a id="Vercel_AI_Operations_EmbedManyRequest_MaxParallelCalls_"></a>
 <a id="Vercel_AI_Operations_EmbedManyRequest_MaxParallelCalls"></a>
@@ -110,7 +110,7 @@ Concurrent chunks when the model supports parallel calls. Null means unlimited.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L444)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L476)
 
 <a id="Vercel_AI_Operations_EmbedManyRequest_Model_"></a>
 <a id="Vercel_AI_Operations_EmbedManyRequest_Model"></a>
@@ -127,7 +127,7 @@ Embedding model.
 
 **Value:** [IEmbeddingCaller](/api/Vercel.AI.Operations/IEmbeddingCaller/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L435)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L467)
 
 <a id="Vercel_AI_Operations_EmbedManyRequest_OnEnd_"></a>
 <a id="Vercel_AI_Operations_EmbedManyRequest_OnEnd"></a>
@@ -144,7 +144,7 @@ Called after every chunk returns.
 
 **Value:** [Func&lt;EmbedEndEvent, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L453)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L485)
 
 <a id="Vercel_AI_Operations_EmbedManyRequest_OnStart_"></a>
 <a id="Vercel_AI_Operations_EmbedManyRequest_OnStart"></a>
@@ -161,7 +161,7 @@ Called before the model.
 
 **Value:** [Func&lt;EmbedStartEvent, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L447)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L479)
 
 <a id="Vercel_AI_Operations_EmbedManyRequest_Telemetry_"></a>
 <a id="Vercel_AI_Operations_EmbedManyRequest_Telemetry"></a>
@@ -170,15 +170,15 @@ Called before the model.
 
 
 ```csharp
-public EmbedTelemetry? Telemetry { get; set; }
+public TelemetryOptions? Telemetry { get; set; }
 ```
 
 
 Telemetry integration callbacks.
 
-**Value:** [EmbedTelemetry](/api/Vercel.AI.Operations/EmbedTelemetry/)
+**Value:** [TelemetryOptions](/api/Vercel.AI/TelemetryOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L459)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L491)
 
 <a id="Vercel_AI_Operations_EmbedManyRequest_Values_"></a>
 <a id="Vercel_AI_Operations_EmbedManyRequest_Values"></a>
@@ -195,4 +195,4 @@ Values to embed.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L438)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L470)

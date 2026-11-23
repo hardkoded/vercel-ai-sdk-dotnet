@@ -116,7 +116,7 @@ public interface IEmbeddingCaller
 }
 
 /// <summary>Start event for <c>embed</c> and <c>embedMany</c>.</summary>
-public sealed class EmbedStartEvent
+public sealed class EmbedStartEvent : IOperationStartEvent
 {
     /// <summary>Creates a start event.</summary>
     public EmbedStartEvent(
@@ -173,10 +173,22 @@ public sealed class EmbedStartEvent
 
     /// <summary>Provider options.</summary>
     public JsonElement? ProviderOptions { get; }
+
+    /// <summary>The version of the SDK that emitted the event. Set only on events sent to telemetry integrations. Maps to <c>aiVersion</c>.</summary>
+    public string? AiVersion { get; init; }
+
+    /// <summary>Copied from <see cref="TelemetryOptions.RecordInputs"/>. Set only on events sent to telemetry integrations.</summary>
+    public bool? RecordInputs { get; init; }
+
+    /// <summary>Copied from <see cref="TelemetryOptions.RecordOutputs"/>. Set only on events sent to telemetry integrations.</summary>
+    public bool? RecordOutputs { get; init; }
+
+    /// <summary>Copied from <see cref="TelemetryOptions.FunctionId"/>. Set only on events sent to telemetry integrations.</summary>
+    public string? FunctionId { get; init; }
 }
 
 /// <summary>End event for <c>embed</c> and <c>embedMany</c>.</summary>
-public sealed class EmbedEndEvent
+public sealed class EmbedEndEvent : IOperationEndEvent
 {
     /// <summary>Creates an end event.</summary>
     public EmbedEndEvent(
@@ -238,43 +250,31 @@ public sealed class EmbedEndEvent
 
     /// <summary>One response for embed, or the response list for embedMany.</summary>
     public EmbedEventValue<ProviderResponse?, IReadOnlyList<ProviderResponse?>> Response { get; }
+
+    /// <summary>The version of the SDK that emitted the event. Set only on events sent to telemetry integrations. Maps to <c>aiVersion</c>.</summary>
+    public string? AiVersion { get; init; }
+
+    /// <summary>Copied from <see cref="TelemetryOptions.RecordInputs"/>. Set only on events sent to telemetry integrations.</summary>
+    public bool? RecordInputs { get; init; }
+
+    /// <summary>Copied from <see cref="TelemetryOptions.RecordOutputs"/>. Set only on events sent to telemetry integrations.</summary>
+    public bool? RecordOutputs { get; init; }
+
+    /// <summary>Copied from <see cref="TelemetryOptions.FunctionId"/>. Set only on events sent to telemetry integrations.</summary>
+    public string? FunctionId { get; init; }
 }
 
-/// <summary>Telemetry callbacks for an embedding operation.</summary>
-public sealed class EmbedTelemetry
-{
-    /// <summary>Called when the operation starts. Receives filtered runtime context.</summary>
-    public Func<EmbedStartEvent, Task>? OnStart { get; set; }
-
-    /// <summary>Called when the operation ends. Receives filtered runtime context.</summary>
-    public Func<EmbedEndEvent, Task>? OnEnd { get; set; }
-
-    /// <summary>Called when a <c>doEmbed</c> call starts.</summary>
-    public Func<EmbeddingModelCallEvent, Task>? OnEmbedStart { get; set; }
-
-    /// <summary>Called when a <c>doEmbed</c> call ends.</summary>
-    public Func<EmbeddingModelCallEvent, Task>? OnEmbedEnd { get; set; }
-
-    /// <summary>Called when the operation fails.</summary>
-    public Func<string, Exception, Task>? OnError { get; set; }
-
-    /// <summary>Runtime context keys included in telemetry events.</summary>
-    public IReadOnlyDictionary<string, bool>? IncludeRuntimeContext { get; set; }
-}
-
-/// <summary>One inner <c>doEmbed</c> telemetry event.</summary>
-public sealed class EmbeddingModelCallEvent
+/// <summary>Event fired before an individual <c>doEmbed</c> call. Maps to <c>EmbeddingModelCallStartEvent</c>.</summary>
+public class EmbeddingModelCallStartEvent
 {
     /// <summary>Creates the event.</summary>
-    public EmbeddingModelCallEvent(
+    public EmbeddingModelCallStartEvent(
         string callId,
         string embedCallId,
         string operationId,
         string provider,
         string modelId,
         IReadOnlyList<string> values,
-        IReadOnlyList<double[]>? embeddings,
-        OperationUsage? usage,
         int? dimensions = null
     )
     {
@@ -285,8 +285,6 @@ public sealed class EmbeddingModelCallEvent
         ModelId = modelId;
         Values = values;
         Dimensions = dimensions;
-        Embeddings = embeddings;
-        Usage = usage;
     }
 
     /// <summary>Operation call id.</summary>
@@ -310,11 +308,45 @@ public sealed class EmbeddingModelCallEvent
     /// <summary>Requested output dimensions, when specified.</summary>
     public int? Dimensions { get; }
 
-    /// <summary>Embeddings, on the end event.</summary>
-    public IReadOnlyList<double[]>? Embeddings { get; }
+    /// <summary>The version of the SDK that emitted the event. Set only on events sent to telemetry integrations. Maps to <c>aiVersion</c>.</summary>
+    public string? AiVersion { get; init; }
 
-    /// <summary>Usage, on the end event.</summary>
-    public OperationUsage? Usage { get; }
+    /// <summary>Copied from <see cref="TelemetryOptions.RecordInputs"/>. Set only on events sent to telemetry integrations.</summary>
+    public bool? RecordInputs { get; init; }
+
+    /// <summary>Copied from <see cref="TelemetryOptions.RecordOutputs"/>. Set only on events sent to telemetry integrations.</summary>
+    public bool? RecordOutputs { get; init; }
+
+    /// <summary>Copied from <see cref="TelemetryOptions.FunctionId"/>. Set only on events sent to telemetry integrations.</summary>
+    public string? FunctionId { get; init; }
+}
+
+/// <summary>Event fired after an individual <c>doEmbed</c> call. Maps to <c>EmbeddingModelCallEndEvent</c>.</summary>
+public sealed class EmbeddingModelCallEndEvent : EmbeddingModelCallStartEvent
+{
+    /// <summary>Creates the event.</summary>
+    public EmbeddingModelCallEndEvent(
+        string callId,
+        string embedCallId,
+        string operationId,
+        string provider,
+        string modelId,
+        IReadOnlyList<string> values,
+        IReadOnlyList<double[]> embeddings,
+        OperationUsage usage,
+        int? dimensions = null
+    )
+        : base(callId, embedCallId, operationId, provider, modelId, values, dimensions)
+    {
+        Embeddings = embeddings;
+        Usage = usage;
+    }
+
+    /// <summary>Embeddings of the call.</summary>
+    public IReadOnlyList<double[]> Embeddings { get; }
+
+    /// <summary>Usage of the call.</summary>
+    public OperationUsage Usage { get; }
 }
 
 /// <summary>Result of <see cref="Embed.EmbedAsync"/>.</summary>
@@ -422,10 +454,10 @@ public sealed class EmbedRequest : OperationRequest
     public Func<EmbedEndEvent, Task>? ExperimentalOnEnd { get; set; }
 
     /// <summary>Telemetry integration callbacks.</summary>
-    public EmbedTelemetry? Telemetry { get; set; }
+    public TelemetryOptions? Telemetry { get; set; }
 
     /// <summary>Deprecated alias of <see cref="Telemetry"/>.</summary>
-    public EmbedTelemetry? ExperimentalTelemetry { get; set; }
+    public TelemetryOptions? ExperimentalTelemetry { get; set; }
 }
 
 /// <summary>Options for <see cref="EmbedMany.EmbedManyAsync"/>.</summary>
@@ -456,10 +488,10 @@ public sealed class EmbedManyRequest : OperationRequest
     public Func<EmbedEndEvent, Task>? ExperimentalOnEnd { get; set; }
 
     /// <summary>Telemetry integration callbacks.</summary>
-    public EmbedTelemetry? Telemetry { get; set; }
+    public TelemetryOptions? Telemetry { get; set; }
 
     /// <summary>Deprecated alias of <see cref="Telemetry"/>.</summary>
-    public EmbedTelemetry? ExperimentalTelemetry { get; set; }
+    public TelemetryOptions? ExperimentalTelemetry { get; set; }
 }
 
 /// <summary>Embeds one value. Maps to <c>embed</c>.</summary>
@@ -486,6 +518,8 @@ public static class Embed
         var headers = OperationHeaders.WithUserAgent(request.Headers, AiSdkVersion.UserAgent);
         var callId = (request.GenerateCallId ?? DefaultCallId)();
         var telemetry = request.Telemetry ?? request.ExperimentalTelemetry;
+        var telemetryDispatcher =
+            EmbedRestrictedTelemetryDispatcher.CreateRestrictedTelemetryDispatcher(telemetry);
         var context = request.RuntimeContext ?? EmptyContext;
         var onStart = request.OnStart ?? request.ExperimentalOnStart;
         var onEnd = request.OnEnd ?? request.ExperimentalOnEnd;
@@ -502,7 +536,7 @@ public static class Embed
             request.Dimensions
         );
         await OperationCallbacks
-            .NotifyAsync(start, onStart, TelemetryStart(telemetry))
+            .NotifyAsync(start, onStart, e => telemetryDispatcher.OnStartAsync(e, token))
             .ConfigureAwait(false);
         try
         {
@@ -515,20 +549,18 @@ public static class Embed
                     {
                         var embedCallId = (request.GenerateCallId ?? DefaultCallId)();
                         var values = new[] { request.Value };
-                        await NotifyModelAsync(
-                                telemetry,
-                                new EmbeddingModelCallEvent(
+                        await telemetryDispatcher
+                            .OnEmbedStartAsync(
+                                new EmbeddingModelCallStartEvent(
                                     callId,
                                     embedCallId,
                                     "ai.embed.doEmbed",
                                     model.Provider,
                                     model.ModelId,
                                     values,
-                                    null,
-                                    null,
                                     request.Dimensions
                                 ),
-                                true
+                                ct
                             )
                             .ConfigureAwait(false);
                         var response = await model
@@ -544,9 +576,9 @@ public static class Embed
                             )
                             .ConfigureAwait(false);
                         var usage = new OperationUsage(tokens: response.Tokens);
-                        await NotifyModelAsync(
-                                telemetry,
-                                new EmbeddingModelCallEvent(
+                        await telemetryDispatcher
+                            .OnEmbedEndAsync(
+                                new EmbeddingModelCallEndEvent(
                                     callId,
                                     embedCallId,
                                     "ai.embed.doEmbed",
@@ -557,7 +589,7 @@ public static class Embed
                                     usage,
                                     request.Dimensions
                                 ),
-                                false
+                                ct
                             )
                             .ConfigureAwait(false);
                         if (response.Embeddings.Count == 0)
@@ -592,7 +624,7 @@ public static class Embed
                 )
             );
             await OperationCallbacks
-                .NotifyAsync(end, onEnd, TelemetryEnd(telemetry))
+                .NotifyAsync(end, onEnd, e => telemetryDispatcher.OnEndAsync(e, token))
                 .ConfigureAwait(false);
             return new EmbedResult(
                 request.Value,
@@ -605,17 +637,7 @@ public static class Embed
         }
         catch (Exception error)
         {
-            if (telemetry?.OnError != null)
-            {
-                try
-                {
-                    await telemetry.OnError(callId, error).ConfigureAwait(false);
-                }
-                catch (Exception)
-                {
-                    // Callback failures are isolated.
-                }
-            }
+            await telemetryDispatcher.OnErrorAsync(callId, error, token).ConfigureAwait(false);
 
             throw;
         }
@@ -651,39 +673,6 @@ public static class Embed
     internal static readonly IReadOnlyDictionary<string, object?> EmptyContext =
         new Dictionary<string, object?>();
 
-    internal static EmbedStartEvent Filter(EmbedStartEvent source, EmbedTelemetry telemetry)
-    {
-        return new EmbedStartEvent(
-            source.CallId,
-            source.OperationId,
-            FilterContext(source.RuntimeContext, telemetry.IncludeRuntimeContext),
-            source.Provider,
-            source.ModelId,
-            source.Value,
-            source.MaxRetries,
-            source.Headers,
-            source.ProviderOptions,
-            source.Dimensions
-        );
-    }
-
-    internal static EmbedEndEvent Filter(EmbedEndEvent source, EmbedTelemetry telemetry)
-    {
-        return new EmbedEndEvent(
-            source.CallId,
-            source.OperationId,
-            FilterContext(source.RuntimeContext, telemetry.IncludeRuntimeContext),
-            source.Provider,
-            source.ModelId,
-            source.Value,
-            source.Embedding,
-            source.Usage,
-            source.Warnings,
-            source.ProviderMetadata,
-            source.Response
-        );
-    }
-
     internal static IReadOnlyDictionary<string, object?> FilterContext(
         IReadOnlyDictionary<string, object?> source,
         IReadOnlyDictionary<string, bool>? include
@@ -704,47 +693,6 @@ public static class Embed
         }
 
         return filtered;
-    }
-
-    /// <summary>Builds the filtered telemetry start callback.</summary>
-    internal static Func<EmbedStartEvent, Task>? TelemetryStart(EmbedTelemetry? telemetry)
-    {
-        if (telemetry == null || telemetry.OnStart == null)
-        {
-            return null;
-        }
-
-        var current = telemetry;
-        var callback = telemetry.OnStart;
-        return filtered => callback(Filter(filtered, current));
-    }
-
-    /// <summary>Builds the filtered telemetry end callback.</summary>
-    internal static Func<EmbedEndEvent, Task>? TelemetryEnd(EmbedTelemetry? telemetry)
-    {
-        if (telemetry == null || telemetry.OnEnd == null)
-        {
-            return null;
-        }
-
-        var current = telemetry;
-        var callback = telemetry.OnEnd;
-        return filtered => callback(Filter(filtered, current));
-    }
-
-    private static Task NotifyModelAsync(
-        EmbedTelemetry? telemetry,
-        EmbeddingModelCallEvent payload,
-        bool start
-    )
-    {
-        if (telemetry == null)
-        {
-            return Task.CompletedTask;
-        }
-
-        var callback = start ? telemetry.OnEmbedStart : telemetry.OnEmbedEnd;
-        return callback == null ? Task.CompletedTask : callback(payload);
     }
 }
 
@@ -772,6 +720,8 @@ public static class EmbedMany
         var headers = OperationHeaders.WithUserAgent(request.Headers, AiSdkVersion.UserAgent);
         var callId = (request.GenerateCallId ?? Embed.DefaultCallId)();
         var telemetry = request.Telemetry ?? request.ExperimentalTelemetry;
+        var telemetryDispatcher =
+            EmbedRestrictedTelemetryDispatcher.CreateRestrictedTelemetryDispatcher(telemetry);
         var context = request.RuntimeContext ?? Embed.EmptyContext;
         var onStart = request.OnStart ?? request.ExperimentalOnStart;
         var onEnd = request.OnEnd ?? request.ExperimentalOnEnd;
@@ -789,7 +739,7 @@ public static class EmbedMany
             request.Dimensions
         );
         await OperationCallbacks
-            .NotifyAsync(start, onStart, Embed.TelemetryStart(telemetry))
+            .NotifyAsync(start, onStart, e => telemetryDispatcher.OnStartAsync(e, token))
             .ConfigureAwait(false);
         try
         {
@@ -810,7 +760,7 @@ public static class EmbedMany
                         token,
                         callId,
                         "ai.embedMany.doEmbed",
-                        telemetry,
+                        telemetryDispatcher,
                         request.Dimensions
                     )
                     .ConfigureAwait(false);
@@ -834,7 +784,7 @@ public static class EmbedMany
                     )
                 );
                 await OperationCallbacks
-                    .NotifyAsync(end, onEnd, Embed.TelemetryEnd(telemetry))
+                    .NotifyAsync(end, onEnd, e => telemetryDispatcher.OnEndAsync(e, token))
                     .ConfigureAwait(false);
                 return new EmbedManyResult(
                     values,
@@ -878,7 +828,7 @@ public static class EmbedMany
                             headers,
                             token,
                             callId,
-                            telemetry
+                            telemetryDispatcher
                         )
                     );
                 }
@@ -912,23 +862,13 @@ public static class EmbedMany
                 )
             );
             await OperationCallbacks
-                .NotifyAsync(endEvent, onEnd, Embed.TelemetryEnd(telemetry))
+                .NotifyAsync(endEvent, onEnd, e => telemetryDispatcher.OnEndAsync(e, token))
                 .ConfigureAwait(false);
             return new EmbedManyResult(values, embeddings, total, warnings, metadata, responses);
         }
         catch (Exception error)
         {
-            if (telemetry?.OnError != null)
-            {
-                try
-                {
-                    await telemetry.OnError(callId, error).ConfigureAwait(false);
-                }
-                catch (Exception)
-                {
-                    // Callback failures are isolated.
-                }
-            }
+            await telemetryDispatcher.OnErrorAsync(callId, error, token).ConfigureAwait(false);
 
             throw;
         }
@@ -962,7 +902,7 @@ public static class EmbedMany
         IReadOnlyDictionary<string, string> headers,
         CancellationToken token,
         string callId,
-        EmbedTelemetry? telemetry
+        EmbedRestrictedTelemetryDispatcher telemetryDispatcher
     )
     {
         var options = await model
@@ -983,7 +923,7 @@ public static class EmbedMany
                 token,
                 callId,
                 "ai.embedMany.doEmbed",
-                telemetry,
+                telemetryDispatcher,
                 request.Dimensions
             )
             .ConfigureAwait(false);
@@ -1000,7 +940,7 @@ public static class EmbedMany
         CancellationToken token,
         string callId,
         string operationId,
-        EmbedTelemetry? telemetry,
+        EmbedRestrictedTelemetryDispatcher telemetryDispatcher,
         int? dimensions
     )
     {
@@ -1012,24 +952,20 @@ public static class EmbedMany
             async ct =>
             {
                 var embedCallId = (request.GenerateCallId ?? Embed.DefaultCallId)();
-                if (telemetry?.OnEmbedStart != null)
-                {
-                    await telemetry
-                        .OnEmbedStart(
-                            new EmbeddingModelCallEvent(
-                                callId,
-                                embedCallId,
-                                operationId,
-                                model.Provider,
-                                model.ModelId,
-                                values,
-                                null,
-                                null,
-                                dimensions
-                            )
-                        )
-                        .ConfigureAwait(false);
-                }
+                await telemetryDispatcher
+                    .OnEmbedStartAsync(
+                        new EmbeddingModelCallStartEvent(
+                            callId,
+                            embedCallId,
+                            operationId,
+                            model.Provider,
+                            model.ModelId,
+                            values,
+                            dimensions
+                        ),
+                        ct
+                    )
+                    .ConfigureAwait(false);
 
                 var response = await model
                     .DoEmbedAsync(
@@ -1037,24 +973,22 @@ public static class EmbedMany
                         ct
                     )
                     .ConfigureAwait(false);
-                if (telemetry?.OnEmbedEnd != null)
-                {
-                    await telemetry
-                        .OnEmbedEnd(
-                            new EmbeddingModelCallEvent(
-                                callId,
-                                embedCallId,
-                                operationId,
-                                model.Provider,
-                                model.ModelId,
-                                values,
-                                response.Embeddings,
-                                new OperationUsage(tokens: response.Tokens),
-                                dimensions
-                            )
-                        )
-                        .ConfigureAwait(false);
-                }
+                await telemetryDispatcher
+                    .OnEmbedEndAsync(
+                        new EmbeddingModelCallEndEvent(
+                            callId,
+                            embedCallId,
+                            operationId,
+                            model.Provider,
+                            model.ModelId,
+                            values,
+                            response.Embeddings,
+                            new OperationUsage(tokens: response.Tokens),
+                            dimensions
+                        ),
+                        ct
+                    )
+                    .ConfigureAwait(false);
 
                 return response;
             },

@@ -226,6 +226,38 @@ public sealed class OpenTelemetry : ITelemetry
             return Task.CompletedTask;
         };
 
+    /// <inheritdoc />
+    public Func<GenerateTextStepErrorEvent, CancellationToken, Task>? OnStepError => null;
+
+    /// <inheritdoc />
+    public Func<EmbeddingModelCallStartEvent, CancellationToken, Task>? OnEmbedStart => null;
+
+    /// <inheritdoc />
+    public Func<EmbeddingModelCallEndEvent, CancellationToken, Task>? OnEmbedEnd => null;
+
+    /// <inheritdoc />
+    public Func<RerankingModelCallStartEvent, CancellationToken, Task>? OnRerankStart => null;
+
+    /// <inheritdoc />
+    public Func<RerankingModelCallEndEvent, CancellationToken, Task>? OnRerankEnd => null;
+
+    /// <inheritdoc />
+    public Func<
+        StreamTranscriptionStartEvent,
+        CancellationToken,
+        Task
+    >? OnStreamTranscriptionStart => null;
+
+    /// <inheritdoc />
+    public Func<StreamTranscriptionEndEvent, CancellationToken, Task>? OnStreamTranscriptionEnd =>
+        null;
+
+    /// <inheritdoc />
+    public IExecuteLanguageModelCall? ExecuteLanguageModelCall => null;
+
+    /// <inheritdoc />
+    public IExecuteTool? ExecuteTool => null;
+
     private static ResolvableTelemetryAttribute In(Func<object?> resolve) =>
         ResolvableTelemetryAttribute.Input(resolve);
 

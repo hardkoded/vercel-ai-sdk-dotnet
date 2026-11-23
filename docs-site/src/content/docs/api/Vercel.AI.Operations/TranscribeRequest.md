@@ -23,7 +23,7 @@ Options for `CancellationToken)`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [OperationRequest](/api/Vercel.AI.Operations/OperationRequest/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L587)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L718)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Audio bytes.
 
 **Value:** [byte\[\]](https://learn.microsoft.com/dotnet/api/system.byte)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L596)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L727)
 
 <a id="Vercel_AI_Operations_TranscribeRequest_AudioUrl_"></a>
 <a id="Vercel_AI_Operations_TranscribeRequest_AudioUrl"></a>
@@ -59,7 +59,7 @@ Audio URL. HTTP(S) URLs go straight to models with native URL support unless [Do
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L599)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L730)
 
 <a id="Vercel_AI_Operations_TranscribeRequest_Download_"></a>
 <a id="Vercel_AI_Operations_TranscribeRequest_Download"></a>
@@ -76,7 +76,7 @@ Downloads URL audio. Setting it forces local downloading, even for models with n
 
 **Value:** [Func&lt;string, CancellationToken, Task&lt;DownloadedMedia&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L602)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L733)
 
 <a id="Vercel_AI_Operations_TranscribeRequest_Model_"></a>
 <a id="Vercel_AI_Operations_TranscribeRequest_Model"></a>
@@ -93,7 +93,7 @@ Model instance. Takes precedence over [ModelId](#Vercel_AI_Operations_Transcribe
 
 **Value:** [ITranscriptionCaller](/api/Vercel.AI.Operations/ITranscriptionCaller/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L590)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L721)
 
 <a id="Vercel_AI_Operations_TranscribeRequest_ModelId_"></a>
 <a id="Vercel_AI_Operations_TranscribeRequest_ModelId"></a>
@@ -110,7 +110,7 @@ Model id resolved through [Default](/api/Vercel.AI.Operations/TranscriptionModel
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L593)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L724)
 
 <a id="Vercel_AI_Operations_TranscribeRequest_Telemetry_"></a>
 <a id="Vercel_AI_Operations_TranscribeRequest_Telemetry"></a>
@@ -119,15 +119,15 @@ Model id resolved through [Default](/api/Vercel.AI.Operations/TranscriptionModel
 
 
 ```csharp
-public TranscribeTelemetry? Telemetry { get; set; }
+public TelemetryOptions? Telemetry { get; set; }
 ```
 
 
 Telemetry callbacks.
 
-**Value:** [TranscribeTelemetry](/api/Vercel.AI.Operations/TranscribeTelemetry/)
+**Value:** [TelemetryOptions](/api/Vercel.AI/TelemetryOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L608)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L739)
 
 <a id="Vercel_AI_Operations_TranscribeRequest_TimestampGranularities_"></a>
 <a id="Vercel_AI_Operations_TranscribeRequest_TimestampGranularities"></a>
@@ -144,4 +144,4 @@ Timing granularities to request, `word` and `segment`. Maps to `timestampGranula
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L605)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L736)

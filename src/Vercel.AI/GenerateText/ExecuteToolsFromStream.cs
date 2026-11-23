@@ -176,7 +176,11 @@ internal static class ExecuteToolsFromStream
                                             options.ExperimentalSandbox,
                                             preliminary => Enqueue(new ToolResultPart(preliminary)),
                                             ToolExecutionCallbacks.Start(options),
-                                            ToolExecutionCallbacks.End(options)
+                                            ToolExecutionCallbacks.End(options),
+                                            ToolExecutionCallbacks.ExecuteInTelemetryContext(
+                                                options,
+                                                cancellation.Token
+                                            )
                                         )
                                         .ConfigureAwait(false);
                                     if (result is { } executed)

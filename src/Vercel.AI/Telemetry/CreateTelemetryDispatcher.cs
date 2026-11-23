@@ -69,6 +69,112 @@ internal sealed class TelemetryDispatcher
     /// <summary>Maps to <c>onError</c>. Null when no integration has it.</summary>
     public Func<TelemetryErrorEvent, CancellationToken, Task>? OnError { get; init; }
 
+    /// <summary>Maps to <c>onStepError</c>. Null when no integration has it.</summary>
+    public Func<GenerateTextStepErrorEvent, CancellationToken, Task>? OnStepError { get; init; }
+
+    /// <summary>Maps to <c>onEmbedStart</c>. Null when no integration has it.</summary>
+    public Func<EmbeddingModelCallStartEvent, CancellationToken, Task>? OnEmbedStart { get; init; }
+
+    /// <summary>Maps to <c>onEmbedEnd</c>. Null when no integration has it.</summary>
+    public Func<EmbeddingModelCallEndEvent, CancellationToken, Task>? OnEmbedEnd { get; init; }
+
+    /// <summary>Maps to <c>onRerankStart</c>. Null when no integration has it.</summary>
+    public Func<RerankingModelCallStartEvent, CancellationToken, Task>? OnRerankStart { get; init; }
+
+    /// <summary>Maps to <c>onRerankEnd</c>. Null when no integration has it.</summary>
+    public Func<RerankingModelCallEndEvent, CancellationToken, Task>? OnRerankEnd { get; init; }
+
+    /// <summary>Maps to <c>experimental_onStreamTranscriptionStart</c>. Null when no integration has it.</summary>
+    public Func<
+        StreamTranscriptionStartEvent,
+        CancellationToken,
+        Task
+    >? OnStreamTranscriptionStart { get; init; }
+
+    /// <summary>Maps to <c>experimental_onStreamTranscriptionEnd</c>. Null when no integration has it.</summary>
+    public Func<
+        StreamTranscriptionEndEvent,
+        CancellationToken,
+        Task
+    >? OnStreamTranscriptionEnd { get; init; }
+
+    internal IReadOnlyList<IExecuteLanguageModelCall> ExecuteLanguageModelCallWrappers { get; init; } =
+    [];
+
+    internal IReadOnlyList<IExecuteTool> ExecuteToolWrappers { get; init; } = [];
+
+    internal TelemetryOptions? Options { get; init; }
+
+    /// <summary>
+    /// Runs the provider call inside the <c>executeLanguageModelCall</c> wrappers of the integrations, the first integration outermost.
+    /// Without a wrapper it only runs the call. Maps to <c>executeLanguageModelCall</c>.
+    /// </summary>
+    internal Task<T> ExecuteLanguageModelCallAsync<T>(
+        LanguageModelCallStartEvent @event,
+        Func<Task<T>> execute,
+        CancellationToken cancellationToken
+    )
+    {
+        if (ExecuteLanguageModelCallWrappers.Count == 0)
+        {
+            return execute();
+        }
+
+        var augmented = AugmentEvent(@event, Options);
+        var wrapped = execute;
+        foreach (var wrapper in ExecuteLanguageModelCallWrappers)
+        {
+            var inner = wrapped;
+            var current = wrapper;
+            wrapped = () =>
+                current.ExecuteAsync(
+                    new ExecuteLanguageModelCallOptions<T>(augmented, inner),
+                    cancellationToken
+                );
+        }
+
+        return wrapped();
+    }
+
+    /// <summary>
+    /// Runs the tool inside the <c>executeTool</c> wrappers of the integrations, the first integration outermost. Without a wrapper it
+    /// only runs the tool. Maps to <c>executeTool</c>.
+    /// </summary>
+    internal Task<T> ExecuteToolAsync<T>(
+        ToolExecutionStartEvent @event,
+        Func<Task<T>> execute,
+        CancellationToken cancellationToken
+    )
+    {
+        if (ExecuteToolWrappers.Count == 0)
+        {
+            return execute();
+        }
+
+        var augmented = new ToolExecutionStartEvent(@event.ToolCall, @event.Messages)
+        {
+            CallId = @event.CallId,
+            ToolContext = FilterToolContext(@event, Options),
+            RecordInputs = Options?.RecordInputs,
+            RecordOutputs = Options?.RecordOutputs,
+            FunctionId = Options?.FunctionId,
+            AiVersion = Operations.AiSdkVersion.Version,
+        };
+        var wrapped = execute;
+        foreach (var wrapper in ExecuteToolWrappers)
+        {
+            var inner = wrapped;
+            var current = wrapper;
+            wrapped = () =>
+                current.ExecuteAsync(
+                    new ExecuteToolOptions<T>(augmented, inner),
+                    cancellationToken
+                );
+        }
+
+        return wrapped();
+    }
+
     /// <summary>Maps to <c>experimental_onDecideStart</c>, or the deprecated <c>experimental_onEvaluateStart</c>. Null when no integration has it.</summary>
     public Func<DecideEvent, CancellationToken, Task>? OnDecideStart { get; init; }
 
@@ -183,6 +289,15 @@ internal sealed class TelemetryDispatcher
         return new TelemetryDispatcher
         {
             HasIntegrations = integrations.Count > 0,
+            Options = telemetry,
+            ExecuteLanguageModelCallWrappers = integrations
+                .Select(i => i.ExecuteLanguageModelCall)
+                .OfType<IExecuteLanguageModelCall>()
+                .ToList(),
+            ExecuteToolWrappers = integrations
+                .Select(i => i.ExecuteTool)
+                .OfType<IExecuteTool>()
+                .ToList(),
             IsTracingEnabled = true,
             TracingTelemetry = telemetry,
             OnObjectStepStart = Merge(integrations.Select(i => i.OnObjectStepStart)),
@@ -191,6 +306,16 @@ internal sealed class TelemetryDispatcher
                 e switch
                 {
                     GenerateTextResult result => AugmentResult(result, telemetry),
+                    EmbedEndEvent embed => FilterTelemetryEventHelper.FilterTelemetryEvent(
+                        embed,
+                        telemetry
+                    ),
+                    RerankEndEvent rerank => FilterTelemetryEventHelper.FilterTelemetryEvent(
+                        rerank,
+                        telemetry
+                    ),
+                    TranscriptionEndEvent transcription =>
+                        FilterTelemetryEventHelper.FilterTelemetryEvent(transcription, telemetry),
                     IRecordingFilterableEndEvent filterable
                         when telemetry?.RecordInputs == false
                             || telemetry?.RecordOutputs == false => filterable.FilterTelemetryEvent(
@@ -222,7 +347,23 @@ internal sealed class TelemetryDispatcher
                             )
                         )
                         .WithTelemetry(telemetry)
-                    : e
+                    : e switch
+                    {
+                        EmbedStartEvent embed => FilterTelemetryEventHelper.FilterTelemetryEvent(
+                            embed,
+                            telemetry
+                        ),
+                        RerankStartEvent rerank => FilterTelemetryEventHelper.FilterTelemetryEvent(
+                            rerank,
+                            telemetry
+                        ),
+                        TranscriptionStartEvent transcription =>
+                            FilterTelemetryEventHelper.FilterTelemetryEvent(
+                                transcription,
+                                telemetry
+                            ),
+                        _ => e,
+                    }
             ),
             OnStepStart = Filter<GenerateTextStepStartEvent>(
                 Merge(integrations.Select(i => i.OnStepStart)),
@@ -286,6 +427,40 @@ internal sealed class TelemetryDispatcher
             ),
             OnError = Filter(Merge(integrations.Select(i => i.OnError)), (TelemetryErrorEvent e) =>
                 FilterTelemetryEventHelper.FilterTelemetryEvent(e, telemetry)
+            ),
+            OnStepError = Filter<GenerateTextStepErrorEvent>(
+                Merge(integrations.Select(i => i.OnStepError)),
+                e => FilterStepError(e, telemetry)
+            ),
+            OnEmbedStart = Filter(
+                Merge(integrations.Select(i => i.OnEmbedStart)),
+                (EmbeddingModelCallStartEvent e) =>
+                    FilterTelemetryEventHelper.FilterTelemetryEvent(e, telemetry)
+            ),
+            OnEmbedEnd = Filter(
+                Merge(integrations.Select(i => i.OnEmbedEnd)),
+                (EmbeddingModelCallEndEvent e) =>
+                    FilterTelemetryEventHelper.FilterTelemetryEvent(e, telemetry)
+            ),
+            OnRerankStart = Filter(
+                Merge(integrations.Select(i => i.OnRerankStart)),
+                (RerankingModelCallStartEvent e) =>
+                    FilterTelemetryEventHelper.FilterTelemetryEvent(e, telemetry)
+            ),
+            OnRerankEnd = Filter(
+                Merge(integrations.Select(i => i.OnRerankEnd)),
+                (RerankingModelCallEndEvent e) =>
+                    FilterTelemetryEventHelper.FilterTelemetryEvent(e, telemetry)
+            ),
+            OnStreamTranscriptionStart = Filter(
+                Merge(integrations.Select(i => i.OnStreamTranscriptionStart)),
+                (StreamTranscriptionStartEvent e) =>
+                    FilterTelemetryEventHelper.FilterTelemetryEvent(e, telemetry)
+            ),
+            OnStreamTranscriptionEnd = Filter(
+                Merge(integrations.Select(i => i.OnStreamTranscriptionEnd)),
+                (StreamTranscriptionEndEvent e) =>
+                    FilterTelemetryEventHelper.FilterTelemetryEvent(e, telemetry)
             ),
             OnDecideStart = Filter(
                 Merge(
@@ -510,6 +685,32 @@ internal sealed class TelemetryDispatcher
     {
         var steps = result.Steps.Select(step => FilterStep(step, telemetry)).ToList();
         return result.WithSteps(steps);
+    }
+
+    // Maps to augmentEvent for a step error: the step start event keeps only the included contexts and the error is redacted.
+    private static GenerateTextStepErrorEvent FilterStepError(
+        GenerateTextStepErrorEvent e,
+        TelemetryOptions? telemetry
+    )
+    {
+        var hidden = telemetry?.RecordInputs == false || telemetry?.RecordOutputs == false;
+        var step = e.WithContexts(
+            FilterIncludedContextHelper.FilterIncludedContext(
+                e.RuntimeContext,
+                telemetry?.IncludeRuntimeContext
+            ),
+            FilterIncludedContextHelper.FilterToolsContext(
+                e.ToolsContext,
+                telemetry?.IncludeToolsContext
+            ),
+            e.Steps.Select(s => FilterStep(s, telemetry)).ToList()
+        );
+        return new GenerateTextStepErrorEvent(
+            step,
+            hidden
+                ? new InvalidOperationException("AI SDK operation failed")
+                : RedactTelemetryCredentialsHelper.RedactTelemetryCredentials(e.Error)
+        );
     }
 
     private static StepResult FilterStep(StepResult step, TelemetryOptions? telemetry)

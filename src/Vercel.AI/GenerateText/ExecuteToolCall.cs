@@ -276,6 +276,34 @@ internal static class ToolExecutionCallbacks
     ) =>
         Combine(options.OnToolExecutionEnd, TelemetryDispatcher.Create(options).OnToolExecutionEnd);
 
+    // Maps to `telemetryDispatcher.executeTool`. Null when no integration wraps tool execution.
+    internal static Func<ExecuteToolInTelemetryContextParams, Task>? ExecuteInTelemetryContext(
+        GenerateTextOptions options,
+        CancellationToken cancellationToken
+    )
+    {
+        var dispatcher = TelemetryDispatcher.Create(options);
+        if (dispatcher.ExecuteToolWrappers.Count == 0)
+        {
+            return null;
+        }
+
+        return context =>
+            dispatcher.ExecuteToolAsync(
+                new ToolExecutionStartEvent(context.ToolCall, context.Messages)
+                {
+                    CallId = context.CallId,
+                    ToolContext = context.ToolContext,
+                },
+                async () =>
+                {
+                    await context.Execute().ConfigureAwait(false);
+                    return true;
+                },
+                cancellationToken
+            );
+    }
+
     // Maps to `callbacks: [onToolExecutionStart, telemetryDispatcher.onToolExecutionStart]`.
     private static IReadOnlyList<Func<TEvent, CancellationToken, Task>>? Combine<TEvent>(
         Func<TEvent, CancellationToken, Task>? user,

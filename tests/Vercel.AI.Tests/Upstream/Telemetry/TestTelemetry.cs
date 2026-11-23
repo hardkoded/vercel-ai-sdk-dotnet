@@ -36,7 +36,33 @@ internal sealed class TestTelemetry : ITelemetry
 
     public Func<GenerateObjectStepEndEvent, CancellationToken, Task>? OnObjectStepEnd { get; init; }
 
+    public Func<GenerateTextStepErrorEvent, CancellationToken, Task>? OnStepError { get; init; }
+
     public Func<IOperationEndEvent, CancellationToken, Task>? OnEnd { get; init; }
+
+    public Func<EmbeddingModelCallStartEvent, CancellationToken, Task>? OnEmbedStart { get; init; }
+
+    public Func<EmbeddingModelCallEndEvent, CancellationToken, Task>? OnEmbedEnd { get; init; }
+
+    public Func<RerankingModelCallStartEvent, CancellationToken, Task>? OnRerankStart { get; init; }
+
+    public Func<RerankingModelCallEndEvent, CancellationToken, Task>? OnRerankEnd { get; init; }
+
+    public Func<
+        StreamTranscriptionStartEvent,
+        CancellationToken,
+        Task
+    >? OnStreamTranscriptionStart { get; init; }
+
+    public Func<
+        StreamTranscriptionEndEvent,
+        CancellationToken,
+        Task
+    >? OnStreamTranscriptionEnd { get; init; }
+
+    public IExecuteLanguageModelCall? ExecuteLanguageModelCall { get; init; }
+
+    public IExecuteTool? ExecuteTool { get; init; }
 
     public Func<
         LanguageModelCallStartEvent,

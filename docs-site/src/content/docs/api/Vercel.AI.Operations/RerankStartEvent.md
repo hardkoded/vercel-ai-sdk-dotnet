@@ -15,13 +15,15 @@ Namespace: [Vercel.AI.Operations](/api/Vercel.AI.Operations/)
 
 
 ```csharp
-public sealed class RerankStartEvent
+public sealed class RerankStartEvent : IOperationStartEvent
 ```
 
 
 Start event for rerank.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
+
+**Implements:** [IOperationStartEvent](/api/Vercel.AI/IOperationStartEvent/)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L239)
 
@@ -60,6 +62,23 @@ Creates a start event.
 
 ## Properties
 
+<a id="Vercel_AI_Operations_RerankStartEvent_AiVersion_"></a>
+<a id="Vercel_AI_Operations_RerankStartEvent_AiVersion"></a>
+
+### AiVersion
+
+
+```csharp
+public string? AiVersion { get; init; }
+```
+
+
+The version of the SDK that emitted the event. Set only on events sent to telemetry integrations. Maps to `aiVersion`.
+
+**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L303)
+
 <a id="Vercel_AI_Operations_RerankStartEvent_CallId_"></a>
 <a id="Vercel_AI_Operations_RerankStartEvent_CallId"></a>
 
@@ -93,6 +112,23 @@ Submitted documents.
 **Value:** [IReadOnlyList&lt;object&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L285)
+
+<a id="Vercel_AI_Operations_RerankStartEvent_FunctionId_"></a>
+<a id="Vercel_AI_Operations_RerankStartEvent_FunctionId"></a>
+
+### FunctionId
+
+
+```csharp
+public string? FunctionId { get; init; }
+```
+
+
+Copied from [FunctionId](/api/Vercel.AI/TelemetryOptions/#Vercel_AI_TelemetryOptions_FunctionId). Set only on events sent to telemetry integrations.
+
+**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L312)
 
 <a id="Vercel_AI_Operations_RerankStartEvent_Headers_"></a>
 <a id="Vercel_AI_Operations_RerankStartEvent_Headers"></a>
@@ -212,6 +248,40 @@ Query.
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L288)
+
+<a id="Vercel_AI_Operations_RerankStartEvent_RecordInputs_"></a>
+<a id="Vercel_AI_Operations_RerankStartEvent_RecordInputs"></a>
+
+### RecordInputs
+
+
+```csharp
+public bool? RecordInputs { get; init; }
+```
+
+
+Copied from [RecordInputs](/api/Vercel.AI/TelemetryOptions/#Vercel_AI_TelemetryOptions_RecordInputs). Set only on events sent to telemetry integrations.
+
+**Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L306)
+
+<a id="Vercel_AI_Operations_RerankStartEvent_RecordOutputs_"></a>
+<a id="Vercel_AI_Operations_RerankStartEvent_RecordOutputs"></a>
+
+### RecordOutputs
+
+
+```csharp
+public bool? RecordOutputs { get; init; }
+```
+
+
+Copied from [RecordOutputs](/api/Vercel.AI/TelemetryOptions/#Vercel_AI_TelemetryOptions_RecordOutputs). Set only on events sent to telemetry integrations.
+
+**Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Rerank.cs#L309)
 
 <a id="Vercel_AI_Operations_RerankStartEvent_RuntimeContext_"></a>
 <a id="Vercel_AI_Operations_RerankStartEvent_RuntimeContext"></a>

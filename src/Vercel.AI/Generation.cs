@@ -370,6 +370,8 @@ internal static class Generation
         using var timeouts = CallTimeouts.Create(options.Timeout, null, false, callerToken);
         var cancellationToken = timeouts?.Token ?? callerToken;
         var steeringRun = Steering.StartSteeringRun(options.ExperimentalSteering);
+        // the step that has started but not ended, reported to onStepError when the call fails before the step produces a result:
+        GenerateTextStepStartEvent? openStep = null;
         try
         {
             var resolvedMaxRetries = Vercel.AI.Operations.OperationRetry.ResolveMaxRetries(
@@ -539,8 +541,12 @@ internal static class Generation
 
                 var stepStartNotified = redo?.StepStartNotified == true;
                 if (
-                    (options.OnStepStart != null || telemetryDispatcher.OnStepStart != null)
-                    && !stepStartNotified
+                    (
+                        options.OnStepStart != null
+                        || telemetryDispatcher.OnStepStart != null
+                        || options.OnStepError != null
+                        || telemetryDispatcher.OnStepError != null
+                    ) && !stepStartNotified
                 )
                 {
                     stepStartNotified = true;
@@ -562,6 +568,7 @@ internal static class Generation
                         ToolsContext = options.ToolsContext,
                         RuntimeContext = options.RuntimeContext,
                     };
+                    openStep = stepStartEvent;
                     if (options.OnStepStart != null)
                     {
                         await NotifyAsync(
@@ -601,24 +608,20 @@ internal static class Generation
                         .ConfigureAwait(false);
                 }
 
-                if (
-                    TelemetryDispatcher.Create(options).OnLanguageModelCallStart is
-                    { } telemetryCallStart
-                )
+                var modelCallStartEvent = new LanguageModelCallStartEvent
                 {
-                    await telemetryCallStart(
-                            new LanguageModelCallStartEvent
-                            {
-                                CallId = callId,
-                                Provider = current.Provider,
-                                ModelId = current.ModelId,
-                                Instructions = instructions,
-                                Messages = messages.Skip(instructionCount).ToArray(),
-                                Tools = callOptions.Tools,
-                                CallOptions = callOptions,
-                            },
-                            cancellationToken
-                        )
+                    CallId = callId,
+                    Provider = current.Provider,
+                    ModelId = current.ModelId,
+                    Instructions = instructions,
+                    Messages = messages.Skip(instructionCount).ToArray(),
+                    Tools = callOptions.Tools,
+                    CallOptions = callOptions,
+                };
+                var modelCallDispatcher = TelemetryDispatcher.Create(options);
+                if (modelCallDispatcher.OnLanguageModelCallStart is { } telemetryCallStart)
+                {
+                    await telemetryCallStart(modelCallStartEvent, cancellationToken)
                         .ConfigureAwait(false);
                 }
 
@@ -636,8 +639,13 @@ internal static class Generation
                         callOptions.AbortSignal = interrupt.Signal;
                     }
 
-                    modelResponse = await current
-                        .DoGenerateAsync(callOptions, interrupt?.Token ?? cancellationToken)
+                    var modelCallToken = interrupt?.Token ?? cancellationToken;
+                    modelResponse = await modelCallDispatcher
+                        .ExecuteLanguageModelCallAsync(
+                            modelCallStartEvent,
+                            () => current.DoGenerateAsync(callOptions, modelCallToken),
+                            modelCallToken
+                        )
                         .ConfigureAwait(false);
                 }
                 catch (Exception)
@@ -737,6 +745,7 @@ internal static class Generation
                     )
                     .ConfigureAwait(false);
                 steps.Add(step);
+                openStep = null;
                 if (ResolveOnStepEnd(options) is { } onStepEnd)
                 {
                     await onStepEnd(step, cancellationToken).ConfigureAwait(false);
@@ -837,9 +846,11 @@ internal static class Generation
 
             return result;
         }
-        catch (ApiUserAbortException)
+        catch (ApiUserAbortException abortException)
         {
             steeringRun?.End(SteeringNotDeliveredReason.Aborted);
+            // generateText has no onAbort, so aborts also end the step here:
+            await NotifyStepErrorAsync(options, openStep, abortException).ConfigureAwait(false);
             throw;
         }
         catch (Exception exception)
@@ -858,6 +869,7 @@ internal static class Generation
                 && timeouts?.Expired is { } expired
                     ? expired
                     : exception;
+            await NotifyStepErrorAsync(options, openStep, error).ConfigureAwait(false);
             if (options.OnError != null)
             {
                 await options.OnError(error, callerToken).ConfigureAwait(false);
@@ -875,6 +887,39 @@ internal static class Generation
             }
 
             throw;
+        }
+    }
+
+    // Maps to the onStepError notification of generateText and the notifyStepError of streamText. Notifies the callback of the
+    // options, then telemetry. An exception of either is ignored, like upstream notify.
+    internal static async Task NotifyStepErrorAsync(
+        GenerateTextOptions options,
+        GenerateTextStepStartEvent? openStep,
+        Exception error
+    )
+    {
+        if (openStep == null)
+        {
+            return;
+        }
+
+        var stepError = new GenerateTextStepErrorEvent(openStep, error);
+        if (options.OnStepError is { } onStepError)
+        {
+            await NotifyAsync(
+                    () => onStepError(stepError, CancellationToken.None),
+                    CancellationToken.None
+                )
+                .ConfigureAwait(false);
+        }
+
+        if (TelemetryDispatcher.Create(options).OnStepError is { } telemetryOnStepError)
+        {
+            await NotifyAsync(
+                    () => telemetryOnStepError(stepError, CancellationToken.None),
+                    CancellationToken.None
+                )
+                .ConfigureAwait(false);
         }
     }
 
@@ -1507,7 +1552,12 @@ internal static class Generation
                 {
                     if (
                         stepStartNotified
-                        || (options.OnStepStart == null && telemetryDispatcher.OnStepStart == null)
+                        || (
+                            options.OnStepStart == null
+                            && telemetryDispatcher.OnStepStart == null
+                            && options.OnStepError == null
+                            && telemetryDispatcher.OnStepError == null
+                        )
                     )
                     {
                         return;
@@ -1532,6 +1582,7 @@ internal static class Generation
                         ToolsContext = options.ToolsContext,
                         RuntimeContext = options.RuntimeContext,
                     };
+                    recorder.OpenStep = stepStartEvent;
                     if (options.OnStepStart != null)
                     {
                         await NotifyAsync(() => options.OnStepStart(stepStartEvent, token), token)
@@ -2903,7 +2954,11 @@ internal static class Generation
                                 options.ExperimentalSandbox,
                                 onPreliminaryToolResult,
                                 ToolExecutionCallbacks.Start(options),
-                                ToolExecutionCallbacks.End(options)
+                                ToolExecutionCallbacks.End(options),
+                                ToolExecutionCallbacks.ExecuteInTelemetryContext(
+                                    options,
+                                    cancellationToken
+                                )
                             )
                             .ConfigureAwait(false);
                         return result;
@@ -3788,7 +3843,11 @@ internal static class Generation
                                 ? null
                                 : preliminary => emit(new ToolResultPart(preliminary)),
                             ToolExecutionCallbacks.Start(options),
-                            ToolExecutionCallbacks.End(options)
+                            ToolExecutionCallbacks.End(options),
+                            ToolExecutionCallbacks.ExecuteInTelemetryContext(
+                                options,
+                                cancellationToken
+                            )
                         )
                         .ConfigureAwait(false);
                     if (result == null)

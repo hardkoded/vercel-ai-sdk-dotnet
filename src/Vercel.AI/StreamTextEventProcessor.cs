@@ -45,6 +45,11 @@ internal sealed class StreamTextEventProcessor
     private LanguageModelUsage? _recordedTotalUsage;
     private NoOutputGeneratedException? _recordedNoOutputError;
 
+    // the step that has started but not ended and its last error that a stream retry did not handle, reported to onStepError
+    // when the stream ends before the step produces a result:
+    private GenerateTextStepStartEvent? _openStep;
+    private Exception? _openStepError;
+
     public StreamTextEventProcessor(
         StreamTextOptions options,
         StreamAbort abort,
@@ -83,6 +88,13 @@ internal sealed class StreamTextEventProcessor
 
     // The steps that the processor recorded. The step loop reads them after WaitForStepAsync returned.
     public List<StepResult> Steps => _steps;
+
+    // Set by the step loop when a step starts. Maps to `openStep = { event: stepStartEvent }`.
+    public GenerateTextStepStartEvent? OpenStep
+    {
+        get => Volatile.Read(ref _openStep);
+        set => Volatile.Write(ref _openStep, value);
+    }
 
     public StepResult[] SnapshotSteps()
     {
@@ -166,6 +178,14 @@ internal sealed class StreamTextEventProcessor
             _usageSource.TrySetException(exception);
             _stepsSource.TrySetException(exception);
             var streamError = exception;
+            // an erroring stream skips the flush: report the failed step, then the error to telemetry:
+            if (!_abort.Stopped && _abort.Error == null)
+            {
+                await Generation
+                    .NotifyStepErrorAsync(_options, _openStep, exception)
+                    .ConfigureAwait(false);
+            }
+
             if (HasOnError(_options))
             {
                 try
@@ -215,12 +235,15 @@ internal sealed class StreamTextEventProcessor
 
                 if (!handledForRetry)
                 {
+                    _openStepError = error.Error ?? new AiSdkException(error.Message);
+
                     await NotifyErrorAsync(error).ConfigureAwait(false);
                 }
 
                 break;
             case StartStepPart start:
                 // reset the recorded data when a new step starts:
+                _openStepError = null;
                 _contentOrder = [];
                 _activeText = [];
                 _activeReasoning = [];
@@ -373,7 +396,8 @@ internal sealed class StreamTextEventProcessor
                 _options,
                 error.Error ?? new AiSdkException(error.Message),
                 Token,
-                swallow: false
+                swallow: false,
+                reportToTelemetry: false
             )
             .ConfigureAwait(false);
     }
@@ -561,6 +585,9 @@ internal sealed class StreamTextEventProcessor
             ExperimentalSteeringMessages = baseStep.ExperimentalSteeringMessages,
         };
 
+        OpenStep = null;
+        _openStepError = null;
+
         if (Generation.ResolveOnStepEnd(_options) is { } onStepEnd)
         {
             await onStepEnd(step, Token).ConfigureAwait(false);
@@ -598,6 +625,17 @@ internal sealed class StreamTextEventProcessor
         }
     }
 
+    // Maps to notifyStepError of streamText. An abort or a timeout ends the step with onAbort, so the flush never reaches it then.
+    private async Task<Exception> NotifyStepErrorAsync()
+    {
+        var error = _openStepError
+            ?? new NoOutputGeneratedException("No output generated. Check the stream for errors.");
+        var openStep = _openStep;
+        _openStep = null;
+        await Generation.NotifyStepErrorAsync(_options, openStep, error).ConfigureAwait(false);
+        return error;
+    }
+
     // Maps to the flush of the event processor.
     private async Task FlushAsync(PartBuffer target)
     {
@@ -626,6 +664,9 @@ internal sealed class StreamTextEventProcessor
                 : SteeringNotDeliveredReason.Finished
         );
 
+        // a step that started without producing a result has failed:
+        var stepError = await NotifyStepErrorAsync().ConfigureAwait(false);
+
         // reject when no output was generated or an incomplete model stream ended a continuation step:
         if (steps.Length == 0 || _recordedNoOutputError != null)
         {
@@ -633,6 +674,21 @@ internal sealed class StreamTextEventProcessor
                 ?? new NoOutputGeneratedException(
                     "No output generated. Check the stream for errors."
                 );
+            // The stream itself does not report an error part to telemetry, so report here to close open spans:
+            if (TelemetryDispatcher.Create(_options).OnError is { } telemetryOnError)
+            {
+                await Generation
+                    .NotifyAsync(
+                        () =>
+                            telemetryOnError(
+                                new TelemetryErrorEvent(null, _recordedNoOutputError ?? stepError),
+                                Token
+                            ),
+                        Token
+                    )
+                    .ConfigureAwait(false);
+            }
+
             _textSource.TrySetException(noOutput);
             _finishSource.TrySetException(noOutput);
             _usageSource.TrySetException(noOutput);

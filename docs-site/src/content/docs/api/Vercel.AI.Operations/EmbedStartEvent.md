@@ -15,13 +15,15 @@ Namespace: [Vercel.AI.Operations](/api/Vercel.AI.Operations/)
 
 
 ```csharp
-public sealed class EmbedStartEvent
+public sealed class EmbedStartEvent : IOperationStartEvent
 ```
 
 
 Start event for `embed` and `embedMany`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
+
+**Implements:** [IOperationStartEvent](/api/Vercel.AI/IOperationStartEvent/)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L119)
 
@@ -59,6 +61,23 @@ Creates a start event.
 
 ## Properties
 
+<a id="Vercel_AI_Operations_EmbedStartEvent_AiVersion_"></a>
+<a id="Vercel_AI_Operations_EmbedStartEvent_AiVersion"></a>
+
+### AiVersion
+
+
+```csharp
+public string? AiVersion { get; init; }
+```
+
+
+The version of the SDK that emitted the event. Set only on events sent to telemetry integrations. Maps to `aiVersion`.
+
+**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L178)
+
 <a id="Vercel_AI_Operations_EmbedStartEvent_CallId_"></a>
 <a id="Vercel_AI_Operations_EmbedStartEvent_CallId"></a>
 
@@ -92,6 +111,23 @@ Requested output dimensions, when specified.
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L166)
+
+<a id="Vercel_AI_Operations_EmbedStartEvent_FunctionId_"></a>
+<a id="Vercel_AI_Operations_EmbedStartEvent_FunctionId"></a>
+
+### FunctionId
+
+
+```csharp
+public string? FunctionId { get; init; }
+```
+
+
+Copied from [FunctionId](/api/Vercel.AI/TelemetryOptions/#Vercel_AI_TelemetryOptions_FunctionId). Set only on events sent to telemetry integrations.
+
+**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L187)
 
 <a id="Vercel_AI_Operations_EmbedStartEvent_Headers_"></a>
 <a id="Vercel_AI_Operations_EmbedStartEvent_Headers"></a>
@@ -194,6 +230,40 @@ Provider options.
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L175)
+
+<a id="Vercel_AI_Operations_EmbedStartEvent_RecordInputs_"></a>
+<a id="Vercel_AI_Operations_EmbedStartEvent_RecordInputs"></a>
+
+### RecordInputs
+
+
+```csharp
+public bool? RecordInputs { get; init; }
+```
+
+
+Copied from [RecordInputs](/api/Vercel.AI/TelemetryOptions/#Vercel_AI_TelemetryOptions_RecordInputs). Set only on events sent to telemetry integrations.
+
+**Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L181)
+
+<a id="Vercel_AI_Operations_EmbedStartEvent_RecordOutputs_"></a>
+<a id="Vercel_AI_Operations_EmbedStartEvent_RecordOutputs"></a>
+
+### RecordOutputs
+
+
+```csharp
+public bool? RecordOutputs { get; init; }
+```
+
+
+Copied from [RecordOutputs](/api/Vercel.AI/TelemetryOptions/#Vercel_AI_TelemetryOptions_RecordOutputs). Set only on events sent to telemetry integrations.
+
+**Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L184)
 
 <a id="Vercel_AI_Operations_EmbedStartEvent_RuntimeContext_"></a>
 <a id="Vercel_AI_Operations_EmbedStartEvent_RuntimeContext"></a>

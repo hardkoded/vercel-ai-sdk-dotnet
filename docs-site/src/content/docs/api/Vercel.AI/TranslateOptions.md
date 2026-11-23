@@ -23,7 +23,7 @@ Speech translation options.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L946)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L966)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Audio.
 
 **Value:** [AudioInput](/api/Vercel.AI.Provider/AudioInput/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L952)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L972)
 
 <a id="Vercel_AI_TranslateOptions_Model_"></a>
 <a id="Vercel_AI_TranslateOptions_Model"></a>
@@ -59,4 +59,4 @@ Speech translation model.
 
 **Value:** [ISpeechTranslationModel](/api/Vercel.AI.Provider/ISpeechTranslationModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L949)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L969)

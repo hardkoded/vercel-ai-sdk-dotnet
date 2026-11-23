@@ -30,7 +30,7 @@ Maps to `StreamTextResult<TOOLS, OUTPUT>`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [StreamTextResult](/api/Vercel.AI/StreamTextResult/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L5629)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L5689)
 
 ## Properties
 
@@ -50,4 +50,4 @@ The parsed output once the stream finished, or &lt;a href="https://learn.microso
 
 **Value:** [Task&lt;TOutput&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L5644)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Generation.cs#L5704)

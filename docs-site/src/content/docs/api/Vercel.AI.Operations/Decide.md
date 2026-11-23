@@ -72,7 +72,7 @@ Validates answers without rewriting provider numbers.
 | `answers` | [IReadOnlyDictionary&lt;string, DecisionAnswer&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2) |  |
 | `rounding` | [DecisionRounding](/api/Vercel.AI.Operations/DecisionRounding/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L825)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L841)
 
 <a id="Vercel_AI_Operations_Decide_ValidateDecisionState_"></a>
 <a id="Vercel_AI_Operations_Decide_ValidateDecisionState_Vercel_AI_Operations_DecisionState_"></a>
@@ -93,7 +93,7 @@ Validates state before any model call. Maps to `validateDecisionState`. Extracti
 | --- | --- | --- |
 | `state` | [DecisionState](/api/Vercel.AI.Operations/DecisionState/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L816)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L832)
 
 <a id="Vercel_AI_Operations_Decide_ValidateInput_"></a>
 <a id="Vercel_AI_Operations_Decide_ValidateInput_Vercel_AI_Operations_DecisionState_System_Collections_Generic_IReadOnlyDictionary_System_String_Vercel_AI_Operations_DecisionQuestion__"></a>
@@ -115,4 +115,4 @@ Validates state and questions before any model call.
 | `state` | [DecisionState](/api/Vercel.AI.Operations/DecisionState/) |  |
 | `questions` | [IReadOnlyDictionary&lt;string, DecisionQuestion&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L722)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L738)

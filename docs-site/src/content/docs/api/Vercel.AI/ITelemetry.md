@@ -24,4 +24,6 @@ to skip it. Maps to `Telemetry` in `telemetry/telemetry.ts`. Only `onStart`, `on
 `onLanguageModelCallEnd`, `onToolExecutionStart`, `onToolExecutionEnd`, `onStepEnd`, `onStepFinish`, `onEnd`,
 `onAbort` and `onError`) and the extract and decide callbacks are ported so far.
 
+**Derived:** [OpenTelemetry](/api/Vercel.AI.OpenTelemetry/OpenTelemetry/)
+
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/Telemetry.cs#L16)

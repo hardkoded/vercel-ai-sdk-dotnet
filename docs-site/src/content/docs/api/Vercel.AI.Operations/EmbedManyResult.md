@@ -23,7 +23,7 @@ Result of `CancellationToken)`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L361)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L393)
 
 ## Constructors
 
@@ -51,7 +51,7 @@ Creates an embedMany result.
 | `providerMetadata` | [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 | `responses` | [IReadOnlyList&lt;ProviderResponse&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L364)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L396)
 
 ## Properties
 
@@ -70,7 +70,7 @@ Embeddings in value order.
 
 **Value:** [IReadOnlyList&lt;double\[\]&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L385)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L417)
 
 <a id="Vercel_AI_Operations_EmbedManyResult_ProviderMetadata_"></a>
 <a id="Vercel_AI_Operations_EmbedManyResult_ProviderMetadata"></a>
@@ -87,7 +87,7 @@ Merged provider metadata.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L394)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L426)
 
 <a id="Vercel_AI_Operations_EmbedManyResult_Responses_"></a>
 <a id="Vercel_AI_Operations_EmbedManyResult_Responses"></a>
@@ -104,7 +104,7 @@ One response per model call.
 
 **Value:** [IReadOnlyList&lt;ProviderResponse&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L397)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L429)
 
 <a id="Vercel_AI_Operations_EmbedManyResult_Usage_"></a>
 <a id="Vercel_AI_Operations_EmbedManyResult_Usage"></a>
@@ -121,7 +121,7 @@ Summed token usage.
 
 **Value:** [OperationUsage](/api/Vercel.AI.Operations/OperationUsage/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L388)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L420)
 
 <a id="Vercel_AI_Operations_EmbedManyResult_Values_"></a>
 <a id="Vercel_AI_Operations_EmbedManyResult_Values"></a>
@@ -138,7 +138,7 @@ Values that were embedded.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L382)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L414)
 
 <a id="Vercel_AI_Operations_EmbedManyResult_Warnings_"></a>
 <a id="Vercel_AI_Operations_EmbedManyResult_Warnings"></a>
@@ -155,4 +155,4 @@ Warnings from every chunk.
 
 **Value:** [IReadOnlyList&lt;OperationWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L391)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L423)

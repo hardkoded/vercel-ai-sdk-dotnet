@@ -23,7 +23,7 @@ Passed to [OnChunk](/api/Vercel.AI/StreamTextOptions/#Vercel_AI_StreamTextOption
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2136)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2220)
 
 ## Constructors
 
@@ -46,7 +46,7 @@ Creates the event.
 | --- | --- | --- |
 | `chunk` | [TextStreamPart](/api/Vercel.AI/TextStreamPart/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2139)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2223)
 
 ## Properties
 
@@ -65,4 +65,4 @@ The stream part.
 
 **Value:** [TextStreamPart](/api/Vercel.AI/TextStreamPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2145)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2229)

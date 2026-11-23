@@ -4,6 +4,7 @@
 
 using System.Text.Json;
 using Vercel.AI.Operations;
+using Vercel.AI.Tests.Upstream.Telemetry;
 
 namespace Vercel.AI.Tests;
 
@@ -253,13 +254,19 @@ public sealed class RerankTests
                 Documents = new object?[] { "a" },
                 Query = "q",
                 RuntimeContext = new Dictionary<string, object?> { ["secret"] = "s" },
-                Telemetry = new RerankTelemetry
+                Telemetry = new TelemetryOptions
                 {
-                    OnStart = item =>
-                    {
-                        telemetry = item;
-                        return Task.CompletedTask;
-                    },
+                    Integrations =
+                    [
+                        new TestTelemetry
+                        {
+                            OnStart = (item, _) =>
+                            {
+                                telemetry = (RerankStartEvent)item;
+                                return Task.CompletedTask;
+                            },
+                        },
+                    ],
                 },
             }
         );
@@ -281,13 +288,19 @@ public sealed class RerankTests
                 Model = new RerankFake(),
                 Documents = new object?[] { "a" },
                 Query = "q",
-                ExperimentalTelemetry = new RerankTelemetry
+                ExperimentalTelemetry = new TelemetryOptions
                 {
-                    OnStart = _ =>
-                    {
-                        called = true;
-                        return Task.CompletedTask;
-                    },
+                    Integrations =
+                    [
+                        new TestTelemetry
+                        {
+                            OnStart = (_, _) =>
+                            {
+                                called = true;
+                                return Task.CompletedTask;
+                            },
+                        },
+                    ],
                 },
             }
         );

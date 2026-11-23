@@ -84,7 +84,7 @@ internal static class EmbedDimensionsSupport
         int? dimensions = null,
         JsonElement? providerOptions = null,
         Func<EmbedStartEvent, Task>? onStart = null,
-        EmbedTelemetry? telemetry = null,
+        TelemetryOptions? telemetry = null,
         int? maxRetries = null
     )
     {
