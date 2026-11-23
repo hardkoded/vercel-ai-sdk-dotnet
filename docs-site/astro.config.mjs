@@ -63,9 +63,6 @@ export default defineConfig({
                         { label: "TypeSafe", slug: "typesafe-ai" },
                         { label: "ScaleDown", slug: "scaledown" },
                         { label: "Parallel", slug: "parallel" },
-                        { label: "Compatibility", slug: "compatibility" },
-                        { label: "Warnings", slug: "warnings" },
-                        { label: "Secure URL fetching", slug: "secure-url-fetching" },
                     ],
                 },
                 {

@@ -73,30 +73,6 @@ const pages = [
         legacy: "articles/parallel.html",
         target: "/parallel/",
     },
-    {
-        source: "docs/articles/compatibility.md",
-        output: "compatibility.md",
-        title: "Compatibility",
-        label: "Compatibility",
-        legacy: "articles/compatibility.html",
-        target: "/compatibility/",
-    },
-    {
-        source: "docs/articles/warnings.md",
-        output: "warnings.md",
-        title: "Warnings",
-        label: "Warnings",
-        legacy: "articles/warnings.html",
-        target: "/warnings/",
-    },
-    {
-        source: "docs/articles/secure-url-fetching.md",
-        output: "secure-url-fetching.md",
-        title: "Secure URL fetching",
-        label: "Secure URL fetching",
-        legacy: "articles/secure-url-fetching.html",
-        target: "/secure-url-fetching/",
-    },
 ];
 
 const pageTargets = new Map(pages.map((page) => [path.posix.basename(page.source), page.target]));
