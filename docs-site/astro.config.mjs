@@ -66,6 +66,11 @@ export default defineConfig({
                     ],
                 },
                 {
+                    label: "Models",
+                    collapsed: true,
+                    autogenerate: { directory: "models" },
+                },
+                {
                     label: "Releases",
                     items: [
                         { label: "Overview", slug: "releases" },

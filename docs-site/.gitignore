@@ -28,6 +28,7 @@ src/content/docs/streaming.md
 src/content/docs/providers.md
 src/content/docs/typesafe-ai.md
 src/content/docs/scaledown.md
+src/content/docs/models/
 
 # macOS-specific files
 .DS_Store
