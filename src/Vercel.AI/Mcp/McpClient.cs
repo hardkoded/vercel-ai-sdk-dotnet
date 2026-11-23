@@ -37,6 +37,12 @@ public interface IMcpProtocolVersionDiscoveryTransport : IMcpTransport
 
     /// <summary>True when the client waits for the discovery response, with no timeout and no fallback after a network error.</summary>
     bool WaitsForProtocolVersionDiscovery { get; }
+
+    /// <summary>
+    /// The protocol version the transport announces, for example in the <c>mcp-protocol-version</c> header.
+    /// The client sets it when discovery or initialization negotiates a version. Maps to <c>MCPTransport.protocolVersion</c>.
+    /// </summary>
+    string? ProtocolVersion { get; set; }
 }
 
 /// <summary>Options of <see cref="McpClient.ConnectAsync(IMcpTransport, McpClientOptions, CancellationToken)"/>. Maps to <c>MCPClientConfig</c>.</summary>
@@ -57,6 +63,8 @@ public static class McpClient
 
     /// <summary>Latest legacy MCP protocol version. Maps to <c>LATEST_LEGACY_PROTOCOL_VERSION</c>.</summary>
     public const string LatestLegacyProtocolVersion = "2025-11-25";
+
+    private const int DefaultProtocolDiscoveryTimeoutMilliseconds = 1000;
 
     private static readonly string[] SupportedProtocolVersions =
     [
@@ -107,6 +115,11 @@ public static class McpClient
             return await ListToolsAsync(transport, cancellationToken).ConfigureAwait(false);
         }
 
+        if (transport is IMcpProtocolVersionDiscoveryTransport versioned)
+        {
+            versioned.ProtocolVersion = LatestLegacyProtocolVersion;
+        }
+
         using var init = JsonDocument.Parse(
             "{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{},\"clientInfo\":{\"name\":\"Vercel.AI.Mcp\",\"version\":\"0.1.0\"}}"
         );
@@ -121,12 +134,35 @@ public static class McpClient
         CancellationToken cancellationToken
     )
     {
+        transport.ProtocolVersion = LatestProtocolVersion;
+        using var timeout = transport.WaitsForProtocolVersionDiscovery
+            ? null
+            : CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout?.CancelAfter(DefaultProtocolDiscoveryTimeoutMilliseconds);
         try
         {
             using var empty = JsonDocument.Parse("{}");
-            var result = await transport
-                .CallAsync("server/discover", empty.RootElement, cancellationToken)
-                .ConfigureAwait(false);
+            JsonElement result;
+            try
+            {
+                result = await transport
+                    .CallAsync(
+                        "server/discover",
+                        empty.RootElement,
+                        timeout?.Token ?? cancellationToken
+                    )
+                    .ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+                when (timeout is { IsCancellationRequested: true }
+                    && !cancellationToken.IsCancellationRequested
+                )
+            {
+                throw new MCPClientError(
+                    "Request timed out after " + DefaultProtocolDiscoveryTimeoutMilliseconds + "ms"
+                );
+            }
+
             var supported =
                 result.TryGetProperty("supportedVersions", out var versions)
                 && versions.ValueKind == JsonValueKind.Array
@@ -712,6 +748,9 @@ public sealed class HttpMcpTransport : IMcpProtocolVersionDiscoveryTransport
     public bool WaitsForProtocolVersionDiscovery => true;
 
     /// <inheritdoc />
+    public string? ProtocolVersion { get; set; } = McpClient.LatestLegacyProtocolVersion;
+
+    /// <inheritdoc />
     public async Task<JsonElement> CallAsync(
         string method,
         JsonElement parameters,
@@ -732,6 +771,10 @@ public sealed class HttpMcpTransport : IMcpProtocolVersionDiscoveryTransport
         };
         message.Headers.Accept.ParseAdd("application/json");
         message.Headers.Accept.ParseAdd("text/event-stream");
+        message.Headers.TryAddWithoutValidation(
+            "mcp-protocol-version",
+            ProtocolVersion ?? McpClient.LatestLegacyProtocolVersion
+        );
         using var response = await _httpClient
             .SendAsync(message, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
             .ConfigureAwait(false);
