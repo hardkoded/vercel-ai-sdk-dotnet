@@ -146,19 +146,22 @@ public class OpenTelemetry : ITelemetry
     // The current hooks route through the deprecated ones, so a subclass that overrides a deprecated hook keeps working.
     /// <inheritdoc />
     public virtual Func<DecideEvent, CancellationToken, Task>? OnDecideStart =>
-        (e, ct) => OnEvaluateStart!(EvaluateEvent.From(e), ct);
+        (e, ct) => OnEvaluateStart?.Invoke(EvaluateEvent.From(e), ct) ?? Task.CompletedTask;
 
     /// <inheritdoc />
     public virtual Func<DecisionModelEvent, CancellationToken, Task>? OnDecisionModelCallStart =>
-        (e, ct) => OnEvaluationModelCallStart!(EvaluateModelEvent.From(e), ct);
+        (e, ct) =>
+            OnEvaluationModelCallStart?.Invoke(EvaluateModelEvent.From(e), ct)
+            ?? Task.CompletedTask;
 
     /// <inheritdoc />
     public virtual Func<DecisionModelEvent, CancellationToken, Task>? OnDecisionModelCallEnd =>
-        (e, ct) => OnEvaluationModelCallEnd!(EvaluateModelEvent.From(e), ct);
+        (e, ct) =>
+            OnEvaluationModelCallEnd?.Invoke(EvaluateModelEvent.From(e), ct) ?? Task.CompletedTask;
 
     /// <inheritdoc />
     public virtual Func<DecideEvent, CancellationToken, Task>? OnDecideEnd =>
-        (e, ct) => OnEvaluateEnd!(EvaluateEvent.From(e), ct);
+        (e, ct) => OnEvaluateEnd?.Invoke(EvaluateEvent.From(e), ct) ?? Task.CompletedTask;
 
     /// <inheritdoc />
     [Obsolete("Use OnDecideStart instead.")]
@@ -1200,7 +1203,8 @@ public class OpenTelemetry : ITelemetry
     ) =>
         new()
         {
-            ["ai.response.providerMetadata"] = providerMetadata is { } value
+            ["ai.response.providerMetadata"] = providerMetadata
+                is { ValueKind: not System.Text.Json.JsonValueKind.Undefined } value
                 ? value.GetRawText()
                 : null,
         };
