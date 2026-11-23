@@ -887,6 +887,12 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
                 throw new ArgumentNullException(nameof(audio));
             }
 
+            var warnings = new List<ModelWarning>();
+            var body = Body(
+                AssemblyAITranscriptionModelOptions.Parse(request?.ProviderOptions),
+                warnings
+            );
+
             var options = _provider.Options as AssemblyAIOptions;
             var started = options?.Clock != null ? options.Clock() : DateTimeOffset.UtcNow;
             var headers = ProviderExchange.Merge(
@@ -912,11 +918,6 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
                 uploadUrl = RequiredString(uploadDocument.RootElement, "upload_url");
             }
 
-            var warnings = new List<ModelWarning>();
-            var body = Body(
-                AssemblyAITranscriptionModelOptions.Parse(request?.ProviderOptions),
-                warnings
-            );
             body["audio_url"] = uploadUrl;
             var submitted = await SendAsync(
                     HttpMethod.Post,

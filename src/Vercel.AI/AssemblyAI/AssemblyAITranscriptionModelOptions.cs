@@ -394,9 +394,10 @@ public sealed class AssemblyAITranscriptionModelOptions
 
         if (
             value.ValueKind != JsonValueKind.Number
-            || !value.TryGetInt32(out var number)
-            || number < min
-            || number > max
+            || !value.TryGetDouble(out var whole)
+            || whole != Math.Floor(whole)
+            || whole < min
+            || whole > max
         )
         {
             throw Invalid(
@@ -412,7 +413,7 @@ public sealed class AssemblyAITranscriptionModelOptions
             );
         }
 
-        return number;
+        return (int)whole;
     }
 
     private static double? Num(
