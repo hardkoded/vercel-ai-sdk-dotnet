@@ -23,7 +23,7 @@ The call an [EnrichSpan](/api/Vercel.AI.OpenTelemetry/EnrichSpan/) callback is a
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L32)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L38)
 
 ## Properties
 
@@ -42,7 +42,7 @@ The call id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L41)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L47)
 
 <a id="Vercel_AI_OpenTelemetry_EnrichSpanContext_OperationId_"></a>
 <a id="Vercel_AI_OpenTelemetry_EnrichSpanContext_OperationId"></a>
@@ -59,7 +59,7 @@ The operation id, such as `ai.generateText`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L38)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L44)
 
 <a id="Vercel_AI_OpenTelemetry_EnrichSpanContext_RuntimeContext_"></a>
 <a id="Vercel_AI_OpenTelemetry_EnrichSpanContext_RuntimeContext"></a>
@@ -76,7 +76,7 @@ The runtime context of the call, or null.
 
 **Value:** [IReadOnlyDictionary&lt;string, object&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L44)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L50)
 
 <a id="Vercel_AI_OpenTelemetry_EnrichSpanContext_SpanType_"></a>
 <a id="Vercel_AI_OpenTelemetry_EnrichSpanContext_SpanType"></a>
@@ -93,4 +93,4 @@ The kind of span being created.
 
 **Value:** [OpenTelemetrySpanType](/api/Vercel.AI.OpenTelemetry/OpenTelemetrySpanType/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L35)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L41)

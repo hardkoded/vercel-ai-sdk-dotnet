@@ -171,7 +171,7 @@ Starts a stream, or null when streaming is unsupported.
 
 **Returns:** [Task&lt;TranscriptionStreamStart&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayTranscriptionModel.cs#L231)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayTranscriptionModel.cs#L238)
 
 <a id="Vercel_AI_Gateway_GatewayTranscriptionModel_DoTranscribeAsync_"></a>
 <a id="Vercel_AI_Gateway_GatewayTranscriptionModel_DoTranscribeAsync_Vercel_AI_Provider_AudioInput_System_Threading_CancellationToken_"></a>
@@ -222,7 +222,7 @@ lookups are case-insensitive. Maps to `getProtocolsFromHeaders`.
 
 **Returns:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayTranscriptionModel.cs#L306)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayTranscriptionModel.cs#L313)
 
 <a id="Vercel_AI_Gateway_GatewayTranscriptionModel_ToGatewayTranscriptionUrl_"></a>
 <a id="Vercel_AI_Gateway_GatewayTranscriptionModel_ToGatewayTranscriptionUrl_System_String_System_String_"></a>
@@ -247,4 +247,4 @@ Gateway streaming transcription WebSocket URL: the HTTP(S) base upgraded to WS(S
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayTranscriptionModel.cs#L290)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayTranscriptionModel.cs#L297)

@@ -23,7 +23,7 @@ Upstream `ModelCapabilities.video.inputs`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L217)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L220)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Role-tagged first frame passed through the `frameImages` option.
 
 **Value:** [ModelCapability](/api/Vercel.AI/ModelCapability/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L226)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L229)
 
 <a id="Vercel_AI_VideoInputCapabilities_Image_"></a>
 <a id="Vercel_AI_VideoInputCapabilities_Image"></a>
@@ -59,7 +59,7 @@ The single starting image passed through the `image` option.
 
 **Value:** [ModelCapability](/api/Vercel.AI/ModelCapability/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L223)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L226)
 
 <a id="Vercel_AI_VideoInputCapabilities_LastFrame_"></a>
 <a id="Vercel_AI_VideoInputCapabilities_LastFrame"></a>
@@ -76,7 +76,7 @@ Role-tagged last frame passed through the `frameImages` option.
 
 **Value:** [ModelCapability](/api/Vercel.AI/ModelCapability/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L229)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L232)
 
 <a id="Vercel_AI_VideoInputCapabilities_ReferenceImage_"></a>
 <a id="Vercel_AI_VideoInputCapabilities_ReferenceImage"></a>
@@ -93,7 +93,7 @@ Reference images passed through the `inputReferences` option.
 
 **Value:** [ModelCapability](/api/Vercel.AI/ModelCapability/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L232)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L235)
 
 <a id="Vercel_AI_VideoInputCapabilities_ReferenceVideo_"></a>
 <a id="Vercel_AI_VideoInputCapabilities_ReferenceVideo"></a>
@@ -110,7 +110,7 @@ Reference videos passed through the `inputReferences` option.
 
 **Value:** [ModelCapability](/api/Vercel.AI/ModelCapability/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L235)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L238)
 
 <a id="Vercel_AI_VideoInputCapabilities_Text_"></a>
 <a id="Vercel_AI_VideoInputCapabilities_Text"></a>
@@ -127,4 +127,4 @@ Text input.
 
 **Value:** [ModelCapability](/api/Vercel.AI/ModelCapability/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L220)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L223)

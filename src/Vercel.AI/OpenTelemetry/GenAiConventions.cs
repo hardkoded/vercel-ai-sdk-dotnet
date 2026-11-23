@@ -78,6 +78,9 @@ public static class GenAiConventions
             "ai.embed" => "embeddings",
             "ai.embedMany" => "embeddings",
             "ai.rerank" => "rerank",
+            "ai.generateSpeech" => "ai.generateSpeech",
+            "ai.transcribe" => "ai.transcribe",
+            "ai.streamTranscribe" => "ai.streamTranscribe",
             _ => operationId,
         };
     }
