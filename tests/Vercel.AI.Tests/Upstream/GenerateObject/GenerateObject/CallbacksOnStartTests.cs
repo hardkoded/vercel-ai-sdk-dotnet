@@ -118,6 +118,7 @@ public sealed class CallbacksOnStartTests
 
         Assert.NotNull(startEvent);
         Assert.Null(typeof(GenerateObjectStartEvent).GetProperty("IsEnabled"));
-        Assert.Null(typeof(GenerateObjectStartEvent).GetProperty("FunctionId"));
+        // Only the events sent to integrations carry the telemetry settings, so the callback event has no function id.
+        Assert.Null(startEvent!.FunctionId);
     }
 }

@@ -468,11 +468,35 @@ public sealed class CreateTelemetryDispatcherTests
     private static async Task AssertObjectLifecycleDispatch()
     {
         var events = new List<string>();
-        var integration = RecordingIntegration(events);
+        var received = new List<GenerateObjectEvent>();
+        var integration = RecordingIntegration(events, received);
 
         var generateOptions = GenerateObjectTestSupportFacade.GenerateOptions();
-        generateOptions.Telemetry = new TelemetryOptions { Integrations = [integration] };
+        generateOptions.Telemetry = new TelemetryOptions
+        {
+            Integrations = [integration],
+            FunctionId = "object-function",
+            RecordInputs = true,
+            RecordOutputs = false,
+        };
         await GenerateObjectTestSupportFacade.Client().GenerateObjectAsync(generateOptions);
+
+        // Every object event carries the telemetry settings and the SDK version, and hides what the call does not record.
+        Assert.Equal(4, received.Count);
+        Assert.All(
+            received,
+            e =>
+            {
+                Assert.Equal("object-function", e.FunctionId);
+                Assert.True(e.RecordInputs);
+                Assert.False(e.RecordOutputs);
+                Assert.False(string.IsNullOrEmpty(e.AiVersion));
+            }
+        );
+        Assert.Equal("", Assert.IsType<GenerateObjectStepEndEvent>(received[2]).ObjectText);
+        Assert.Null(Assert.IsType<GenerateObjectStepEndEvent>(received[2]).ProviderMetadata);
+        generateOptions.Telemetry = new TelemetryOptions { Integrations = [integration] };
+        received.Clear();
         Assert.Equal(
             ["onStart:ai.generateObject", "onObjectStepStart", "onObjectStepEnd", "onEnd"],
             events
@@ -531,27 +555,35 @@ public sealed class CreateTelemetryDispatcherTests
             },
         };
 
-    internal static TestTelemetry RecordingIntegration(List<string> events) =>
+    internal static TestTelemetry RecordingIntegration(
+        List<string> events,
+        List<GenerateObjectEvent>? received = null
+    ) =>
         new()
         {
             OnStart = (e, _) =>
             {
-                events.Add("onStart:" + Assert.IsType<GenerateObjectStartEvent>(e).OperationId);
+                var start = Assert.IsType<GenerateObjectStartEvent>(e);
+                received?.Add(start);
+                events.Add("onStart:" + start.OperationId);
                 return Task.CompletedTask;
             },
-            OnObjectStepStart = (_, _) =>
+            OnObjectStepStart = (e, _) =>
             {
+                received?.Add(e);
                 events.Add("onObjectStepStart");
                 return Task.CompletedTask;
             },
-            OnObjectStepEnd = (_, _) =>
+            OnObjectStepEnd = (e, _) =>
             {
+                received?.Add(e);
                 events.Add("onObjectStepEnd");
                 return Task.CompletedTask;
             },
             OnEnd = (e, _) =>
             {
                 Assert.StartsWith("GenerateObjectEndEvent", e.GetType().Name);
+                received?.Add((GenerateObjectEvent)e);
                 events.Add("onEnd");
                 return Task.CompletedTask;
             },
