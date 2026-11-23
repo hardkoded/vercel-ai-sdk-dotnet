@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
+using Vercel.AI.Tests.Upstream.Telemetry;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.Util;
@@ -244,12 +245,34 @@ public sealed class ExperimentalStreamTranscribeTests
             },
             Completes = false,
         };
+        var ends = 0;
+        var errors = new List<TelemetryErrorEvent>();
         var result = StreamTranscribeOperation.Start(
             new StreamTranscribeRequest
             {
                 Model = model,
                 Audio = new AudioChunkStream(),
                 InputAudioFormat = "pcm16",
+                GenerateCallId = () => "call-1",
+                Telemetry = new TelemetryOptions
+                {
+                    Integrations =
+                    [
+                        new TestTelemetry
+                        {
+                            OnStreamTranscriptionEnd = (_, _) =>
+                            {
+                                ends++;
+                                return Task.CompletedTask;
+                            },
+                            OnError = (e, _) =>
+                            {
+                                errors.Add(e);
+                                return Task.CompletedTask;
+                            },
+                        },
+                    ],
+                },
             }
         );
         await foreach (var part in result.FullStream)
@@ -261,6 +284,10 @@ public sealed class ExperimentalStreamTranscribeTests
         // The pump cancels the model stream before it rejects the result promises.
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => result.Text);
         Assert.True(model.Stream!.Cancelled);
+        Assert.Equal(0, ends);
+        Assert.Single(errors);
+        Assert.Equal("call-1", errors[0].CallId);
+        Assert.NotNull(errors[0].Error);
     }
 
     [Fact]
@@ -415,5 +442,194 @@ public sealed class ExperimentalStreamTranscribeTests
         _ = result.FullStream;
         var error = Assert.Throws<InvalidOperationException>(() => result.FullStream);
         Assert.Equal("fullStream can only be accessed once.", error.Message);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Stream + "should pass the original audio stream through when telemetry is disabled",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Passes_the_original_audio_stream_through_when_telemetry_is_disabled()
+    {
+        var audio = new AudioChunkStream();
+        var model = new TranscriptFake { Parts = Finish("Hello") };
+        var result = StreamTranscribeOperation.Start(
+            new StreamTranscribeRequest
+            {
+                Model = model,
+                Audio = audio,
+                InputAudioFormat = "pcm16",
+                Telemetry = new TelemetryOptions { IsEnabled = false },
+            }
+        );
+        await Read(result.FullStream);
+        Assert.Same(audio, model.Call!.Audio);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Stream
+            + "should pass the original audio stream through when no telemetry integration is configured",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Passes_the_original_audio_stream_through_when_no_integration_is_configured()
+    {
+        var audio = new AudioChunkStream();
+        var model = new TranscriptFake { Parts = Finish("Hello") };
+        var result = StreamTranscribeOperation.Start(
+            new StreamTranscribeRequest
+            {
+                Model = model,
+                Audio = audio,
+                InputAudioFormat = "pcm16",
+                Telemetry = new TelemetryOptions { Integrations = [] },
+            }
+        );
+        await Read(result.FullStream);
+        Assert.Same(audio, model.Call!.Audio);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Stream + "should emit one correlated telemetry error for a provider stream failure",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Emits_one_correlated_telemetry_error_for_a_provider_stream_failure()
+    {
+        var error = new InvalidOperationException("connection lost");
+        var starts = 0;
+        var ends = 0;
+        var errors = new List<TelemetryErrorEvent>();
+        var result = StreamTranscribeOperation.Start(
+            new StreamTranscribeRequest
+            {
+                Model = new TranscriptFake
+                {
+                    Parts = new[] { new ModelStreamPart { Type = "stream-start" } },
+                    Failure = error,
+                },
+                Audio = new AudioChunkStream(),
+                InputAudioFormat = "pcm16",
+                GenerateCallId = () => "call-1",
+                Telemetry = new TelemetryOptions
+                {
+                    Integrations =
+                    [
+                        new TestTelemetry
+                        {
+                            OnStreamTranscriptionStart = (_, _) =>
+                            {
+                                starts++;
+                                return Task.CompletedTask;
+                            },
+                            OnStreamTranscriptionEnd = (_, _) =>
+                            {
+                                ends++;
+                                return Task.CompletedTask;
+                            },
+                            OnError = (e, _) =>
+                            {
+                                errors.Add(e);
+                                return Task.CompletedTask;
+                            },
+                        },
+                    ],
+                },
+            }
+        );
+        var thrown = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            Read(result.FullStream)
+        );
+        Assert.Same(error, thrown);
+        Assert.Equal(1, starts);
+        Assert.Equal(0, ends);
+        var reported = Assert.Single(errors);
+        Assert.Equal("call-1", reported.CallId);
+        Assert.Same(error, reported.Error);
+        Assert.Equal(AiSdkVersion.Version, reported.AiVersion);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Stream + "should emit telemetry events with the consumed audio byte count",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Emits_telemetry_events_with_the_consumed_audio_byte_count()
+    {
+        var events = new List<(string Type, object Event)>();
+        var audio = new AudioChunkStream();
+        audio.Write(new byte[] { 1, 2, 3 });
+        audio.Write("BAU=");
+        audio.Complete();
+        var model = new TranscriptFake
+        {
+            Parts = new[]
+            {
+                new ModelStreamPart { Type = "stream-start" },
+                new ModelStreamPart
+                {
+                    Type = "finish",
+                    Text = "Hello",
+                    Segments = [],
+                    ProviderMetadata = OperationJson.Parse("{\"mock\":{\"traceId\":\"trace-1\"}}"),
+                    UsageValue = OperationJson.Parse("{\"inputTokens\":3}"),
+                },
+            },
+            BeforeStream = async call =>
+            {
+                var reader = call.Audio.GetReader();
+                while (await reader.ReadAsync() != null) { }
+            },
+        };
+        var result = StreamTranscribeOperation.Start(
+            new StreamTranscribeRequest
+            {
+                Model = model,
+                Audio = audio,
+                InputAudioFormat = "audio/pcm",
+                GenerateCallId = () => "call-1",
+                Telemetry = new TelemetryOptions
+                {
+                    FunctionId = "stream-audio",
+                    Integrations =
+                    [
+                        new TestTelemetry
+                        {
+                            OnStreamTranscriptionStart = (e, _) =>
+                            {
+                                events.Add(("start", e));
+                                return Task.CompletedTask;
+                            },
+                            OnStreamTranscriptionEnd = (e, _) =>
+                            {
+                                events.Add(("end", e));
+                                return Task.CompletedTask;
+                            },
+                        },
+                    ],
+                },
+            }
+        );
+        await Read(result.FullStream);
+
+        Assert.Equal(2, events.Count);
+        var start = Assert.IsType<StreamTranscriptionStartEvent>(events[0].Event);
+        Assert.Equal("call-1", start.CallId);
+        Assert.Equal("ai.streamTranscribe", start.OperationId);
+        Assert.Null(start.Audio.ByteLength);
+        Assert.Equal("audio/pcm", start.Audio.MediaType);
+        Assert.Equal("stream-audio", start.FunctionId);
+        var end = Assert.IsType<StreamTranscriptionEndEvent>(events[1].Event);
+        Assert.Equal("call-1", end.CallId);
+        Assert.Equal("ai.streamTranscribe", end.OperationId);
+        Assert.Equal(5, end.Audio.ByteLength);
+        Assert.Equal("audio/pcm", end.Audio.MediaType);
+        Assert.Equal("Hello", end.Text);
+        Assert.Equal(3, end.Usage!.Value.GetProperty("inputTokens").GetInt32());
+        Assert.Equal(
+            "trace-1",
+            end.ProviderMetadata!.Value.GetProperty("mock").GetProperty("traceId").GetString()
+        );
+        Assert.Equal("stream-audio", end.FunctionId);
     }
 }
