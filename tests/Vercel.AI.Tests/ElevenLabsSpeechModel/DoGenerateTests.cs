@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json;
 using Vercel.AI.ElevenLabs;
 using Vercel.AI.OpenAICompatible;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.Tests.MoreProviders;
 
@@ -85,6 +86,42 @@ public sealed class DoGenerateTests
 
         Assert.Contains($"output_format={nativeFormat}", handler.Calls[0].Uri.Query);
         Assert.Equal(audio, result.Audio);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should report the output format in provider metadata",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "48ab95d62a08b409311c110852e8083910ba438d"
+    )]
+    public async Task Should_report_the_output_format_in_provider_metadata()
+    {
+        var handler = new ParityHandler(_ => ParityHandler.Bytes(new byte[100], "audio/mp3"));
+        var provider = ElevenLabsProvider.Create(
+            new OpenAICompatibleOptions { ApiKey = "test-api-key" },
+            handler
+        );
+        var model = (ISpeechCaller)provider.SpeechModel("eleven_multilingual_v2");
+
+        var result = await model.DoGenerateAsync(
+            new SpeechModelCall(
+                "Hello, world!",
+                null,
+                "pcm_24000",
+                null,
+                null,
+                null,
+                JsonDocument.Parse("{}").RootElement,
+                new Dictionary<string, string>(),
+                CancellationToken.None
+            ),
+            CancellationToken.None
+        );
+
+        Assert.Equal(
+            "{\"elevenlabs\":{\"outputFormat\":\"pcm_24000\"}}",
+            result.ProviderMetadata!.Value.GetRawText()
+        );
     }
 
     [Fact]

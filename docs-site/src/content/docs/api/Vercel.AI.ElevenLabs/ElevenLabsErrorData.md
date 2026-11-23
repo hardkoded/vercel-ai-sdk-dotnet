@@ -23,7 +23,7 @@ Parsed ElevenLabs error body.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L144)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L145)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates legacy parsed error data.
 | `message` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `code` | [int](https://learn.microsoft.com/dotnet/api/system.int32) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L147)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L148)
 
 ## Properties
 
@@ -71,7 +71,7 @@ Legacy integral provider code. Use [Error](#Vercel_AI_ElevenLabs_ElevenLabsError
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L180)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L181)
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsErrorData_Detail_"></a>
 <a id="Vercel_AI_ElevenLabs_ElevenLabsErrorData_Detail"></a>
@@ -88,7 +88,7 @@ Object-valued `detail`, when present.
 
 **Value:** [ElevenLabsErrorDetail](/api/Vercel.AI.ElevenLabs/ElevenLabsErrorDetail/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L164)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L165)
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsErrorData_DetailMessage_"></a>
 <a id="Vercel_AI_ElevenLabs_ElevenLabsErrorData_DetailMessage"></a>
@@ -105,7 +105,7 @@ String-valued `detail`, when present.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L170)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L171)
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsErrorData_Error_"></a>
 <a id="Vercel_AI_ElevenLabs_ElevenLabsErrorData_Error"></a>
@@ -122,7 +122,7 @@ Legacy `error` object, when present.
 
 **Value:** [ElevenLabsLegacyError](/api/Vercel.AI.ElevenLabs/ElevenLabsLegacyError/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L173)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L174)
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsErrorData_Issues_"></a>
 <a id="Vercel_AI_ElevenLabs_ElevenLabsErrorData_Issues"></a>
@@ -139,7 +139,7 @@ Array-valued `detail`, when present.
 
 **Value:** [IReadOnlyList&lt;ElevenLabsValidationIssue&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L167)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L168)
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsErrorData_Message_"></a>
 <a id="Vercel_AI_ElevenLabs_ElevenLabsErrorData_Message"></a>
@@ -161,4 +161,4 @@ Legacy provider message. Use [Error](#Vercel_AI_ElevenLabs_ElevenLabsErrorData_E
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L176)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L177)
