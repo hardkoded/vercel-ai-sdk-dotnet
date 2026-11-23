@@ -400,6 +400,14 @@ The `redirect` option and OAuth (`authProvider`) are not ported ([#585](https://
 
 `ExecutedTool` carries `Title`, `ToolMetadata` and `Dynamic` from the tool call it answers, and `ToolInputStartPart` carries the tool's `Title`. `Dynamic` is true for a dynamic tool and for an invalid call. The `GeneratedToolResult` of a client tool in `Content` carries `Dynamic` and `ToolMetadata` too, and `ToolInputStartPart` also carries the tool's `ToolMetadata`. That result also sets `ProviderExecuted` to false (a provider's own result keeps it true) and carries the `InputJson` of the call it answers. The response messages of a step (the assistant message and one tool message that carries the approval responses in `ToolModelMessage.ApprovalResponses` and the results in tool call order for `GenerateTextAsync` and in completion order for a streamed step; a denied call, provider-executed or not, gets an `execution-denied` result) are built from `Content` in one place, as upstream's `toResponseMessages` does. The assistant message now includes the step's files and skips empty text that has no provider metadata.
 
+### Protocol version discovery
+
+`HttpMcpTransport` implements `IMcpProtocolVersionDiscoveryTransport` (upstream's `supportsProtocolVersionDiscovery` and `waitsForProtocolVersionDiscovery`). `McpClient.ConnectAsync(transport, options)` first sends `server/discover` and falls back to `initialize` when the server does not know it. Set `McpClientOptions.ProtocolVersionDiscovery` to `false` (`protocolVersionDiscovery` upstream) for a legacy server that needs `initialize` first. The default is `true`.
+
+A server that answers with `-32022` and lists only legacy versions in `data.supported` makes `ConnectAsync` throw an `MCPClientError` that explains the mismatch. It does not fall back to `initialize`. The error keeps `Code`, `Data`, `StatusCode` and `Url`, and its `InnerException` is the original error. A network error during discovery is rethrown too, with no fallback.
+
+The port does not yet send the `mcp-protocol-version` header or apply the discover result to the client state ([#1694](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/1694)).
+
 ## MCP tool output
 
 Tools from `McpClient` set `ToModelOutput`, which maps upstream's `mcpToModelOutput`. The output of an MCP tool is the JSON text of the call-tool result, and `ToModelOutput` converts it for the model:

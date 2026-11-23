@@ -25,18 +25,86 @@ public interface IMcpTransport
     );
 }
 
+/// <summary>
+/// A transport that can probe the server with <c>server/discover</c> before legacy initialization.
+/// Maps to the <c>supportsProtocolVersionDiscovery</c> and <c>waitsForProtocolVersionDiscovery</c> members of upstream's
+/// <c>MCPTransport</c>. It is a separate interface because <see cref="IMcpTransport"/> cannot gain members on netstandard2.0.
+/// </summary>
+public interface IMcpProtocolVersionDiscoveryTransport : IMcpTransport
+{
+    /// <summary>True when the client may probe with <c>server/discover</c>.</summary>
+    bool SupportsProtocolVersionDiscovery { get; }
+
+    /// <summary>True when the client waits for the discovery response, with no timeout and no fallback after a network error.</summary>
+    bool WaitsForProtocolVersionDiscovery { get; }
+}
+
+/// <summary>Options of <see cref="McpClient.ConnectAsync(IMcpTransport, McpClientOptions, CancellationToken)"/>. Maps to <c>MCPClientConfig</c>.</summary>
+public sealed class McpClientOptions
+{
+    /// <summary>
+    /// Whether transports that support stateless protocol discovery probe with <c>server/discover</c> before falling back
+    /// to legacy initialization. Disable it for legacy servers that require <c>initialize</c> to be the first request. Default true.
+    /// </summary>
+    public bool ProtocolVersionDiscovery { get; set; } = true;
+}
+
 /// <summary>Lists MCP tools and adapts them to <see cref="Tool"/>.</summary>
 public static class McpClient
 {
+    /// <summary>Latest MCP protocol version. Maps to <c>LATEST_PROTOCOL_VERSION</c>.</summary>
+    public const string LatestProtocolVersion = "2026-07-28";
+
+    /// <summary>Latest legacy MCP protocol version. Maps to <c>LATEST_LEGACY_PROTOCOL_VERSION</c>.</summary>
+    public const string LatestLegacyProtocolVersion = "2025-11-25";
+
+    private static readonly string[] SupportedProtocolVersions =
+    [
+        LatestProtocolVersion,
+        LatestLegacyProtocolVersion,
+        "2025-06-18",
+        "2025-03-26",
+        "2024-11-05",
+    ];
+
     /// <summary>Calls <c>initialize</c>, then <c>tools/list</c>.</summary>
+    public static Task<IReadOnlyList<Tool>> ConnectAsync(
+        IMcpTransport transport,
+        CancellationToken cancellationToken = default
+    ) => ConnectAsync(transport, new McpClientOptions(), cancellationToken);
+
+    /// <summary>
+    /// Probes with <c>server/discover</c> when <see cref="McpClientOptions.ProtocolVersionDiscovery"/> and the transport allow it,
+    /// otherwise calls <c>initialize</c>. Then calls <c>tools/list</c>.
+    /// </summary>
     public static async Task<IReadOnlyList<Tool>> ConnectAsync(
         IMcpTransport transport,
+        McpClientOptions options,
         CancellationToken cancellationToken = default
     )
     {
         if (transport is null)
         {
             throw new ArgumentNullException(nameof(transport));
+        }
+
+        if (options is null)
+        {
+            throw new ArgumentNullException(nameof(options));
+        }
+
+        if (
+            options.ProtocolVersionDiscovery
+            && transport
+                is IMcpProtocolVersionDiscoveryTransport
+                {
+                    SupportsProtocolVersionDiscovery: true
+                } discoverable
+            && await TryProtocolDiscoveryAsync(discoverable, cancellationToken)
+                .ConfigureAwait(false)
+        )
+        {
+            return await ListToolsAsync(transport, cancellationToken).ConfigureAwait(false);
         }
 
         using var init = JsonDocument.Parse(
@@ -46,6 +114,94 @@ public static class McpClient
             .CallAsync("initialize", init.RootElement, cancellationToken)
             .ConfigureAwait(false);
         return await ListToolsAsync(transport, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<bool> TryProtocolDiscoveryAsync(
+        IMcpProtocolVersionDiscoveryTransport transport,
+        CancellationToken cancellationToken
+    )
+    {
+        try
+        {
+            using var empty = JsonDocument.Parse("{}");
+            var result = await transport
+                .CallAsync("server/discover", empty.RootElement, cancellationToken)
+                .ConfigureAwait(false);
+            var supported =
+                result.TryGetProperty("supportedVersions", out var versions)
+                && versions.ValueKind == JsonValueKind.Array
+                    ? versions.EnumerateArray().Select(v => v.GetString()).ToList()
+                    : throw new MCPClientError("Server sent invalid server/discover result.");
+            if (!supported.Contains(LatestProtocolVersion))
+            {
+                throw new MCPClientError(
+                    "Server does not support the requested protocol version: "
+                        + LatestProtocolVersion
+                );
+            }
+
+            return true;
+        }
+        catch (MCPClientError error) when (error.Code is -32020 or -32021 or -32022)
+        {
+            if (
+                error.Code == -32022
+                && TryGetSupportedVersions(error.Data, out var supportedVersions)
+            )
+            {
+                if (
+                    !supportedVersions.Contains(LatestProtocolVersion)
+                    && supportedVersions.Any(version =>
+                        string.CompareOrdinal(version, LatestLegacyProtocolVersion) <= 0
+                        && SupportedProtocolVersions.Contains(version)
+                    )
+                )
+                {
+                    throw new MCPClientError(
+                        "MCP server rejected protocol version "
+                            + LatestProtocolVersion
+                            + " during discovery. Server-supported versions: "
+                            + string.Join(", ", supportedVersions)
+                            + ". The client does not automatically switch to legacy initialization after this error. "
+                            + "If this is a known legacy server, set ProtocolVersionDiscovery to false to use initialize.",
+                        code: error.Code,
+                        statusCode: error.StatusCode,
+                        url: error.Url,
+                        responseBody: error.ResponseBody,
+                        data: error.Data,
+                        cause: error
+                    );
+                }
+            }
+
+            throw;
+        }
+        catch (Exception exception)
+            when (transport.WaitsForProtocolVersionDiscovery && exception is not MCPClientError)
+        {
+            throw;
+        }
+        catch (MCPClientError)
+        {
+            return false;
+        }
+    }
+
+    private static bool TryGetSupportedVersions(JsonElement? data, out List<string> versions)
+    {
+        versions = [];
+        if (
+            data is { ValueKind: JsonValueKind.Object } element
+            && element.TryGetProperty("supported", out var supported)
+            && supported.ValueKind == JsonValueKind.Array
+            && supported.EnumerateArray().All(v => v.ValueKind == JsonValueKind.String)
+        )
+        {
+            versions = supported.EnumerateArray().Select(v => v.GetString()!).ToList();
+            return true;
+        }
+
+        return false;
     }
 
     /// <summary>Maps <c>tools/list</c> onto SDK tools. Execution calls <c>tools/call</c>.</summary>
@@ -536,7 +692,7 @@ public sealed class StdioMcpTransport : IMcpTransport, IDisposable
 }
 
 /// <summary>MCP over Streamable HTTP. Posts JSON-RPC and accepts a JSON body or an SSE <c>data:</c> payload.</summary>
-public sealed class HttpMcpTransport : IMcpTransport
+public sealed class HttpMcpTransport : IMcpProtocolVersionDiscoveryTransport
 {
     private readonly HttpClient _httpClient;
     private readonly Uri _endpoint;
@@ -548,6 +704,12 @@ public sealed class HttpMcpTransport : IMcpTransport
         _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         _endpoint = endpoint ?? throw new ArgumentNullException(nameof(endpoint));
     }
+
+    /// <inheritdoc />
+    public bool SupportsProtocolVersionDiscovery => true;
+
+    /// <inheritdoc />
+    public bool WaitsForProtocolVersionDiscovery => true;
 
     /// <inheritdoc />
     public async Task<JsonElement> CallAsync(
