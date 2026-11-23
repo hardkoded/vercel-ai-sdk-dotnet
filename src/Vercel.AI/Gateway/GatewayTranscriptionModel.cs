@@ -97,6 +97,17 @@ public sealed class GatewayTranscriptionModel : ITranscriptionModel, ITranscript
         }
 
         ProviderTextResponse response;
+        var requestHeaders = await _provider
+            .HeadersAsync(
+                "ai-transcription-model-specification-version",
+                "4",
+                "ai-model-id",
+                ModelId,
+                null,
+                headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         try
         {
             response = await _provider
@@ -104,26 +115,22 @@ public sealed class GatewayTranscriptionModel : ITranscriptionModel, ITranscript
                     HttpMethod.Post,
                     _provider.Route("transcription-model"),
                     body.ToJsonString(),
-                    await _provider.HeadersAsync(
-                        "ai-transcription-model-specification-version",
-                        "4",
-                        "ai-model-id",
-                        ModelId,
-                        null,
-                        headers,
-                        cancellationToken
-                    ),
+                    requestHeaders,
                     cancellationToken
                 )
                 .ConfigureAwait(false);
         }
         catch (ApiException exception)
         {
-            throw GatewayProvider.MapFailure(exception);
+            throw GatewayProvider.MapFailure(exception, requestHeaders);
         }
         catch (ApiTimeoutException exception)
         {
-            throw GatewayProvider.MapFailure(exception);
+            throw GatewayProvider.MapFailure(exception, requestHeaders);
+        }
+        catch (ApiConnectionException exception)
+        {
+            throw GatewayProvider.MapFailure(exception, requestHeaders);
         }
 
         JsonElement root;
