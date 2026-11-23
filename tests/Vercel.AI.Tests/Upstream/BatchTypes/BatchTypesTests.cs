@@ -141,10 +141,11 @@ public sealed class BatchTypesTests
     )]
     public void Keeps_text_specific_options_on_text_batch_requests()
     {
-        Assert.Equal(typeof(string), PropertyType<BatchRequest>("Type"));
-        Assert.Equal(typeof(string), PropertyType<BatchRequest>("Model"));
-        Assert.Equal(typeof(IReadOnlyList<BatchTool>), PropertyType<BatchRequest>("Tools"));
-        Assert.Null(typeof(BatchRequest).GetProperty("StopWhen"));
+        var request = new TextBatchRequest("request-1", "model-a");
+        Assert.Equal("text", request.Type);
+        Assert.Equal(typeof(string), PropertyType<TextBatchRequest>("Model"));
+        Assert.Equal(typeof(IReadOnlyList<BatchTool>), PropertyType<TextBatchRequest>("Tools"));
+        Assert.Null(typeof(TextBatchRequest).GetProperty("StopWhen"));
     }
 
     [Fact]
@@ -190,20 +191,93 @@ public sealed class BatchTypesTests
     [Fact]
     [UpstreamTest(
         Prefix + "exposes Core content in successful batch results",
-        Coverage = UpstreamCoverage.Partial,
+        Coverage = UpstreamCoverage.Covered,
         Commit = Commit
     )]
     public void Exposes_Core_content_in_successful_batch_results()
     {
-        // The C# item exposes BatchContentPart, not the generate-text ContentPart.
+        // The provider result carries provider content parts; the Core item exposes the generate-text content parts.
         Assert.Equal(
             typeof(IReadOnlyList<BatchContentPart>),
             PropertyType<BatchTextGeneration>("Content")
         );
         Assert.Equal(
-            typeof(IReadOnlyList<BatchContentPart>),
+            typeof(IReadOnlyList<GeneratedContent>),
             PropertyType<BatchItemResult>("Content")
         );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "exposes modality-specific call options to batch providers",
+        Coverage = UpstreamCoverage.Partial,
+        Commit = Commit
+    )]
+    public async Task Exposes_modality_specific_call_options_to_batch_providers()
+    {
+        // BatchV4Request has exactly id, type, modelId, and options.
+        Assert.Equal(
+            ["Id", "ModelId", "Options", "Type"],
+            typeof(NormalizedBatchRequest).GetProperties().Select(p => p.Name).Order().ToArray()
+        );
+        Assert.Equal("text", new TextBatchRequest("a", "model-a").Type);
+        Assert.Equal("model-a", new TextBatchRequest("a", "model-a").Model);
+        Assert.Equal("image", new ImageBatchRequest("a", "image-a").Type);
+
+        var fake = new BatchTests.BatchFake { Items = [] };
+        await BatchApi.StartBatchAsync(
+            new StartBatchOptions
+            {
+                Provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(fake),
+                Requests =
+                [
+                    new TextBatchRequest("text-1", "model-a")
+                    {
+                        Prompt = "hello",
+                        MaxOutputTokens = 1,
+                        Temperature = 1,
+                        StopSequences = ["x"],
+                        TopP = 1,
+                        TopK = 1,
+                        PresencePenalty = 1,
+                        FrequencyPenalty = 1,
+                        Seed = 1,
+                        Reasoning = "low",
+                        ProviderOptions = JsonDocument.Parse("{}").RootElement,
+                    },
+                    new ImageBatchRequest("image-1", "image-a")
+                    {
+                        Prompt = "hello",
+                        N = 1,
+                        Size = "1x1",
+                        AspectRatio = "1:1",
+                        Seed = 1,
+                    },
+                ],
+                Output = OutputSpec.Object<TextOutput>("{}"),
+            }
+        );
+
+        var started = fake.Last!.Requests!;
+        var text = started.Single(r => r.Type == "text");
+        var image = started.Single(r => r.Type == "image");
+        Assert.Equal("model-a", text.ModelId);
+        var textKeys = text.Options.EnumerateObject().Select(p => p.Name).ToHashSet();
+        var imageKeys = image.Options.EnumerateObject().Select(p => p.Name).ToHashSet();
+        string[] allowedText =
+        [
+            "prompt", "maxOutputTokens", "temperature", "stopSequences", "topP", "topK",
+            "presencePenalty", "frequencyPenalty", "seed", "reasoning", "responseFormat",
+            "toolChoice", "tools", "providerOptions",
+        ];
+        string[] allowedImage =
+            ["prompt", "n", "size", "aspectRatio", "seed", "files", "mask", "providerOptions"];
+        Assert.True(textKeys.IsSubsetOf(allowedText));
+        Assert.Contains("responseFormat", textKeys);
+        Assert.DoesNotContain("includeRawChunks", textKeys);
+        Assert.DoesNotContain("abortSignal", textKeys);
+        Assert.DoesNotContain("headers", textKeys);
+        Assert.True(imageKeys.IsSubsetOf(allowedImage));
     }
 
     [Fact]

@@ -23,7 +23,7 @@ Transcription options.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L956)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L958)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Audio.
 
 **Value:** [AudioInput](/api/Vercel.AI.Provider/AudioInput/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L962)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L964)
 
 <a id="Vercel_AI_TranscribeOptions_Model_"></a>
 <a id="Vercel_AI_TranscribeOptions_Model"></a>
@@ -59,4 +59,4 @@ Transcription model.
 
 **Value:** [ITranscriptionModel](/api/Vercel.AI.Provider/ITranscriptionModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L959)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L961)

@@ -23,7 +23,7 @@ Evaluation options.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L989)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L991)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Candidate text.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L1015)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L1017)
 
 <a id="Vercel_AI_EvaluateOptions_EvaluationModel_"></a>
 <a id="Vercel_AI_EvaluateOptions_EvaluationModel"></a>
@@ -64,7 +64,7 @@ Deprecated name of [RubricModel](#Vercel_AI_EvaluateOptions_RubricModel). Settin
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L995)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L997)
 
 <a id="Vercel_AI_EvaluateOptions_Model_"></a>
 <a id="Vercel_AI_EvaluateOptions_Model"></a>
@@ -81,7 +81,7 @@ Language model used when [RubricModel](#Vercel_AI_EvaluateOptions_RubricModel) i
 
 **Value:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L1006)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L1008)
 
 <a id="Vercel_AI_EvaluateOptions_ModelId_"></a>
 <a id="Vercel_AI_EvaluateOptions_ModelId"></a>
@@ -98,7 +98,7 @@ Gateway model id used when no model instance is set.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L1009)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L1011)
 
 <a id="Vercel_AI_EvaluateOptions_Rubric_"></a>
 <a id="Vercel_AI_EvaluateOptions_Rubric"></a>
@@ -115,7 +115,7 @@ Rubric.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L1012)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L1014)
 
 <a id="Vercel_AI_EvaluateOptions_RubricModel_"></a>
 <a id="Vercel_AI_EvaluateOptions_RubricModel"></a>
@@ -132,4 +132,4 @@ Dedicated rubric model.
 
 **Value:** [IRubricModel](/api/Vercel.AI.Provider/IRubricModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L992)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AiClient.cs#L994)

@@ -23,7 +23,7 @@ A step started. It comes before the parts of that step.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [TextStreamPart](/api/Vercel.AI/TextStreamPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2607)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2642)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates a start-step part.
 | `warnings` | [IReadOnlyList&lt;CallWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 | `request` | [LanguageModelRequestMetadata](/api/Vercel.AI/LanguageModelRequestMetadata/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2610)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2645)
 
 ## Properties
 
@@ -62,11 +62,11 @@ public LanguageModelRequestMetadata Request { get; }
 ```
 
 
-Request metadata of this step. Body and messages are set only when [Include](/api/Vercel.AI/StreamTextOptions/#Vercel_AI_StreamTextOptions_Include) asks for them.
+Request metadata of this step. Body and messages are set only when [Include](/api/Vercel.AI/GenerateTextOptions/#Vercel_AI_GenerateTextOptions_Include) asks for them.
 
 **Value:** [LanguageModelRequestMetadata](/api/Vercel.AI/LanguageModelRequestMetadata/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2621)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2656)
 
 <a id="Vercel_AI_StartStepPart_Warnings_"></a>
 <a id="Vercel_AI_StartStepPart_Warnings"></a>
@@ -83,4 +83,4 @@ Warnings from the model call of this step.
 
 **Value:** [IReadOnlyList&lt;CallWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2624)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2659)

@@ -30,4 +30,4 @@ The transformation must maintain the stream structure for `StreamTextAsync` to w
 
 **Returns:** [Func&lt;IAsyncEnumerable&lt;TextStreamPart&gt;, CancellationToken, IAsyncEnumerable&lt;TextStreamPart&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2153)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2162)

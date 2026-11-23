@@ -23,7 +23,7 @@ A warning tied to a request.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L631)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L647)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates a warning.
 | `requestId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `warning` | [OperationWarning](/api/Vercel.AI.Operations/OperationWarning/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L634)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L650)
 
 ## Properties
 
@@ -66,7 +66,7 @@ Request id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L641)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L657)
 
 <a id="Vercel_AI_Operations_BatchRequestWarning_Warning_"></a>
 <a id="Vercel_AI_Operations_BatchRequestWarning_Warning"></a>
@@ -83,4 +83,4 @@ Warning.
 
 **Value:** [OperationWarning](/api/Vercel.AI.Operations/OperationWarning/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L644)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L660)

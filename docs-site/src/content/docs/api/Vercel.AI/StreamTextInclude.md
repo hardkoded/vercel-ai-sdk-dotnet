@@ -23,7 +23,7 @@ What `streamText` keeps of the request and the provider stream. Maps to `StreamT
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2585)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2620)
 
 ## Properties
 
@@ -43,7 +43,7 @@ Maps to `rawChunks`. The default is &lt;a href="https://learn.microsoft.com/dotn
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2603)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2638)
 
 <a id="Vercel_AI_StreamTextInclude_RequestBody_"></a>
 <a id="Vercel_AI_StreamTextInclude_RequestBody"></a>
@@ -56,12 +56,12 @@ public bool RequestBody { get; init; }
 ```
 
 
-Whether to retain the request body in the `start-step` part. The request body can be large when sending images or files.
+Whether to retain the request body in step results. The request body can be large when sending images or files.
 Maps to `requestBody`. The default is &lt;a href="https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/bool"&gt;false&lt;/a&gt;.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2591)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2626)
 
 <a id="Vercel_AI_StreamTextInclude_RequestMessages_"></a>
 <a id="Vercel_AI_StreamTextInclude_RequestMessages"></a>
@@ -74,9 +74,9 @@ public bool RequestMessages { get; init; }
 ```
 
 
-Whether to retain the request messages in the `start-step` part. The request messages can be large when sending images or files.
+Whether to retain the request messages in step results. The request messages can be large when sending images or files.
 Maps to `requestMessages`. The default is &lt;a href="https://learn.microsoft.com/dotnet/csharp/language-reference/builtin-types/bool"&gt;false&lt;/a&gt;.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2597)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2632)
