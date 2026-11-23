@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Diagnostics;
+using Vercel.AI.Provider;
 using static Vercel.AI.Tests.Upstream.OpenTelemetry.OpenTelemetry.OpenTelemetrySupport;
 using OtelIntegration = Vercel.AI.OpenTelemetry.OpenTelemetry;
 using OtelOptions = Vercel.AI.OpenTelemetry.OpenTelemetryOptions;
@@ -16,7 +17,7 @@ public sealed class OnStepErrorTests
     [UpstreamTest(
         "packages/otel/src/open-telemetry.test.ts::OpenTelemetry > onStepError::records error on step and chat spans and keeps the root span open for onEnd",
         Coverage = UpstreamCoverage.Partial,
-        Note = "The final onEnd that closes the root span is not asserted: its end event needs the generateText output messages, which the integration does not format yet."
+        Note = "The gen_ai.output.messages of the root span are not asserted: the integration does not format output messages yet (#1760)."
     )]
     public async Task Records_error_on_step_and_chat_spans_and_keeps_the_root_span_open()
     {
@@ -40,5 +41,34 @@ public sealed class OnStepErrorTests
             ],
             Summarize(tracer)
         );
+
+        var step = new StepResult(
+            "Hello world",
+            null,
+            [],
+            [],
+            FinishReason.Stop,
+            LanguageModelUsage.Empty,
+            []
+        )
+        {
+            CallId = CallId,
+        };
+        await integration.OnEnd!(
+            new GenerateTextResult(
+                "Hello world",
+                null,
+                [step],
+                FinishReason.Stop,
+                LanguageModelUsage.Empty,
+                null,
+                []
+            ),
+            default
+        );
+
+        var root = tracer.Spans[0];
+        Assert.True(root.Ended);
+        Assert.Equal(ActivityStatusCode.Unset, root.Activity.Status);
     }
 }
