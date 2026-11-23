@@ -483,16 +483,13 @@ public sealed class CreateTelemetryDispatcherTests
 
         // Every object event carries the telemetry settings and the SDK version, and hides what the call does not record.
         Assert.Equal(4, received.Count);
-        Assert.All(
-            received,
-            e =>
-            {
-                Assert.Equal("object-function", e.FunctionId);
-                Assert.True(e.RecordInputs);
-                Assert.False(e.RecordOutputs);
-                Assert.False(string.IsNullOrEmpty(e.AiVersion));
-            }
-        );
+        Assert.All(received, e =>
+        {
+            Assert.Equal("object-function", e.FunctionId);
+            Assert.True(e.RecordInputs);
+            Assert.False(e.RecordOutputs);
+            Assert.False(string.IsNullOrEmpty(e.AiVersion));
+        });
         Assert.Equal("", Assert.IsType<GenerateObjectStepEndEvent>(received[2]).ObjectText);
         Assert.Null(Assert.IsType<GenerateObjectStepEndEvent>(received[2]).ProviderMetadata);
         generateOptions.Telemetry = new TelemetryOptions { Integrations = [integration] };

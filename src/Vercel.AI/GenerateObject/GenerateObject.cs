@@ -5,9 +5,9 @@
 using System.Text.Json;
 using Vercel.AI.GenerateText;
 using Vercel.AI.Operations;
-using Vercel.AI.ProviderUtils;
 using Vercel.AI.Prompt;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 using Vercel.AI.Util;
 
 namespace Vercel.AI.GenerateObject;
@@ -621,10 +621,9 @@ public sealed class GenerateObjectEndEvent<T>
                     )
                 : this;
         var copy = source.CloneWithTelemetry<GenerateObjectEndEvent<T>>(telemetry);
-        copy.Error =
-            source.Error is null
-                ? null
-                : RedactTelemetryCredentialsHelper.RedactTelemetryCredentials(source.Error);
+        copy.Error = source.Error is null
+            ? null
+            : RedactTelemetryCredentialsHelper.RedactTelemetryCredentials(source.Error);
         copy.Request = RedactRequest(source.Request);
         copy.Response = RedactResponse(source.Response);
         return copy;

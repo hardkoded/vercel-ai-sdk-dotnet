@@ -356,9 +356,7 @@ internal sealed class TelemetryDispatcher
                         .WithTelemetry(telemetry)
                     : e switch
                     {
-                        GenerateObjectStartEvent objectStart => objectStart.AugmentEvent(
-                            telemetry
-                        ),
+                        GenerateObjectStartEvent objectStart => objectStart.AugmentEvent(telemetry),
                         EmbedStartEvent embed => FilterTelemetryEventHelper.FilterTelemetryEvent(
                             embed,
                             telemetry
