@@ -520,7 +520,7 @@ public sealed class StepResult
 
     /// <summary>
     /// Additional request information for this step. <see cref="LanguageModelRequestMetadata.Body"/> and <see cref="LanguageModelRequestMetadata.Messages"/>
-    /// are set only when <see cref="StreamTextOptions.Include"/> asks for them. Maps to <c>request</c>.
+    /// are set only when <see cref="GenerateTextOptions.Include"/> asks for them. Maps to <c>request</c>.
     /// </summary>
     public LanguageModelRequestMetadata Request { get; private set; }
 
@@ -1449,6 +1449,15 @@ public class GenerateTextOptions
     /// <summary>Deprecated alias of <see cref="Telemetry"/>. Maps to <c>experimental_telemetry</c>.</summary>
     public TelemetryOptions? ExperimentalTelemetry { get; set; }
 
+    /// <summary>
+    /// What to retain in the step results. By default request bodies, request messages and response bodies are excluded. Maps to <c>include</c>.
+    /// </summary>
+    public GenerateTextInclude? Include { get; set; }
+
+    /// <summary>Deprecated alias of <see cref="Include"/>. Maps to <c>experimental_include</c>.</summary>
+    [Obsolete("Use Include instead.")]
+    public GenerateTextInclude? ExperimentalInclude { get; set; }
+
     /// <summary>The clock for step timing in milliseconds. Tests replace it. Maps to <c>_internal.now</c>.</summary>
     internal Func<double>? NowMs { get; set; }
 
@@ -2104,8 +2113,12 @@ public sealed class StreamTextOptions : GenerateTextOptions
     /// </summary>
     public IReadOnlyList<StreamTextTransform>? ExperimentalTransform { get; set; }
 
-    /// <summary>What to retain of the request in the <see cref="StartStepPart"/>. Maps to <c>include</c>.</summary>
-    public StreamTextInclude? Include { get; set; }
+    /// <summary>What to retain of the request in the <see cref="StartStepPart"/> and whether to forward raw chunks. Hides <see cref="GenerateTextOptions.Include"/>, which has the type of <c>generateText</c>. Maps to <c>include</c>.</summary>
+    public new StreamTextInclude? Include { get; set; }
+
+    /// <summary>Deprecated alias of <see cref="Include"/>. Hides <see cref="GenerateTextOptions.ExperimentalInclude"/>. Maps to <c>experimental_include</c>.</summary>
+    [Obsolete("Use Include instead.")]
+    public new StreamTextInclude? ExperimentalInclude { get; set; }
 
     /// <summary>
     /// Aborts the call and carries the reason. Use it instead of the <see cref="CancellationToken"/> when the reason matters.
@@ -2357,7 +2370,7 @@ public class GenerateTextResult : IOperationEndEvent
     /// <summary>Provider metadata from the last step.</summary>
     public JsonElement? ProviderMetadata { get; }
 
-    /// <summary>Additional request information of the last step. Maps to <c>request</c>. <see cref="GenerateTextOptions"/> has no include option yet, so <c>Body</c> and <c>Messages</c> are <see langword="null"/>.</summary>
+    /// <summary>Additional request information of the last step. Maps to <c>request</c>. <c>Body</c> and <c>Messages</c> are set only when <see cref="GenerateTextOptions.Include"/> asks for them.</summary>
     public LanguageModelRequestMetadata Request => FinalStep.Request;
 
     /// <summary>Additional response information of the last step. Maps to <c>response</c>.</summary>
@@ -2520,17 +2533,39 @@ public sealed class StepResponse : LanguageModelResponseMetadata
     public Func<JsonElement, JsonElement>? RedactBody { get; init; }
 }
 
-/// <summary>What <c>streamText</c> keeps of the request and the provider stream. Maps to <c>StreamTextInclude</c>.</summary>
-public sealed class StreamTextInclude
+/// <summary>What <c>generateText</c> keeps of each step. Large payloads, such as base64-encoded images, can cause memory issues. Maps to <c>GenerateTextInclude</c>.</summary>
+public class GenerateTextInclude
 {
     /// <summary>
-    /// Whether to retain the request body in the <c>start-step</c> part. The request body can be large when sending images or files.
+    /// Whether to retain the request body in step results. The request body can be large when sending images or files.
     /// Maps to <c>requestBody</c>. The default is <see langword="false"/>.
     /// </summary>
     public bool RequestBody { get; init; }
 
     /// <summary>
-    /// Whether to retain the request messages in the <c>start-step</c> part. The request messages can be large when sending images or files.
+    /// Whether to retain the request messages in step results. The request messages can be large when sending images or files.
+    /// Maps to <c>requestMessages</c>. The default is <see langword="false"/>.
+    /// </summary>
+    public bool RequestMessages { get; init; }
+
+    /// <summary>
+    /// Whether to retain the response body in step results. The response body can be large.
+    /// Maps to <c>responseBody</c>. The default is <see langword="false"/>.
+    /// </summary>
+    public bool ResponseBody { get; init; }
+}
+
+/// <summary>What <c>streamText</c> keeps of the request and the provider stream. Maps to <c>StreamTextInclude</c>.</summary>
+public sealed class StreamTextInclude
+{
+    /// <summary>
+    /// Whether to retain the request body in step results. The request body can be large when sending images or files.
+    /// Maps to <c>requestBody</c>. The default is <see langword="false"/>.
+    /// </summary>
+    public bool RequestBody { get; init; }
+
+    /// <summary>
+    /// Whether to retain the request messages in step results. The request messages can be large when sending images or files.
     /// Maps to <c>requestMessages</c>. The default is <see langword="false"/>.
     /// </summary>
     public bool RequestMessages { get; init; }
@@ -2556,7 +2591,7 @@ public sealed class StartStepPart : TextStreamPart
         Request = request ?? LanguageModelRequestMetadata.Empty;
     }
 
-    /// <summary>Request metadata of this step. Body and messages are set only when <see cref="StreamTextOptions.Include"/> asks for them.</summary>
+    /// <summary>Request metadata of this step. Body and messages are set only when <see cref="GenerateTextOptions.Include"/> asks for them.</summary>
     public LanguageModelRequestMetadata Request { get; }
 
     /// <summary>Warnings from the model call of this step.</summary>

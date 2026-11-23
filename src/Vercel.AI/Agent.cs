@@ -288,6 +288,15 @@ public sealed class Agent : IAgent
 #pragma warning restore CS0618
                 Telemetry = prepared.Telemetry,
                 ExperimentalTelemetry = prepared.ExperimentalTelemetry,
+#pragma warning disable CS0618 // ExperimentalInclude is the deprecated alias of Include
+                Include = (prepared.Include ?? prepared.ExperimentalInclude) is { } include
+                    ? new StreamTextInclude
+                    {
+                        RequestBody = include.RequestBody,
+                        RequestMessages = include.RequestMessages,
+                    }
+                    : null,
+#pragma warning restore CS0618
 #pragma warning disable CS0618 // OnFinish is the deprecated alias of OnEnd
                 OnFinish = prepared.OnFinish,
 #pragma warning restore CS0618
