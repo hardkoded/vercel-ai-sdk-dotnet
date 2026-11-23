@@ -14,19 +14,24 @@ Public types in the `Vercel.AI.AssemblyAI` namespace.
 
 | Type | Summary |
 | --- | --- |
+| [AssemblyAICustomSpelling](/api/Vercel.AI.AssemblyAI/AssemblyAICustomSpelling/) | One custom spelling rule. Maps to an entry of customSpelling. |
 | [AssemblyAIError](/api/Vercel.AI.AssemblyAI/AssemblyAIError/) | Parses AssemblyAI error JSON. |
 | [AssemblyAIErrorData](/api/Vercel.AI.AssemblyAI/AssemblyAIErrorData/) | Parsed AssemblyAI error. AssemblyAI documents a flat { "error": "Invalid API key" } body for 4xx and 5xx responses. The nested { "error": { "message": "...", "code": 429 } } body is still read. |
 | [AssemblyAIErrorParseResult](/api/Vercel.AI.AssemblyAI/AssemblyAIErrorParseResult/) | Result of parsing an AssemblyAI error body. |
 | [AssemblyAIFailedResponseHandler](/api/Vercel.AI.AssemblyAI/AssemblyAIFailedResponseHandler/) | Creates .NET API exceptions from AssemblyAI failed JSON responses. |
+| [AssemblyAILanguageDetectionOptions](/api/Vercel.AI.AssemblyAI/AssemblyAILanguageDetectionOptions/) | Options for automatic language detection. Maps to languageDetectionOptions. |
 | [AssemblyAIOptions](/api/Vercel.AI.AssemblyAI/AssemblyAIOptions/) | AssemblyAI settings. |
 | [AssemblyAIProvider](/api/Vercel.AI.AssemblyAI/AssemblyAIProvider/) | AssemblyAI provider. |
 | [AssemblyAIProvider.AssemblyAISpeechModel](/api/Vercel.AI.AssemblyAI/AssemblyAIProvider.AssemblyAISpeechModel/) | AssemblyAI text-to-speech model. Requests are buffered, not streamed. |
 | [AssemblyAIProvider.AssemblyAITranscriptionModel](/api/Vercel.AI.AssemblyAI/AssemblyAIProvider.AssemblyAITranscriptionModel/) | Uploads audio, submits a transcript, and polls until it completes. |
+| [AssemblyAIRedactPiiAudioOptions](/api/Vercel.AI.AssemblyAI/AssemblyAIRedactPiiAudioOptions/) | Options for PII-redacted audio files. Maps to redactPiiAudioOptions. |
 | [AssemblyAIServiceCollectionExtensions](/api/Vercel.AI.AssemblyAI/AssemblyAIServiceCollectionExtensions/) | Registers AssemblyAI. |
+| [AssemblyAISpeakerOptions](/api/Vercel.AI.AssemblyAI/AssemblyAISpeakerOptions/) | Options for speaker diarization. Maps to speakerOptions. |
 | [AssemblyAISpeechModelOptions](/api/Vercel.AI.AssemblyAI/AssemblyAISpeechModelOptions/) | Provider options for AssemblyAI speech generation, read from providerOptions.assemblyai. Maps to AssemblyAISpeechModelOptions of assemblyai-speech-model-options.ts. |
 | [AssemblyAISpeechRequest](/api/Vercel.AI.AssemblyAI/AssemblyAISpeechRequest/) | One AssemblyAI text-to-speech call. |
 | [AssemblyAISpeechResponse](/api/Vercel.AI.AssemblyAI/AssemblyAISpeechResponse/) | Metadata returned with synthesized AssemblyAI speech. |
 | [AssemblyAISpeechResult](/api/Vercel.AI.AssemblyAI/AssemblyAISpeechResult/) | Synthesized AssemblyAI audio. |
+| [AssemblyAITranscriptionModelOptions](/api/Vercel.AI.AssemblyAI/AssemblyAITranscriptionModelOptions/) | Provider options for AssemblyAI transcription, read from providerOptions.assemblyai. Maps to AssemblyAITranscriptionModelOptions of assemblyai-transcription-model-options.ts. |
 | [AssemblyAITranscriptionRequest](/api/Vercel.AI.AssemblyAI/AssemblyAITranscriptionRequest/) | Provider options and headers for one AssemblyAI transcription. |
 | [AssemblyAITranscriptionResponse](/api/Vercel.AI.AssemblyAI/AssemblyAITranscriptionResponse/) | Metadata returned with a transcription. |
 | [AssemblyAITranscriptionResult](/api/Vercel.AI.AssemblyAI/AssemblyAITranscriptionResult/) | AssemblyAI transcription, including word segments and audio-intelligence metadata. |
