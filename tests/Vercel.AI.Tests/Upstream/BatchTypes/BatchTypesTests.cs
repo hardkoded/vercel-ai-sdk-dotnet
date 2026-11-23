@@ -266,12 +266,32 @@ public sealed class BatchTypesTests
         var imageKeys = image.Options.EnumerateObject().Select(p => p.Name).ToHashSet();
         string[] allowedText =
         [
-            "prompt", "maxOutputTokens", "temperature", "stopSequences", "topP", "topK",
-            "presencePenalty", "frequencyPenalty", "seed", "reasoning", "responseFormat",
-            "toolChoice", "tools", "providerOptions",
+            "prompt",
+            "maxOutputTokens",
+            "temperature",
+            "stopSequences",
+            "topP",
+            "topK",
+            "presencePenalty",
+            "frequencyPenalty",
+            "seed",
+            "reasoning",
+            "responseFormat",
+            "toolChoice",
+            "tools",
+            "providerOptions",
         ];
         string[] allowedImage =
-            ["prompt", "n", "size", "aspectRatio", "seed", "files", "mask", "providerOptions"];
+        [
+            "prompt",
+            "n",
+            "size",
+            "aspectRatio",
+            "seed",
+            "files",
+            "mask",
+            "providerOptions",
+        ];
         Assert.True(textKeys.IsSubsetOf(allowedText));
         Assert.Contains("responseFormat", textKeys);
         Assert.DoesNotContain("includeRawChunks", textKeys);

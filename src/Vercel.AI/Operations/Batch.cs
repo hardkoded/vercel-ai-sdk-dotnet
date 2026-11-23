@@ -1375,7 +1375,11 @@ public static class Batch
         switch (part.Type)
         {
             case "text":
-                return new GeneratedText(part.Text ?? string.Empty, part.Citations, part.ProviderMetadata);
+                return new GeneratedText(
+                    part.Text ?? string.Empty,
+                    part.Citations,
+                    part.ProviderMetadata
+                );
             case "reasoning":
                 return new GeneratedReasoning(part.Text ?? string.Empty, part.ProviderMetadata);
             case "tool-call":
