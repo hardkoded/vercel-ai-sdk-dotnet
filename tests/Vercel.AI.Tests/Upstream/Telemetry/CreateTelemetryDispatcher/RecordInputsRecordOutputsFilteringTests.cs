@@ -275,7 +275,8 @@ public sealed class RecordInputsRecordOutputsFilteringTests
     [Fact]
     [UpstreamTest(
         Prefix + "treats text as input for speech and as output elsewhere",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "15bfd6b262f688cfb8281dbdb32c7dffe082337e"
     )]
     public async Task Treats_text_as_input_for_speech_and_as_output_elsewhere()
     {
