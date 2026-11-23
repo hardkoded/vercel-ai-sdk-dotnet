@@ -56,7 +56,7 @@ public sealed class FalVideoModel : IVideoModel, IVideoCaller
     public bool CanWebhook => true;
 
     private string NormalizedModelId =>
-        FalModelCatalog.GetFalVideoModelEntry(ModelId).Video.NormalizedModelId;
+        FalModelCatalog.GetFalVideoModelEntry(ModelId).RequestConfig!.Video!.NormalizedModelId;
 
     /// <inheritdoc />
     public Task<int?> ResolveMaxVideosPerCallAsync(CancellationToken cancellationToken)
