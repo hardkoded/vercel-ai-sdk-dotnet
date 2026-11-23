@@ -121,12 +121,69 @@ public static class McpClient
         }
 
         using var init = JsonDocument.Parse(
-            "{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{},\"clientInfo\":{\"name\":\"Vercel.AI.Mcp\",\"version\":\"0.1.0\"}}"
+            "{\"protocolVersion\":\""
+                + LatestLegacyProtocolVersion
+                + "\",\"capabilities\":{},\"clientInfo\":{\"name\":\"Vercel.AI.Mcp\",\"version\":\"0.1.0\"}}"
         );
-        await transport
+        var initialized = await transport
             .CallAsync("initialize", init.RootElement, cancellationToken)
             .ConfigureAwait(false);
+        ApplyInitializeResult(transport, initialized);
         return await ListToolsAsync(transport, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static void ApplyInitializeResult(IMcpTransport transport, JsonElement result)
+    {
+        if (
+            result.ValueKind != JsonValueKind.Object
+            || !result.TryGetProperty("protocolVersion", out var versionElement)
+            || versionElement.ValueKind != JsonValueKind.String
+        )
+        {
+            throw new MCPClientError("Server sent invalid initialize result");
+        }
+
+        var version = versionElement.GetString()!;
+        if (!SupportedProtocolVersions.Contains(version))
+        {
+            throw new MCPClientError("Server's protocol version is not supported: " + version);
+        }
+
+        if (transport is IMcpProtocolVersionDiscoveryTransport versioned)
+        {
+            versioned.ProtocolVersion = version;
+        }
+    }
+
+    private static async Task<JsonElement> CallBoundedAsync(
+        IMcpTransport transport,
+        string method,
+        JsonElement parameters,
+        int timeoutMilliseconds,
+        CancellationToken cancellationToken
+    )
+    {
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var call = transport.CallAsync(method, parameters, timeout.Token);
+        using var delayCancellation = new CancellationTokenSource();
+        var delay = Task.Delay(timeoutMilliseconds, delayCancellation.Token);
+        var finished = await Task.WhenAny(call, delay).ConfigureAwait(false);
+        if (finished == call)
+        {
+            delayCancellation.Cancel();
+            return await call.ConfigureAwait(false);
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+        timeout.Cancel();
+        // The abandoned call may fail after the timeout. Observe it so it does not go unobserved.
+        _ = call.ContinueWith(
+            static t => _ = t.Exception,
+            CancellationToken.None,
+            TaskContinuationOptions.OnlyOnFaulted,
+            TaskScheduler.Default
+        );
+        throw new MCPClientError("Request timed out after " + timeoutMilliseconds + "ms");
     }
 
     private static async Task<bool> TryProtocolDiscoveryAsync(
@@ -135,34 +192,21 @@ public static class McpClient
     )
     {
         transport.ProtocolVersion = LatestProtocolVersion;
-        using var timeout = transport.WaitsForProtocolVersionDiscovery
-            ? null
-            : CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeout?.CancelAfter(DefaultProtocolDiscoveryTimeoutMilliseconds);
         try
         {
             using var empty = JsonDocument.Parse("{}");
-            JsonElement result;
-            try
-            {
-                result = await transport
-                    .CallAsync(
+            var result = transport.WaitsForProtocolVersionDiscovery
+                ? await transport
+                    .CallAsync("server/discover", empty.RootElement, cancellationToken)
+                    .ConfigureAwait(false)
+                : await CallBoundedAsync(
+                        transport,
                         "server/discover",
-                        empty.RootElement,
-                        timeout?.Token ?? cancellationToken
+                        empty.RootElement.Clone(),
+                        DefaultProtocolDiscoveryTimeoutMilliseconds,
+                        cancellationToken
                     )
                     .ConfigureAwait(false);
-            }
-            catch (OperationCanceledException)
-                when (timeout is { IsCancellationRequested: true }
-                    && !cancellationToken.IsCancellationRequested
-                )
-            {
-                throw new MCPClientError(
-                    "Request timed out after " + DefaultProtocolDiscoveryTimeoutMilliseconds + "ms"
-                );
-            }
-
             var supported =
                 result.TryGetProperty("supportedVersions", out var versions)
                 && versions.ValueKind == JsonValueKind.Array
