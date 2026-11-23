@@ -7,7 +7,7 @@ using Vercel.AI.Provider;
 namespace Vercel.AI.OpenTelemetry;
 
 /// <summary>GenAI semantic-convention names shared by spans and the UI message protocol.</summary>
-public static class GenAiConventions
+public static partial class GenAiConventions
 {
     private static readonly (string Prefix, string Name)[] ProviderPrefixes =
     {
