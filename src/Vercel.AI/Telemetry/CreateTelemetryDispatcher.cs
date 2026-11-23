@@ -316,6 +316,8 @@ internal sealed class TelemetryDispatcher
                     ),
                     TranscriptionEndEvent transcription =>
                         FilterTelemetryEventHelper.FilterTelemetryEvent(transcription, telemetry),
+                    GenerateSpeechEndEvent speech =>
+                        FilterTelemetryEventHelper.FilterTelemetryEvent(speech, telemetry),
                     IRecordingFilterableEndEvent filterable
                         when telemetry?.RecordInputs == false
                             || telemetry?.RecordOutputs == false => filterable.FilterTelemetryEvent(
@@ -362,6 +364,8 @@ internal sealed class TelemetryDispatcher
                                 transcription,
                                 telemetry
                             ),
+                        GenerateSpeechStartEvent speech =>
+                            FilterTelemetryEventHelper.FilterTelemetryEvent(speech, telemetry),
                         _ => e,
                     }
             ),

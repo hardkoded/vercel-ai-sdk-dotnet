@@ -23,7 +23,7 @@ Lists MCP tools and adapts them to [Tool](/api/Vercel.AI/Tool/).
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L53)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L59)
 
 ## Fields
 
@@ -41,7 +41,7 @@ Latest legacy MCP protocol version. Maps to `LATEST_LEGACY_PROTOCOL_VERSION`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L59)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L65)
 
 <a id="Vercel_AI_Mcp_McpClient_LatestProtocolVersion"></a>
 
@@ -57,7 +57,7 @@ Latest MCP protocol version. Maps to `LATEST_PROTOCOL_VERSION`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L56)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L62)
 
 ## Methods
 
@@ -83,7 +83,7 @@ Calls `initialize`, then `tools/list`.
 
 **Returns:** [Task&lt;IReadOnlyList&lt;Tool&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L71)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L79)
 
 <a id="Vercel_AI_Mcp_McpClient_ConnectAsync_Vercel_AI_Mcp_IMcpTransport_Vercel_AI_Mcp_McpClientOptions_System_Threading_CancellationToken_"></a>
 
@@ -108,7 +108,7 @@ otherwise calls `initialize`. Then calls `tools/list`.
 
 **Returns:** [Task&lt;IReadOnlyList&lt;Tool&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L80)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L88)
 
 <a id="Vercel_AI_Mcp_McpClient_ListToolsAsync_"></a>
 <a id="Vercel_AI_Mcp_McpClient_ListToolsAsync_Vercel_AI_Mcp_IMcpTransport_System_Threading_CancellationToken_"></a>
@@ -132,4 +132,4 @@ Maps `tools/list` onto SDK tools. Execution calls `tools/call`.
 
 **Returns:** [Task&lt;IReadOnlyList&lt;Tool&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L208)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L244)

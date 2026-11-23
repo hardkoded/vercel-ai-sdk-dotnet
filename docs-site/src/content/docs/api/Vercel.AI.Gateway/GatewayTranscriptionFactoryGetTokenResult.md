@@ -23,7 +23,7 @@ The result of minting a streaming transcription client secret. Maps to `GatewayT
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L828)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L832)
 
 ## Constructors
 
@@ -48,7 +48,7 @@ Creates a result.
 | `url` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `expiresAt` | [long?](https://learn.microsoft.com/dotnet/api/system.int64) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L831)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L835)
 
 ## Properties
 
@@ -67,7 +67,7 @@ Token expiry, epoch seconds.
 
 **Value:** [long?](https://learn.microsoft.com/dotnet/api/system.int64)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L849)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L853)
 
 <a id="Vercel_AI_Gateway_GatewayTranscriptionFactoryGetTokenResult_Token_"></a>
 <a id="Vercel_AI_Gateway_GatewayTranscriptionFactoryGetTokenResult_Token"></a>
@@ -84,7 +84,7 @@ The minted `vcst_` client secret.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L843)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L847)
 
 <a id="Vercel_AI_Gateway_GatewayTranscriptionFactoryGetTokenResult_Url_"></a>
 <a id="Vercel_AI_Gateway_GatewayTranscriptionFactoryGetTokenResult_Url"></a>
@@ -101,4 +101,4 @@ WebSocket URL of the streaming transcription surface for this model.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L846)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gateway/GatewayProvider.cs#L850)

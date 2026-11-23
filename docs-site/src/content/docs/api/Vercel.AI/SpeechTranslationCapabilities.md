@@ -23,7 +23,7 @@ Upstream `ModelCapabilities.speechTranslation`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L320)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L323)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Upstream `sourceTranscript`.
 
 **Value:** [ModelCapability](/api/Vercel.AI/ModelCapability/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L329)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L332)
 
 <a id="Vercel_AI_SpeechTranslationCapabilities_TranslatedAudio_"></a>
 <a id="Vercel_AI_SpeechTranslationCapabilities_TranslatedAudio"></a>
@@ -59,7 +59,7 @@ Upstream `translatedAudio`.
 
 **Value:** [ModelCapability](/api/Vercel.AI/ModelCapability/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L323)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L326)
 
 <a id="Vercel_AI_SpeechTranslationCapabilities_TranslatedText_"></a>
 <a id="Vercel_AI_SpeechTranslationCapabilities_TranslatedText"></a>
@@ -76,4 +76,4 @@ Upstream `translatedText`.
 
 **Value:** [ModelCapability](/api/Vercel.AI/ModelCapability/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L326)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L329)
