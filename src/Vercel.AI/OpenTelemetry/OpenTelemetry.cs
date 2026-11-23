@@ -580,6 +580,11 @@ public sealed class OpenTelemetry : ITelemetry
             parent
         );
 
+        if (rootSpan is null)
+        {
+            return;
+        }
+
         _callStates[e.CallId] = new CallState(e.OperationId, telemetry)
         {
             RootSpan = rootSpan,
@@ -940,6 +945,11 @@ public sealed class OpenTelemetry : ITelemetry
             Activity.Current?.Context ?? default
         );
 
+        if (rootSpan is null)
+        {
+            return;
+        }
+
         _callStates[e.CallId] = new CallState(e.OperationId, telemetry)
         {
             RootSpan = rootSpan,
@@ -1117,6 +1127,11 @@ public sealed class OpenTelemetry : ITelemetry
             ),
             Activity.Current?.Context ?? default
         );
+
+        if (rootSpan is null)
+        {
+            return;
+        }
 
         _callStates[e.CallId] = new CallState(e.OperationId, telemetry)
         {
