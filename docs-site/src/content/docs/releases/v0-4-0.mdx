@@ -1,0 +1,339 @@
+---
+title: "v0.4.0"
+description: "Vercel AI SDK for .NET v0.4.0: Liquid and Parallel decision models, AssemblyAI speech and transcription, xAI image and speech, Azure MAI-Image-2.7, and video models on Fal, Google, Vertex, and Replicate."
+sidebar:
+  label: "v0.4.0"
+  order: 1
+editUrl: "https://github.com/hardkoded/vercel-ai-sdk-dotnet/edit/main/docs-site/src/content/docs/releases/v0-4-0.mdx"
+---
+
+_Released November 23, 2026_
+
+v0.4.0 follows [v0.3.0](https://github.com/hardkoded/vercel-ai-sdk-dotnet/releases/tag/v0.3.0) and brings 169 pull requests. The headline is **new model support**: two new decision providers, new speech, image, video, embedding, extraction, and reranking models on providers that were already in the package, plus Gemini 4 Neon thinking levels.
+
+```bash
+dotnet add package Vercel.AI --version 0.4.0
+```
+
+The Mistral LiveKit adapter is a separate package and targets `net10.0` only:
+
+```bash
+dotnet add package Vercel.AI.Mistral.LiveKit --version 0.4.0
+```
+
+`Vercel.AI` still targets `net10.0` and `netstandard2.0`. NuGet accepted both 0.4.0 packages at 06:49 (America/Buenos_Aires) on 23 November 2026, in [Publish run 45149874796](https://github.com/hardkoded/vercel-ai-sdk-dotnet/actions/runs/45149874796). `Vercel.AI.Mistral.LiveKit` 0.4.0 is on the NuGet index. The `Vercel.AI` index still listed 0.1.0, 0.2.0, and 0.3.0 when these notes were published, so that gallery page may lag.
+
+The full changelog is on the [GitHub release](https://github.com/hardkoded/vercel-ai-sdk-dotnet/releases/tag/v0.4.0). Compare: [v0.3.0...v0.4.0](https://github.com/hardkoded/vercel-ai-sdk-dotnet/compare/v0.3.0...v0.4.0).
+
+## New models at a glance
+
+| Provider | What's new | How to call it |
+| --- | --- | --- |
+| Liquid (new) | Decision models that classify, score, and locate objects in text, images, and audio | `LiquidProvider.Create().DecisionModel("d1.2")` or `"d1.2-ultra"` |
+| Parallel (new) | Web-grounded decisions with live evidence | `ParallelProvider.Default.DecisionModel("fast")` |
+| AssemblyAI | Speech and transcription, plus a model catalog | `Speech("assemblyai-tts-1")`, `Transcription("assemblyai-stt-3-7")` |
+| ElevenLabs | Music, sound effects, and text-to-dialogue on the speech model | `SpeechModel("music_v2_5")`, `"eleven_text_to_sound_v2"`, `"eleven_v3"` / `"eleven_v4"` |
+| xAI | Image, speech, and batch | `ImageModel("grok-imagine-image")`, `SpeechModel()`, `ExperimentalBatch()` |
+| Azure | MAI-Image-2.7 and a transparent background option | `Image("MAI-Image-2.7")` or `"MAI-Image-2.7-Flash"` |
+| Fal, Google, Google Vertex, Replicate | Video models for `GenerateVideo` | `Video("luma-dream-machine")`, `Video("veo-3.1-generate-preview")`, `Video("minimax/video-01")` |
+| Gateway | Extraction, reranking, and Live WebSocket models | `ExtractionModel("scaledown/extract-1")`, `Reranking("cohere/rerank-v3.5")`, `ExperimentalRealtime("openai/gpt-live-1")` |
+| Mistral | Embeddings and a realtime voice agent | `EmbeddingModel("mistral-embed")`, `ExperimentalRealtime` / `RealtimeModel` |
+| QuiverAI | Arrow language models | `LanguageModel("arrow-2")` or `"arrow-2-telos"` |
+| Google | Gemini 4 Neon thinking levels, and batch text plus image | `gemini-4-neon` with `Reasoning` / `thinkingLevel` including `xhigh`; `ExperimentalBatch()` |
+
+Every provider except the LiveKit adapter still ships in the one `Vercel.AI` package. String model ids on `AiClient` continue to go to the [Vercel AI Gateway](/providers/) by default.
+
+## Liquid decision models
+
+[Liquid](https://docs.liquid.ai/lfm/models/decision-models) is a new provider ([#1420](https://github.com/hardkoded/vercel-ai-sdk-dotnet/pull/1420)). It is not a chat provider: `LanguageModel`, `EmbeddingModel`, and `ImageModel` throw. Use `DecisionModel` with `Decide.DecideAsync`. The API key is `LIQUID_API_KEY`, read when a request is made. The default base URL is `https://api.liquid.ai`. The provider id of the decision model is `liquid.decision`. This API is experimental.
+
+Known model ids are `d1.2` and `d1.2-ultra` (`d1.2-ultra` is the more capable model). Other ids are sent unchanged. Both models support boolean, choice, score, and box questions, plus image and audio input. A boolean maps to Liquid's native `noul` type.
+
+```csharp
+using Vercel.AI.Liquid;
+using Vercel.AI.Operations;
+
+var result = await Decide.DecideAsync(
+    new DecideRequest
+    {
+        Model = LiquidProvider.Create().DecisionModel("d1.2"),
+        State =
+            "The production API is returning 500 errors on every request. All customers are affected.",
+        Questions = new Dictionary<string, DecisionQuestion>
+        {
+            ["team"] = new(
+                "choice",
+                "Which team should handle this ticket?",
+                new DecisionChoiceCriteria(
+                    new Dictionary<string, DecisionInput?>
+                    {
+                        ["billing"] = "Charges, invoices, refunds, or payment methods",
+                        ["engineering"] = "Bugs, outages, and technical malfunctions",
+                        ["account"] = "Sign-in, permissions, or plan changes",
+                    }
+                )
+            ),
+            ["outage"] = new("boolean", "Is the customer reporting a service outage?"),
+            ["urgency"] = new(
+                "score",
+                "How urgent is this ticket?",
+                new DecisionScoreCriteria([
+                    "Can wait",
+                    "Handle today",
+                    "Time-sensitive",
+                    "Blocking revenue",
+                ])
+            ),
+        },
+    }
+);
+
+var outage = result.Answers["outage"].Probability; // P(true), 0 to 1
+var team = result.Answers["team"].Choice;
+var urgency = result.Answers["urgency"].Score; // expected zero-based level
+```
+
+Limits before a request is sent: 1 to 128 questions (each with instructions), 2 to 255 choice options, 2 to 10 score levels, at most 8 images and 8 audio clips. Images must be JPEG, PNG, or WebP; audio must be WAV, MP3, FLAC, or OGG. Liquid does not accept remote URLs on the model itself; `Decide.DecideAsync` can download URL files first.
+
+A `box` question locates an object in a picture and needs exactly one image in the state. Edges are fractions of the image (`Top`, `Bottom`, `Left`, `Right`). When Liquid does not find the object (`found` below 0.5), `Decide.DecideAsync` throws `DecisionRefusalError`. See `examples/DecideLiquidBasic`, `DecideLiquidImage`, and `DecideLiquidAudio`.
+
+## Parallel web-grounded decisions
+
+[Parallel](https://parallel.ai) is a new provider ([#1587](https://github.com/hardkoded/vercel-ai-sdk-dotnet/pull/1587)). It has no language, embedding, or image models. `DecisionModel("fast")` retrieves evidence from the live web and answers boolean, choice, and score questions against that shared evidence. Box questions and image input are not supported. The API key is `PARALLEL_API_KEY` (`x-api-key`). The default base URL is `https://api.parallel.ai/v1`. The provider id is `parallel.decision`. Other model ids are accepted and sent through.
+
+```csharp
+using Vercel.AI.Operations;
+using Vercel.AI.Parallel;
+
+var result = await Decide.DecideAsync(
+    new DecideRequest
+    {
+        Model = ParallelProvider.Default.DecisionModel("fast"),
+        State = DecisionState.FromJson(
+            JsonDocument.Parse("""{"company":"Parallel","website":"https://parallel.ai"}""").RootElement
+        ),
+        Questions = new Dictionary<string, DecisionQuestion>
+        {
+            ["hasSearch"] = new("boolean", "Does this company offer a web search API?"),
+        },
+    }
+);
+```
+
+`providerOptions.parallel.includeExcerpts` (default true) includes evidence excerpts in citations. A guide is already in the docs: [Parallel](/parallel/). See `examples/DecideParallelBasic`.
+
+## AssemblyAI speech and transcription
+
+AssemblyAI now has a speech model, a transcription catalog, and typed options ([#1651](https://github.com/hardkoded/vercel-ai-sdk-dotnet/pull/1651), [#1697](https://github.com/hardkoded/vercel-ai-sdk-dotnet/pull/1697)).
+
+- Speech: `assemblyai-tts-1` posts a buffered `POST /v1/speech` to `https://tts.us.assemblyai.com`. Output formats are `mp3` (default), `wav`, `pcm`, `mulaw`, or `alaw`. Voices are sent as `voice_id`. Languages are `de`, `en`, `es`, `fr`, `it`, `pt`, or the full name; `auto` and other values are dropped with an `unsupported` warning. Streaming speech and the EU endpoints are not supported.
+- Transcription: `assemblyai-stt-3-7` is the flagship. `universal-2` is kept for languages that `assemblyai-stt-3-7` does not support. `universal-3-5-pro` still works but adds a `deprecated` warning that points to `assemblyai-stt-3-7`. `assemblyai-stt-3-7` accepts `prompt`, `keytermsPrompt`, `temperature`, and `removeAudioTags`.
+
+```csharp
+using Vercel.AI.AssemblyAI;
+using Vercel.AI.Provider;
+
+var speech = AssemblyAIProvider.Create().Speech("assemblyai-tts-1");
+var spoken = await speech.GenerateAsync(
+    new AssemblyAISpeechRequest("Hello from AssemblyAI!") { Voice = "aai-kyla" },
+    CancellationToken.None
+);
+
+var transcription = AssemblyAIProvider.Create().Transcription("assemblyai-stt-3-7");
+var result = await transcription.TranscribeAsync(
+    new AudioInput(await File.ReadAllBytesAsync("audio.mp3"), "audio/mpeg", null),
+    new AssemblyAITranscriptionRequest(),
+    CancellationToken.None
+);
+```
+
+See `examples/GenerateSpeechAssemblyAIBasic` and `examples/TranscribeAssemblyAIBasic`.
+
+## ElevenLabs music, sound effects, and dialogue
+
+The existing ElevenLabs speech model now serves music, sound-generation, and text-to-dialogue models through `GenerateAsync` ([#1682](https://github.com/hardkoded/vercel-ai-sdk-dotnet/pull/1682)):
+
+- Music: ids that start with `music_` (for example `music_v2_5`) go to `/v1/music`, or `/v1/music/detailed` with `withTimestamps`.
+- Sound effects: ids that start with `eleven_text_to_sound` (for example `eleven_text_to_sound_v2`) go to `/v1/sound-generation`.
+- Dialogue: ids that start with `eleven_v3` or `eleven_v4` go to `/v1/text-to-dialogue`. `eleven_v4` also sends a plain text call as a single-input dialogue. Set `providerOptions.elevenlabs.inputs` to pass several speakers.
+
+Streaming speech and provider-option schema validation are not ported.
+
+## xAI image, speech, and batch
+
+xAI gains an image model, a speech model, and a batch API ([#1441](https://github.com/hardkoded/vercel-ai-sdk-dotnet/pull/1441), [#1438](https://github.com/hardkoded/vercel-ai-sdk-dotnet/pull/1438)).
+
+Image model ids in the catalog are `grok-imagine-image`, `grok-imagine-image-pro`, and `grok-imagine-image-2.0` (max 3 images per call; file inputs yes, masks no). Use `AspectRatio`, not `Size`. A call with input images posts to `/images/edits`.
+
+```csharp
+using Vercel.AI.Operations;
+using Vercel.AI.Xai;
+
+var xai = XaiProvider.Create();
+var image = await GenerateImage.GenerateImageAsync(
+    new GenerateImageRequest
+    {
+        Model = xai.Image("grok-imagine-image"),
+        Text = "A futuristic cityscape at sunset",
+        AspectRatio = "16:9",
+    }
+);
+```
+
+`SpeechModel()` hits the [xAI Text to Speech API](https://docs.x.ai/developers/model-capabilities/audio/text-to-speech). The endpoint needs no model id, so the parameterless factory uses an empty id. Built-in voices are `eve` (default), `ara`, `rex`, `sal`, and `leo`. Output formats are `mp3` (default), `wav`, `pcm`, `mulaw`, or `alaw`. Speech tags such as `[pause]` or `<whisper>...</whisper>` go in the text.
+
+```csharp
+var spoken = await GenerateSpeech.GenerateSpeechAsync(
+    new GenerateSpeechRequest
+    {
+        Model = xai.SpeechModel(),
+        Text = "Hello from the AI SDK!",
+        Voice = "ara",
+        Language = "en",
+        OutputFormat = "mp3",
+        Speed = 1.1,
+    }
+);
+```
+
+`ExperimentalBatch()` (`xai.batch`) starts text and image batches. Text items go to `/v1/responses`; image items go to `/v1/images/generations` or `/images/edits`. A webhook URL adds an `unsupported` warning.
+
+## Azure MAI-Image-2.7
+
+MAI-Image deployments now include `MAI-Image-2.7` and `MAI-Image-2.7-Flash` ([#1430](https://github.com/hardkoded/vercel-ai-sdk-dotnet/pull/1430), [#1480](https://github.com/hardkoded/vercel-ai-sdk-dotnet/pull/1480)). They use the MAI image API at `{MaiBaseUrl}/images/generations` (default `https://{resource}.services.ai.azure.com/mai/v1`). Set `{ "azure": { "api": "mai" } }` to keep a custom deployment name on that API.
+
+`background` (`transparent` or `opaque`) is MAI-Image-2.7 only. `transparent` returns a PNG with an alpha channel. Each 2.7 output is at most 2048×2048. `autoAspectRatio` and `webGrounding` apply to MAI-Image-2.6 and 2.7.
+
+```csharp
+using System.Text.Json;
+using Vercel.AI.Azure;
+using Vercel.AI.Operations;
+
+var azure = AzureOpenAIProvider.Create(
+    new AzureOpenAIOptions { ResourceName = resourceName, ApiKey = apiKey }
+);
+
+var result = await GenerateImage.GenerateImageAsync(
+    new GenerateImageRequest
+    {
+        Model = azure.Image("MAI-Image-2.7"),
+        Text = "A red apple sticker",
+        ProviderOptions = JsonDocument
+            .Parse("""{ "azure": { "api": "mai", "background": "transparent" } }""")
+            .RootElement.Clone(),
+    }
+);
+```
+
+See `examples/GenerateImageAzureMai27Transparent`.
+
+## Video models on Fal, Google, Vertex, and Replicate
+
+`FalProvider`, `GoogleProvider`, `GoogleVertexProvider`, and `ReplicateProvider` now create video models with `VideoModel(id)` (alias `Video(id)`) ([#1685](https://github.com/hardkoded/vercel-ai-sdk-dotnet/pull/1685)). Pass the model to `GenerateVideo.GenerateVideoAsync`; the helper polls until the video is ready. `Seed` is sent whenever it is set, including `0`.
+
+| Model | Provider id | `MaxVideosPerCall` | Example model id |
+| --- | --- | --- | --- |
+| `FalVideoModel` | `fal.video` | 1 | `luma-dream-machine` (also `luma-ray-2`; a `fal-ai/` or `fal/` prefix is stripped) |
+| `GoogleVideoModel` | `google.generative-ai` | 4 | `veo-3.1-generate-preview` |
+| `GoogleVertexVideoModel` | `google.vertex.video` | 4 | `veo-2.0-generate-001`, `veo-3.0-generate-001` |
+| `ReplicateVideoModel` | `replicate.video` | 1 | `minimax/video-01` |
+
+```csharp
+using Vercel.AI.Google;
+using Vercel.AI.Operations;
+
+var result = await GenerateVideo.GenerateVideoAsync(
+    new GenerateVideoRequest
+    {
+        Model = (IVideoCaller)GoogleProvider.Create().Video("veo-3.1-generate-preview"),
+        Prompt = new VideoPrompt("A yorkie among dandelions at Crissy Field in San Francisco."),
+        AspectRatio = "16:9",
+    }
+);
+
+await File.WriteAllBytesAsync("video.mp4", result.Video.Data);
+```
+
+Fal and Replicate support webhooks. Fal appends the URL as `fal_webhook`. Replicate sends `webhook` with `webhook_events_filter: ["completed"]`.
+
+## Gateway extraction, reranking, and Live models
+
+The Gateway adds three model factories:
+
+- **Extraction** ([#1425](https://github.com/hardkoded/vercel-ai-sdk-dotnet/pull/1425), [#1423](https://github.com/hardkoded/vercel-ai-sdk-dotnet/pull/1423)): `GatewayProvider.ExtractionModel(id)` (alias `Extraction`) posts to `/extraction-model`. OpenAI, Anthropic, Google, `CustomProvider`, and `ProviderRegistry` also expose extraction models.
+
+```csharp
+using Vercel.AI.Gateway;
+using Vercel.AI.Operations;
+
+var extracted = await Extract.ExtractAsync(
+    new ExtractRequest
+    {
+        Model = GatewayProvider.Create().ExtractionModel("scaledown/extract-1"),
+        State = "Invoice INV-2041 from Acme Corp. Contacts: Ana, Bo.",
+        Fields = new Dictionary<string, ExtractionField>
+        {
+            ["invoiceNumber"] = new("text", DecisionInput.From("The invoice number")),
+            ["contacts"] = new("list", DecisionInput.From("Contact names")) { Items = "text" },
+        },
+    }
+);
+```
+
+- **Reranking** ([#1672](https://github.com/hardkoded/vercel-ai-sdk-dotnet/pull/1672)): `Reranking("cohere/rerank-v3.5")` (or `RerankingModel`) posts `{ documents: { type, values }, query, topN, providerOptions }` to `/reranking-model` and works with `Rerank.RerankAsync`.
+
+- **Live models** ([#1657](https://github.com/hardkoded/vercel-ai-sdk-dotnet/pull/1657)): `ExperimentalRealtime("openai/gpt-live-1")` or `"openai/gpt-live-1.1"` returns a `GatewayRealtimeModelLive` (provider id `gateway.live`) over WebSocket at `/live-model`. Other ids, including `google/gemini-3.8-live`, stay on the existing realtime route. Pass `new GatewayRealtimeOptions { Api = GatewayRealtimeApi.Live }` for a Live id the SDK does not know yet. See `examples/GatewayRealtimeLive`.
+
+The Gateway also adds DeepSeek Search and Fetch as provider-defined tools (`gateway.deepseek_search`, `gateway.deepseek_fetch`) that it executes for any model ([#1577](https://github.com/hardkoded/vercel-ai-sdk-dotnet/pull/1577)).
+
+## Mistral embeddings and realtime voice
+
+`MistralProvider.EmbeddingModel(id)` creates a `MistralEmbeddingModel` (provider id `mistral.embedding`) ([#1409](https://github.com/hardkoded/vercel-ai-sdk-dotnet/pull/1409)). At most 32 values per call, no parallel calls. Known ids are `mistral-embed`, `codestral-embed`, `codestral-embed-2505`, and `mistral-embed-2312`. Catalog entries document `mistral-embed` at 1024 dimensions and `codestral-embed` at 1536 (with `outputDimension` supported). `providerOptions.mistral.outputDimension` wins over the `Dimensions` call setting.
+
+```csharp
+using Vercel.AI;
+using Vercel.AI.Gateway;
+using Vercel.AI.Mistral;
+
+var client = new AiClient(GatewayProvider.Create());
+var vector = await client.EmbedAsync(
+    new EmbedOptions
+    {
+        Model = MistralProvider.Create().EmbeddingModel("mistral-embed"),
+        Values = ["Hello from the AI SDK"],
+    }
+);
+```
+
+`ExperimentalRealtime` / `RealtimeModel` is a voice-agent factory ([#1586](https://github.com/hardkoded/vercel-ai-sdk-dotnet/pull/1586), [#1634](https://github.com/hardkoded/vercel-ai-sdk-dotnet/pull/1634)). `CreateSessionAsync` posts to `{base}/audio/sessions` and returns `Id`, `ParticipantToken`, and `ServerUrl` for the browser. There is no WebSocket on the model itself: `BuildUri` and `ConnectAsync` throw. `CreateTransport` returns a `MistralRealtimeTransport` that joins a LiveKit room.
+
+The adapter that speaks LiveKit on `net10.0` is the new `Vercel.AI.Mistral.LiveKit` package ([#1680](https://github.com/hardkoded/vercel-ai-sdk-dotnet/pull/1680)). Mistral also ports realtime transcription over WebSocket ([#1522](https://github.com/hardkoded/vercel-ai-sdk-dotnet/pull/1522)).
+
+## QuiverAI language models
+
+`QuiverAIProvider.LanguageModel(modelId)` creates an Arrow language model for QuiverAI's stateless `POST /v1/responses` endpoint (provider id `quiverai.responses`) ([#1690](https://github.com/hardkoded/vercel-ai-sdk-dotnet/pull/1690)). Known ids are `arrow-2` and `arrow-2-telos`. The image models from v0.3.0 remain.
+
+Reasoning uses `LanguageModelCallOptions.Reasoning` or `providerOptions.quiverai.reasoningEffort` (`low`, `medium`, `high`, `xhigh`). `none` and `minimal` map to `low`; `max` maps to `xhigh`. Hosted tools and structured output are not supported.
+
+## Gemini 4 Neon thinking and Google batch
+
+`gemini-4-neon` gets the same thinking levels as `gemini-4-hydrogen` (and `gemini-4-hydrogen-eap`): `low`, `medium`, `high`, and `xhigh` ([#1481](https://github.com/hardkoded/vercel-ai-sdk-dotnet/pull/1481)). `Reasoning = "xhigh"` sends `xhigh`; `max` maps to `xhigh`; `minimal` maps to `low`. Hydrogen and Neon also accept `providerOptions.google.thinkingConfig.thinkingLevel = "xhigh"`, which wins over `Reasoning`. When `Reasoning` is omitted, the SDK leaves `thinkingLevel` unset and Gemini's API default for these models is `high`.
+
+`GoogleProvider.ExperimentalBatch()` starts **text and image** batch requests ([#1451](https://github.com/hardkoded/vercel-ai-sdk-dotnet/pull/1451), [#1496](https://github.com/hardkoded/vercel-ai-sdk-dotnet/pull/1496)). Every request in a batch must use the same model. Mask-based image edits and multiple images per request throw `UnsupportedFunctionalityException`. Status, cancel, and list are included.
+
+## Other highlights
+
+- `Agent<TCallOptions>` with `callOptionsSchema` and per-call options, also on `CreateAgentUIStream` ([#1412](https://github.com/hardkoded/vercel-ai-sdk-dotnet/pull/1412), [#1433](https://github.com/hardkoded/vercel-ai-sdk-dotnet/pull/1433)).
+- `toolOrder` for `streamLanguageModelCall`, `generateText`, `streamText`, and agents ([#1464](https://github.com/hardkoded/vercel-ai-sdk-dotnet/pull/1464)).
+- Batch structured output in `startBatch` and `getBatchResults` ([#1391](https://github.com/hardkoded/vercel-ai-sdk-dotnet/pull/1391)).
+- Stream text: incremental array parser and an output transform ([#1399](https://github.com/hardkoded/vercel-ai-sdk-dotnet/pull/1399)); tool approvals decided as calls arrive ([#1418](https://github.com/hardkoded/vercel-ai-sdk-dotnet/pull/1418)).
+- OpenTelemetry integration, a telemetry tracing channel (`ai:telemetry`), and extract/decide spans ([#1710](https://github.com/hardkoded/vercel-ai-sdk-dotnet/pull/1710), [#1699](https://github.com/hardkoded/vercel-ai-sdk-dotnet/pull/1699)).
+- Async credential resolution on providers (`Resolvable<string>` API keys) ([#1661](https://github.com/hardkoded/vercel-ai-sdk-dotnet/pull/1661)).
+- MCP: `ConnectAsync` probes `server/discover` over HTTP and explains legacy protocol incompatibility instead of failing opaquely ([#1695](https://github.com/hardkoded/vercel-ai-sdk-dotnet/pull/1695)).
+- Moonshot maps reasoning by model family (Kimi K3, K2.7, and unknown models) ([#1684](https://github.com/hardkoded/vercel-ai-sdk-dotnet/pull/1684)).
+
+## Behavior change
+
+`ToResponseMessages.Convert` now puts approval responses inside the tool message (`ToolModelMessage.ApprovalResponses`), matching upstream, instead of emitting separate `ToolApprovalResponseModelMessage` messages before it ([#1400](https://github.com/hardkoded/vercel-ai-sdk-dotnet/pull/1400)). A denied call always gets its `execution-denied` result in that tool message. If application code inspects `response.messages` and expected standalone approval messages, update it.
+
+`StreamTranslateRequest.OutputAudioFormat` is now `AudioFormat?` instead of `string?`. A plain string still converts implicitly ([#1439](https://github.com/hardkoded/vercel-ai-sdk-dotnet/pull/1439)).

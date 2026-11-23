@@ -69,6 +69,13 @@ export default defineConfig({
                     ],
                 },
                 {
+                    label: "Releases",
+                    items: [
+                        { label: "Overview", slug: "releases" },
+                        { label: "v0.4.0", slug: "releases/v0-4-0" },
+                    ],
+                },
+                {
                     label: "API",
                     collapsed: true,
                     items: apiSidebar,
