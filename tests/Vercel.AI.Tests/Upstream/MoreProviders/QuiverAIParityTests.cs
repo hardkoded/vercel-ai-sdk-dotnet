@@ -247,7 +247,7 @@ public sealed class QuiverAIParityTests
             .ConfigureAwait(false);
         Assert.Contains("Slow down.", error.Message, StringComparison.Ordinal);
         Assert.Equal(429, error.StatusCode);
-        Assert.True(ProviderUtils.ProviderHttp.IsRetryable(error.StatusCode));
+        Assert.True(error.IsRetryable);
         var data = JsonNode.Parse(error.ResponseBody!)!;
         Assert.Equal("rate_limit", data["code"]!.GetValue<string>());
         Assert.Equal("req_1", data["request_id"]!.GetValue<string>());
@@ -271,7 +271,7 @@ public sealed class QuiverAIParityTests
                 Model(handler, "arrow-1").DoGenerateAsync(Call(), CancellationToken.None)
             )
             .ConfigureAwait(false);
-        Assert.False(ProviderUtils.ProviderHttp.IsRetryable(error.StatusCode));
+        Assert.False(error.IsRetryable);
         Assert.Equal(400, error.StatusCode);
         Assert.Contains("Prompt is invalid.", error.Message, StringComparison.Ordinal);
     }
