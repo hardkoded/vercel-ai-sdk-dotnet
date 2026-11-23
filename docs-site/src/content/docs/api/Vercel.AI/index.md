@@ -46,6 +46,7 @@ Client, text generation, streaming, tools, and agents.
 | [FinishPart](/api/Vercel.AI/FinishPart/) | The full stream finished. |
 | [GenerateImageOptions](/api/Vercel.AI/GenerateImageOptions/) | Image generation options. |
 | [GenerateSpeechOptions](/api/Vercel.AI/GenerateSpeechOptions/) | Speech options. |
+| [GenerateTextInclude](/api/Vercel.AI/GenerateTextInclude/) | What generateText keeps of each step. Large payloads, such as base64-encoded images, can cause memory issues. Maps to GenerateTextInclude. |
 | [GenerateTextOptions](/api/Vercel.AI/GenerateTextOptions/) | Options for CancellationToken). Property names follow generateText. |
 | [GenerateTextResult](/api/Vercel.AI/GenerateTextResult/) | Result of generateText. |
 | [GenerateTextResult&lt;TOutput&gt;](/api/Vercel.AI/GenerateTextResult-1/) | Result of generateText whose parsed output has the type of the OutputSpec%601 of the call. Maps to GenerateTextResult<TOOLS, OUTPUT>. |

@@ -24,7 +24,7 @@ so there is no `MaxRetries`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L879)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L895)
 
 ## Properties
 
@@ -43,7 +43,7 @@ Exception thrown when [CancellationToken](#Vercel_AI_Operations_StartBatchOption
 
 **Value:** [Exception](https://learn.microsoft.com/dotnet/api/system.exception)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L907)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L923)
 
 <a id="Vercel_AI_Operations_StartBatchOptions_CancellationToken_"></a>
 <a id="Vercel_AI_Operations_StartBatchOptions_CancellationToken"></a>
@@ -60,7 +60,7 @@ Cancels the call.
 
 **Value:** [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L904)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L920)
 
 <a id="Vercel_AI_Operations_StartBatchOptions_Headers_"></a>
 <a id="Vercel_AI_Operations_StartBatchOptions_Headers"></a>
@@ -77,7 +77,7 @@ Extra HTTP headers.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L910)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L926)
 
 <a id="Vercel_AI_Operations_StartBatchOptions_Output_"></a>
 <a id="Vercel_AI_Operations_StartBatchOptions_Output"></a>
@@ -96,7 +96,7 @@ validate each result.
 
 **Value:** [OutputSpec](/api/Vercel.AI/OutputSpec/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L895)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L911)
 
 <a id="Vercel_AI_Operations_StartBatchOptions_Provider_"></a>
 <a id="Vercel_AI_Operations_StartBatchOptions_Provider"></a>
@@ -113,7 +113,7 @@ Batch API or a provider that exposes one. Null uses [Default](/api/Vercel.AI.Ope
 
 **Value:** `ApiOrProvider&lt;IBatchApi, IBatchProvider&gt;`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L882)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L898)
 
 <a id="Vercel_AI_Operations_StartBatchOptions_ProviderOptions_"></a>
 <a id="Vercel_AI_Operations_StartBatchOptions_ProviderOptions"></a>
@@ -130,7 +130,7 @@ Provider-specific options.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L888)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L904)
 
 <a id="Vercel_AI_Operations_StartBatchOptions_Requests_"></a>
 <a id="Vercel_AI_Operations_StartBatchOptions_Requests"></a>
@@ -147,7 +147,7 @@ Requests to start.
 
 **Value:** [IReadOnlyList&lt;BatchRequest&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L885)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L901)
 
 <a id="Vercel_AI_Operations_StartBatchOptions_TimeoutMs_"></a>
 <a id="Vercel_AI_Operations_StartBatchOptions_TimeoutMs"></a>
@@ -164,7 +164,7 @@ Total timeout in milliseconds.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L901)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L917)
 
 <a id="Vercel_AI_Operations_StartBatchOptions_WebhookUrl_"></a>
 <a id="Vercel_AI_Operations_StartBatchOptions_WebhookUrl"></a>
@@ -181,4 +181,4 @@ URL the provider notifies when the batch reaches a terminal state.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L898)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L914)

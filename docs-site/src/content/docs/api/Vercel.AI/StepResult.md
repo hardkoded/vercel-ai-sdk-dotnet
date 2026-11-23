@@ -336,7 +336,7 @@ public LanguageModelRequestMetadata Request { get; }
 
 
 Additional request information for this step. [Body](/api/Vercel.AI/LanguageModelRequestMetadata/#Vercel_AI_LanguageModelRequestMetadata_Body) and [Messages](/api/Vercel.AI/LanguageModelRequestMetadata/#Vercel_AI_LanguageModelRequestMetadata_Messages)
-are set only when [Include](/api/Vercel.AI/StreamTextOptions/#Vercel_AI_StreamTextOptions_Include) asks for them. Maps to `request`.
+are set only when [Include](/api/Vercel.AI/GenerateTextOptions/#Vercel_AI_GenerateTextOptions_Include) asks for them. Maps to `request`.
 
 **Value:** [LanguageModelRequestMetadata](/api/Vercel.AI/LanguageModelRequestMetadata/)
 

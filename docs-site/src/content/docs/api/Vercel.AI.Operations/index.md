@@ -31,7 +31,7 @@ Speech, image, video, embeddings, transcription, and other operations.
 | [BatchModelUsage](/api/Vercel.AI.Operations/BatchModelUsage/) | Provider token usage before it is reshaped. |
 | [BatchOperationCall](/api/Vercel.AI.Operations/BatchOperationCall/) | Arguments for a batch operation. |
 | [BatchReference](/api/Vercel.AI.Operations/BatchReference/) | A version-2 batch reference. Upstream BatchReference. |
-| [BatchRequest](/api/Vercel.AI.Operations/BatchRequest/) | One request in a batch. |
+| [BatchRequest](/api/Vercel.AI.Operations/BatchRequest/) | One request in a batch, discriminated by Type. Maps to BatchRequest. |
 | [BatchRequestCounts](/api/Vercel.AI.Operations/BatchRequestCounts/) | Request counts. |
 | [BatchRequestOptions](/api/Vercel.AI.Operations/BatchRequestOptions/) | Options for batch operations. |
 | [BatchRequestWarning](/api/Vercel.AI.Operations/BatchRequestWarning/) | A warning tied to a request. |
@@ -125,6 +125,7 @@ Speech, image, video, embeddings, transcription, and other operations.
 | [GetVideoStatus](/api/Vercel.AI.Operations/GetVideoStatus/) | Reads video operation status. Maps to experimentalgetVideoStatus. |
 | [GetVideoStatusRequest](/api/Vercel.AI.Operations/GetVideoStatusRequest/) | Options for CancellationToken). |
 | [GoogleMultimodalEmbedding](/api/Vercel.AI.Operations/GoogleMultimodalEmbedding/) | Gemini embedding caller used by EmbedMany. Splits multimodal google.content to the chunk that is about to be sent and posts embedContent or batchEmbedContents. |
+| [ImageBatchRequest](/api/Vercel.AI.Operations/ImageBatchRequest/) | One image generation request within a batch. Maps to ImageBatchRequest. |
 | [ImageCallResult](/api/Vercel.AI.Operations/ImageCallResult/) | One provider call preserved on the result. |
 | [ImageModelCall](/api/Vercel.AI.Operations/ImageModelCall/) | Arguments for one image model call. |
 | [ImageModelFile](/api/Vercel.AI.Operations/ImageModelFile/) | An image sent to doGenerate as a file or URL. |
@@ -138,7 +139,7 @@ Speech, image, video, embeddings, transcription, and other operations.
 | [ModelPartStream](/api/Vercel.AI.Operations/ModelPartStream/) | Model stream that stays open until Cancel() when Completes is false. |
 | [ModelStreamPart](/api/Vercel.AI.Operations/ModelStreamPart/) | A part emitted by a transcription or translation model stream. |
 | [NoImageGeneratedException](/api/Vercel.AI.Operations/NoImageGeneratedException/) | No image was produced after retries. |
-| [NormalizedBatchRequest](/api/Vercel.AI.Operations/NormalizedBatchRequest/) | Normalized request sent to doStartBatch. |
+| [NormalizedBatchRequest](/api/Vercel.AI.Operations/NormalizedBatchRequest/) | Normalized request sent to doStartBatch. Maps to BatchV4Request. |
 | [NoSpeechGeneratedException](/api/Vercel.AI.Operations/NoSpeechGeneratedException/) | No speech audio was produced. |
 | [NoTranscriptGeneratedException](/api/Vercel.AI.Operations/NoTranscriptGeneratedException/) | No transcript text was produced. |
 | [NoTranslationGeneratedException](/api/Vercel.AI.Operations/NoTranslationGeneratedException/) | No translation text or audio was produced. |
@@ -201,6 +202,7 @@ Speech, image, video, embeddings, transcription, and other operations.
 | [StreamTranslate](/api/Vercel.AI.Operations/StreamTranslate/) | Streams a speech translation. Maps to streamTranslate. |
 | [StreamTranslateRequest](/api/Vercel.AI.Operations/StreamTranslateRequest/) | Options for CancellationToken). |
 | [StreamTranslateResult](/api/Vercel.AI.Operations/StreamTranslateResult/) | Streaming translation result. |
+| [TextBatchRequest](/api/Vercel.AI.Operations/TextBatchRequest/) | One text generation request within a batch. Maps to TextBatchRequest. |
 | [ToolCallerBinding](/api/Vercel.AI.Operations/ToolCallerBinding/) | How a tool may be called. |
 | [ToolCallers](/api/Vercel.AI.Operations/ToolCallers/) | Direct tool invocation. An omitted routing entry permits this caller. |
 | [ToolSearch](/api/Vercel.AI.Operations/ToolSearch/) | Creates the search tool. Maps to toolSearch. |

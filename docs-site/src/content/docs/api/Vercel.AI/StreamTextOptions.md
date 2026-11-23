@@ -23,7 +23,7 @@ Options for `CancellationToken)`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [GenerateTextOptions](/api/Vercel.AI/GenerateTextOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2160)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2169)
 
 ## Properties
 
@@ -43,7 +43,29 @@ A reason that is an [Exception](https://learn.microsoft.com/dotnet/api/system.ex
 
 **Value:** [AbortSignal](/api/Vercel.AI.Util/AbortSignal/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2175)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2188)
+
+<a id="Vercel_AI_StreamTextOptions_ExperimentalInclude_"></a>
+<a id="Vercel_AI_StreamTextOptions_ExperimentalInclude"></a>
+
+### ExperimentalInclude
+
+
+```csharp
+[Obsolete("Use Include instead.")]
+public StreamTextInclude? ExperimentalInclude { get; set; }
+```
+
+
+Deprecated alias of [Include](#Vercel_AI_StreamTextOptions_Include). Hides [ExperimentalInclude](/api/Vercel.AI/GenerateTextOptions/#Vercel_AI_GenerateTextOptions_ExperimentalInclude). Maps to `experimental_include`.
+
+**Value:** [StreamTextInclude](/api/Vercel.AI/StreamTextInclude/)
+
+:::caution[Obsolete]
+This API is obsolete.
+:::
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2181)
 
 <a id="Vercel_AI_StreamTextOptions_ExperimentalTransform_"></a>
 <a id="Vercel_AI_StreamTextOptions_ExperimentalTransform"></a>
@@ -61,7 +83,7 @@ Use [Create(SmoothStreamOptions)](/api/Vercel.AI.GenerateText/SmoothStream/#Verc
 
 **Value:** [IReadOnlyList&lt;StreamTextTransform&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2166)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2175)
 
 <a id="Vercel_AI_StreamTextOptions_Include_"></a>
 <a id="Vercel_AI_StreamTextOptions_Include"></a>
@@ -74,11 +96,11 @@ public StreamTextInclude? Include { get; set; }
 ```
 
 
-What to retain of the request in the [StartStepPart](/api/Vercel.AI/StartStepPart/). Maps to `include`.
+What to retain of the request in the [StartStepPart](/api/Vercel.AI/StartStepPart/) and whether to forward raw chunks. Hides [Include](/api/Vercel.AI/GenerateTextOptions/#Vercel_AI_GenerateTextOptions_Include), which has the type of `generateText`. Maps to `include`.
 
 **Value:** [StreamTextInclude](/api/Vercel.AI/StreamTextInclude/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2169)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2178)
 
 <a id="Vercel_AI_StreamTextOptions_OnAbort_"></a>
 <a id="Vercel_AI_StreamTextOptions_OnAbort"></a>
@@ -97,7 +119,7 @@ results. The stream ends with an [AbortPart](/api/Vercel.AI/AbortPart/) after it
 
 **Value:** [Func&lt;StreamAbortContext, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2182)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2195)
 
 <a id="Vercel_AI_StreamTextOptions_OnChunk_"></a>
 <a id="Vercel_AI_StreamTextOptions_OnChunk"></a>
@@ -115,7 +137,7 @@ the callback returns. Maps to `onChunk`.
 
 **Value:** [Func&lt;StreamTextChunkEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2188)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2201)
 
 <a id="Vercel_AI_StreamTextOptions_OnErrorRetry_"></a>
 <a id="Vercel_AI_StreamTextOptions_OnErrorRetry"></a>
@@ -134,7 +156,7 @@ error that was received from the response stream, when [StreamRetries](#Vercel_A
 
 **Value:** [Func&lt;Exception, CancellationToken, Task&lt;StreamTextOnErrorResult&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2205)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2218)
 
 <a id="Vercel_AI_StreamTextOptions_StreamRetries_"></a>
 <a id="Vercel_AI_StreamTextOptions_StreamRetries"></a>
@@ -156,4 +178,4 @@ Set it to `0` to disable automatic retries while allowing [OnErrorRetry](#Vercel
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2198)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2211)
