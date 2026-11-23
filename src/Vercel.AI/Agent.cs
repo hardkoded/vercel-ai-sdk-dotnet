@@ -139,6 +139,23 @@ public sealed class Agent : IAgent
         prepared.OnStepEnd = MergeCallbacks(Options.OnStepEnd, prepared.OnStepEnd);
         prepared.OnStepError = Options.OnStepError;
         prepared.OnStart = MergeCallbacks(Options.OnStart, prepared.OnStart);
+        prepared.OnStepStart = MergeCallbacks(Options.OnStepStart, prepared.OnStepStart);
+        prepared.OnToolExecutionStart = MergeCallbacks(
+            Options.OnToolExecutionStart,
+            prepared.OnToolExecutionStart
+        );
+        prepared.OnToolExecutionEnd = MergeCallbacks(
+            Options.OnToolExecutionEnd,
+            prepared.OnToolExecutionEnd
+        );
+        prepared.OnLanguageModelCallStart = MergeCallbacks(
+            Options.OnLanguageModelCallStart,
+            prepared.OnLanguageModelCallStart
+        );
+        prepared.OnLanguageModelCallEnd = MergeCallbacks(
+            Options.OnLanguageModelCallEnd,
+            prepared.OnLanguageModelCallEnd
+        );
 #pragma warning disable CS0618 // OnFinish is the deprecated alias of OnEnd
         prepared.OnEnd = MergeCallbacks(Options.OnEnd, prepared.OnEnd ?? prepared.OnFinish);
 #pragma warning restore CS0618
@@ -285,6 +302,23 @@ public sealed class Agent : IAgent
                 OnStepEnd = MergeCallbacks(Options.OnStepEnd, onStepEnd ?? prepared.OnStepEnd),
                 OnStepError = Options.OnStepError,
                 OnStart = MergeCallbacks(Options.OnStart, prepared.OnStart),
+                OnStepStart = MergeCallbacks(Options.OnStepStart, prepared.OnStepStart),
+                OnToolExecutionStart = MergeCallbacks(
+                    Options.OnToolExecutionStart,
+                    prepared.OnToolExecutionStart
+                ),
+                OnToolExecutionEnd = MergeCallbacks(
+                    Options.OnToolExecutionEnd,
+                    prepared.OnToolExecutionEnd
+                ),
+                OnLanguageModelCallStart = MergeCallbacks(
+                    Options.OnLanguageModelCallStart,
+                    prepared.OnLanguageModelCallStart
+                ),
+                OnLanguageModelCallEnd = MergeCallbacks(
+                    Options.OnLanguageModelCallEnd,
+                    prepared.OnLanguageModelCallEnd
+                ),
 #pragma warning disable CS0618 // OnFinish is the deprecated alias of OnEnd
                 OnEnd = MergeCallbacks(Options.OnEnd, prepared.OnEnd ?? prepared.OnFinish),
 #pragma warning restore CS0618
@@ -450,6 +484,33 @@ public class AgentOptions
     /// Maps to <c>onStart</c> of the <c>ToolLoopAgent</c> settings.
     /// </summary>
     public Func<GenerateTextStartEvent, CancellationToken, Task>? OnStart { get; set; }
+
+    /// <summary>Called when each step begins. It runs together with the callback of the call. Maps to <c>onStepStart</c> of the <c>ToolLoopAgent</c> settings.</summary>
+    public Func<GenerateTextStepStartEvent, CancellationToken, Task>? OnStepStart { get; set; }
+
+    /// <summary>Called before a tool runs. It runs together with the callback of the call. Maps to <c>onToolExecutionStart</c> of the <c>ToolLoopAgent</c> settings.</summary>
+    public Func<
+        ToolExecutionStartEvent,
+        CancellationToken,
+        Task
+    >? OnToolExecutionStart { get; set; }
+
+    /// <summary>Called after a tool ran. It runs together with the callback of the call. Maps to <c>onToolExecutionEnd</c> of the <c>ToolLoopAgent</c> settings.</summary>
+    public Func<ToolExecutionEndEvent, CancellationToken, Task>? OnToolExecutionEnd { get; set; }
+
+    /// <summary>Called before each provider model call. It runs together with the callback of the call. Maps to <c>onLanguageModelCallStart</c> of the <c>ToolLoopAgent</c> settings.</summary>
+    public Func<
+        LanguageModelCallStartEvent,
+        CancellationToken,
+        Task
+    >? OnLanguageModelCallStart { get; set; }
+
+    /// <summary>Called after each provider model call. It runs together with the callback of the call. Maps to <c>onLanguageModelCallEnd</c> of the <c>ToolLoopAgent</c> settings.</summary>
+    public Func<
+        LanguageModelCallEndEvent,
+        CancellationToken,
+        Task
+    >? OnLanguageModelCallEnd { get; set; }
 
     /// <summary>
     /// Called when a generation completes. It runs together with the callback of the call, and a failure of one does not stop the other.
