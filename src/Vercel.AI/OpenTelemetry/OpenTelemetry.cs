@@ -1357,7 +1357,12 @@ public sealed class OpenTelemetry : ITelemetry
 
         RecordInferenceDuration(
             state,
-            errorType: e.Error is Exception error ? error.GetType().Name : "_OTHER"
+            errorType: e.Error switch
+            {
+                OperationCanceledException => "AbortError",
+                Exception error => error.GetType().Name,
+                _ => "_OTHER",
+            }
         );
         EndOpenSpans(state, e.Error);
         TelemetrySpan.RecordError(state.RootSpan, e.Error);
@@ -1391,6 +1396,7 @@ public sealed class OpenTelemetry : ITelemetry
         state.ToolSpans.Clear();
         Finish(state.InferenceSpan);
         state.InferenceSpan = null;
+        state.InferenceContext = null;
         Finish(state.StepSpan);
         state.StepSpan = null;
         Finish(state.DecisionSpan);
