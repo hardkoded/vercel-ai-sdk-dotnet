@@ -492,8 +492,6 @@ public sealed class CreateTelemetryDispatcherTests
         });
         Assert.Equal("", Assert.IsType<GenerateObjectStepEndEvent>(received[2]).ObjectText);
         Assert.Null(Assert.IsType<GenerateObjectStepEndEvent>(received[2]).ProviderMetadata);
-        generateOptions.Telemetry = new TelemetryOptions { Integrations = [integration] };
-        received.Clear();
         Assert.Equal(
             ["onStart:ai.generateObject", "onObjectStepStart", "onObjectStepEnd", "onEnd"],
             events
