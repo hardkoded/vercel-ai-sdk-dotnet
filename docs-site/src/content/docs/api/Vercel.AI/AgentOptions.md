@@ -25,7 +25,7 @@ Agent settings.
 
 **Derived:** [AgentOptions&lt;TCallOptions&gt;](/api/Vercel.AI/AgentOptions-1/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L411)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L445)
 
 ## Properties
 
@@ -47,7 +47,7 @@ Defaults to false, which rejects them with an [InvalidPromptException](/api/Verc
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L428)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L462)
 
 <a id="Vercel_AI_AgentOptions_ExperimentalToolApprovalSecret_"></a>
 <a id="Vercel_AI_AgentOptions_ExperimentalToolApprovalSecret"></a>
@@ -64,7 +64,7 @@ Secret for HMAC-signing tool approval requests. Approval requests of automatical
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L473)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L534)
 
 <a id="Vercel_AI_AgentOptions_ExperimentalToolApprovalSecretBytes_"></a>
 <a id="Vercel_AI_AgentOptions_ExperimentalToolApprovalSecretBytes"></a>
@@ -81,7 +81,7 @@ The same secret as [ExperimentalToolApprovalSecret](#Vercel_AI_AgentOptions_Expe
 
 **Value:** [byte\[\]](https://learn.microsoft.com/dotnet/api/system.byte)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L476)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L537)
 
 <a id="Vercel_AI_AgentOptions_Headers_"></a>
 <a id="Vercel_AI_AgentOptions_Headers"></a>
@@ -98,7 +98,7 @@ Additional HTTP headers sent with every request. The agent appends `ai-sdk-agent
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L488)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L549)
 
 <a id="Vercel_AI_AgentOptions_Instructions_"></a>
 <a id="Vercel_AI_AgentOptions_Instructions"></a>
@@ -115,7 +115,7 @@ System instructions: a string, one [SystemModelMessage](/api/Vercel.AI.Provider/
 
 **Value:** [Instructions](/api/Vercel.AI.Prompt/Instructions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L420)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L454)
 
 <a id="Vercel_AI_AgentOptions_MaxOutputTokens_"></a>
 <a id="Vercel_AI_AgentOptions_MaxOutputTokens"></a>
@@ -132,7 +132,7 @@ Maximum output tokens.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L485)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L546)
 
 <a id="Vercel_AI_AgentOptions_Model_"></a>
 <a id="Vercel_AI_AgentOptions_Model"></a>
@@ -149,7 +149,7 @@ Explicit model.
 
 **Value:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L414)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L448)
 
 <a id="Vercel_AI_AgentOptions_ModelId_"></a>
 <a id="Vercel_AI_AgentOptions_ModelId"></a>
@@ -166,7 +166,7 @@ Gateway model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L417)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L451)
 
 <a id="Vercel_AI_AgentOptions_OnAbort_"></a>
 <a id="Vercel_AI_AgentOptions_OnAbort"></a>
@@ -183,7 +183,7 @@ Called after `ISandboxSession)` is aborted. See [OnAbort](/api/Vercel.AI/StreamT
 
 **Value:** [Func&lt;StreamAbortContext, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L522)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L583)
 
 <a id="Vercel_AI_AgentOptions_OnEnd_"></a>
 <a id="Vercel_AI_AgentOptions_OnEnd"></a>
@@ -201,7 +201,41 @@ Maps to `onFinish` of the `ToolLoopAgent` settings.
 
 **Value:** [Func&lt;GenerateTextResult, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L458)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L519)
+
+<a id="Vercel_AI_AgentOptions_OnLanguageModelCallEnd_"></a>
+<a id="Vercel_AI_AgentOptions_OnLanguageModelCallEnd"></a>
+
+### OnLanguageModelCallEnd
+
+
+```csharp
+public Func<LanguageModelCallEndEvent, CancellationToken, Task>? OnLanguageModelCallEnd { get; set; }
+```
+
+
+Called after each provider model call. It runs together with the callback of the call. Maps to `onLanguageModelCallEnd` of the `ToolLoopAgent` settings.
+
+**Value:** [Func&lt;LanguageModelCallEndEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L509)
+
+<a id="Vercel_AI_AgentOptions_OnLanguageModelCallStart_"></a>
+<a id="Vercel_AI_AgentOptions_OnLanguageModelCallStart"></a>
+
+### OnLanguageModelCallStart
+
+
+```csharp
+public Func<LanguageModelCallStartEvent, CancellationToken, Task>? OnLanguageModelCallStart { get; set; }
+```
+
+
+Called before each provider model call. It runs together with the callback of the call. Maps to `onLanguageModelCallStart` of the `ToolLoopAgent` settings.
+
+**Value:** [Func&lt;LanguageModelCallStartEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L502)
 
 <a id="Vercel_AI_AgentOptions_OnStart_"></a>
 <a id="Vercel_AI_AgentOptions_OnStart"></a>
@@ -219,7 +253,7 @@ Maps to `onStart` of the `ToolLoopAgent` settings.
 
 **Value:** [Func&lt;GenerateTextStartEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L452)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L486)
 
 <a id="Vercel_AI_AgentOptions_OnStepEnd_"></a>
 <a id="Vercel_AI_AgentOptions_OnStepEnd"></a>
@@ -237,7 +271,7 @@ Maps to `onStepEnd` of the `ToolLoopAgent` settings.
 
 **Value:** [Func&lt;StepResult, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L437)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L471)
 
 <a id="Vercel_AI_AgentOptions_OnStepError_"></a>
 <a id="Vercel_AI_AgentOptions_OnStepError"></a>
@@ -255,7 +289,58 @@ Unlike [OnStepEnd](#Vercel_AI_AgentOptions_OnStepEnd), it can only be set here a
 
 **Value:** [Func&lt;GenerateTextStepErrorEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L443)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L477)
+
+<a id="Vercel_AI_AgentOptions_OnStepStart_"></a>
+<a id="Vercel_AI_AgentOptions_OnStepStart"></a>
+
+### OnStepStart
+
+
+```csharp
+public Func<GenerateTextStepStartEvent, CancellationToken, Task>? OnStepStart { get; set; }
+```
+
+
+Called when each step begins. It runs together with the callback of the call. Maps to `onStepStart` of the `ToolLoopAgent` settings.
+
+**Value:** [Func&lt;GenerateTextStepStartEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L489)
+
+<a id="Vercel_AI_AgentOptions_OnToolExecutionEnd_"></a>
+<a id="Vercel_AI_AgentOptions_OnToolExecutionEnd"></a>
+
+### OnToolExecutionEnd
+
+
+```csharp
+public Func<ToolExecutionEndEvent, CancellationToken, Task>? OnToolExecutionEnd { get; set; }
+```
+
+
+Called after a tool ran. It runs together with the callback of the call. Maps to `onToolExecutionEnd` of the `ToolLoopAgent` settings.
+
+**Value:** [Func&lt;ToolExecutionEndEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L499)
+
+<a id="Vercel_AI_AgentOptions_OnToolExecutionStart_"></a>
+<a id="Vercel_AI_AgentOptions_OnToolExecutionStart"></a>
+
+### OnToolExecutionStart
+
+
+```csharp
+public Func<ToolExecutionStartEvent, CancellationToken, Task>? OnToolExecutionStart { get; set; }
+```
+
+
+Called before a tool runs. It runs together with the callback of the call. Maps to `onToolExecutionStart` of the `ToolLoopAgent` settings.
+
+**Value:** [Func&lt;ToolExecutionStartEvent, CancellationToken, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L492)
 
 <a id="Vercel_AI_AgentOptions_PrepareCall_"></a>
 <a id="Vercel_AI_AgentOptions_PrepareCall"></a>
@@ -274,7 +359,7 @@ A returned options object that sets [StopWhen](/api/Vercel.AI/GenerateTextOption
 
 **Value:** [Func&lt;GenerateTextOptions, GenerateTextOptions&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L519)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L580)
 
 <a id="Vercel_AI_AgentOptions_RefineToolInput_"></a>
 <a id="Vercel_AI_AgentOptions_RefineToolInput"></a>
@@ -291,7 +376,7 @@ Refines the parsed input of tool calls. See [RefineToolInput](/api/Vercel.AI/Gen
 
 **Value:** [IReadOnlyDictionary&lt;string, Func&lt;JsonElement, CancellationToken, Task&lt;JsonElement&gt;&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L503)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L564)
 
 <a id="Vercel_AI_AgentOptions_RepairToolCall_"></a>
 <a id="Vercel_AI_AgentOptions_RepairToolCall"></a>
@@ -308,7 +393,7 @@ Repairs a tool call that failed to parse. See [RepairToolCall](/api/Vercel.AI/Ge
 
 **Value:** [ToolCallRepairFunction](/api/Vercel.AI.GenerateText/ToolCallRepairFunction/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L500)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L561)
 
 <a id="Vercel_AI_AgentOptions_RuntimeContext_"></a>
 <a id="Vercel_AI_AgentOptions_RuntimeContext"></a>
@@ -325,7 +410,7 @@ User-defined context that is passed to the approval functions. See [RuntimeConte
 
 **Value:** [IReadOnlyDictionary&lt;string, object&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L470)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L531)
 
 <a id="Vercel_AI_AgentOptions_StopWhen_"></a>
 <a id="Vercel_AI_AgentOptions_StopWhen"></a>
@@ -342,7 +427,7 @@ Stop condition. Defaults to 10 steps.
 
 **Value:** [StopCondition](/api/Vercel.AI/StopCondition/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L479)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L540)
 
 <a id="Vercel_AI_AgentOptions_Telemetry_"></a>
 <a id="Vercel_AI_AgentOptions_Telemetry"></a>
@@ -359,7 +444,7 @@ Telemetry configuration of every call. See [Telemetry](/api/Vercel.AI/GenerateTe
 
 **Value:** [TelemetryOptions](/api/Vercel.AI/TelemetryOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L446)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L480)
 
 <a id="Vercel_AI_AgentOptions_Temperature_"></a>
 <a id="Vercel_AI_AgentOptions_Temperature"></a>
@@ -376,7 +461,7 @@ Temperature.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L482)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L543)
 
 <a id="Vercel_AI_AgentOptions_Timeout_"></a>
 <a id="Vercel_AI_AgentOptions_Timeout"></a>
@@ -394,7 +479,7 @@ Timeout of each `ISandboxSession)` and `ISandboxSession)` call. See [Timeout](/a
 
 **Value:** [TimeoutConfiguration](/api/Vercel.AI.Prompt/TimeoutConfiguration/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L512)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L573)
 
 <a id="Vercel_AI_AgentOptions_ToolApproval_"></a>
 <a id="Vercel_AI_AgentOptions_ToolApproval"></a>
@@ -412,7 +497,7 @@ Configures whether tools require approval before they run. See [ToolApproval](/a
 
 **Value:** [ToolApprovalConfiguration](/api/Vercel.AI.GenerateText/ToolApprovalConfiguration/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L464)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L525)
 
 <a id="Vercel_AI_AgentOptions_ToolCallConcurrency_"></a>
 <a id="Vercel_AI_AgentOptions_ToolCallConcurrency"></a>
@@ -430,7 +515,7 @@ Maximum number of tool calls that may execute concurrently within a step. See [T
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L497)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L558)
 
 <a id="Vercel_AI_AgentOptions_ToolOrder_"></a>
 <a id="Vercel_AI_AgentOptions_ToolOrder"></a>
@@ -447,7 +532,7 @@ Controls the order in which tools are sent to the provider. See [ToolOrder](/api
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L491)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L552)
 
 <a id="Vercel_AI_AgentOptions_Tools_"></a>
 <a id="Vercel_AI_AgentOptions_Tools"></a>
@@ -464,7 +549,7 @@ Tools.
 
 **Value:** [IReadOnlyList&lt;Tool&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L431)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L465)
 
 <a id="Vercel_AI_AgentOptions_ToolsContext_"></a>
 <a id="Vercel_AI_AgentOptions_ToolsContext"></a>
@@ -481,4 +566,4 @@ The context of each tool, keyed by tool name. See [ToolsContext](/api/Vercel.AI/
 
 **Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L467)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L528)

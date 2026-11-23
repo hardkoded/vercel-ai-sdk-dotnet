@@ -26,6 +26,12 @@ public enum OpenTelemetrySpanType
 
     /// <summary>An extraction model call span. Maps to <c>'experimental_extraction'</c>.</summary>
     ExperimentalExtraction,
+
+    /// <summary>An embedding model call span. Maps to <c>'embedding'</c>.</summary>
+    Embedding,
+
+    /// <summary>A reranking model call span. Maps to <c>'reranking'</c>.</summary>
+    Reranking,
 }
 
 /// <summary>The call an <see cref="EnrichSpan"/> callback is asked about. Maps to the callback options in <c>EnrichSpan</c>.</summary>
@@ -106,6 +112,12 @@ public sealed class OpenTelemetryOptions
     /// <summary>Emit provider metadata on response spans.</summary>
     public bool? ProviderMetadata { get; set; }
 
+    /// <summary>Emit embedding input and output values.</summary>
+    public bool? Embedding { get; set; }
+
+    /// <summary>Emit reranking input documents and output ranking.</summary>
+    public bool? Reranking { get; set; }
+
     /// <summary>Emit decision state, questions, and answers. Maps to <c>experimental_decision</c>.</summary>
     public bool? ExperimentalDecision { get; set; }
 
@@ -133,6 +145,10 @@ internal sealed class SupplementalAttributeOptions
 
     public bool ProviderMetadata { get; init; }
 
+    public bool Embedding { get; init; }
+
+    public bool Reranking { get; init; }
+
     public bool ExperimentalDecision { get; init; }
 
     public bool ExperimentalExtraction { get; init; }
@@ -153,6 +169,8 @@ internal sealed class SupplementalAttributeOptions
         {
             Usage = options.Usage ?? false,
             ProviderMetadata = options.ProviderMetadata ?? false,
+            Embedding = options.Embedding ?? false,
+            Reranking = options.Reranking ?? false,
             ExperimentalDecision = decision,
             ExperimentalExtraction = options.ExperimentalExtraction ?? false,
             RuntimeContext = options.RuntimeContext ?? false,
@@ -172,6 +190,8 @@ internal sealed class SupplementalAttributeOptions
         {
             SupplementalGroup.Usage => Usage,
             SupplementalGroup.ProviderMetadata => ProviderMetadata,
+            SupplementalGroup.Embedding => Embedding,
+            SupplementalGroup.Reranking => Reranking,
             SupplementalGroup.ExperimentalDecision => ExperimentalDecision,
             SupplementalGroup.ExperimentalExtraction => ExperimentalExtraction,
             SupplementalGroup.RuntimeContext => RuntimeContext,
@@ -192,6 +212,8 @@ internal enum SupplementalGroup
 {
     Usage,
     ProviderMetadata,
+    Embedding,
+    Reranking,
     ExperimentalDecision,
     ExperimentalExtraction,
     RuntimeContext,

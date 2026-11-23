@@ -23,7 +23,7 @@ Upstream `ModelCapabilities.reranking`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L239)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L242)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Input support exposed by the provider, including compatibility conversions.
 
 **Value:** [RerankingDocumentCapabilities](/api/Vercel.AI/RerankingDocumentCapabilities/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L242)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L245)
 
 <a id="Vercel_AI_RerankingCapabilities_TopN_"></a>
 <a id="Vercel_AI_RerankingCapabilities_TopN"></a>
@@ -59,4 +59,4 @@ Upstream `topN`.
 
 **Value:** [ModelCapability](/api/Vercel.AI/ModelCapability/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L245)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L248)

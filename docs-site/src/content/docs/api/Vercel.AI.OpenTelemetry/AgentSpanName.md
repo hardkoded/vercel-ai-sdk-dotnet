@@ -23,7 +23,7 @@ Controls the root agent span names. Maps to the `agentSpanName` option of `OpenT
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L57)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L63)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Names are `invoke_agent {functionId}`, falling back to the model id. Maps to `'f
 
 **Value:** [AgentSpanName](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L72)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L78)
 
 <a id="Vercel_AI_OpenTelemetry_AgentSpanName_ModelId_"></a>
 <a id="Vercel_AI_OpenTelemetry_AgentSpanName_ModelId"></a>
@@ -59,7 +59,7 @@ Names are `invoke_agent {modelId}`. The default. Maps to `'modelId'`.
 
 **Value:** [AgentSpanName](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L69)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L75)
 
 ## Methods
 
@@ -84,4 +84,4 @@ Returns the complete span name. A null result or an exception falls back to the 
 
 **Returns:** [AgentSpanName](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L75)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L81)

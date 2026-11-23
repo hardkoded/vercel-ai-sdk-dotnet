@@ -48,7 +48,7 @@ Protocol finish reason used by UI message `finish` chunks and `gen_ai.response.f
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/GenAiConventions.cs#L87)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/GenAiConventions.cs#L90)
 
 <a id="Vercel_AI_OpenTelemetry_GenAiConventions_MapOperationName_"></a>
 <a id="Vercel_AI_OpenTelemetry_GenAiConventions_MapOperationName_System_String_"></a>

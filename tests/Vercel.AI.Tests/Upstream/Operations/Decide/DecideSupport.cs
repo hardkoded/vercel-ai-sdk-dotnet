@@ -168,7 +168,8 @@ internal static class DecideSupport
 }
 
 /// <summary>Records calls and returns a configured result.</summary>
-internal sealed class DecideModel : IDecisionCaller
+#pragma warning disable CS0618 // Also a deprecated evaluation model, to run the deprecated Evaluate API.
+internal sealed class DecideModel : IDecisionCaller, IEvaluationCaller
 {
     public string Provider => "mock-provider";
 
@@ -194,6 +195,14 @@ internal sealed class DecideModel : IDecisionCaller
     public (CancellationTokenSource Source, Exception Reason)? AbortDuringCall { get; set; }
 
     public List<DecisionModelCall> Calls { get; } = new List<DecisionModelCall>();
+
+    public async Task<EvaluationModelResult> DoEvaluateAsync(
+        EvaluationModelCall call,
+        CancellationToken cancellationToken
+    ) =>
+        EvaluationModelResult.From(
+            await DoDecideAsync(call, cancellationToken).ConfigureAwait(false)
+        );
 
     public Task<DecisionModelResult> DoDecideAsync(
         DecisionModelCall call,

@@ -23,7 +23,7 @@ Upstream `ModelCapabilities.decision`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L259)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L262)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Upstream `inputs`.
 
 **Value:** [DecisionInputCapabilities](/api/Vercel.AI/DecisionInputCapabilities/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L265)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L268)
 
 <a id="Vercel_AI_DecisionCapabilities_MaxOutputTokens_"></a>
 <a id="Vercel_AI_DecisionCapabilities_MaxOutputTokens"></a>
@@ -59,7 +59,7 @@ Upstream `maxOutputTokens`.
 
 **Value:** [ModelCapability](/api/Vercel.AI/ModelCapability/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L271)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L274)
 
 <a id="Vercel_AI_DecisionCapabilities_QuestionTypes_"></a>
 <a id="Vercel_AI_DecisionCapabilities_QuestionTypes"></a>
@@ -76,7 +76,7 @@ Upstream `questionTypes`.
 
 **Value:** [DecisionQuestionTypeCapabilities](/api/Vercel.AI/DecisionQuestionTypeCapabilities/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L262)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L265)
 
 <a id="Vercel_AI_DecisionCapabilities_Reasoning_"></a>
 <a id="Vercel_AI_DecisionCapabilities_Reasoning"></a>
@@ -93,4 +93,4 @@ Upstream `reasoning`.
 
 **Value:** [ModelCapability](/api/Vercel.AI/ModelCapability/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L268)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L271)

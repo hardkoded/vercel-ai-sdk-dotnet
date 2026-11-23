@@ -323,6 +323,8 @@ internal sealed class TelemetryDispatcher
                     ),
                     TranscriptionEndEvent transcription =>
                         FilterTelemetryEventHelper.FilterTelemetryEvent(transcription, telemetry),
+                    GenerateSpeechEndEvent speech =>
+                        FilterTelemetryEventHelper.FilterTelemetryEvent(speech, telemetry),
                     IRecordingFilterableEndEvent filterable
                         when telemetry?.RecordInputs == false
                             || telemetry?.RecordOutputs == false => filterable.FilterTelemetryEvent(
@@ -370,6 +372,8 @@ internal sealed class TelemetryDispatcher
                                 transcription,
                                 telemetry
                             ),
+                        GenerateSpeechStartEvent speech =>
+                            FilterTelemetryEventHelper.FilterTelemetryEvent(speech, telemetry),
                         _ => e,
                     }
             ),
@@ -430,7 +434,8 @@ internal sealed class TelemetryDispatcher
                 Merge(integrations.Select(i => i.OnAbort)),
                 context => new StreamAbortContext(
                     context.Steps.Select(step => FilterStep(step, telemetry)).ToList(),
-                    context.Exception
+                    context.Exception,
+                    context.CallId
                 )
             ),
             OnError = Filter(Merge(integrations.Select(i => i.OnError)), (TelemetryErrorEvent e) =>

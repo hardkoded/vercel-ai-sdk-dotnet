@@ -23,7 +23,7 @@ Result of `CancellationToken)`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L151)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L156)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates a speech result.
 | `responses` | [IReadOnlyList&lt;ProviderResponse&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 | `providerMetadata` | [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L154)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L159)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Generated audio.
 
 **Value:** [GeneratedAudio](/api/Vercel.AI.Operations/GeneratedAudio/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L168)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L173)
 
 <a id="Vercel_AI_Operations_GenerateSpeechResult_ProviderMetadata_"></a>
 <a id="Vercel_AI_Operations_GenerateSpeechResult_ProviderMetadata"></a>
@@ -85,7 +85,7 @@ Provider metadata. Empty object when omitted.
 
 **Value:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L177)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L182)
 
 <a id="Vercel_AI_Operations_GenerateSpeechResult_Responses_"></a>
 <a id="Vercel_AI_Operations_GenerateSpeechResult_Responses"></a>
@@ -102,7 +102,7 @@ Provider responses.
 
 **Value:** [IReadOnlyList&lt;ProviderResponse&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L174)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L179)
 
 <a id="Vercel_AI_Operations_GenerateSpeechResult_Warnings_"></a>
 <a id="Vercel_AI_Operations_GenerateSpeechResult_Warnings"></a>
@@ -119,4 +119,4 @@ Warnings.
 
 **Value:** [IReadOnlyList&lt;OperationWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L171)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L176)

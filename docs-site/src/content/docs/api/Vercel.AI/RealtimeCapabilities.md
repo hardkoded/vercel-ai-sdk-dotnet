@@ -23,7 +23,7 @@ Upstream `ModelCapabilities.realtime`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L340)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L346)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Upstream `connections`: `client-secret-websocket`, `server-websocket`, `webrtc` 
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L349)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L355)
 
 <a id="Vercel_AI_RealtimeCapabilities_Conversation_"></a>
 <a id="Vercel_AI_RealtimeCapabilities_Conversation"></a>
@@ -59,7 +59,7 @@ Upstream `conversation`: `continuous` or `turn-based`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L343)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L349)
 
 <a id="Vercel_AI_RealtimeCapabilities_Finalization_"></a>
 <a id="Vercel_AI_RealtimeCapabilities_Finalization"></a>
@@ -76,7 +76,7 @@ Upstream `finalization`: `session-close` or `transport-close`. Null preserves tr
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L355)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L361)
 
 <a id="Vercel_AI_RealtimeCapabilities_Startup_"></a>
 <a id="Vercel_AI_RealtimeCapabilities_Startup"></a>
@@ -93,7 +93,7 @@ Upstream `startup`: `session-start` or `session-update`. Null preserves session-
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L352)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L358)
 
 <a id="Vercel_AI_RealtimeCapabilities_Transports_"></a>
 <a id="Vercel_AI_RealtimeCapabilities_Transports"></a>
@@ -110,4 +110,4 @@ Upstream `transports`: `websocket` or `webrtc`.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L346)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L352)
