@@ -119,6 +119,118 @@ public sealed class OutputObjectErrorHandlingTests
 
     [Fact]
     [UpstreamTest(
+        Id
+            + "should not emit background errors when cancelled before the provider stream is registered",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_not_emit_background_errors_when_cancelled_before_the_provider_stream_is_registered()
+    {
+        var backgroundErrors = new List<Exception>();
+        void OnUnhandledRejection(object? sender, UnobservedTaskExceptionEventArgs args)
+        {
+            // other tests share the process: only errors raised by streamObject count
+            if (
+                args
+                    .Exception.Flatten()
+                    .InnerExceptions.Any(e => e.StackTrace?.Contains("GenerateObject") == true)
+            )
+            {
+                lock (backgroundErrors)
+                {
+                    backgroundErrors.Add(args.Exception);
+                }
+            }
+        }
+        void OnUncaughtException(object? sender, UnhandledExceptionEventArgs args)
+        {
+            lock (backgroundErrors)
+            {
+                backgroundErrors.Add((Exception)args.ExceptionObject);
+            }
+        }
+        var providerGate = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
+        var providerStreamCreation = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
+        var providerStreamCancelled = false;
+
+        TaskScheduler.UnobservedTaskException += OnUnhandledRejection;
+        AppDomain.CurrentDomain.UnhandledException += OnUncaughtException;
+
+        try
+        {
+            var options = ObjectOptions(
+                new StreamObjectTestModel
+                {
+                    OnStream = async _ =>
+                    {
+                        await providerGate.Task;
+
+                        // start() of the provider ReadableStream runs when the stream is created; cancelling it
+                        // disposes the stream result.
+                        providerStreamCreation.TrySetResult();
+                        return new LanguageModelStreamResult(
+                            PendingStream(),
+                            resource: new Cancellation(() => providerStreamCancelled = true)
+                        );
+                    },
+                }
+            );
+            options.OnError = (_, _) => Task.CompletedTask;
+            var result = Client().StreamObjectAsync(options);
+
+            using var readerCancellation = new CancellationTokenSource();
+            var reader = result.PartialObjectStream().GetAsyncEnumerator(readerCancellation.Token);
+            var pendingRead = IgnoreErrors(reader.MoveNextAsync().AsTask());
+
+            // Maps to `await reader.cancel()`: the reader stops, and the pending read settles.
+            readerCancellation.Cancel();
+            await pendingRead;
+            await reader.DisposeAsync();
+            providerGate.TrySetResult();
+
+            await providerStreamCreation.Task;
+            await Task.Delay(50);
+
+            Assert.True(providerStreamCancelled);
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            Assert.Empty(backgroundErrors);
+        }
+        finally
+        {
+            TaskScheduler.UnobservedTaskException -= OnUnhandledRejection;
+            AppDomain.CurrentDomain.UnhandledException -= OnUncaughtException;
+        }
+
+        static async IAsyncEnumerable<LanguageModelStreamPart> PendingStream(
+            [System.Runtime.CompilerServices.EnumeratorCancellation]
+                CancellationToken cancellationToken = default
+        )
+        {
+            await Task.Delay(Timeout.Infinite, cancellationToken);
+            yield break;
+        }
+
+        static async Task IgnoreErrors(Task task)
+        {
+            try
+            {
+                await task;
+            }
+            catch (Exception) { }
+        }
+    }
+
+    private sealed class Cancellation(Action onDispose) : IDisposable
+    {
+        public void Dispose() => onDispose();
+    }
+
+    [Fact]
+    [UpstreamTest(
         Id + "should reject pending result promises and report failure for an error stream part",
         Coverage = UpstreamCoverage.Covered
     )]

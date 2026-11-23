@@ -477,14 +477,25 @@ public sealed class StreamObjectResult<T>
     }
 }
 
-/// <summary>A buffer that every reader of the full stream replays from the start.</summary>
+/// <summary>
+/// A buffer that every reader of the full stream replays from the start. Stands in for <c>createStitchableStream</c>:
+/// a reader that stops before the end cancels it, like cancelling the stitchable stream.
+/// </summary>
 internal sealed class ObjectPartBuffer
 {
     private readonly List<ObjectStreamPart> _parts = [];
     private readonly object _gate = new();
+
+    // Not disposed: it has no timer, and readers can still cancel after the stream completes.
+    private readonly CancellationTokenSource _cancel = new();
     private TaskCompletionSource<bool> _changed = NewSignal();
     private Exception? _error;
     private bool _completed;
+
+    /// <summary>Cancelled when a reader stops before the end. Maps to <c>isCancelled</c>.</summary>
+    public CancellationToken Cancelled => _cancel.Token;
+
+    public bool IsCancelled => _cancel.IsCancellationRequested;
 
     public void Add(ObjectStreamPart part)
     {
@@ -513,53 +524,79 @@ internal sealed class ObjectPartBuffer
         }
     }
 
+    // Maps to the cancel of the stitchable stream: the inner (provider) stream is cancelled.
+    public void Cancel()
+    {
+        lock (_gate)
+        {
+            if (_completed)
+            {
+                return;
+            }
+        }
+
+        _cancel.Cancel();
+    }
+
     public async IAsyncEnumerable<ObjectStreamPart> Read(
         [EnumeratorCancellation] CancellationToken cancellationToken
     )
     {
         var index = 0;
-        while (true)
+        var reachedEnd = false;
+        try
         {
-            Task wait;
-            ObjectStreamPart? next = null;
-            lock (_gate)
+            while (true)
             {
-                if (index < _parts.Count)
+                Task wait;
+                ObjectStreamPart? next = null;
+                lock (_gate)
                 {
-                    next = _parts[index++];
-                    wait = Task.CompletedTask;
-                }
-                else if (_completed)
-                {
-                    if (_error != null)
+                    if (index < _parts.Count)
                     {
-                        ExceptionDispatchInfo.Capture(_error).Throw();
+                        next = _parts[index++];
+                        wait = Task.CompletedTask;
                     }
+                    else if (_completed)
+                    {
+                        reachedEnd = true;
+                        if (_error != null)
+                        {
+                            ExceptionDispatchInfo.Capture(_error).Throw();
+                        }
 
-                    yield break;
+                        yield break;
+                    }
+                    else
+                    {
+                        wait = _changed.Task;
+                    }
                 }
-                else
+
+                if (next != null)
                 {
-                    wait = _changed.Task;
+                    yield return next;
+                    continue;
                 }
-            }
 
-            if (next != null)
+                cancellationToken.ThrowIfCancellationRequested();
+                var cancelled = new TaskCompletionSource<bool>(
+                    TaskCreationOptions.RunContinuationsAsynchronously
+                );
+                using (cancellationToken.Register(() => cancelled.TrySetResult(true)))
+                {
+                    await Task.WhenAny(wait, cancelled.Task).ConfigureAwait(false);
+                }
+
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+        }
+        finally
+        {
+            if (!reachedEnd)
             {
-                yield return next;
-                continue;
+                Cancel();
             }
-
-            cancellationToken.ThrowIfCancellationRequested();
-            var cancelled = new TaskCompletionSource<bool>(
-                TaskCreationOptions.RunContinuationsAsynchronously
-            );
-            using (cancellationToken.Register(() => cancelled.TrySetResult(true)))
-            {
-                await Task.WhenAny(wait, cancelled.Task).ConfigureAwait(false);
-            }
-
-            cancellationToken.ThrowIfCancellationRequested();
         }
     }
 
@@ -732,6 +769,10 @@ internal static class StreamObject
             {
                 await StreamAsync().ConfigureAwait(false);
             }
+            catch (OperationCanceledException) when (buffer.IsCancelled)
+            {
+                // A reader cancelled the stream, and with it the provider stream: nothing is reported.
+            }
             catch (Exception error)
             {
                 result.RejectResultPromises(GatewayErrorWrappers.WrapGatewayError(error));
@@ -747,7 +788,11 @@ internal static class StreamObject
                         .ConfigureAwait(false);
                 }
 
-                await EmitAsync(new ObjectStreamErrorPart(error)).ConfigureAwait(false);
+                // Maps to addStream on a cancelled stitchable stream: the error part is dropped.
+                if (!buffer.IsCancelled)
+                {
+                    await EmitAsync(new ObjectStreamErrorPart(error)).ConfigureAwait(false);
+                }
             }
             finally
             {
@@ -892,6 +937,12 @@ internal static class StreamObject
                 .ConfigureAwait(false);
             try
             {
+                // Maps to addStream on a cancelled stitchable stream: the provider stream is cancelled, not read.
+                if (buffer.IsCancelled)
+                {
+                    return;
+                }
+
                 await ProcessAsync(call, callId, now, startTimestampMs).ConfigureAwait(false);
             }
             finally
@@ -969,11 +1020,16 @@ internal static class StreamObject
                     call.Response?.Headers
                 );
 
+            // A reader that stops cancels the provider stream, like cancelling the stitchable stream.
+            using var streamCancellation = CancellationTokenSource.CreateLinkedTokenSource(
+                _cancellationToken,
+                buffer.Cancelled
+            );
             try
             {
                 await foreach (
                     var chunk in call
-                        .Stream.WithCancellation(_cancellationToken)
+                        .Stream.WithCancellation(streamCancellation.Token)
                         .ConfigureAwait(false)
                 )
                 {
@@ -1174,7 +1230,8 @@ internal static class StreamObject
                     }
                 }
             }
-            catch (Exception streamError) when (!_cancellationToken.IsCancellationRequested)
+            catch (Exception streamError)
+                when (!_cancellationToken.IsCancellationRequested && !buffer.IsCancelled)
             {
                 // A raw stream error stops the stream: readers of the full stream throw it, and flush does not run.
                 var wrappedError = GatewayErrorWrappers.WrapGatewayError(streamError);
