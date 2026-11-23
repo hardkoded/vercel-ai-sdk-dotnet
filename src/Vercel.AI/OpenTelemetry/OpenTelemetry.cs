@@ -1297,6 +1297,11 @@ public sealed class OpenTelemetry : ITelemetry
             Activity.Current?.Context ?? default
         );
 
+        if (rootSpan is null)
+        {
+            return;
+        }
+
         _callStates[callId] = new CallState(operationId, telemetry)
         {
             RootSpan = rootSpan,
@@ -1382,7 +1387,19 @@ public sealed class OpenTelemetry : ITelemetry
         IEnumerable<KeyValuePair<string, string>>? headers
     ) => headers?.Select(pair => new KeyValuePair<string, string?>(pair.Key, pair.Value));
 
-    private static string Json(object? value) => System.Text.Json.JsonSerializer.Serialize(value);
+    private static readonly System.Text.Json.JsonSerializerOptions JsonOptions = new()
+    {
+        // A vector with NaN must not make the span handlers throw and leave spans open.
+        NumberHandling = System
+            .Text
+            .Json
+            .Serialization
+            .JsonNumberHandling
+            .AllowNamedFloatingPointLiterals,
+    };
+
+    private static string Json(object? value) =>
+        System.Text.Json.JsonSerializer.Serialize(value, JsonOptions);
 
     private void OnEmbedOperationStart(EmbedStartEvent e)
     {
@@ -1438,6 +1455,11 @@ public sealed class OpenTelemetry : ITelemetry
             ),
             Activity.Current?.Context ?? default
         );
+
+        if (rootSpan is null)
+        {
+            return;
+        }
 
         _callStates[e.CallId] = new CallState(e.OperationId, telemetry)
         {
@@ -1612,6 +1634,11 @@ public sealed class OpenTelemetry : ITelemetry
             ),
             Activity.Current?.Context ?? default
         );
+
+        if (rootSpan is null)
+        {
+            return;
+        }
 
         _callStates[e.CallId] = new CallState(e.OperationId, telemetry)
         {

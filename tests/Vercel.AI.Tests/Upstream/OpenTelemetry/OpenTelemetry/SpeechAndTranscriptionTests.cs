@@ -50,10 +50,21 @@ public sealed class SpeechAndTranscriptionTests
         );
 
     // Numbers are compared as doubles: the attribute can hold any numeric type.
-    private static object? Attribute(MockSpan span, string key)
+    private static object? Normalize(object? value) =>
+        value is null or string or bool ? value : Convert.ToDouble(value);
+
+    // Attributes the span had when it started (upstream's initAttributes).
+    private static object? Init(MockSpan span, string key)
     {
-        span.Attributes.TryGetValue(key, out var value);
-        return value is null or string or bool ? value : Convert.ToDouble(value);
+        span.InitAttributes.TryGetValue(key, out var value);
+        return Normalize(value);
+    }
+
+    // Attributes set after the span started (upstream's runtimeAttributes).
+    private static object? Runtime(MockSpan span, string key)
+    {
+        span.RuntimeAttributes.TryGetValue(key, out var value);
+        return Normalize(value);
     }
 
     [Theory]
@@ -120,25 +131,25 @@ public sealed class SpeechAndTranscriptionTests
         Assert.Equal("gpt-4o-mini-tts", span.InitAttributes["gen_ai.request.model"]);
         Assert.Equal("speech", span.InitAttributes["gen_ai.output.type"]);
         Assert.Equal(false, span.InitAttributes["gen_ai.request.stream"]);
-        Assert.Equal(recordInputs == false ? null : text, Attribute(span, "ai.request.text"));
+        Assert.Equal(recordInputs == false ? null : text, Init(span, "ai.request.text"));
         Assert.Equal(
             recordInputs == false ? null : Messages("user", text),
-            Attribute(span, "gen_ai.input.messages")
+            Init(span, "gen_ai.input.messages")
         );
-        Assert.Null(Attribute(span, "gen_ai.output.messages"));
+        Assert.Null(Runtime(span, "gen_ai.output.messages"));
         Assert.Equal(
             recordOutputs == false ? null : 1234.0,
-            Attribute(span, "ai.response.audio.size")
+            Runtime(span, "ai.response.audio.size")
         );
         Assert.Equal(
             recordOutputs == false ? null : "audio/mpeg",
-            Attribute(span, "ai.response.audio.media_type")
+            Runtime(span, "ai.response.audio.media_type")
         );
         Assert.Equal(
             recordOutputs == false ? null : "mp3",
-            Attribute(span, "ai.response.audio.format")
+            Runtime(span, "ai.response.audio.format")
         );
-        Assert.Equal(5.0, Attribute(span, "gen_ai.usage.characters"));
+        Assert.Equal(5.0, Runtime(span, "gen_ai.usage.characters"));
     }
 
     [Theory]
@@ -197,25 +208,23 @@ public sealed class SpeechAndTranscriptionTests
         );
 
         var span = Assert.Single(tracer.Spans);
+        Assert.Equal(System.Diagnostics.ActivityKind.Client, span.Activity.Kind);
         Assert.Equal("ai.transcribe gpt-4o-transcribe", span.Name);
         Assert.True(span.Ended);
         Assert.Equal("text", span.InitAttributes["gen_ai.output.type"]);
         Assert.Equal(false, span.InitAttributes["gen_ai.request.stream"]);
-        Assert.Equal(
-            recordInputs == false ? null : 4321.0,
-            Attribute(span, "ai.request.audio.size")
-        );
+        Assert.Equal(recordInputs == false ? null : 4321.0, Init(span, "ai.request.audio.size"));
         Assert.Equal(
             recordInputs == false ? null : "audio/mpeg",
-            Attribute(span, "ai.request.audio.media_type")
+            Init(span, "ai.request.audio.media_type")
         );
-        Assert.Equal(recordOutputs == false ? null : text, Attribute(span, "ai.response.text"));
-        Assert.Equal(1.0, Attribute(span, "gen_ai.usage.seconds"));
+        Assert.Equal(recordOutputs == false ? null : text, Runtime(span, "ai.response.text"));
+        Assert.Equal(1.0, Runtime(span, "gen_ai.usage.seconds"));
         Assert.Equal(
             recordOutputs == false ? null : Messages("assistant", text),
-            Attribute(span, "gen_ai.output.messages")
+            Runtime(span, "gen_ai.output.messages")
         );
-        Assert.Null(Attribute(span, "gen_ai.input.messages"));
+        Assert.Null(Init(span, "gen_ai.input.messages"));
     }
 
     [Theory]
@@ -273,24 +282,22 @@ public sealed class SpeechAndTranscriptionTests
         );
 
         var span = Assert.Single(tracer.Spans);
+        Assert.Equal(System.Diagnostics.ActivityKind.Client, span.Activity.Kind);
         Assert.Equal("ai.streamTranscribe gpt-realtime-whisper", span.Name);
         Assert.True(span.Ended);
         Assert.Equal("text", span.InitAttributes["gen_ai.output.type"]);
         Assert.Equal(true, span.InitAttributes["gen_ai.request.stream"]);
         Assert.Equal(
             recordInputs == false ? null : "audio/pcm",
-            Attribute(span, "ai.request.audio.media_type")
+            Init(span, "ai.request.audio.media_type")
         );
-        Assert.Equal(
-            recordInputs == false ? null : 2048.0,
-            Attribute(span, "ai.request.audio.size")
-        );
-        Assert.Equal(recordOutputs == false ? null : text, Attribute(span, "ai.response.text"));
-        Assert.Equal(3.0, Attribute(span, "gen_ai.usage.input_tokens"));
+        Assert.Equal(recordInputs == false ? null : 2048.0, Runtime(span, "ai.request.audio.size"));
+        Assert.Equal(recordOutputs == false ? null : text, Runtime(span, "ai.response.text"));
+        Assert.Equal(3.0, Runtime(span, "gen_ai.usage.input_tokens"));
         Assert.Equal(
             recordOutputs == false ? null : Messages("assistant", text),
-            Attribute(span, "gen_ai.output.messages")
+            Runtime(span, "gen_ai.output.messages")
         );
-        Assert.Null(Attribute(span, "gen_ai.input.messages"));
+        Assert.Null(Init(span, "gen_ai.input.messages"));
     }
 }

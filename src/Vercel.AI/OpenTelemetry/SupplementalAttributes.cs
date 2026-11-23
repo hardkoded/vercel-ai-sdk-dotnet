@@ -21,17 +21,17 @@ public enum OpenTelemetrySpanType
     /// <summary>A tool execution span. Maps to <c>'tool'</c>.</summary>
     Tool,
 
-    /// <summary>An embedding model call span. Maps to <c>'embedding'</c>.</summary>
-    Embedding,
-
-    /// <summary>A reranking model call span. Maps to <c>'reranking'</c>.</summary>
-    Reranking,
-
     /// <summary>A decision model call span. Maps to <c>'experimental_decision'</c>.</summary>
     ExperimentalDecision,
 
     /// <summary>An extraction model call span. Maps to <c>'experimental_extraction'</c>.</summary>
     ExperimentalExtraction,
+
+    /// <summary>An embedding model call span. Maps to <c>'embedding'</c>.</summary>
+    Embedding,
+
+    /// <summary>A reranking model call span. Maps to <c>'reranking'</c>.</summary>
+    Reranking,
 }
 
 /// <summary>The call an <see cref="EnrichSpan"/> callback is asked about. Maps to the callback options in <c>EnrichSpan</c>.</summary>

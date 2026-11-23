@@ -18,10 +18,16 @@ public sealed class EmbedIntegrationTests
     private static TelemetryOptions Integration(MockTracer tracer) =>
         new() { Integrations = [new OtelIntegration(new OtelOptions { Tracer = tracer.Source })] };
 
-    private static object? InputTokens(MockSpan span)
+    private static double? InputTokens(MockSpan span)
     {
-        span.Attributes.TryGetValue("gen_ai.usage.input_tokens", out var tokens);
-        return tokens;
+        if (!span.Attributes.TryGetValue("gen_ai.usage.input_tokens", out var tokens))
+        {
+            return null;
+        }
+
+        // A number only: a string or a rounded value must fail the comparison.
+        Assert.True(tokens is int or long or double or float, "input tokens must be numeric");
+        return Convert.ToDouble(tokens);
     }
 
     [Fact]
@@ -53,7 +59,7 @@ public sealed class EmbedIntegrationTests
         Assert.All(spans, span =>
             Assert.Equal("embeddings", span.Attributes["gen_ai.operation.name"])
         );
-        Assert.Equal(14L, Convert.ToInt64(InputTokens(spans[0])));
+        Assert.Equal(14.0, InputTokens(spans[0]));
         Assert.Null(InputTokens(spans[1]));
     }
 
@@ -90,8 +96,8 @@ public sealed class EmbedIntegrationTests
 
         // The two provider request spans can end in either order. The root span ends last and has no usage.
         Assert.Equal(
-            [14L, 28L],
-            spans.Take(2).Select(span => Convert.ToInt64(InputTokens(span))).OrderBy(n => n)
+            [14.0, 28.0],
+            spans.Take(2).Select(span => InputTokens(span)!.Value).OrderBy(n => n)
         );
         Assert.Null(InputTokens(spans[2]));
     }

@@ -64,7 +64,7 @@ internal static class ProviderUsageAttributes
             {
                 // Whole numbers stay integers, like the token counts of the other spans.
                 attributes[prefix + "." + string.Join(".", path)] = value.TryGetInt64(out var whole)
-                    ? whole
+                    ? (object)whole
                     : number;
             }
 
