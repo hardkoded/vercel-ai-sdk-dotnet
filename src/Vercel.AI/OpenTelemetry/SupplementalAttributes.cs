@@ -136,6 +136,9 @@ public sealed class OpenTelemetryOptions
 
     /// <summary>Emit the tool choice of a step as <c>ai.prompt.toolChoice</c>. Maps to <c>toolChoice</c>.</summary>
     public bool? ToolChoice { get; set; }
+
+    /// <summary>Emit object generation schema information.</summary>
+    public bool? Schema { get; set; }
 }
 
 /// <summary>The enabled supplemental attribute groups. Maps to <c>SupplementalAttributeOptions</c>.</summary>
@@ -158,6 +161,7 @@ internal sealed class SupplementalAttributeOptions
     public bool Headers { get; init; }
 
     public bool ToolChoice { get; init; }
+    public bool Schema { get; init; }
 
     /// <summary>Maps to <c>normalizeSupplementalAttributes</c>.</summary>
     public static SupplementalAttributeOptions Normalize(OpenTelemetryOptions options)
@@ -176,6 +180,7 @@ internal sealed class SupplementalAttributeOptions
             RuntimeContext = options.RuntimeContext ?? false,
             Headers = options.Headers ?? false,
             ToolChoice = options.ToolChoice ?? false,
+            Schema = options.Schema ?? false,
         };
     }
 
@@ -197,6 +202,7 @@ internal sealed class SupplementalAttributeOptions
             SupplementalGroup.RuntimeContext => RuntimeContext,
             SupplementalGroup.Headers => Headers,
             SupplementalGroup.ToolChoice => ToolChoice,
+            SupplementalGroup.Schema => Schema,
             _ => false,
         };
         if (!enabled || attributes is null)
@@ -219,6 +225,7 @@ internal enum SupplementalGroup
     RuntimeContext,
     Headers,
     ToolChoice,
+    Schema,
 }
 
 /// <summary>Helpers of <c>supplemental-attributes.ts</c>.</summary>
