@@ -39,6 +39,7 @@ public sealed class RedactToolDefinitionTests
     [UpstreamTest(
         Test + "preserves definitions without domain secrets: $args",
         Coverage = UpstreamCoverage.Partial,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71",
         Note = "The upstream case with undefined arguments has no JSON form."
     )]
     public void Preserves_definitions_without_domain_secrets(string tool)
@@ -52,7 +53,8 @@ public sealed class RedactToolDefinitionTests
     [Fact]
     [UpstreamTest(
         Test + "redacts shell environment domain secrets without mutating provider arguments",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public void Redacts_shell_environment_domain_secrets_without_mutating_provider_arguments()
     {
@@ -70,7 +72,8 @@ public sealed class RedactToolDefinitionTests
     [UpstreamTest(
         Test
             + "redacts MCP authorization and all header values without mutating provider arguments",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public void Redacts_MCP_authorization_and_all_header_values_without_mutating_provider_arguments()
     {
@@ -87,7 +90,8 @@ public sealed class RedactToolDefinitionTests
     [Fact]
     [UpstreamTest(
         Test + "preserves MCP definitions without credentials",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public void Preserves_MCP_definitions_without_credentials()
     {
@@ -100,7 +104,8 @@ public sealed class RedactToolDefinitionTests
     [Fact]
     [UpstreamTest(
         Test + "redacts Google MCP server header values without mutating provider arguments",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public void Redacts_Google_MCP_server_header_values_without_mutating_provider_arguments()
     {
@@ -117,7 +122,8 @@ public sealed class RedactToolDefinitionTests
     [Fact]
     [UpstreamTest(
         Test + "preserves Google MCP definitions without credentials",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public void Preserves_Google_MCP_definitions_without_credentials()
     {
@@ -130,7 +136,8 @@ public sealed class RedactToolDefinitionTests
     [Fact]
     [UpstreamTest(
         Test + "preserves unrelated tool definitions",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public void Preserves_unrelated_tool_definitions()
     {
@@ -152,7 +159,8 @@ public sealed class RedactToolDefinitionTests
     [Fact]
     [UpstreamTest(
         Test + "redacts multiple credentials without mutating provider arguments",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public void Redacts_multiple_credentials_without_mutating_provider_arguments()
     {

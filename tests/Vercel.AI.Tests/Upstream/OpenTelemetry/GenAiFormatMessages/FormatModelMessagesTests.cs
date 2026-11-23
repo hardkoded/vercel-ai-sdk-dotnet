@@ -16,7 +16,8 @@ public sealed class FormatModelMessagesTests
     [Fact]
     [UpstreamTest(
         Test + "should convert a prompt string to a user message",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public void Should_convert_a_prompt_string_to_a_user_message()
     {
@@ -29,7 +30,8 @@ public sealed class FormatModelMessagesTests
     [Fact]
     [UpstreamTest(
         Test + "should convert ModelMessage array from prompt",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public void Should_convert_ModelMessage_array_from_prompt()
     {
@@ -62,7 +64,8 @@ public sealed class FormatModelMessagesTests
     [Fact]
     [UpstreamTest(
         Test + "should preserve system messages in message order",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public void Should_preserve_system_messages_in_message_order()
     {
@@ -87,7 +90,11 @@ public sealed class FormatModelMessagesTests
     }
 
     [Fact]
-    [UpstreamTest(Test + "should convert tool messages", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Test + "should convert tool messages",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
+    )]
     public void Should_convert_tool_messages()
     {
         SemConvJson.AssertEqual(
@@ -103,7 +110,11 @@ public sealed class FormatModelMessagesTests
     }
 
     [Fact]
-    [UpstreamTest(Test + "should combine prompt and messages", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Test + "should combine prompt and messages",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
+    )]
     public void Should_combine_prompt_and_messages()
     {
         SemConvJson.AssertEqual(
@@ -123,7 +134,8 @@ public sealed class FormatModelMessagesTests
     [Fact]
     [UpstreamTest(
         Test + "should return empty array when both prompt and messages are undefined",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public void Should_return_empty_array_when_both_prompt_and_messages_are_undefined()
     {
@@ -133,7 +145,8 @@ public sealed class FormatModelMessagesTests
     [Fact]
     [UpstreamTest(
         Test + "should format all assistant content parts in order",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public void Should_format_all_assistant_content_parts_in_order()
     {

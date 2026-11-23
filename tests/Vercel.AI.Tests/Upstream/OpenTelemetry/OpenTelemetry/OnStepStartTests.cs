@@ -30,7 +30,8 @@ public sealed class OnStepStartTests
     [Fact]
     [UpstreamTest(
         Test + "creates agent_step and chat spans with correct attributes",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "15bfd6b262f688cfb8281dbdb32c7dffe082337e"
     )]
     public async Task Creates_agent_step_and_chat_spans_with_correct_attributes()
     {
@@ -62,7 +63,8 @@ public sealed class OnStepStartTests
     [Fact]
     [UpstreamTest(
         Test + "sets gen_ai.input.messages when messages are provided",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "15bfd6b262f688cfb8281dbdb32c7dffe082337e"
     )]
     public async Task Sets_gen_ai_input_messages_when_messages_are_provided()
     {
@@ -84,7 +86,8 @@ public sealed class OnStepStartTests
     [Fact]
     [UpstreamTest(
         Test + "sets gen_ai.system_instructions when instructions are provided",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "15bfd6b262f688cfb8281dbdb32c7dffe082337e"
     )]
     public async Task Sets_gen_ai_system_instructions_when_instructions_are_provided()
     {
@@ -107,6 +110,7 @@ public sealed class OnStepStartTests
     [UpstreamTest(
         Test + "sets gen_ai.tool.definitions when tools provided",
         Coverage = UpstreamCoverage.Partial,
+        Commit = "15bfd6b262f688cfb8281dbdb32c7dffe082337e",
         Note = "Upstream passes a tool without an input schema. The port's function tool always carries one, so the definition has inputSchema too."
     )]
     public async Task Sets_gen_ai_tool_definitions_when_tools_provided()

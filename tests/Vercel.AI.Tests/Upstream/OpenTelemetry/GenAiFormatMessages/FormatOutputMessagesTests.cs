@@ -14,7 +14,11 @@ public sealed class FormatOutputMessagesTests
         "packages/otel/src/gen-ai-format-messages.test.ts::formatOutputMessages::";
 
     [Fact]
-    [UpstreamTest(Test + "should format text-only output", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Test + "should format text-only output",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
+    )]
     public void Should_format_text_only_output()
     {
         SemConvJson.AssertEqual(
@@ -26,7 +30,8 @@ public sealed class FormatOutputMessagesTests
     [Fact]
     [UpstreamTest(
         Test + "should format output with reasoning",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public void Should_format_output_with_reasoning()
     {
@@ -45,7 +50,8 @@ public sealed class FormatOutputMessagesTests
     [Fact]
     [UpstreamTest(
         Test + "should format output with tool calls",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public void Should_format_output_with_tool_calls()
     {
@@ -66,7 +72,8 @@ public sealed class FormatOutputMessagesTests
     [Fact]
     [UpstreamTest(
         Test + "should format output with tool results",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public void Should_format_output_with_tool_results()
     {
@@ -88,6 +95,7 @@ public sealed class FormatOutputMessagesTests
     [UpstreamTest(
         Test + "should format output with files",
         Coverage = UpstreamCoverage.Partial,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71",
         Note = "The port holds file data as bytes, so the part carries the base64 of the bytes instead of an already-encoded base64 string."
     )]
     public void Should_format_output_with_files()
@@ -107,6 +115,7 @@ public sealed class FormatOutputMessagesTests
     [UpstreamTest(
         Test + "should combine reasoning, text, tool calls, and files",
         Coverage = UpstreamCoverage.Partial,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71",
         Note = "The port holds file data as bytes, so the part carries the base64 of the bytes instead of an already-encoded base64 string."
     )]
     public void Should_combine_reasoning_text_tool_calls_and_files()
@@ -133,7 +142,8 @@ public sealed class FormatOutputMessagesTests
     [Fact]
     [UpstreamTest(
         Test + "should map finish reasons correctly",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public void Should_map_finish_reasons_correctly()
     {

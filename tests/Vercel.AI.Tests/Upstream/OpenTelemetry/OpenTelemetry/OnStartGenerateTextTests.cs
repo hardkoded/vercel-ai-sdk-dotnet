@@ -19,7 +19,8 @@ public sealed class OnStartGenerateTextTests
     [Fact]
     [UpstreamTest(
         Test + "creates root span with correct attributes",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "15bfd6b262f688cfb8281dbdb32c7dffe082337e"
     )]
     public async Task Creates_root_span_with_correct_attributes()
     {
@@ -50,7 +51,8 @@ public sealed class OnStartGenerateTextTests
     [Fact]
     [UpstreamTest(
         Test + "sets system_instructions when instructions are provided",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "15bfd6b262f688cfb8281dbdb32c7dffe082337e"
     )]
     public async Task Sets_system_instructions_when_instructions_are_provided()
     {
@@ -74,7 +76,8 @@ public sealed class OnStartGenerateTextTests
     [Fact]
     [UpstreamTest(
         Test + "preserves functionId as gen_ai.agent.name",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "15bfd6b262f688cfb8281dbdb32c7dffe082337e"
     )]
     public async Task Preserves_functionId_as_gen_ai_agent_name()
     {

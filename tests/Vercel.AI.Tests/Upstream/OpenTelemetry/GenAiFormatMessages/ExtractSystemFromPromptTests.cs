@@ -12,7 +12,8 @@ public sealed class ExtractSystemFromPromptTests
     [Fact]
     [UpstreamTest(
         "packages/otel/src/gen-ai-format-messages.test.ts::extractSystemFromPrompt::should extract system message from prompt",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public void Should_extract_system_message_from_prompt()
     {
@@ -27,7 +28,8 @@ public sealed class ExtractSystemFromPromptTests
     [Fact]
     [UpstreamTest(
         "packages/otel/src/gen-ai-format-messages.test.ts::extractSystemFromPrompt::should return undefined when no system message",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public void Should_return_undefined_when_no_system_message()
     {

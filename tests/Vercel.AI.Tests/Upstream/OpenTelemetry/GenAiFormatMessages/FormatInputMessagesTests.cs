@@ -14,7 +14,11 @@ public sealed class FormatInputMessagesTests
         "packages/otel/src/gen-ai-format-messages.test.ts::formatInputMessages::";
 
     [Fact]
-    [UpstreamTest(Test + "should convert user text messages", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Test + "should convert user text messages",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
+    )]
     public void Should_convert_user_text_messages()
     {
         var prompt = new ModelMessage[] { new UserModelMessage("What is the weather?") };
@@ -27,7 +31,8 @@ public sealed class FormatInputMessagesTests
     [Fact]
     [UpstreamTest(
         Test + "should preserve system messages in prompt order",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public void Should_preserve_system_messages_in_prompt_order()
     {
@@ -52,7 +57,8 @@ public sealed class FormatInputMessagesTests
     [Fact]
     [UpstreamTest(
         Test + "should convert assistant messages with tool calls",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public void Should_convert_assistant_messages_with_tool_calls()
     {
@@ -78,7 +84,8 @@ public sealed class FormatInputMessagesTests
     [Fact]
     [UpstreamTest(
         Test + "should convert tool result messages",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public void Should_convert_tool_result_messages()
     {
@@ -96,6 +103,7 @@ public sealed class FormatInputMessagesTests
     [UpstreamTest(
         Test + "should convert file parts to blob parts",
         Coverage = UpstreamCoverage.Partial,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71",
         Note = "The port holds file data as bytes, so the part carries the base64 of the bytes instead of an already-encoded base64 string."
     )]
     public void Should_convert_file_parts_to_blob_parts()
@@ -125,7 +133,8 @@ public sealed class FormatInputMessagesTests
     [Fact]
     [UpstreamTest(
         Test + "should convert URL file parts to uri parts",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public void Should_convert_URL_file_parts_to_uri_parts()
     {
@@ -147,7 +156,11 @@ public sealed class FormatInputMessagesTests
     }
 
     [Fact]
-    [UpstreamTest(Test + "should convert reasoning parts", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Test + "should convert reasoning parts",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
+    )]
     public void Should_convert_reasoning_parts()
     {
         var prompt = new ModelMessage[]

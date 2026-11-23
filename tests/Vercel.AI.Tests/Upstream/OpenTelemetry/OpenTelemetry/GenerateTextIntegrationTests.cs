@@ -59,7 +59,8 @@ public sealed class GenerateTextIntegrationTests
     [Fact]
     [UpstreamTest(
         Test + "records system instructions on the chat span",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "15bfd6b262f688cfb8281dbdb32c7dffe082337e"
     )]
     public async Task Records_system_instructions_on_the_chat_span()
     {
@@ -90,7 +91,8 @@ public sealed class GenerateTextIntegrationTests
     [Fact]
     [UpstreamTest(
         Test + "preserves allowed system messages in chat history order",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "15bfd6b262f688cfb8281dbdb32c7dffe082337e"
     )]
     public async Task Preserves_allowed_system_messages_in_chat_history_order()
     {
@@ -129,7 +131,8 @@ public sealed class GenerateTextIntegrationTests
     [Fact]
     [UpstreamTest(
         Test + "records output message parts in the order they were produced",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "15bfd6b262f688cfb8281dbdb32c7dffe082337e"
     )]
     public async Task Records_output_message_parts_in_the_order_they_were_produced()
     {
@@ -172,7 +175,8 @@ public sealed class GenerateTextIntegrationTests
     [Fact]
     [UpstreamTest(
         Test + "records step output parts the same way as the next step input",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "15bfd6b262f688cfb8281dbdb32c7dffe082337e"
     )]
     public async Task Records_step_output_parts_the_same_way_as_the_next_step_input()
     {

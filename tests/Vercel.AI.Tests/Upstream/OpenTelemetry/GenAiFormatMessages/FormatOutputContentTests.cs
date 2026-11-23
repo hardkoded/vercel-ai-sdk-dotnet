@@ -15,7 +15,8 @@ public sealed class FormatOutputContentTests
     [Fact]
     [UpstreamTest(
         Test + "should preserve the order and boundaries of content parts",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public void Should_preserve_the_order_and_boundaries_of_content_parts()
     {
@@ -43,7 +44,8 @@ public sealed class FormatOutputContentTests
     [Fact]
     [UpstreamTest(
         Test + "should format all content part types",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public void Should_format_all_content_part_types()
     {
@@ -92,7 +94,8 @@ public sealed class FormatOutputContentTests
     [Fact]
     [UpstreamTest(
         Test + "should skip empty text parts without provider metadata",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public void Should_skip_empty_text_parts_without_provider_metadata()
     {

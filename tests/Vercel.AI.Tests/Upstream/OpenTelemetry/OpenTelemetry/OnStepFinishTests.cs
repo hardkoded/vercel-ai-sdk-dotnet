@@ -19,7 +19,8 @@ public sealed class OnStepFinishTests
     [Fact]
     [UpstreamTest(
         Test + "formats output messages in SemConv format",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "15bfd6b262f688cfb8281dbdb32c7dffe082337e"
     )]
     public async Task Formats_output_messages_in_SemConv_format()
     {
@@ -43,7 +44,8 @@ public sealed class OnStepFinishTests
     [Fact]
     [UpstreamTest(
         Test + "includes tool calls in output messages",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "15bfd6b262f688cfb8281dbdb32c7dffe082337e"
     )]
     public async Task Includes_tool_calls_in_output_messages()
     {
@@ -74,6 +76,7 @@ public sealed class OnStepFinishTests
     [UpstreamTest(
         Test + "records provider-executed tool results and observed definitions",
         Coverage = UpstreamCoverage.Partial,
+        Commit = "15bfd6b262f688cfb8281dbdb32c7dffe082337e",
         Note = "Only the gen_ai.output.messages and gen_ai.tool.definitions checks. The execute_tool span of a provider-executed call is tracked in #1707."
     )]
     public async Task Records_provider_executed_tool_results_and_observed_definitions()

@@ -28,7 +28,8 @@ public sealed class OnEndGenerateTextTests
     [Fact]
     [UpstreamTest(
         Test + "sets total usage and output on root span",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "15bfd6b262f688cfb8281dbdb32c7dffe082337e"
     )]
     public async Task Sets_total_usage_and_output_on_root_span()
     {
@@ -55,7 +56,8 @@ public sealed class OnEndGenerateTextTests
     [Fact]
     [UpstreamTest(
         Test + "formats output messages on root span",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "15bfd6b262f688cfb8281dbdb32c7dffe082337e"
     )]
     public async Task Formats_output_messages_on_root_span()
     {
