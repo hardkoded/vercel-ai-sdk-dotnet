@@ -91,6 +91,7 @@ public sealed class MoonshotProvider : OpenAICompatibleProvider
         }
         options.IncludeUsage = true;
         options.ResolveReasoningEffort = (_, _, _, _) => null;
+        options.ConvertUsage = usage => MoonshotChatUsage.ConvertMoonshotAIChatUsage(usage);
         options.TransformChatRequest = MoonshotChatRequest.Apply;
         options.NormalizeRequestSchema = MoonshotJsonSchema.NormalizeJsonSchemaForMFJS;
         options.NormalizeResponseSchema = MoonshotJsonSchema.NormalizeResponseSchema;

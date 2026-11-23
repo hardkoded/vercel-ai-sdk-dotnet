@@ -34,6 +34,8 @@ internal static class MoonshotChatRequest
         IList<CallWarning> warnings
     )
     {
+        ApplySamplingOptions(modelId, options, body, warnings);
+
         var moonshot = ReadOptions(options.ProviderOptions);
         var requestedThinking = moonshot.TryGetPropertyValue("thinking", out var thinkingNode)
             ? thinkingNode as JsonObject
@@ -214,6 +216,42 @@ internal static class MoonshotChatRequest
         }
 
         return body;
+    }
+
+    /// <summary>Omits the sampling options that Kimi models fix and warns. Maps to the <c>supportsSamplingOptions</c> checks in <c>getArgs</c>.</summary>
+    private static void ApplySamplingOptions(
+        string modelId,
+        LanguageModelCallOptions options,
+        JsonObject body,
+        IList<CallWarning> warnings
+    )
+    {
+        if (!MoonshotModelCatalog.IsMoonshotKimiModel(modelId))
+        {
+            return;
+        }
+
+        void Omit(string feature, bool present, string key)
+        {
+            if (!present)
+            {
+                return;
+            }
+
+            body.Remove(key);
+            warnings.Add(
+                new CallWarning(
+                    "unsupported",
+                    feature,
+                    $"{feature} is fixed by model \"{modelId}\" and has been omitted."
+                )
+            );
+        }
+
+        Omit("temperature", options.Temperature != null, "temperature");
+        Omit("topP", options.TopP != null, "top_p");
+        Omit("frequencyPenalty", options.FrequencyPenalty != null, "frequency_penalty");
+        Omit("presencePenalty", options.PresencePenalty != null, "presence_penalty");
     }
 
     private static string? ThinkingTypeOf(string? reasoning)
