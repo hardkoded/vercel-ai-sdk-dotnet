@@ -20,7 +20,7 @@ namespace Vercel.AI.OpenTelemetry;
 /// extract. The embed, rerank, speech, transcription, object, durable, and inference duration parts of upstream need events the port
 /// does not emit yet.
 /// </remarks>
-public sealed class OpenTelemetry : ITelemetry
+public class OpenTelemetry : ITelemetry
 {
     private static readonly Lazy<ActivitySource> DefaultTracer = new(() =>
         new ActivitySource("gen_ai")
@@ -142,8 +142,30 @@ public sealed class OpenTelemetry : ITelemetry
             return Task.CompletedTask;
         };
 
+#pragma warning disable CS0618 // The current hooks call the deprecated ones on purpose.
+    // The current hooks route through the deprecated ones, so a subclass that overrides a deprecated hook keeps working.
     /// <inheritdoc />
-    public Func<DecideEvent, CancellationToken, Task>? OnDecideStart =>
+    public virtual Func<DecideEvent, CancellationToken, Task>? OnDecideStart =>
+        (e, ct) => OnEvaluateStart?.Invoke(EvaluateEvent.From(e), ct) ?? Task.CompletedTask;
+
+    /// <inheritdoc />
+    public virtual Func<DecisionModelEvent, CancellationToken, Task>? OnDecisionModelCallStart =>
+        (e, ct) =>
+            OnEvaluationModelCallStart?.Invoke(EvaluateModelEvent.From(e), ct)
+            ?? Task.CompletedTask;
+
+    /// <inheritdoc />
+    public virtual Func<DecisionModelEvent, CancellationToken, Task>? OnDecisionModelCallEnd =>
+        (e, ct) =>
+            OnEvaluationModelCallEnd?.Invoke(EvaluateModelEvent.From(e), ct) ?? Task.CompletedTask;
+
+    /// <inheritdoc />
+    public virtual Func<DecideEvent, CancellationToken, Task>? OnDecideEnd =>
+        (e, ct) => OnEvaluateEnd?.Invoke(EvaluateEvent.From(e), ct) ?? Task.CompletedTask;
+
+    /// <inheritdoc />
+    [Obsolete("Use OnDecideStart instead.")]
+    public virtual Func<EvaluateEvent, CancellationToken, Task>? OnEvaluateStart =>
         (e, _) =>
         {
             OnDecideOperationStart(e);
@@ -151,7 +173,8 @@ public sealed class OpenTelemetry : ITelemetry
         };
 
     /// <inheritdoc />
-    public Func<DecisionModelEvent, CancellationToken, Task>? OnDecisionModelCallStart =>
+    [Obsolete("Use OnDecisionModelCallStart instead.")]
+    public virtual Func<EvaluateModelEvent, CancellationToken, Task>? OnEvaluationModelCallStart =>
         (e, _) =>
         {
             OnDecisionModelCallStartCore(e);
@@ -159,7 +182,8 @@ public sealed class OpenTelemetry : ITelemetry
         };
 
     /// <inheritdoc />
-    public Func<DecisionModelEvent, CancellationToken, Task>? OnDecisionModelCallEnd =>
+    [Obsolete("Use OnDecisionModelCallEnd instead.")]
+    public virtual Func<EvaluateModelEvent, CancellationToken, Task>? OnEvaluationModelCallEnd =>
         (e, _) =>
         {
             OnDecisionModelCallEndCore(e);
@@ -167,28 +191,15 @@ public sealed class OpenTelemetry : ITelemetry
         };
 
     /// <inheritdoc />
-    public Func<DecideEvent, CancellationToken, Task>? OnDecideEnd =>
+    [Obsolete("Use OnDecideEnd instead.")]
+    public virtual Func<EvaluateEvent, CancellationToken, Task>? OnEvaluateEnd =>
         (e, _) =>
         {
             OnDecideOperationEnd(e);
             return Task.CompletedTask;
         };
 
-    /// <inheritdoc />
-    [Obsolete("Use OnDecideStart instead.")]
-    public Func<EvaluateEvent, CancellationToken, Task>? OnEvaluateStart => null;
-
-    /// <inheritdoc />
-    [Obsolete("Use OnDecisionModelCallStart instead.")]
-    public Func<EvaluateModelEvent, CancellationToken, Task>? OnEvaluationModelCallStart => null;
-
-    /// <inheritdoc />
-    [Obsolete("Use OnDecisionModelCallEnd instead.")]
-    public Func<EvaluateModelEvent, CancellationToken, Task>? OnEvaluationModelCallEnd => null;
-
-    /// <inheritdoc />
-    [Obsolete("Use OnDecideEnd instead.")]
-    public Func<EvaluateEvent, CancellationToken, Task>? OnEvaluateEnd => null;
+#pragma warning restore CS0618
 
     /// <inheritdoc />
     public Func<ExtractStartEvent, CancellationToken, Task>? OnExtractStart =>
@@ -909,9 +920,16 @@ public sealed class OpenTelemetry : ITelemetry
                     state.Telemetry,
                     new Dictionary<string, object?>
                     {
+                        ["gen_ai.response.id"] = e.Response?.Id,
+                        ["gen_ai.response.model"] = e.Response?.ModelId,
                         ["gen_ai.usage.input_tokens"] = e.Usage?.InputTokens,
                         ["gen_ai.usage.output_tokens"] = e.Usage?.OutputTokens,
                     }
+                ),
+                _supplementalAttributes.Select(
+                    state.Telemetry,
+                    SupplementalGroup.ProviderMetadata,
+                    ProviderMetadataAttributes(e.ProviderMetadata)
                 ),
                 _supplementalAttributes.Select(
                     state.Telemetry,
@@ -1112,15 +1130,14 @@ public sealed class OpenTelemetry : ITelemetry
 
     private void OnAbortCore(StreamAbortContext e)
     {
-        var callId = e.Steps.Count > 0 ? e.Steps[e.Steps.Count - 1].CallId : null;
-        if (!TryGetCallState(callId, out var state) || state.RootSpan is null)
+        if (!TryGetCallState(e.CallId, out var state) || state.RootSpan is null)
         {
             return;
         }
 
         EndOpenSpans(state, null);
         End(state.RootSpan);
-        _callStates.TryRemove(callId!, out _);
+        _callStates.TryRemove(e.CallId, out _);
     }
 
     private void OnErrorCore(TelemetryErrorEvent e)
@@ -1186,7 +1203,8 @@ public sealed class OpenTelemetry : ITelemetry
     ) =>
         new()
         {
-            ["ai.response.providerMetadata"] = providerMetadata is { } value
+            ["ai.response.providerMetadata"] = providerMetadata
+                is { ValueKind: not System.Text.Json.JsonValueKind.Undefined } value
                 ? value.GetRawText()
                 : null,
         };
