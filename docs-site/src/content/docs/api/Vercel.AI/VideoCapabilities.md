@@ -23,7 +23,7 @@ Upstream `ModelCapabilities.video`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L189)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L192)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Aspect ratio.
 
 **Value:** [ModelCapability](/api/Vercel.AI/ModelCapability/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L198)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L201)
 
 <a id="Vercel_AI_VideoCapabilities_Duration_"></a>
 <a id="Vercel_AI_VideoCapabilities_Duration"></a>
@@ -59,7 +59,7 @@ Duration.
 
 **Value:** [ModelCapability](/api/Vercel.AI/ModelCapability/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L204)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L207)
 
 <a id="Vercel_AI_VideoCapabilities_Fps_"></a>
 <a id="Vercel_AI_VideoCapabilities_Fps"></a>
@@ -76,7 +76,7 @@ Frames per second.
 
 **Value:** [ModelCapability](/api/Vercel.AI/ModelCapability/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L207)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L210)
 
 <a id="Vercel_AI_VideoCapabilities_GenerateAudio_"></a>
 <a id="Vercel_AI_VideoCapabilities_GenerateAudio"></a>
@@ -93,7 +93,7 @@ Audio generation.
 
 **Value:** [ModelCapability](/api/Vercel.AI/ModelCapability/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L195)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L198)
 
 <a id="Vercel_AI_VideoCapabilities_Inputs_"></a>
 <a id="Vercel_AI_VideoCapabilities_Inputs"></a>
@@ -110,7 +110,7 @@ Upstream `inputs`.
 
 **Value:** [VideoInputCapabilities](/api/Vercel.AI/VideoInputCapabilities/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L192)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L195)
 
 <a id="Vercel_AI_VideoCapabilities_MaxVideosPerCall_"></a>
 <a id="Vercel_AI_VideoCapabilities_MaxVideosPerCall"></a>
@@ -127,7 +127,7 @@ Null means the catalog does not declare a fixed limit.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L213)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L216)
 
 <a id="Vercel_AI_VideoCapabilities_Resolution_"></a>
 <a id="Vercel_AI_VideoCapabilities_Resolution"></a>
@@ -144,7 +144,7 @@ Resolution.
 
 **Value:** [ModelCapability](/api/Vercel.AI/ModelCapability/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L201)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L204)
 
 <a id="Vercel_AI_VideoCapabilities_Seed_"></a>
 <a id="Vercel_AI_VideoCapabilities_Seed"></a>
@@ -161,4 +161,4 @@ Seed.
 
 **Value:** [ModelCapability](/api/Vercel.AI/ModelCapability/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L210)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L213)

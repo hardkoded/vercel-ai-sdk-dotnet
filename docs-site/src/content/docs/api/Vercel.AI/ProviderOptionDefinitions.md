@@ -25,7 +25,7 @@ accepted under `providerOptions.<provider>` for that operation.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L363)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L369)
 
 ## Properties
 
@@ -44,7 +44,7 @@ Upstream `decision`.
 
 **Value:** [IReadOnlyDictionary&lt;string, ProviderOptionDefinition&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L381)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L387)
 
 <a id="Vercel_AI_ProviderOptionDefinitions_Embedding_"></a>
 <a id="Vercel_AI_ProviderOptionDefinitions_Embedding"></a>
@@ -61,7 +61,7 @@ Upstream `embedding`.
 
 **Value:** [IReadOnlyDictionary&lt;string, ProviderOptionDefinition&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L369)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L375)
 
 <a id="Vercel_AI_ProviderOptionDefinitions_Image_"></a>
 <a id="Vercel_AI_ProviderOptionDefinitions_Image"></a>
@@ -78,7 +78,7 @@ Upstream `image`.
 
 **Value:** [IReadOnlyDictionary&lt;string, ProviderOptionDefinition&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L372)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L378)
 
 <a id="Vercel_AI_ProviderOptionDefinitions_Language_"></a>
 <a id="Vercel_AI_ProviderOptionDefinitions_Language"></a>
@@ -95,7 +95,7 @@ Upstream `language`.
 
 **Value:** [IReadOnlyDictionary&lt;string, ProviderOptionDefinition&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L366)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L372)
 
 <a id="Vercel_AI_ProviderOptionDefinitions_Realtime_"></a>
 <a id="Vercel_AI_ProviderOptionDefinitions_Realtime"></a>
@@ -112,7 +112,7 @@ Upstream `realtime`.
 
 **Value:** [IReadOnlyDictionary&lt;string, ProviderOptionDefinition&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L393)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L399)
 
 <a id="Vercel_AI_ProviderOptionDefinitions_Reranking_"></a>
 <a id="Vercel_AI_ProviderOptionDefinitions_Reranking"></a>
@@ -129,7 +129,7 @@ Upstream `reranking`.
 
 **Value:** [IReadOnlyDictionary&lt;string, ProviderOptionDefinition&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L378)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L384)
 
 <a id="Vercel_AI_ProviderOptionDefinitions_Speech_"></a>
 <a id="Vercel_AI_ProviderOptionDefinitions_Speech"></a>
@@ -146,7 +146,7 @@ Upstream `speech`.
 
 **Value:** [IReadOnlyDictionary&lt;string, ProviderOptionDefinition&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L390)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L396)
 
 <a id="Vercel_AI_ProviderOptionDefinitions_SpeechTranslation_"></a>
 <a id="Vercel_AI_ProviderOptionDefinitions_SpeechTranslation"></a>
@@ -163,7 +163,7 @@ Upstream `speechTranslation`.
 
 **Value:** [IReadOnlyDictionary&lt;string, ProviderOptionDefinition&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L387)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L393)
 
 <a id="Vercel_AI_ProviderOptionDefinitions_Transcription_"></a>
 <a id="Vercel_AI_ProviderOptionDefinitions_Transcription"></a>
@@ -180,7 +180,7 @@ Upstream `transcription`.
 
 **Value:** [IReadOnlyDictionary&lt;string, ProviderOptionDefinition&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L384)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L390)
 
 <a id="Vercel_AI_ProviderOptionDefinitions_Video_"></a>
 <a id="Vercel_AI_ProviderOptionDefinitions_Video"></a>
@@ -197,4 +197,4 @@ Upstream `video`.
 
 **Value:** [IReadOnlyDictionary&lt;string, ProviderOptionDefinition&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L375)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/ModelCapabilities.cs#L381)

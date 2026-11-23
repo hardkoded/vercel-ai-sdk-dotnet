@@ -65,7 +65,7 @@ public int? MaxImagesPerCall { get; }
 ```
 
 
-Fal returns one image per call.
+Fal returns one image per call. Maps to `maxImagesPerCall`.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
@@ -137,7 +137,7 @@ True when the model takes input images, false when it does not, null when unknow
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Fal/FalImageModel.cs#L70)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Fal/FalImageModel.cs#L71)
 
 <a id="Vercel_AI_Fal_FalImageModel_SupportsMaskInputs_"></a>
 <a id="Vercel_AI_Fal_FalImageModel_SupportsMaskInputs"></a>
@@ -154,7 +154,7 @@ True when the model takes a mask, false when it takes input images but no mask, 
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Fal/FalImageModel.cs#L101)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Fal/FalImageModel.cs#L75)
 
 ## Methods
 
@@ -180,7 +180,7 @@ Generates images.
 
 **Returns:** [Task&lt;ImageModelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Fal/FalImageModel.cs#L133)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Fal/FalImageModel.cs#L97)
 
 <a id="Vercel_AI_Fal_FalImageModel_DoGenerateAsync_Vercel_AI_Provider_ImageCallOptions_System_Threading_CancellationToken_"></a>
 
@@ -203,7 +203,7 @@ Generates images. Maps to `doGenerate` on an image model.
 
 **Returns:** [Task&lt;ImageGenerationResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Fal/FalImageModel.cs#L124)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Fal/FalImageModel.cs#L88)
 
 <a id="Vercel_AI_Fal_FalImageModel_ResolveMaxImagesPerCallAsync_"></a>
 <a id="Vercel_AI_Fal_FalImageModel_ResolveMaxImagesPerCallAsync_System_Threading_CancellationToken_"></a>
@@ -226,4 +226,4 @@ Resolves a functional per-call limit. The default returns [MaxImagesPerCall](/ap
 
 **Returns:** [Task&lt;int?&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Fal/FalImageModel.cs#L118)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Fal/FalImageModel.cs#L82)

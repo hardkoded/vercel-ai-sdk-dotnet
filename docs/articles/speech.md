@@ -99,6 +99,10 @@ Console.WriteLine(result.Usage?.Characters);
 
 Read the `assemblyai` provider options with `AssemblyAISpeechModelOptions.Parse(request.ProviderOptions)`. It validates `Encoding`, `Container`, `SampleRate` and `BitRate`.
 
+## Speech telemetry
+
+`GenerateSpeechRequest.Telemetry` (a `TelemetryOptions`) delivers a `GenerateSpeechStartEvent` to `ITelemetry.OnStart` and a `GenerateSpeechEndEvent` to `ITelemetry.OnEnd` (`ai.generateSpeech`). A failure calls `OnError`. The end event carries the text, the audio metadata (`Audio.ByteLength`, `Audio.MediaType`, `Audio.Format`), the provider `Usage` (`SpeechModelResult.Usage`, in the provider's native shape), the warnings, the provider metadata, and a `Response` with only the timestamp, model id and headers. Raw audio and the raw response body are never part of an event. `RecordInputs = false` sends `Text` as `""` and empty `ProviderOptions`. Either flag set to `false` hides `ProviderMetadata`.
+
 ## Transcription telemetry
 
 `Transcribe.TranscribeAsync` accepts a `TranscribeRequest.Telemetry`, a `TelemetryOptions`. Its `Integrations` are `ITelemetry` objects. Their `OnStart`, `OnEnd` and `OnError` callbacks receive start, end and error events. `OnStart` receives an `IOperationStartEvent` and `OnEnd` an `IOperationEndEvent`, which are a `TranscriptionStartEvent` and a `TranscriptionEndEvent` here. `TranscribeTelemetry` is gone. They carry the provider and model, the audio byte length and media type, the transcript, warnings, response metadata, provider metadata and the provider's usage when it reports one. The start event also carries the `TimestampGranularities` you asked for. The end event carries the provider's `Words`, whether you requested them or the provider returned them by default.

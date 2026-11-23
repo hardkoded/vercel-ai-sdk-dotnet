@@ -16,7 +16,7 @@ namespace Vercel.AI;
 public interface ITelemetry
 {
     /// <summary>
-    /// Called when an operation begins, before any model call. Maps to <c>onStart</c>. Receives a <see cref="GenerateTextStartEvent"/> or a <see cref="GenerateObjectStartEvent"/>.
+    /// Called when an operation begins, before any model call. Maps to <c>onStart</c>. Receives a <see cref="GenerateTextStartEvent"/>, a <see cref="GenerateObjectStartEvent"/>, an <see cref="EmbedStartEvent"/>, a <see cref="RerankStartEvent"/>, a <see cref="GenerateSpeechStartEvent"/> or a <see cref="TranscriptionStartEvent"/>.
     /// </summary>
     Func<IOperationStartEvent, CancellationToken, Task>? OnStart { get; }
 
@@ -52,7 +52,7 @@ public interface ITelemetry
 
     /// <summary>
     /// Called when an operation completes. Maps to <c>onEnd</c>. Receives a <see cref="GenerateTextResult"/>, a <see cref="GenerateObjectEndEvent{T}"/>,
-    /// an <see cref="EmbedEndEvent"/>, a <see cref="RerankEndEvent"/> or a <see cref="TranscriptionEndEvent"/>.
+    /// an <see cref="EmbedEndEvent"/>, a <see cref="RerankEndEvent"/>, a <see cref="GenerateSpeechEndEvent"/> or a <see cref="TranscriptionEndEvent"/>.
     /// </summary>
     Func<IOperationEndEvent, CancellationToken, Task>? OnEnd { get; }
 
