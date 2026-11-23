@@ -530,7 +530,8 @@ public sealed class GenerateObjectEndEvent<T>
     : GenerateObjectEvent,
         IOperationEndEvent,
         IRecordingFilterableEndEvent,
-        IAugmentableEndEvent
+        IAugmentableEndEvent,
+        IGenerateObjectEndEvent
 {
     internal GenerateObjectEndEvent(
         string callId,
@@ -629,6 +630,9 @@ public sealed class GenerateObjectEndEvent<T>
         return copy;
     }
 
+    string? IGenerateObjectEndEvent.ObjectJson =>
+        Object is null ? null : JsonSerializer.Serialize(Object);
+
     /// <summary>Maps to the object branches of <c>filterTelemetryEvent</c>: a copy without the output, the provider metadata, the error text and the request and response bodies.</summary>
     IOperationEndEvent IRecordingFilterableEndEvent.FilterTelemetryEvent(
         bool hideInputs,
@@ -669,6 +673,24 @@ public sealed class GenerateObjectEndEvent<T>
 internal interface IAugmentableEndEvent
 {
     IOperationEndEvent AugmentEvent(TelemetryOptions? telemetry);
+}
+
+/// <summary>
+/// The members of <see cref="GenerateObjectEndEvent{T}"/> an integration reads, without the object type. .NET-only: C# cannot match a
+/// generic event type without knowing <c>T</c>.
+/// </summary>
+internal interface IGenerateObjectEndEvent
+{
+    string CallId { get; }
+
+    FinishReason FinishReason { get; }
+
+    LanguageModelUsage Usage { get; }
+
+    JsonElement? ProviderMetadata { get; }
+
+    /// <summary>The object as JSON text, or null when there is no object. Maps to <c>JSON.stringify(event.object)</c>.</summary>
+    string? ObjectJson { get; }
 }
 
 /// <summary>Filters an end event on a copy when <c>recordInputs</c> or <c>recordOutputs</c> is <c>false</c>.</summary>

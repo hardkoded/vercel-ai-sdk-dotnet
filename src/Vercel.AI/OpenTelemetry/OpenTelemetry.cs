@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Text.Json.Nodes;
 using Vercel.AI.GenerateObject;
 using Vercel.AI.Operations;
+using Vercel.AI.Prompt;
 using Vercel.AI.Provider;
 
 namespace Vercel.AI.OpenTelemetry;
@@ -17,8 +18,8 @@ namespace Vercel.AI.OpenTelemetry;
 /// <see cref="TelemetryRegistry.RegisterTelemetry"/>.
 /// </summary>
 /// <remarks>
-/// Only the callbacks <see cref="ITelemetry"/> has are ported: text generation (root, step, model call, and tool spans), decide, and
-/// extract. The embed, rerank, speech, transcription, object, durable, and inference duration parts of upstream need events the port
+/// Only the callbacks <see cref="ITelemetry"/> has are ported: text generation (root, step, model call, and tool spans), object generation, decide, and
+/// extract. The embed, rerank, speech, transcription, durable, and inference duration parts of upstream need events the port
 /// does not emit yet.
 /// </remarks>
 public sealed class OpenTelemetry : ITelemetry
@@ -54,15 +55,29 @@ public sealed class OpenTelemetry : ITelemetry
             {
                 OnGenerateStart(start);
             }
+            else if (e is GenerateObjectStartEvent objectStart)
+            {
+                OnObjectOperationStart(objectStart);
+            }
 
             return Task.CompletedTask;
         };
 
     /// <inheritdoc />
-    public Func<GenerateObjectStepStartEvent, CancellationToken, Task>? OnObjectStepStart => null;
+    public Func<GenerateObjectStepStartEvent, CancellationToken, Task>? OnObjectStepStart =>
+        (e, _) =>
+        {
+            OnObjectStepStartCore(e);
+            return Task.CompletedTask;
+        };
 
     /// <inheritdoc />
-    public Func<GenerateObjectStepEndEvent, CancellationToken, Task>? OnObjectStepEnd => null;
+    public Func<GenerateObjectStepEndEvent, CancellationToken, Task>? OnObjectStepEnd =>
+        (e, _) =>
+        {
+            OnObjectStepEndCore(e);
+            return Task.CompletedTask;
+        };
 
     /// <inheritdoc />
     public Func<GenerateTextStepStartEvent, CancellationToken, Task>? OnStepStart =>
@@ -122,6 +137,10 @@ public sealed class OpenTelemetry : ITelemetry
             if (e is GenerateTextResult result)
             {
                 OnGenerateEnd(result);
+            }
+            else if (e is IGenerateObjectEndEvent objectEnd)
+            {
+                OnObjectOperationEnd(objectEnd);
             }
 
             return Task.CompletedTask;
@@ -479,6 +498,281 @@ public sealed class OpenTelemetry : ITelemetry
             RuntimeContext = runtimeContext,
             BaseSupplementalAttributes = baseSupplemental,
         };
+    }
+
+    private void OnObjectOperationStart(GenerateObjectStartEvent e)
+    {
+        var telemetry = SelectionOf(e.RecordInputs, e.RecordOutputs);
+        var settings = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["maxOutputTokens"] = e.MaxOutputTokens,
+            ["temperature"] = e.Temperature,
+            ["topP"] = e.TopP,
+            ["topK"] = e.TopK,
+            ["presencePenalty"] = e.PresencePenalty,
+            ["frequencyPenalty"] = e.FrequencyPenalty,
+            ["seed"] = e.Seed,
+            ["maxRetries"] = e.MaxRetries,
+        };
+
+        var providerName = GenAiConventions.MapProviderName(e.Provider);
+        var operationName = GenAiConventions.MapOperationName(e.OperationId);
+        var baseSupplemental = Merge(
+            _supplementalAttributes.Select(
+                telemetry,
+                SupplementalGroup.Headers,
+                SupplementalAttributeHelpers.GetHeaderAttributes(e.Headers)
+            )
+        );
+
+        var attributes = Merge(
+            TelemetryAttributes.SelectAttributes(
+                telemetry,
+                new Dictionary<string, object?>
+                {
+                    ["gen_ai.operation.name"] = operationName,
+                    ["gen_ai.provider.name"] = providerName,
+                    ["gen_ai.request.model"] = e.ModelId,
+                    ["gen_ai.agent.name"] = e.FunctionId,
+                    ["gen_ai.output.type"] = "json",
+                    ["gen_ai.request.frequency_penalty"] = e.FrequencyPenalty,
+                    ["gen_ai.request.max_tokens"] = e.MaxOutputTokens,
+                    ["gen_ai.request.presence_penalty"] = e.PresencePenalty,
+                    ["gen_ai.request.temperature"] = e.Temperature,
+                    ["gen_ai.request.top_k"] = e.TopK,
+                    ["gen_ai.request.top_p"] = e.TopP,
+                    ["gen_ai.request.seed"] = e.Seed,
+                    ["gen_ai.system_instructions"] = e.System is null
+                        ? null
+                        : In(() => StringifyInstructions(e.System)),
+                    ["gen_ai.input.messages"] = In(() =>
+                        GenAiConventions.StringifySemConv(
+                            GenAiConventions
+                                .FormatModelMessages(e.Prompt, e.Messages)
+                                .Select(message => message.ToJsonObject())
+                        )
+                    ),
+                }
+            ),
+            baseSupplemental,
+            _supplementalAttributes.Select(
+                telemetry,
+                SupplementalGroup.Schema,
+                new Dictionary<string, object?>
+                {
+                    ["ai.schema"] = e.Schema is { } schema ? In(() => schema.GetRawText()) : null,
+                    ["ai.schema.name"] = e.SchemaName,
+                    ["ai.schema.description"] = e.SchemaDescription,
+                    ["ai.settings.output"] = e.Output,
+                }
+            )
+        );
+
+        var spanName = GetAgentSpanName(operationName, e.ModelId, e.FunctionId);
+        var parent = Activity.Current?.Context ?? default;
+        var rootSpan = StartSpan(
+            spanName,
+            ActivityKind.Internal,
+            GetSpanAttributes(
+                attributes,
+                OpenTelemetrySpanType.Operation,
+                e.OperationId,
+                e.CallId,
+                null
+            ),
+            parent
+        );
+
+        _callStates[e.CallId] = new CallState(e.OperationId, telemetry)
+        {
+            RootSpan = rootSpan,
+            Settings = settings,
+            Provider = e.Provider,
+            ModelId = e.ModelId,
+            BaseSupplementalAttributes = baseSupplemental,
+            ObjectSystemInstructions = e.System,
+        };
+    }
+
+    private static string StringifyInstructions(Instructions instructions) =>
+        GenAiConventions.StringifySemConv(
+            GenAiConventions
+                .FormatSystemInstructions(instructions)
+                .Select(part => part.ToJsonObject())
+        );
+
+    /// <summary>Maps to <c>onObjectStepStart</c>.</summary>
+    private void OnObjectStepStartCore(GenerateObjectStepStartEvent e)
+    {
+        if (!TryGetCallState(e.CallId, out var state) || state.RootSpan is null)
+        {
+            return;
+        }
+
+        var systemInstructionCount = state.ObjectSystemInstructions is null
+            ? 0
+            : GenAiConventions.FormatSystemInstructions(state.ObjectSystemInstructions).Count;
+        var inputMessages = e.PromptMessages?.Skip(systemInstructionCount).ToList();
+
+        var attributes = TelemetryAttributes.SelectAttributes(
+            state.Telemetry,
+            new Dictionary<string, object?>
+            {
+                ["gen_ai.operation.name"] = "chat",
+                ["gen_ai.provider.name"] = GenAiConventions.MapProviderName(e.Provider),
+                ["gen_ai.request.model"] = e.ModelId,
+                ["gen_ai.output.type"] = "json",
+                ["gen_ai.request.frequency_penalty"] = Setting(state, "frequencyPenalty"),
+                ["gen_ai.request.max_tokens"] = Setting(state, "maxOutputTokens"),
+                ["gen_ai.request.presence_penalty"] = Setting(state, "presencePenalty"),
+                ["gen_ai.request.temperature"] = Setting(state, "temperature"),
+                ["gen_ai.request.top_k"] = Setting(state, "topK"),
+                ["gen_ai.request.top_p"] = Setting(state, "topP"),
+                ["gen_ai.system_instructions"] = state.ObjectSystemInstructions is null
+                    ? null
+                    : In(() => StringifyInstructions(state.ObjectSystemInstructions)),
+                ["gen_ai.input.messages"] = In(() =>
+                    inputMessages is null
+                        ? null
+                        : GenAiConventions.StringifySemConv(
+                            GenAiConventions
+                                .FormatInputMessages(inputMessages)
+                                .Select(message => message.ToJsonObject())
+                        )
+                ),
+            }
+        );
+
+        state.InferenceSpan = StartSpan(
+            "chat " + e.ModelId,
+            ActivityKind.Client,
+            GetSpanAttributes(
+                attributes,
+                OpenTelemetrySpanType.LanguageModel,
+                state.OperationId,
+                e.CallId,
+                state.RuntimeContext
+            ),
+            state.RootSpan.Context
+        );
+    }
+
+    /// <summary>Maps to <c>onObjectStepEnd</c>.</summary>
+    private void OnObjectStepEndCore(GenerateObjectStepEndEvent e)
+    {
+        if (!TryGetCallState(e.CallId, out var state) || state.InferenceSpan is null)
+        {
+            return;
+        }
+
+        if (e.FinishReason == FinishReason.Error)
+        {
+            state.InferenceSpan.SetStatus(ActivityStatusCode.Error);
+        }
+
+        SetAttributes(
+            state.InferenceSpan,
+            Merge(
+                TelemetryAttributes.SelectAttributes(
+                    state.Telemetry,
+                    Merge(
+                        ServerAttributes.Get(e.Request.Url),
+                        new Dictionary<string, object?>
+                        {
+                            ["gen_ai.response.finish_reasons"] = new[]
+                            {
+                                GenAiConventions.FormatFinishReason(e.FinishReason),
+                            },
+                            ["gen_ai.response.id"] = e.Response.Id,
+                            ["gen_ai.response.model"] = e.Response.ModelId,
+                            ["gen_ai.usage.input_tokens"] = e.Usage.InputTokens,
+                            ["gen_ai.usage.output_tokens"] = e.Usage.OutputTokens,
+                            ["gen_ai.usage.cache_read.input_tokens"] = e.Usage.CacheReadTokens,
+                            ["gen_ai.output.messages"] = Out(() =>
+                                FormatObjectOutput(
+                                    e.ObjectText,
+                                    GenAiConventions.FormatFinishReason(e.FinishReason)
+                                ) ?? e.ObjectText
+                            ),
+                        }
+                    )
+                ),
+                _supplementalAttributes.Select(
+                    state.Telemetry,
+                    SupplementalGroup.ProviderMetadata,
+                    ProviderMetadataAttributes(e.ProviderMetadata)
+                ),
+                _supplementalAttributes.Select(
+                    state.Telemetry,
+                    SupplementalGroup.Usage,
+                    DetailedUsageAttributes(e.Usage)
+                )
+            )
+        );
+
+        End(state.InferenceSpan);
+        state.InferenceSpan = null;
+    }
+
+    private static string? FormatObjectOutput(string objectText, string finishReason) =>
+        GenAiConventions.StringifySemConv(
+            GenAiConventions
+                .FormatObjectOutputMessages(objectText, finishReason)
+                .Select(message => message.ToJsonObject())
+        );
+
+    /// <summary>Maps to <c>onObjectOperationEnd</c>.</summary>
+    private void OnObjectOperationEnd(IGenerateObjectEndEvent e)
+    {
+        if (!TryGetCallState(e.CallId, out var state) || state.RootSpan is null)
+        {
+            return;
+        }
+
+        if (e.FinishReason == FinishReason.Error)
+        {
+            state.RootSpan.SetStatus(ActivityStatusCode.Error);
+        }
+
+        SetAttributes(
+            state.RootSpan,
+            Merge(
+                TelemetryAttributes.SelectAttributes(
+                    state.Telemetry,
+                    new Dictionary<string, object?>
+                    {
+                        ["gen_ai.response.finish_reasons"] = new[]
+                        {
+                            GenAiConventions.FormatFinishReason(e.FinishReason),
+                        },
+                        ["gen_ai.usage.input_tokens"] = e.Usage.InputTokens,
+                        ["gen_ai.usage.output_tokens"] = e.Usage.OutputTokens,
+                        ["gen_ai.usage.cache_read.input_tokens"] = e.Usage.CacheReadTokens,
+                        ["gen_ai.output.messages"] = Out(() =>
+                            e.ObjectJson is { } json
+                                ? FormatObjectOutput(
+                                    json,
+                                    GenAiConventions.FormatFinishReason(e.FinishReason)
+                                )
+                                : null
+                        ),
+                    }
+                ),
+                _supplementalAttributes.Select(
+                    state.Telemetry,
+                    SupplementalGroup.ProviderMetadata,
+                    ProviderMetadataAttributes(e.ProviderMetadata)
+                ),
+                _supplementalAttributes.Select(
+                    state.Telemetry,
+                    SupplementalGroup.Usage,
+                    DetailedUsageAttributes(e.Usage)
+                )
+            )
+        );
+
+        End(state.RootSpan);
+        _callStates.TryRemove(e.CallId, out _);
     }
 
     private void OnStepStartCore(GenerateTextStepStartEvent e)
@@ -1321,6 +1615,8 @@ public sealed class OpenTelemetry : ITelemetry
         public string ModelId { get; init; } = string.Empty;
 
         public IReadOnlyDictionary<string, object?>? RuntimeContext { get; init; }
+
+        public Instructions? ObjectSystemInstructions { get; init; }
 
         public IReadOnlyDictionary<string, object?> BaseSupplementalAttributes { get; init; } =
             new Dictionary<string, object?>();

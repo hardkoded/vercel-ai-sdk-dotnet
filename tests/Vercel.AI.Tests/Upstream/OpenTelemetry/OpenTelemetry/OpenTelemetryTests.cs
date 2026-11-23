@@ -8,11 +8,13 @@ using OtelOptions = Vercel.AI.OpenTelemetry.OpenTelemetryOptions;
 
 namespace Vercel.AI.Tests.Upstream.OpenTelemetry.OpenTelemetry;
 
-/// <summary>Port of <c>open-telemetry.test.ts</c> &gt; <c>OpenTelemetry</c> &gt; <c>agentSpanName</c>.</summary>
+/// <summary>Port of <c>open-telemetry.test.ts</c> &gt; <c>OpenTelemetry</c> &gt; <c>agentSpanName</c>, for <c>ai.generateText</c> and <c>ai.generateObject</c>.</summary>
 public sealed class OpenTelemetryTests
 {
     private const string Test =
         "packages/otel/src/open-telemetry.test.ts::OpenTelemetry::agentSpanName::ai.generateText::";
+    private const string ObjectTest =
+        "packages/otel/src/open-telemetry.test.ts::OpenTelemetry::agentSpanName::ai.generateObject::";
 
     public static TheoryData<string, string?, string> AgentSpanNameCases =>
         new()
@@ -27,14 +29,46 @@ public sealed class OpenTelemetryTests
     [MemberData(nameof(AgentSpanNameCases))]
     [UpstreamTest(
         Test + "uses $expectedName with agentSpanName=$agentSpanName and functionId=$functionId",
-        Coverage = UpstreamCoverage.Partial,
-        Commit = "e6a568d67b361bfe9171c1605f37ef579c718b58",
-        Note = "Only ai.generateText runs. ITelemetry has no OnEnd for generateObject, so the integration does not create object operation spans."
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "e6a568d67b361bfe9171c1605f37ef579c718b58"
     )]
-    public async Task Uses_the_expected_name(
+    public Task Uses_the_expected_name(
         string agentSpanName,
         string? functionId,
         string expectedName
+    ) =>
+        AssertName(
+            agentSpanName,
+            functionId,
+            expectedName,
+            OpenTelemetryEvents.MakeOnStartEvent(functionId: functionId)
+        );
+
+    [Theory]
+    [MemberData(nameof(AgentSpanNameCases))]
+    [UpstreamTest(
+        ObjectTest
+            + "uses $expectedName with agentSpanName=$agentSpanName and functionId=$functionId",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "e6a568d67b361bfe9171c1605f37ef579c718b58"
+    )]
+    public Task Uses_the_expected_name_for_generateObject(
+        string agentSpanName,
+        string? functionId,
+        string expectedName
+    ) =>
+        AssertName(
+            agentSpanName,
+            functionId,
+            expectedName,
+            OpenTelemetryEvents.MakeObjectOnStartEvent(functionId)
+        );
+
+    private static async Task AssertName(
+        string agentSpanName,
+        string? functionId,
+        string expectedName,
+        IOperationStartEvent start
     )
     {
         using var tracer = new MockTracer();
@@ -51,15 +85,7 @@ public sealed class OpenTelemetryTests
             }
         );
 
-        await integration.OnStart!(
-            new GenerateTextStartEvent
-            {
-                CallId = "call-1",
-                Provider = "openai",
-                ModelId = "gpt-4",
-            }.WithTelemetry(new TelemetryOptions { FunctionId = functionId }),
-            default
-        );
+        await integration.OnStart!(start, default);
 
         var span = Assert.Single(tracer.Spans);
         Assert.Equal(expectedName, span.Name);

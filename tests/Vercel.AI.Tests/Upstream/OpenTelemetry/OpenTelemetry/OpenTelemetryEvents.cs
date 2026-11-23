@@ -2,7 +2,9 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
 using System.Text.Json.Nodes;
+using Vercel.AI.GenerateObject;
 using Vercel.AI.Prompt;
 using Vercel.AI.Provider;
 
@@ -28,6 +30,32 @@ internal static class OpenTelemetryEvents
             Temperature = 0.7,
             MaxRetries = 2,
         }.WithTelemetry(new TelemetryOptions { FunctionId = functionId });
+
+    /// <summary>The object counterpart of <c>makeOnStartEvent</c>: the same event with <c>operationId: 'ai.generateObject'</c>.</summary>
+    public static GenerateObjectStartEvent MakeObjectOnStartEvent(
+        string? functionId = null,
+        JsonElement? schema = null,
+        string? schemaName = null,
+        string? schemaDescription = null,
+        string output = "object"
+    ) =>
+        new GenerateObjectStartEvent(
+            CallId,
+            "openai.chat",
+            "gpt-4",
+            null,
+            [new UserModelMessage("Hello")]
+        )
+        {
+            OperationId = "ai.generateObject",
+            MaxOutputTokens = 100,
+            Temperature = 0.7,
+            MaxRetries = 2,
+            Schema = schema,
+            SchemaName = schemaName,
+            SchemaDescription = schemaDescription,
+            Output = output,
+        }.AugmentEvent(new TelemetryOptions { FunctionId = functionId });
 
     public static GenerateTextStepStartEvent MakeStepStartEvent() =>
         new()
