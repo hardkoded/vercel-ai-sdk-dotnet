@@ -103,6 +103,7 @@ public sealed class QuiverAIProvider : OpenAICompatibleProvider
     internal static void ApplyErrorHandling(OpenResponsesProvider provider)
     {
         provider.Http.ErrorToMessage = QuiverAIError.ErrorToMessage;
+        provider.Http.IsRetryableStatus = QuiverAIError.IsRetryable;
     }
 
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)

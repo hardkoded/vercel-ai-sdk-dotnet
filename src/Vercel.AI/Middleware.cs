@@ -385,7 +385,20 @@ public sealed class ExtractReasoningMiddleware : LanguageModelMiddleware
 /// <summary>Strips markdown JSON fences. Maps to <c>extractJsonMiddleware</c>.</summary>
 public sealed class ExtractJsonMiddleware : LanguageModelMiddleware
 {
+    private static readonly Regex s_prefix = new(
+        @"^```(?:json)?\s*\n",
+        RegexOptions.CultureInvariant,
+        TimeSpan.FromSeconds(5)
+    );
+
+    private static readonly Regex s_suffix = new(
+        @"\n?```\s*\z",
+        RegexOptions.CultureInvariant,
+        TimeSpan.FromSeconds(5)
+    );
+
     private readonly Func<string, string> _transform;
+    private readonly bool _hasCustomTransform;
 
     /// <summary>Creates middleware that strips markdown code fences.</summary>
     public ExtractJsonMiddleware()
@@ -398,6 +411,7 @@ public sealed class ExtractJsonMiddleware : LanguageModelMiddleware
     public ExtractJsonMiddleware(Func<string, string>? transform)
     {
         _transform = transform ?? StripFence;
+        _hasCustomTransform = transform is not null;
     }
 
     /// <inheritdoc />
@@ -426,6 +440,22 @@ public sealed class ExtractJsonMiddleware : LanguageModelMiddleware
         return MiddlewareResults.CopyResult(content, result, structuredOutputText);
     }
 
+    /// <inheritdoc />
+    public override async Task<LanguageModelStreamResult> WrapStreamAsync(
+        LanguageModelCallOptions options,
+        Func<LanguageModelCallOptions, CancellationToken, Task<LanguageModelStreamResult>> next,
+        CancellationToken cancellationToken
+    )
+    {
+        var inner = await next(options, cancellationToken).ConfigureAwait(false);
+        return new LanguageModelStreamResult(
+            Transform(inner.Stream, cancellationToken),
+            inner.Request,
+            inner.Response,
+            inner
+        );
+    }
+
     internal static string StripFence(string text)
     {
         var trimmed = text.Trim();
@@ -447,6 +477,170 @@ public sealed class ExtractJsonMiddleware : LanguageModelMiddleware
         }
 
         return body.Trim();
+    }
+
+    private static string StripMarkdownCodeFenceSuffix(string text) =>
+        s_suffix.Replace(text, string.Empty).TrimEnd();
+
+    private static int GetPotentialSuffixStart(string text)
+    {
+        var index = text.Length;
+        while (index > 0 && char.IsWhiteSpace(text[index - 1]))
+        {
+            index--;
+        }
+
+        var backtickCount = 0;
+        while (index > 0 && backtickCount < 3 && text[index - 1] == '`')
+        {
+            index--;
+            backtickCount++;
+        }
+
+        if (backtickCount > 0)
+        {
+            while (index > 0 && char.IsWhiteSpace(text[index - 1]))
+            {
+                index--;
+            }
+        }
+
+        return index;
+    }
+
+    private async IAsyncEnumerable<LanguageModelStreamPart> Transform(
+        IAsyncEnumerable<LanguageModelStreamPart> source,
+        [EnumeratorCancellation] CancellationToken cancellationToken
+    )
+    {
+        var textBlocks = new Dictionary<string, TextBlock>();
+        await foreach (
+            var chunk in source.WithCancellation(cancellationToken).ConfigureAwait(false)
+        )
+        {
+            if (chunk is TextStartStreamPart start)
+            {
+                // Custom transforms need to buffer all content.
+                textBlocks[start.Id] = new TextBlock(
+                    start,
+                    _hasCustomTransform ? BlockPhase.Buffering : BlockPhase.Prefix
+                );
+                continue;
+            }
+
+            if (chunk is TextDeltaStreamPart delta)
+            {
+                if (!textBlocks.TryGetValue(delta.Id, out var block))
+                {
+                    yield return chunk;
+                    continue;
+                }
+
+                block.Buffer += delta.Delta;
+                if (block.Phase == BlockPhase.Buffering)
+                {
+                    continue;
+                }
+
+                if (block.Phase == BlockPhase.Prefix)
+                {
+                    if (block.Buffer.Length > 0 && block.Buffer[0] != '`')
+                    {
+                        block.Phase = BlockPhase.Streaming;
+                        yield return block.StartEvent;
+                    }
+                    else if (block.Buffer.StartsWith("```", StringComparison.Ordinal))
+                    {
+                        // Only strip the prefix once a newline shows the fence is complete.
+                        if (block.Buffer.IndexOf('\n') >= 0)
+                        {
+                            var match = s_prefix.Match(block.Buffer);
+                            if (match.Success)
+                            {
+                                block.Buffer = block.Buffer.Substring(match.Length);
+                                block.PrefixStripped = true;
+                            }
+
+                            block.Phase = BlockPhase.Streaming;
+                            yield return block.StartEvent;
+                        }
+                    }
+                    else if (block.Buffer.Length >= 3)
+                    {
+                        block.Phase = BlockPhase.Streaming;
+                        yield return block.StartEvent;
+                    }
+                }
+
+                // Stream content while retaining anything that could still become
+                // trailing whitespace or a markdown fence suffix.
+                if (block.Phase == BlockPhase.Streaming)
+                {
+                    var suffixStart = GetPotentialSuffixStart(block.Buffer);
+                    var toStream = block.Buffer.Substring(0, suffixStart);
+                    block.Buffer = block.Buffer.Substring(suffixStart);
+                    if (toStream.Length > 0)
+                    {
+                        yield return new TextDeltaStreamPart(delta.Id, toStream);
+                    }
+                }
+
+                continue;
+            }
+
+            if (chunk is TextEndStreamPart end && textBlocks.TryGetValue(end.Id, out var ending))
+            {
+                if (ending.Phase is BlockPhase.Prefix or BlockPhase.Buffering)
+                {
+                    yield return ending.StartEvent;
+                }
+
+                var remaining = ending.Buffer;
+                if (
+                    ending.Phase == BlockPhase.Buffering
+                    || ending.Phase == BlockPhase.Prefix && !ending.PrefixStripped
+                )
+                {
+                    // Nothing has streamed yet, so the full transform is safe.
+                    remaining = _transform(remaining);
+                }
+                else
+                {
+                    // Only strip the suffix. Earlier text may already have streamed,
+                    // so trimming would remove valid leading whitespace.
+                    remaining = StripMarkdownCodeFenceSuffix(remaining);
+                }
+
+                if (remaining.Length > 0)
+                {
+                    yield return new TextDeltaStreamPart(end.Id, remaining);
+                }
+
+                yield return chunk;
+                textBlocks.Remove(end.Id);
+                continue;
+            }
+
+            yield return chunk;
+        }
+    }
+
+    private enum BlockPhase
+    {
+        Prefix,
+        Streaming,
+        Buffering,
+    }
+
+    private sealed class TextBlock(TextStartStreamPart startEvent, BlockPhase phase)
+    {
+        public TextStartStreamPart StartEvent { get; } = startEvent;
+
+        public BlockPhase Phase { get; set; } = phase;
+
+        public string Buffer { get; set; } = string.Empty;
+
+        public bool PrefixStripped { get; set; }
     }
 }
 
