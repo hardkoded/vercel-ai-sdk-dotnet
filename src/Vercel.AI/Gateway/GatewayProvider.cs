@@ -915,23 +915,41 @@ public sealed class GatewayLanguageModel : ILanguageModel
             options.Headers,
             cancellationToken
         );
+        var json = V4Json.CallOptions(options);
         try
         {
             using var document = await _provider
                 .Http.SendJsonAsync(
                     HttpMethod.Post,
                     _provider.Route("language-model"),
-                    V4Json.CallOptions(options),
+                    json,
                     headers,
                     cancellationToken
                 )
                 .ConfigureAwait(false);
-            return V4Json.ParseGenerate(document.RootElement);
+            return V4Json.ParseGenerate(document.RootElement).WithRequest(Request(json));
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
             throw GatewayProvider.MapFailure(exception, headers);
         }
+    }
+
+    // The request body metadata keeps the body unchanged and carries the telemetry view that hides BYOK credentials.
+    private static LanguageModelStreamRequest Request(string json)
+    {
+        // The body was serialized by V4Json.CallOptions, so it is read back with a depth limit that cannot reject it.
+        using var document = JsonDocument.Parse(
+            json,
+            new JsonDocumentOptions { MaxDepth = int.MaxValue }
+        );
+        var body = document.RootElement.Clone();
+        return new LanguageModelStreamRequest(body)
+        {
+            RedactBody = RedactGatewayRequestCredentials
+                .WithGatewayRequestTelemetryRedaction(body)
+                .Redact,
+        };
     }
 
     /// <inheritdoc />
@@ -968,9 +986,21 @@ public sealed class GatewayLanguageModel : ILanguageModel
             throw GatewayProvider.MapFailure(exception, headers);
         }
 
+        Func<JsonElement, JsonElement>? redactBody;
+        try
+        {
+            redactBody = Request(json).RedactBody;
+        }
+        catch
+        {
+            sse.Resource.Dispose();
+            throw;
+        }
+
         return sse.ToStreamResult(
             StreamAsync(sse.Events, options.IncludeRawChunks, headers, cancellationToken),
-            json
+            json,
+            redactBody
         );
     }
 
