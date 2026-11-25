@@ -29,14 +29,17 @@ public sealed class Resolvable<T>
     // Upstream checks `typeof apiKey !== 'string'`: only a task or callback is held to the non-empty rule.
     internal bool IsDynamic => _callback is not null || _task is not null;
 
-    /// <summary>Wraps a value.</summary>
-    public static implicit operator Resolvable<T>(T value) => From(value);
+    /// <summary>
+    /// Wraps a value. A null value is accepted so <c>ApiKey = maybeNull</c> compiles without a nullable warning;
+    /// it resolves to null, as an unset upstream setting resolves to <c>undefined</c>.
+    /// </summary>
+    public static implicit operator Resolvable<T>(T? value) => From(value);
 
     /// <summary>Wraps a task.</summary>
     public static implicit operator Resolvable<T>(Task<T> task) => From(task);
 
-    /// <summary>Wraps a value.</summary>
-    public static Resolvable<T> From(T value) => new(value, null, null);
+    /// <summary>Wraps a value, which may be null.</summary>
+    public static Resolvable<T> From(T? value) => new(value, null, null);
 
     /// <summary>Wraps a task, awaited every time the value is resolved.</summary>
     public static Resolvable<T> From(Task<T> task) =>
