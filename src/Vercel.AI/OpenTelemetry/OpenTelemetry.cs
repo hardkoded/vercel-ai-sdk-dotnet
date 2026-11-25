@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Globalization;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Vercel.AI.GenerateObject;
 using Vercel.AI.Operations;
 using Vercel.AI.Prompt;
@@ -695,6 +696,22 @@ public class OpenTelemetry : ITelemetry
                     ["gen_ai.request.top_p"] = e.TopP,
                     ["gen_ai.request.stop_sequences"] = e.StopSequences?.ToArray(),
                     ["gen_ai.request.seed"] = e.Seed,
+                    ["gen_ai.system_instructions"] = e.Instructions is null
+                        ? null
+                        : In(() =>
+                            GenAiConventions.StringifySemConv(
+                                GenAiConventions
+                                    .FormatSystemInstructions(e.Instructions)
+                                    .Select(part => part.ToJsonObject())
+                            )
+                        ),
+                    ["gen_ai.input.messages"] = In(() =>
+                        GenAiConventions.StringifySemConv(
+                            GenAiConventions
+                                .FormatModelMessages(null, e.Messages)
+                                .Select(message => message.ToJsonObject())
+                        )
+                    ),
                 }
             ),
             baseSupplemental
@@ -1061,6 +1078,8 @@ public class OpenTelemetry : ITelemetry
             state.InferenceContext = null;
         }
 
+        var toolDefinitions = e.Tools?.Select(GenAiConventions.ToToolDefinition).ToList();
+        state.InferenceToolDefinitions = toolDefinitions;
         RecordInferenceDuration(state, errorType: "_OTHER");
         state.InferenceMetrics = new InferenceMetrics(
             Stopwatch.GetTimestamp(),
@@ -1084,6 +1103,29 @@ public class OpenTelemetry : ITelemetry
                 ["gen_ai.request.temperature"] = Setting(state, "temperature"),
                 ["gen_ai.request.top_k"] = Setting(state, "topK"),
                 ["gen_ai.request.top_p"] = Setting(state, "topP"),
+                ["gen_ai.system_instructions"] = e.Instructions is null
+                    ? null
+                    : In(() =>
+                        GenAiConventions.StringifySemConv(
+                            GenAiConventions
+                                .FormatSystemInstructions(e.Instructions)
+                                .Select(part => part.ToJsonObject())
+                        )
+                    ),
+                ["gen_ai.input.messages"] = In(() =>
+                {
+                    var formatted = GenAiConventions.FormatModelMessages(null, e.Messages);
+                    return formatted.Count > 0
+                        ? GenAiConventions.StringifySemConv(
+                            formatted.Select(message => message.ToJsonObject())
+                        )
+                        : null;
+                }),
+                ["gen_ai.tool.definitions"] = In(() =>
+                    toolDefinitions is null
+                        ? null
+                        : GenAiConventions.StringifySemConv(toolDefinitions)
+                ),
             }
         );
 
@@ -1122,6 +1164,34 @@ public class OpenTelemetry : ITelemetry
             span.SetStatus(ActivityStatusCode.Error);
         }
 
+        var toolDefinitions = new List<JsonObject>(state.InferenceToolDefinitions ?? []);
+        var definedToolNames = new HashSet<string>(
+            toolDefinitions
+                .Select(tool =>
+                    tool["name"] is JsonValue name && name.TryGetValue<string>(out var text)
+                        ? text
+                        : null
+                )
+                .OfType<string>(),
+            StringComparer.Ordinal
+        );
+        var hasObservedProviderTools = false;
+        foreach (var part in e.Content)
+        {
+            if (
+                part is not GeneratedToolCall { ProviderExecuted: true } call
+                || !definedToolNames.Add(call.ToolName)
+            )
+            {
+                continue;
+            }
+
+            toolDefinitions.Add(
+                new JsonObject { ["type"] = "extension", ["name"] = call.ToolName }
+            );
+            hasObservedProviderTools = true;
+        }
+
         SetAttributes(
             span,
             Merge(
@@ -1147,6 +1217,19 @@ public class OpenTelemetry : ITelemetry
                         ["gen_ai.usage.output_tokens"] = e.Usage.OutputTokens,
                         ["gen_ai.usage.cache_read.input_tokens"] = e.Usage.CacheReadTokens,
                         ["gen_ai.usage.cache_creation.input_tokens"] = e.Usage.CacheWriteTokens,
+                        ["gen_ai.output.messages"] = Out(() =>
+                            GenAiConventions.StringifySemConv(
+                                GenAiConventions
+                                    .FormatOutputContent(
+                                        e.Content,
+                                        GenAiConventions.FormatFinishReason(e.FinishReason)
+                                    )
+                                    .Select(message => message.ToJsonObject())
+                            )
+                        ),
+                        ["gen_ai.tool.definitions"] = hasObservedProviderTools
+                            ? In(() => GenAiConventions.StringifySemConv(toolDefinitions))
+                            : null,
                     }
                 ),
                 _supplementalAttributes.Select(
@@ -1161,6 +1244,7 @@ public class OpenTelemetry : ITelemetry
 
         End(span);
         state.InferenceSpan = null;
+        state.InferenceToolDefinitions = null;
         state.InferenceContext = null;
     }
 
@@ -1417,6 +1501,16 @@ public class OpenTelemetry : ITelemetry
                         ["gen_ai.usage.cache_read.input_tokens"] = e.TotalUsage.CacheReadTokens,
                         ["gen_ai.usage.cache_creation.input_tokens"] =
                             e.TotalUsage.CacheWriteTokens,
+                        ["gen_ai.output.messages"] = Out(() =>
+                            GenAiConventions.StringifySemConv(
+                                GenAiConventions
+                                    .FormatOutputContent(
+                                        e.Content,
+                                        GenAiConventions.FormatFinishReason(e.FinishReason)
+                                    )
+                                    .Select(message => message.ToJsonObject())
+                            )
+                        ),
                     }
                 ),
                 _supplementalAttributes.Select(
@@ -2433,6 +2527,8 @@ public class OpenTelemetry : ITelemetry
         public ActivityContext? InferenceContext { get; set; }
 
         public InferenceMetrics? InferenceMetrics { get; set; }
+
+        public List<JsonObject>? InferenceToolDefinitions { get; set; }
         public ConcurrentDictionary<string, Activity> EmbedSpans { get; } =
             new(StringComparer.Ordinal);
 
