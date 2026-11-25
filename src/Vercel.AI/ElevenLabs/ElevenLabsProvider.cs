@@ -1930,6 +1930,13 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
         /// <inheritdoc />
         public string ModelId { get; }
 
+        private static bool IsRealtimeTranscriptionModelId(string modelId) =>
+            ElevenLabsModelCatalog
+                .GetElevenLabsTranscriptionModelEntry(modelId)
+                .Capabilities
+                .Streaming
+                .IsSupported;
+
         /// <inheritdoc />
         public async Task<TranscriptionResult> DoTranscribeAsync(
             AudioInput audio,
@@ -1949,7 +1956,7 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
         )
         {
             audio = audio ?? throw new ArgumentNullException(nameof(audio));
-            if (ModelId == "scribe_v2_realtime")
+            if (IsRealtimeTranscriptionModelId(ModelId))
             {
                 throw new Operations.UnsupportedFunctionalityException(
                     "non-streaming transcription with " + ModelId,
