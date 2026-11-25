@@ -23,7 +23,7 @@ The result of the `initialize` request, or its `server/discover` equivalent. Map
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L93)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L118)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates a result.
 | `serverInfo` | [McpConfiguration](/api/Vercel.AI.Mcp/McpConfiguration/) |  |
 | `instructions` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L96)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L121)
 
 ## Properties
 
@@ -68,7 +68,7 @@ The server capabilities.
 
 **Value:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L113)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L138)
 
 <a id="Vercel_AI_Mcp_McpInitializeResult_Instructions_"></a>
 <a id="Vercel_AI_Mcp_McpInitializeResult_Instructions"></a>
@@ -85,7 +85,7 @@ The server instructions, if any.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L119)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L144)
 
 <a id="Vercel_AI_Mcp_McpInitializeResult_ProtocolVersion_"></a>
 <a id="Vercel_AI_Mcp_McpInitializeResult_ProtocolVersion"></a>
@@ -102,7 +102,7 @@ The negotiated protocol version.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L110)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L135)
 
 <a id="Vercel_AI_Mcp_McpInitializeResult_ServerInfo_"></a>
 <a id="Vercel_AI_Mcp_McpInitializeResult_ServerInfo"></a>
@@ -119,4 +119,4 @@ The server name and version.
 
 **Value:** [McpConfiguration](/api/Vercel.AI.Mcp/McpConfiguration/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L116)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L141)

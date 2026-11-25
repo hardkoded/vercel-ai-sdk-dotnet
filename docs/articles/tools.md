@@ -379,6 +379,25 @@ Fetched content is untrusted and can contain prompt injections. When an agent ha
 
 `RequireUrlInUserMessage` ignores URLs in tool results because the model can place arbitrary text there, for example through tool inputs that are reflected in outputs. As a result, the model cannot follow links from search results or fetched pages in this mode.
 
+## MCP tool schemas and typed output
+
+`McpClient.ConnectAsync` discovers every tool by default, and a tool returns the call-tool result as JSON text. Pass `McpClientOptions.Schemas` (or `McpClient.ListToolsAsync(transport, schemas)`) to list only the named tools with your own schemas, like `client.tools({ schemas })` upstream. An entry is an `McpToolSchema` with the `InputSchema` JSON Schema and an optional `OutputSchema`.
+
+```csharp
+var tools = await McpClient.ConnectAsync(
+    transport,
+    new McpClientOptions
+    {
+        Schemas = new Dictionary<string, McpToolSchema>
+        {
+            ["get-weather"] = new McpToolSchema(inputSchemaJson) { OutputSchema = outputSchemaJson },
+        },
+    }
+);
+```
+
+With an `OutputSchema`, the tool returns the `structuredContent` of the result, validated against the schema. Without `structuredContent`, it parses the first text content as JSON and validates that. A mismatch, invalid JSON, or a result with neither throws an `MCPClientError`. A result with `isError` set is returned as is, with no validation. The schema is also set as `Tool.OutputSchema`.
+
 ## MCP transports
 
 `McpClient.ConnectAsync(transport)` lists the tools of an MCP server over an `IMcpTransport`. The port ships `StdioMcpTransport`, `HttpMcpTransport` (Streamable HTTP), and `SseMcpTransport` (the legacy HTTP+SSE transport, `SseMCPTransport` upstream).

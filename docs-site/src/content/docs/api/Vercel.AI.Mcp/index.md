@@ -28,6 +28,7 @@ Model Context Protocol client and transports.
 | [McpToolHeaders](/api/Vercel.AI.Mcp/McpToolHeaders/) | Reads x-mcp-header annotations and encodes Mcp-Param- headers. |
 | [McpToolHeaders.Binding](/api/Vercel.AI.Mcp/McpToolHeaders.Binding/) | One header bound to a tool argument path. |
 | [McpToolHeaders.BindingResult](/api/Vercel.AI.Mcp/McpToolHeaders.BindingResult/) | Result of reading header bindings. |
+| [McpToolSchema](/api/Vercel.AI.Mcp/McpToolSchema/) | The schemas of one MCP tool. Maps to an entry of the schemas option of client.tools(). |
 | [OAuthResources](/api/Vercel.AI.Mcp/OAuthResources/) | OAuth resource URL checks from the MCP authorization helper. |
 | [SseMcpTransport](/api/Vercel.AI.Mcp/SseMcpTransport/) | MCP over the legacy HTTP+SSE transport. StartAsync(CancellationToken) opens a GET event stream, waits for the endpoint event, then CancellationToken) posts JSON-RPC messages to that endpoint. Responses arrive on the stream. |
 | [StdioEnvironment](/api/Vercel.AI.Mcp/StdioEnvironment/) | Environment passed to an MCP stdio child. The caller's dictionary is not modified. |

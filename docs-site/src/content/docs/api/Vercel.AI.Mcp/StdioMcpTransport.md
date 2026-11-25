@@ -25,7 +25,7 @@ MCP over a child process using newline-delimited JSON-RPC messages.
 
 **Implements:** [IMcpNotificationTransport](/api/Vercel.AI.Mcp/IMcpNotificationTransport/), [IMcpTransport](/api/Vercel.AI.Mcp/IMcpTransport/), [IDisposable](https://learn.microsoft.com/dotnet/api/system.idisposable)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L728)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L868)
 
 ## Properties
 
@@ -44,7 +44,7 @@ Child process id.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L751)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L891)
 
 <a id="Vercel_AI_Mcp_StdioMcpTransport_StandardError_"></a>
 <a id="Vercel_AI_Mcp_StdioMcpTransport_StandardError"></a>
@@ -61,7 +61,7 @@ The child's stderr, when [RedirectStandardError](/api/Vercel.AI.Mcp/StdioMcpOpti
 
 **Value:** [StreamReader](https://learn.microsoft.com/dotnet/api/system.io.streamreader)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L754)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L894)
 
 ## Methods
 
@@ -88,7 +88,7 @@ Calls &lt;code class="paramref"&gt;method&lt;/code&gt; and returns the JSON-RPC 
 
 **Returns:** [Task&lt;JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L853)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L993)
 
 <a id="Vercel_AI_Mcp_StdioMcpTransport_CreateStartInfo_"></a>
 <a id="Vercel_AI_Mcp_StdioMcpTransport_CreateStartInfo_Vercel_AI_Mcp_StdioMcpOptions_"></a>
@@ -112,7 +112,7 @@ so the child does not inherit every variable of this process.
 
 **Returns:** [ProcessStartInfo](https://learn.microsoft.com/dotnet/api/system.diagnostics.processstartinfo)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L789)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L929)
 
 <a id="Vercel_AI_Mcp_StdioMcpTransport_Dispose_"></a>
 <a id="Vercel_AI_Mcp_StdioMcpTransport_Dispose"></a>
@@ -127,7 +127,7 @@ public void Dispose()
 
 Kills the child process, if one was started.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L936)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L1076)
 
 <a id="Vercel_AI_Mcp_StdioMcpTransport_NotifyAsync_"></a>
 <a id="Vercel_AI_Mcp_StdioMcpTransport_NotifyAsync_System_String_System_Text_Json_JsonElement_System_Threading_CancellationToken_"></a>
@@ -152,7 +152,7 @@ Sends the notification &lt;code class="paramref"&gt;method&lt;/code&gt;.
 
 **Returns:** [Task](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L908)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L1048)
 
 <a id="Vercel_AI_Mcp_StdioMcpTransport_Start_"></a>
 <a id="Vercel_AI_Mcp_StdioMcpTransport_Start_System_String_System_Collections_Generic_IReadOnlyList_System_String__"></a>
@@ -176,7 +176,7 @@ Starts &lt;code class="paramref"&gt;fileName&lt;/code&gt; and speaks MCP on its 
 
 **Returns:** [StdioMcpTransport](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L758)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L898)
 
 <a id="Vercel_AI_Mcp_StdioMcpTransport_Start_Vercel_AI_Mcp_StdioMcpOptions_"></a>
 
@@ -198,4 +198,4 @@ Starts the server described by &lt;code class="paramref"&gt;options&lt;/code&gt;
 
 **Returns:** [StdioMcpTransport](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L764)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L904)
