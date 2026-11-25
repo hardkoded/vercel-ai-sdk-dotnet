@@ -72,6 +72,35 @@ public sealed class ProviderMethodsTests : BedrockEndpointEnvironment
     }
 
     [Fact]
+    [UpstreamTest(File + "should create an image model", Coverage = UpstreamCoverage.Covered)]
+    public void Should_create_an_image_model()
+    {
+        var provider = BedrockProvider.Create();
+        var modelId = "amazon.titan-image-generator";
+
+        var model = provider.Image(modelId);
+
+        Assert.Equal(modelId, model.ModelId);
+        Assert.IsType<global::Vercel.AI.AmazonBedrock.AmazonBedrockImageModel>(model);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        File + "should create an image model via imageModel method",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void Should_create_an_image_model_via_imageModel_method()
+    {
+        var provider = BedrockProvider.Create();
+        var modelId = "amazon.titan-image-generator";
+
+        var model = provider.ImageModel(modelId);
+
+        Assert.Equal(modelId, model.ModelId);
+        Assert.IsType<global::Vercel.AI.AmazonBedrock.AmazonBedrockImageModel>(model);
+    }
+
+    [Fact]
     [UpstreamTest(
         "packages/amazon-bedrock/src/amazon-bedrock-provider.test.ts::AmazonBedrockProvider > provider methods::should expose anthropicTools",
         Coverage = UpstreamCoverage.Covered
