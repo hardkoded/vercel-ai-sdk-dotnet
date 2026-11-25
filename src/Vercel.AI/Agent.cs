@@ -138,6 +138,7 @@ public sealed class Agent : IAgent
         prepared.ExperimentalSteering = experimentalSteering ?? prepared.ExperimentalSteering;
         prepared.OnStepEnd = MergeCallbacks(Options.OnStepEnd, prepared.OnStepEnd);
         prepared.OnStepError = Options.OnStepError;
+        prepared.OnError = null;
         prepared.OnStart = MergeCallbacks(Options.OnStart, prepared.OnStart);
         prepared.OnStepStart = MergeCallbacks(Options.OnStepStart, prepared.OnStepStart);
         prepared.OnToolExecutionStart = MergeCallbacks(
@@ -160,7 +161,31 @@ public sealed class Agent : IAgent
         prepared.OnEnd = MergeCallbacks(Options.OnEnd, prepared.OnEnd ?? prepared.OnFinish);
 #pragma warning restore CS0618
 
-        return await _client.GenerateTextAsync(prepared, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            return await _client
+                .GenerateTextAsync(prepared, cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (Exception error)
+            when (Options.OnError is { } onError
+                && !IsCausedByAbort(error)
+                && !cancellationToken.IsCancellationRequested
+            )
+        {
+            // generateText has no onError option, so report the error before it is thrown.
+            // Aborts and timeouts are not reported, like in streamText.
+            try
+            {
+                await onError(error, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception) when (!cancellationToken.IsCancellationRequested)
+            {
+                // Like upstream notify, a failing callback does not replace the generate error.
+            }
+
+            throw;
+        }
     }
 
     /// <summary>
@@ -336,7 +361,7 @@ public sealed class Agent : IAgent
 #pragma warning disable CS0618 // OnFinish is the deprecated alias of OnEnd
                 OnFinish = prepared.OnFinish,
 #pragma warning restore CS0618
-                OnError = prepared.OnError,
+                OnError = Options.OnError,
                 ToolApproval = prepared.ToolApproval,
                 ToolsContext = prepared.ToolsContext,
                 RuntimeContext = prepared.RuntimeContext,
@@ -361,6 +386,24 @@ public sealed class Agent : IAgent
         ProviderValues
             .WithUserAgentSuffix(headers, "ai-sdk-agent/tool-loop")
             .ToDictionary(pair => pair.Key, pair => (string?)pair.Value);
+
+    // Maps to isCausedByAbort: an abort or a timeout, at any depth of the cause chain.
+    private static bool IsCausedByAbort(Exception? error)
+    {
+        for (var current = error; current is not null; current = current.InnerException)
+        {
+            if (
+                current is OperationCanceledException or ApiTimeoutException or TimeoutError
+                || current is AggregateException { InnerExceptions: { } inner }
+                    && inner.Any(IsCausedByAbort)
+            )
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     private static Func<TEvent, CancellationToken, Task>? MergeCallbacks<TEvent>(
         Func<TEvent, CancellationToken, Task>? settings,
@@ -424,6 +467,7 @@ public sealed class Agent : IAgent
             StopWhen = Options.StopWhen ?? StopWhen.CreateDefaultStopCondition(10),
             Temperature = Options.Temperature,
             MaxOutputTokens = Options.MaxOutputTokens,
+            MaxRetries = Options.MaxRetries,
             Headers = Options.Headers,
             ToolOrder = Options.ToolOrder,
             ToolCallConcurrency = Options.ToolCallConcurrency,
@@ -475,6 +519,16 @@ public class AgentOptions
     /// Unlike <see cref="OnStepEnd"/>, it can only be set here and not per call. Maps to <c>onStepError</c> of the <c>ToolLoopAgent</c> settings.
     /// </summary>
     public Func<GenerateTextStepErrorEvent, CancellationToken, Task>? OnStepError { get; set; }
+
+    /// <summary>
+    /// Called when an error occurs. For <see cref="Agent.Stream(string, CancellationToken, Vercel.AI.Util.AbortSignal?, TimeoutConfiguration?, ISteering?, Vercel.AI.ProviderUtils.ISandboxSession?)"/> it receives the errors of the stream.
+    /// For <see cref="Agent.GenerateAsync(string, CancellationToken, TimeoutConfiguration?, ISteering?, Vercel.AI.ProviderUtils.ISandboxSession?)"/> it receives the error before it is thrown.
+    /// Aborts and timeouts are not reported. It can only be set here and not per call. Maps to <c>onError</c> of the <c>ToolLoopAgent</c> settings.
+    /// </summary>
+    public Func<Exception, CancellationToken, Task>? OnError { get; set; }
+
+    /// <summary>Maximum number of automatic retries of a failed model call. Defaults to 2. <see cref="PrepareCall"/> can replace it. Maps to <c>maxRetries</c>.</summary>
+    public int? MaxRetries { get; set; }
 
     /// <summary>Telemetry configuration of every call. See <see cref="GenerateTextOptions.Telemetry"/>. <see cref="PrepareCall"/> can replace it. Maps to <c>telemetry</c>.</summary>
     public TelemetryOptions? Telemetry { get; set; }
