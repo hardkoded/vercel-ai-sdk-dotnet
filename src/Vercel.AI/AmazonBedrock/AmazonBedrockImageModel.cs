@@ -144,8 +144,8 @@ public sealed class AmazonBedrockImageModel : IImageModel, IImageCaller
         {
             var hasMask = call.Mask != null;
             var hasMaskPrompt = options.MaskPrompt != null;
-            var taskType =
-                options.TaskType ?? (hasMask || hasMaskPrompt ? "INPAINTING" : "IMAGE_VARIATION");
+            var taskType = options.TaskType
+                ?? (hasMask || hasMaskPrompt ? "INPAINTING" : "IMAGE_VARIATION");
             var sourceImageBase64 = GetBase64Data(files![0]);
             switch (taskType)
             {
@@ -378,7 +378,10 @@ public sealed class AmazonBedrockImageModel : IImageModel, IImageCaller
         }
     }
 
-    private static void SetNegativeText(JsonObject parameters, AmazonBedrockImageModelOptions options)
+    private static void SetNegativeText(
+        JsonObject parameters,
+        AmazonBedrockImageModelOptions options
+    )
     {
         if (!string.IsNullOrEmpty(options.NegativeText))
         {

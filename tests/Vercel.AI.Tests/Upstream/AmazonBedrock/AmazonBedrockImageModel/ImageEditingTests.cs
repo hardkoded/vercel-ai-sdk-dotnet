@@ -4,8 +4,8 @@
 
 using System.Text.Json.Nodes;
 using Vercel.AI.AmazonBedrock;
-using Vercel.AI.Provider;
 using Vercel.AI.Operations;
+using Vercel.AI.Provider;
 using static Vercel.AI.Tests.Upstream.AmazonBedrock.AmazonBedrockImageModel.BedrockImageTestSupport;
 
 namespace Vercel.AI.Tests.Upstream.AmazonBedrock.AmazonBedrockImageModel;

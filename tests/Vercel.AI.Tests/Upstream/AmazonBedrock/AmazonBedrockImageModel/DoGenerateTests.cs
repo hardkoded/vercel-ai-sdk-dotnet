@@ -4,8 +4,8 @@
 
 using System.Text.Json.Nodes;
 using Vercel.AI.AmazonBedrock;
-using Vercel.AI.Provider;
 using Vercel.AI.Operations;
+using Vercel.AI.Provider;
 using static Vercel.AI.Tests.Upstream.AmazonBedrock.AmazonBedrockImageModel.BedrockImageTestSupport;
 
 namespace Vercel.AI.Tests.Upstream.AmazonBedrock.AmazonBedrockImageModel;
@@ -51,8 +51,7 @@ public sealed class DoGenerateTests
     {
         var handler = new UpstreamRecordingHandler(ImagesBody);
 
-        await Model(CreateProvider(handler))
-            .DoGenerateAsync(Call(seed: 0), CancellationToken.None);
+        await Model(CreateProvider(handler)).DoGenerateAsync(Call(seed: 0), CancellationToken.None);
 
         var config = Body(handler)!["imageGenerationConfig"]!.AsObject();
         Assert.True(config.ContainsKey("seed"));
@@ -134,16 +133,11 @@ public sealed class DoGenerateTests
     public async Task Should_properly_combine_headers_from_all_sources()
     {
         var handler = new UpstreamRecordingHandler(ImagesBody);
-        var model = Model(
-            CreateProvider(
-                handler,
-                options =>
-                {
-                    options.Headers["model-header"] = "model-value";
-                    options.Headers["shared-header"] = "model-shared";
-                }
-            )
-        );
+        var model = Model(CreateProvider(handler, options =>
+            {
+                options.Headers["model-header"] = "model-value";
+                options.Headers["shared-header"] = "model-shared";
+            }));
 
         await model.DoGenerateAsync(
             Call(

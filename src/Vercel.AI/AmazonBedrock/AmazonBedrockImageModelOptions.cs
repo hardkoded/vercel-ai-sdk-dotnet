@@ -86,7 +86,12 @@ internal sealed class AmazonBedrockImageModelOptions
         return options;
     }
 
-    private static string? ReadString(string key, JsonElement values, string name, string[]? allowed)
+    private static string? ReadString(
+        string key,
+        JsonElement values,
+        string name,
+        string[]? allowed
+    )
     {
         if (!values.TryGetProperty(name, out var value) || value.ValueKind == JsonValueKind.Null)
         {
