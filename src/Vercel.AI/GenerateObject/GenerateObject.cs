@@ -529,6 +529,7 @@ public sealed class GenerateObjectStepEndEvent : GenerateObjectEvent
 public sealed class GenerateObjectEndEvent<T>
     : GenerateObjectEvent,
         IOperationEndEvent,
+        IObjectEndEvent,
         IRecordingFilterableEndEvent,
         IAugmentableEndEvent
 {
@@ -609,6 +610,10 @@ public sealed class GenerateObjectEndEvent<T>
     /// <summary>Provider-specific response metadata.</summary>
     public JsonElement? ProviderMetadata { get; }
 
+    /// <summary>The JSON text of <see cref="Object"/>, or null when there is no object.</summary>
+    string? IObjectEndEvent.ObjectJson =>
+        Object is null ? null : JsonSerializer.Serialize(Object, typeof(T));
+
     /// <summary>Maps to <c>augmentEvent</c>: the settings and version, the content filter and the credential redaction.</summary>
     IOperationEndEvent IAugmentableEndEvent.AugmentEvent(TelemetryOptions? telemetry)
     {
@@ -663,6 +668,20 @@ public sealed class GenerateObjectEndEvent<T>
             Reasoning = hideOutputs ? null : Reasoning,
         };
     }
+}
+
+/// <summary>The part of <see cref="GenerateObjectEndEvent{T}"/> that does not depend on the object type.</summary>
+internal interface IObjectEndEvent
+{
+    string CallId { get; }
+
+    FinishReason FinishReason { get; }
+
+    LanguageModelUsage Usage { get; }
+
+    JsonElement? ProviderMetadata { get; }
+
+    string? ObjectJson { get; }
 }
 
 /// <summary>Adds the telemetry settings to an end event and redacts its credentials on a copy.</summary>
