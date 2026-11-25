@@ -2499,6 +2499,27 @@ public sealed class LanguageModelGenerateResult
         return result;
     }
 
+    // A copy that hides credentials from telemetry: the request body and the raw response go through their provider-owned views.
+    internal LanguageModelGenerateResult WithRedactedTelemetry()
+    {
+        var copy = (LanguageModelGenerateResult)MemberwiseClone();
+        if (Request?.RedactBody != null)
+        {
+            copy.Request = new LanguageModelStreamRequest(Request.RedactTelemetryBody())
+            {
+                Url = Request.Url,
+            };
+        }
+
+        if (RedactRawResponse != null)
+        {
+            copy.RawResponse = RedactTelemetryRawResponse()?.GetRawText();
+            copy.RedactRawResponse = null;
+        }
+
+        return copy;
+    }
+
     internal LanguageModelGenerateResult WithRequest(LanguageModelStreamRequest? request)
     {
         return new LanguageModelGenerateResult(
@@ -2566,7 +2587,7 @@ public sealed class LanguageModelGenerateResult
     }
 
     /// <summary>Request info, when the model reports it. Maps to the <c>request</c> field of <c>doGenerate</c>.</summary>
-    public LanguageModelStreamRequest? Request { get; }
+    public LanguageModelStreamRequest? Request { get; private set; }
 
     /// <summary>Normalized finish reason.</summary>
     public FinishReason FinishReason { get; }
@@ -2587,7 +2608,7 @@ public sealed class LanguageModelGenerateResult
     public JsonElement? ProviderMetadata { get; }
 
     /// <summary>Raw provider response body, when the model captured it.</summary>
-    public string? RawResponse { get; }
+    public string? RawResponse { get; private set; }
 
     /// <summary>Provider-owned telemetry view of <see cref="RawResponse"/>, which hides credentials. Maps to the annotation of <c>withTelemetryRedaction</c> on the response body.</summary>
     public Func<JsonElement, JsonElement>? RedactRawResponse { get; private set; }
@@ -3354,6 +3375,10 @@ public sealed class LanguageModelStreamResult
         IDisposable
 {
     private IDisposable? _resource;
+    private IAsyncEnumerable<LanguageModelStreamPart> _stream;
+
+    // Set on a telemetry view: stream replacements and disposal are forwarded to the original result.
+    private LanguageModelStreamResult? _origin;
 
     /// <summary>Creates a stream result.</summary>
     /// <param name="stream">The stream parts.</param>
@@ -3367,14 +3392,36 @@ public sealed class LanguageModelStreamResult
         IDisposable? resource = null
     )
     {
-        Stream = stream ?? throw new ArgumentNullException(nameof(stream));
+        _stream = stream ?? throw new ArgumentNullException(nameof(stream));
         Request = request;
         Response = response;
         _resource = resource;
     }
 
     /// <summary>The stream parts.</summary>
-    public IAsyncEnumerable<LanguageModelStreamPart> Stream { get; }
+    public IAsyncEnumerable<LanguageModelStreamPart> Stream
+    {
+        get => _origin != null ? _origin.Stream : _stream;
+        // Instrumentation replaces the stream with a tapped one. Maps to the writable <c>result.stream</c> upstream.
+        internal set
+        {
+            if (_origin != null)
+            {
+                _origin.Stream = value;
+            }
+            else
+            {
+                _stream = value;
+            }
+        }
+    }
+
+    /// <summary>
+    /// A telemetry view of this result with another request. It reads and replaces the stream of this result and disposes it too.
+    /// Maps to <c>replaceProperties</c> in <c>redact-telemetry-credentials.ts</c>.
+    /// </summary>
+    internal LanguageModelStreamResult WithTelemetryRequest(LanguageModelStreamRequest? request) =>
+        new(_stream, request, Response) { _origin = this };
 
     /// <summary>Request info, when the model reports it.</summary>
     public LanguageModelStreamRequest? Request { get; }
@@ -3404,6 +3451,7 @@ public sealed class LanguageModelStreamResult
     /// <summary>Releases the resource the provider opened for this stream. Safe to call more than once.</summary>
     public void Dispose()
     {
+        _origin?.Dispose();
         Interlocked.Exchange(ref _resource, null)?.Dispose();
     }
 

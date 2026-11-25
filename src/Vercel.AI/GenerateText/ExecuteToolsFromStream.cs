@@ -180,7 +180,8 @@ internal static class ExecuteToolsFromStream
                                             ToolExecutionCallbacks.ExecuteInTelemetryContext(
                                                 options,
                                                 cancellation.Token
-                                            )
+                                            ),
+                                            ToolExecutionCallbacks.RunInTracingChannelSpan(options)
                                         )
                                         .ConfigureAwait(false);
                                     if (result is { } executed)

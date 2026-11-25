@@ -399,7 +399,8 @@ public static class OpenAICompatibleChat
         string metadataKey,
         JsonObject? extracted,
         int? acceptedPredictionTokens,
-        int? rejectedPredictionTokens
+        int? rejectedPredictionTokens,
+        JsonObject? responseHeaderMetadata = null
     )
     {
         var key = metadataKey ?? string.Empty;
@@ -414,6 +415,14 @@ public static class OpenAICompatibleChat
 
         if (root[key] is JsonObject inner)
         {
+            if (responseHeaderMetadata != null)
+            {
+                foreach (var pair in responseHeaderMetadata)
+                {
+                    inner[pair.Key] = pair.Value?.DeepClone();
+                }
+            }
+
             if (acceptedPredictionTokens is { } accepted)
             {
                 inner["acceptedPredictionTokens"] = accepted;

@@ -17,12 +17,12 @@ public sealed class OnStepErrorTests
     [Fact]
     [UpstreamTest(
         Prefix + "should call onStepError when a generate step fails",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "AgentOptions has no OnStepStart, so the test does not check that the error event carries the step start event.",
+        Coverage = UpstreamCoverage.Covered,
         Commit = "d03d74ad2fef36a1bdd0636b3aa72b44f3d95f71"
     )]
     public async Task ShouldCallOnStepErrorWhenAGenerateStepFails()
     {
+        var stepStarts = new List<GenerateTextStepStartEvent>();
         var stepErrors = new List<GenerateTextStepErrorEvent>();
         var stepEnds = 0;
         var providerError = new InvalidOperationException("provider failure");
@@ -30,6 +30,12 @@ public sealed class OnStepErrorTests
             new AgentOptions
             {
                 Model = new StepErrorModel(doGenerate: (_, _) => throw providerError),
+                MaxRetries = 0,
+                OnStepStart = (e, _) =>
+                {
+                    stepStarts.Add(e);
+                    return Task.CompletedTask;
+                },
                 OnStepError = (e, _) =>
                 {
                     stepErrors.Add(e);
@@ -51,6 +57,13 @@ public sealed class OnStepErrorTests
         Assert.Same(providerError, thrown);
         Assert.Equal(0, stepEnds);
         var stepError = Assert.Single(stepErrors);
+        var stepStart = Assert.Single(stepStarts);
+        Assert.Equal(stepStart.CallId, stepError.CallId);
+        Assert.Equal(stepStart.StepNumber, stepError.StepNumber);
+        Assert.Equal(stepStart.Provider, stepError.Provider);
+        Assert.Equal(stepStart.ModelId, stepError.ModelId);
+        Assert.Equal(stepStart.Instructions, stepError.Instructions);
+        Assert.Equal(stepStart.Messages.Count, stepError.Messages.Count);
         Assert.Same(providerError, stepError.Error);
     }
 

@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using Vercel.AI.GenerateObject;
 using OtelAgentSpanName = Vercel.AI.OpenTelemetry.AgentSpanName;
 using OtelIntegration = Vercel.AI.OpenTelemetry.OpenTelemetry;
 using OtelOptions = Vercel.AI.OpenTelemetry.OpenTelemetryOptions;
@@ -41,7 +42,12 @@ public sealed class OpenTelemetryTests
             agentSpanName,
             functionId,
             expectedName,
-            OpenTelemetryEvents.MakeOnStartEvent(functionId: functionId)
+            new GenerateTextStartEvent
+            {
+                CallId = "call-1",
+                Provider = "openai",
+                ModelId = "gpt-4",
+            }.WithTelemetry(new TelemetryOptions { FunctionId = functionId })
         );
 
     [Theory]
@@ -61,7 +67,10 @@ public sealed class OpenTelemetryTests
             agentSpanName,
             functionId,
             expectedName,
-            OpenTelemetryEvents.MakeObjectOnStartEvent(functionId)
+            new GenerateObjectStartEvent("call-1", "openai", "gpt-4", null, null)
+            {
+                OperationId = "ai.generateObject",
+            }.AugmentEvent(new TelemetryOptions { FunctionId = functionId })
         );
 
     private static async Task AssertName(

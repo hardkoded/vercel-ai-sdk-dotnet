@@ -529,9 +529,9 @@ public sealed class GenerateObjectStepEndEvent : GenerateObjectEvent
 public sealed class GenerateObjectEndEvent<T>
     : GenerateObjectEvent,
         IOperationEndEvent,
+        IObjectEndEvent,
         IRecordingFilterableEndEvent,
-        IAugmentableEndEvent,
-        IGenerateObjectEndEvent
+        IAugmentableEndEvent
 {
     internal GenerateObjectEndEvent(
         string callId,
@@ -610,6 +610,10 @@ public sealed class GenerateObjectEndEvent<T>
     /// <summary>Provider-specific response metadata.</summary>
     public JsonElement? ProviderMetadata { get; }
 
+    /// <summary>The JSON text of <see cref="Object"/>, or null when there is no object.</summary>
+    string? IObjectEndEvent.ObjectJson =>
+        Object is null ? null : JsonSerializer.Serialize(Object, typeof(T));
+
     /// <summary>Maps to <c>augmentEvent</c>: the settings and version, the content filter and the credential redaction.</summary>
     IOperationEndEvent IAugmentableEndEvent.AugmentEvent(TelemetryOptions? telemetry)
     {
@@ -629,9 +633,6 @@ public sealed class GenerateObjectEndEvent<T>
         copy.Response = RedactResponse(source.Response);
         return copy;
     }
-
-    string? IGenerateObjectEndEvent.ObjectJson =>
-        Object is null ? null : JsonSerializer.Serialize(Object);
 
     /// <summary>Maps to the object branches of <c>filterTelemetryEvent</c>: a copy without the output, the provider metadata, the error text and the request and response bodies.</summary>
     IOperationEndEvent IRecordingFilterableEndEvent.FilterTelemetryEvent(
@@ -669,17 +670,8 @@ public sealed class GenerateObjectEndEvent<T>
     }
 }
 
-/// <summary>Adds the telemetry settings to an end event and redacts its credentials on a copy.</summary>
-internal interface IAugmentableEndEvent
-{
-    IOperationEndEvent AugmentEvent(TelemetryOptions? telemetry);
-}
-
-/// <summary>
-/// The members of <see cref="GenerateObjectEndEvent{T}"/> an integration reads, without the object type. .NET-only: C# cannot match a
-/// generic event type without knowing <c>T</c>.
-/// </summary>
-internal interface IGenerateObjectEndEvent
+/// <summary>The part of <see cref="GenerateObjectEndEvent{T}"/> that does not depend on the object type.</summary>
+internal interface IObjectEndEvent
 {
     string CallId { get; }
 
@@ -689,8 +681,13 @@ internal interface IGenerateObjectEndEvent
 
     JsonElement? ProviderMetadata { get; }
 
-    /// <summary>The object as JSON text, or null when there is no object. Maps to <c>JSON.stringify(event.object)</c>.</summary>
     string? ObjectJson { get; }
+}
+
+/// <summary>Adds the telemetry settings to an end event and redacts its credentials on a copy.</summary>
+internal interface IAugmentableEndEvent
+{
+    IOperationEndEvent AugmentEvent(TelemetryOptions? telemetry);
 }
 
 /// <summary>Filters an end event on a copy when <c>recordInputs</c> or <c>recordOutputs</c> is <c>false</c>.</summary>

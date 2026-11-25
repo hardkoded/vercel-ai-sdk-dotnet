@@ -25,6 +25,9 @@ public abstract class BatchResultsApiBase : IBatchApi
     public abstract IReadOnlyDictionary<string, string> SupportedUrls { get; }
 
     /// <inheritdoc />
+    public virtual BatchModelIds? ModelIds => null;
+
+    /// <inheritdoc />
     public virtual bool CanCancel => false;
 
     /// <inheritdoc />

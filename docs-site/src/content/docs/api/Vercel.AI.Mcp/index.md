@@ -18,14 +18,17 @@ Model Context Protocol client and transports.
 | [HttpMcpTransport](/api/Vercel.AI.Mcp/HttpMcpTransport/) | MCP over Streamable HTTP. Posts JSON-RPC and accepts a JSON body or an SSE data: payload. |
 | [JsonRpcMessages](/api/Vercel.AI.Mcp/JsonRpcMessages/) | Checks JSON-RPC 2.0 requests, notifications, results, and errors. |
 | [McpAppFingerprint](/api/Vercel.AI.Mcp/McpAppFingerprint/) | SHA-256 fingerprint of an MCP app resource. |
-| [McpClient](/api/Vercel.AI.Mcp/McpClient/) | Lists MCP tools and adapts them to Tool. |
+| [McpClient](/api/Vercel.AI.Mcp/McpClient/) | An MCP client. It connects to a server, keeps what the server announced, and adapts MCP tools to Tool. |
 | [MCPClientError](/api/Vercel.AI.Mcp/MCPClientError/) | An MCP call failed. Carries the JSON-RPC and HTTP details when the transport has them. |
 | [McpClientOptions](/api/Vercel.AI.Mcp/McpClientOptions/) | Options of CancellationToken). Maps to MCPClientConfig. |
+| [McpConfiguration](/api/Vercel.AI.Mcp/McpConfiguration/) | The name, version and optional title of an MCP client or server. Maps to upstream's Configuration. |
+| [McpInitializeResult](/api/Vercel.AI.Mcp/McpInitializeResult/) | The result of the initialize request, or its server/discover equivalent. Maps to upstream's InitializeResult. |
 | [McpNdjson](/api/Vercel.AI.Mcp/McpNdjson/) | Newline-delimited JSON used by the upstream stdio transport. |
 | [McpNdjson.Buffer](/api/Vercel.AI.Mcp/McpNdjson.Buffer/) | Buffer that reassembles newline-delimited messages split across chunks. |
 | [McpToolHeaders](/api/Vercel.AI.Mcp/McpToolHeaders/) | Reads x-mcp-header annotations and encodes Mcp-Param- headers. |
 | [McpToolHeaders.Binding](/api/Vercel.AI.Mcp/McpToolHeaders.Binding/) | One header bound to a tool argument path. |
 | [McpToolHeaders.BindingResult](/api/Vercel.AI.Mcp/McpToolHeaders.BindingResult/) | Result of reading header bindings. |
+| [McpToolSchema](/api/Vercel.AI.Mcp/McpToolSchema/) | The schemas of one MCP tool. Maps to an entry of the schemas option of client.tools(). |
 | [OAuthResources](/api/Vercel.AI.Mcp/OAuthResources/) | OAuth resource URL checks from the MCP authorization helper. |
 | [SseMcpTransport](/api/Vercel.AI.Mcp/SseMcpTransport/) | MCP over the legacy HTTP+SSE transport. StartAsync(CancellationToken) opens a GET event stream, waits for the endpoint event, then CancellationToken) posts JSON-RPC messages to that endpoint. Responses arrive on the stream. |
 | [StdioEnvironment](/api/Vercel.AI.Mcp/StdioEnvironment/) | Environment passed to an MCP stdio child. The caller's dictionary is not modified. |
@@ -36,5 +39,6 @@ Model Context Protocol client and transports.
 
 | Type | Summary |
 | --- | --- |
+| [IMcpNotificationTransport](/api/Vercel.AI.Mcp/IMcpNotificationTransport/) | A transport that can send a JSON-RPC notification, which has no id and gets no response. The client sends notifications/initialized through it after initialize. It is a separate interface because IMcpTransport cannot gain members on netstandard2.0. |
 | [IMcpProtocolVersionDiscoveryTransport](/api/Vercel.AI.Mcp/IMcpProtocolVersionDiscoveryTransport/) | A transport that can probe the server with server/discover before legacy initialization. Maps to the supportsProtocolVersionDiscovery and waitsForProtocolVersionDiscovery members of upstream's MCPTransport. It is a separate interface because IMcpTransport cannot gain members on netstandard2.0. |
 | [IMcpTransport](/api/Vercel.AI.Mcp/IMcpTransport/) | Sends one JSON-RPC call and returns the result object. |

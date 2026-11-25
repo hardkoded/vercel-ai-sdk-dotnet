@@ -41,8 +41,7 @@ public sealed class OnToolExecutionStartStreamTests
     [Fact]
     [UpstreamTest(
         Prefix + "should call onToolExecutionStart from stream method",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The call-level callback is set through PrepareCall, because the agent methods take no per-call callbacks."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task ShouldCallOnToolExecutionStartFromStreamMethod()
     {
@@ -52,27 +51,23 @@ public sealed class OnToolExecutionStartStreamTests
             {
                 Model = ToolLoopAgentToolCalls.StreamModel(out _),
                 Tools = [ToolLoopAgentToolCalls.TestTool((value, _) => value + "-result")],
-                PrepareCall = call =>
-                {
-                    call.OnToolExecutionStart = (_, _) =>
-                    {
-                        calls.Add("method");
-                        return Task.CompletedTask;
-                    };
-                    return call;
-                },
             },
             ToolLoopAgentInstructions.Client()
         );
-        await ToolExecutionCallbackSupport.ConsumeAsync(agent.Stream("test"));
+        await ToolExecutionCallbackSupport.ConsumeAsync(
+            agent.Stream("test", onToolExecutionStart: (_, _) =>
+            {
+                calls.Add("method");
+                return Task.CompletedTask;
+            })
+        );
         Assert.Equal(["method"], calls);
     }
 
     [Fact]
     [UpstreamTest(
         Prefix + "should call both constructor and method in correct order",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The call-level callback is set through PrepareCall, because the agent methods take no per-call callbacks."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task ShouldCallBothConstructorAndMethodInCorrectOrder()
     {
@@ -87,27 +82,23 @@ public sealed class OnToolExecutionStartStreamTests
                     calls.Add("constructor");
                     return Task.CompletedTask;
                 },
-                PrepareCall = call =>
-                {
-                    call.OnToolExecutionStart = (_, _) =>
-                    {
-                        calls.Add("method");
-                        return Task.CompletedTask;
-                    };
-                    return call;
-                },
             },
             ToolLoopAgentInstructions.Client()
         );
-        await ToolExecutionCallbackSupport.ConsumeAsync(agent.Stream("test"));
+        await ToolExecutionCallbackSupport.ConsumeAsync(
+            agent.Stream("test", onToolExecutionStart: (_, _) =>
+            {
+                calls.Add("method");
+                return Task.CompletedTask;
+            })
+        );
         Assert.Equal(["constructor", "method"], calls);
     }
 
     [Fact]
     [UpstreamTest(
         Prefix + "should pass correct event information",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The test does not compare callId, which is generated per call in the port."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task ShouldPassCorrectEventInformation()
     {
@@ -117,18 +108,18 @@ public sealed class OnToolExecutionStartStreamTests
             {
                 Model = ToolLoopAgentToolCalls.StreamModel(out _),
                 Tools = [ToolLoopAgentToolCalls.TestTool((value, _) => value + "-result")],
-                OnToolExecutionStart = (ev, _) =>
-                {
-                    e = ev;
-                    return Task.CompletedTask;
-                },
+                GenerateCallId = () => "call-1",
+                NowMs = () => 0,
             },
             ToolLoopAgentInstructions.Client()
         );
-        await ToolExecutionCallbackSupport.ConsumeAsync(agent.Stream("test"));
-        Assert.Equal("call-1", e!.ToolCall.ToolCallId);
-        Assert.Equal("testTool", e.ToolCall.ToolName);
-        Assert.Contains("test", e.ToolCall.ArgumentsJson);
-        Assert.Single(e.Messages);
+        await ToolExecutionCallbackSupport.ConsumeAsync(
+            agent.Stream("test", onToolExecutionStart: (ev, _) =>
+            {
+                e = ev;
+                return Task.CompletedTask;
+            })
+        );
+        ToolLoopAgentToolCalls.AssertToolExecutionEvent(e!, "call-1", "test");
     }
 }

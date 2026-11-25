@@ -379,6 +379,25 @@ Fetched content is untrusted and can contain prompt injections. When an agent ha
 
 `RequireUrlInUserMessage` ignores URLs in tool results because the model can place arbitrary text there, for example through tool inputs that are reflected in outputs. As a result, the model cannot follow links from search results or fetched pages in this mode.
 
+## MCP tool schemas and typed output
+
+`McpClient.ConnectAsync` discovers every tool by default, and a tool returns the call-tool result as JSON text. Pass `McpClientOptions.Schemas` (or `McpClient.ListToolsAsync(transport, schemas)`) to list only the named tools with your own schemas, like `client.tools({ schemas })` upstream. An entry is an `McpToolSchema` with the `InputSchema` JSON Schema and an optional `OutputSchema`.
+
+```csharp
+var tools = await McpClient.ConnectAsync(
+    transport,
+    new McpClientOptions
+    {
+        Schemas = new Dictionary<string, McpToolSchema>
+        {
+            ["get-weather"] = new McpToolSchema(inputSchemaJson) { OutputSchema = outputSchemaJson },
+        },
+    }
+);
+```
+
+With an `OutputSchema`, the tool returns the `structuredContent` of the result, validated against the schema. Without `structuredContent`, it parses the first text content as JSON and validates that. A mismatch, invalid JSON, or a result with neither throws an `MCPClientError`. A result with `isError` set is returned as is, with no validation. The schema is also set as `Tool.OutputSchema`.
+
 ## MCP transports
 
 `McpClient.ConnectAsync(transport)` lists the tools of an MCP server over an `IMcpTransport`. The port ships `StdioMcpTransport`, `HttpMcpTransport` (Streamable HTTP), and `SseMcpTransport` (the legacy HTTP+SSE transport, `SseMCPTransport` upstream).
@@ -407,6 +426,14 @@ The `redirect` option and OAuth (`authProvider`) are not ported ([#585](https://
 A server that answers with `-32022` and lists only legacy versions in `data.supported` makes `ConnectAsync` throw an `MCPClientError` that explains the mismatch. It does not fall back to `initialize`. The error keeps `Code`, `Data`, `StatusCode` and `Url`, and its `InnerException` is the original error. A network error during discovery is rethrown too, with no fallback.
 
 `HttpMcpTransport.ProtocolVersion` (upstream's `protocolVersion`) is sent as the `mcp-protocol-version` header. It starts as `McpClient.LatestLegacyProtocolVersion`. The client sets it to `McpClient.LatestProtocolVersion` before `server/discover` and back to the legacy version before `initialize`. A transport whose `WaitsForProtocolVersionDiscovery` is `false` gets a 1000ms limit for discovery. When it expires, `ConnectAsync` falls back to `initialize`. A slow response from a transport that waits is awaited with no limit.
+
+## MCP client instance
+
+`McpClient.CreateAsync(transport, options)` maps `createMCPClient`. It initializes the connection and returns a client that keeps what the server announced: `ServerInfo` (`serverInfo`), `InitializeResult` (`initializeResult`) and `Instructions` (`instructions`). `ListToolsAsync()` on the instance lists the tools, and `McpClient.ConnectAsync(transport)` stays as a shortcut for `CreateAsync` followed by `ListToolsAsync`.
+
+After `server/discover` the client treats the server as modern. It adds `io.modelcontextprotocol/protocolVersion`, `io.modelcontextprotocol/clientCapabilities` and `io.modelcontextprotocol/clientInfo` to the `_meta` of every request, and throws an `MCPClientError` (`Modern MCP result is missing resultType`) when a result has no `resultType`. After `initialize` the client sets the negotiated protocol version on the transport and sends `notifications/initialized` through `IMcpNotificationTransport.NotifyAsync`. `StdioMcpTransport`, `HttpMcpTransport` and `SseMcpTransport` implement it. A transport that does not implement it gets no notification. `initialize` sends the client info `ai-sdk-mcp-client` `1.0.0`, like upstream's defaults.
+
+An `initialize` result must carry `protocolVersion`, `capabilities` and `serverInfo`, and the version must be one the client supports. Otherwise `CreateAsync` throws an `MCPClientError`.
 
 ## MCP tool output
 

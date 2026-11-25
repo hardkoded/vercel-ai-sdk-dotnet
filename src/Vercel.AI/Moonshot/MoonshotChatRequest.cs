@@ -35,6 +35,9 @@ internal static class MoonshotChatRequest
     )
     {
         ApplySamplingOptions(modelId, options, body, warnings);
+        ApplyMaxOutputTokens(body);
+        ApplyMessageNames(options, body, warnings);
+        ApplyPromptCacheOptions(body);
 
         var moonshot = ReadOptions(options.ProviderOptions);
         var requestedThinking = moonshot.TryGetPropertyValue("thinking", out var thinkingNode)
@@ -285,6 +288,90 @@ internal static class MoonshotChatRequest
         }
 
         return effort;
+    }
+
+    /// <summary>
+    /// Sends <c>providerOptions.moonshotai.promptCacheOptions</c> as <c>prompt_cache_options</c>. The mode defaults to
+    /// <c>implicit</c>. Maps to the <c>prompt_cache_options</c> field in <c>getArgs</c>.
+    /// </summary>
+    private static void ApplyPromptCacheOptions(JsonObject body)
+    {
+        var node = body["promptCacheOptions"];
+        body.Remove("promptCacheOptions");
+        if (node is not JsonObject cache)
+        {
+            return;
+        }
+
+        var options = new JsonObject { ["mode"] = StringOf(cache, "mode") ?? "implicit" };
+        if (StringOf(cache, "ttl") is { } ttl)
+        {
+            options["ttl"] = ttl;
+        }
+
+        body["prompt_cache_options"] = options;
+    }
+
+    /// <summary>Sends <c>maxOutputTokens</c> as <c>max_completion_tokens</c>, never <c>max_tokens</c>.</summary>
+    private static void ApplyMaxOutputTokens(JsonObject body)
+    {
+        if (body["max_tokens"] is { } maxTokens)
+        {
+            body.Remove("max_tokens");
+            body["max_completion_tokens"] = maxTokens;
+        }
+    }
+
+    /// <summary>
+    /// Sends <c>providerOptions.moonshotai.name</c> as the message <c>name</c>. Tool messages have no name, so the name
+    /// is omitted with a warning. Maps to the <c>moonshotMessageOptions?.name</c> handling in
+    /// <c>convert-to-moonshotai-chat-messages.ts</c>.
+    /// </summary>
+    private static void ApplyMessageNames(
+        LanguageModelCallOptions options,
+        JsonObject body,
+        IList<CallWarning> warnings
+    )
+    {
+        if (options.Prompt == null || body["messages"] is not JsonArray messages)
+        {
+            return;
+        }
+
+        var prompt = ToolModelMessage.Flatten(options.Prompt);
+        if (prompt.Count != messages.Count)
+        {
+            return;
+        }
+
+        for (var index = 0; index < prompt.Count; index++)
+        {
+            var name = StringOf(
+                ReadOptions(
+                    prompt[index] switch
+                    {
+                        SystemModelMessage system => system.ProviderOptions,
+                        UserModelMessage user => user.ProviderOptions,
+                        AssistantModelMessage assistant => assistant.ProviderOptions,
+                        ToolModelMessage tool => tool.MessageProviderOptions,
+                        _ => null,
+                    }
+                ),
+                "name"
+            );
+            if (name == null || messages[index] is not JsonObject message)
+            {
+                continue;
+            }
+
+            if (prompt[index] is ToolModelMessage)
+            {
+                warnings.Add(new CallWarning("unsupported", "message name on tool messages", null));
+                continue;
+            }
+
+            message["name"] = name;
+        }
     }
 
     private static JsonObject ReadOptions(IReadOnlyDictionary<string, JsonElement>? providerOptions)

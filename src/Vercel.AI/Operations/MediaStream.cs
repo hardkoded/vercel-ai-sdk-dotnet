@@ -137,6 +137,7 @@ public sealed class AudioChunkStream
     private readonly object _gate = new object();
     private bool _cancelled;
     private bool _completed;
+    private Action<int>? _onBytes;
 
     /// <summary>Creates an audio stream. <paramref name="onCancel"/> runs once when the stream or its reader is cancelled.</summary>
     public AudioChunkStream(Action<Exception?>? onCancel = null)
@@ -149,6 +150,16 @@ public sealed class AudioChunkStream
 
     /// <summary>Reason from a failed setup cancel.</summary>
     public Exception? CancelError { get; private set; }
+
+    /// <summary>
+    /// Makes reads of this stream report their byte counts to <paramref name="onBytes"/> and returns it. Maps to <c>createByteCountingStream</c>.
+    /// Upstream returns a wrapping stream. The port counts on the same instance, so a model still receives the caller's stream.
+    /// </summary>
+    internal AudioChunkStream CreateByteCountingStream(Action<int> onBytes)
+    {
+        _onBytes = onBytes;
+        return this;
+    }
 
     /// <summary>Marks the stream as owned by the model.</summary>
     public void Lock()
@@ -226,6 +237,11 @@ public sealed class AudioChunkStream
         _onCancel?.Invoke(error);
     }
 
+    internal void CountBytes(int byteLength)
+    {
+        _onBytes?.Invoke(byteLength);
+    }
+
     internal PartQueue<object> Chunks
     {
         get { return _chunks; }
@@ -284,7 +300,9 @@ public sealed class AudioChunkReader
         }
 
         var chunk = _stream.Chunks.Dequeue();
-        return chunk is string base64 ? Convert.FromBase64String(base64) : (byte[])chunk;
+        var bytes = chunk is string base64 ? Convert.FromBase64String(base64) : (byte[])chunk;
+        _stream.CountBytes(bytes.Length);
+        return bytes;
     }
 
     /// <summary>Cancels the underlying stream and any pending read.</summary>

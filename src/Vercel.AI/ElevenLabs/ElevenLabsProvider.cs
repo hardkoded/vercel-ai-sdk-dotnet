@@ -707,7 +707,19 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
     /// <inheritdoc />
     public override ILanguageModel LanguageModel(string modelId)
     {
-        throw new AiSdkException("ElevenLabs does not provide language models.");
+        throw new NoSuchModelError(modelId, "languageModel");
+    }
+
+    /// <inheritdoc />
+    public override IEmbeddingModel EmbeddingModel(string modelId)
+    {
+        throw new NoSuchModelError(modelId, "embeddingModel");
+    }
+
+    /// <inheritdoc />
+    public override IImageModel ImageModel(string modelId)
+    {
+        throw new NoSuchModelError(modelId, "imageModel");
     }
 
     /// <summary>Creates a provider.</summary>
@@ -1930,6 +1942,11 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
         /// <inheritdoc />
         public string ModelId { get; }
 
+        private static bool IsRealtimeTranscriptionModelId(string modelId) =>
+            ElevenLabsModelCatalog
+                .GetElevenLabsTranscriptionModelEntry(modelId)
+                .Capabilities.Streaming.IsSupported;
+
         /// <inheritdoc />
         public async Task<TranscriptionResult> DoTranscribeAsync(
             AudioInput audio,
@@ -1949,7 +1966,7 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
         )
         {
             audio = audio ?? throw new ArgumentNullException(nameof(audio));
-            if (ModelId == "scribe_v2_realtime")
+            if (IsRealtimeTranscriptionModelId(ModelId))
             {
                 throw new Operations.UnsupportedFunctionalityException(
                     "non-streaming transcription with " + ModelId,

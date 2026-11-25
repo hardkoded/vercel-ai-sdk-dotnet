@@ -341,6 +341,66 @@ public sealed class BatchTypesTests
             typeof(IBatchApi).GetMethod("DoListAsync")!.ReturnType
         );
         Assert.Equal(typeof(string), PropertyType<BatchStatus>("Status"));
+
+        // BatchV4<{ text: 'model-a' | 'model-b'; image: 'image-model' }>: the batch API declares its model ids.
+        Assert.Equal(
+            typeof(BatchModelIds),
+            typeof(IBatchApi).GetProperty("ModelIds")!.PropertyType
+        );
+        Assert.Equal(
+            typeof(IReadOnlyList<string>),
+            typeof(BatchModelIds).GetProperty("Text")!.PropertyType
+        );
+        Assert.Equal(
+            typeof(IReadOnlyList<string>),
+            typeof(BatchModelIds).GetProperty("Image")!.PropertyType
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "infers per-request model IDs from the provider batch service",
+        Coverage = UpstreamCoverage.Partial,
+        Commit = Commit
+    )]
+    public async Task Infers_per_request_model_IDs_from_the_provider_batch_service()
+    {
+        // C# has no string-literal unions: the check happens when the batch starts, not at compile time.
+        var fake = new BatchTests.BatchFake
+        {
+            Items = [],
+            ModelIds = new BatchModelIds { Text = ["model-a", "model-b"], Image = ["image-model"] },
+        };
+        var provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(fake);
+
+        await BatchApi.StartBatchAsync(
+            new StartBatchOptions
+            {
+                Provider = provider,
+                Requests = [new TextBatchRequest("request-1", "model-b") { Prompt = "hello" }],
+            }
+        );
+        await BatchApi.StartBatchAsync(
+            new StartBatchOptions
+            {
+                Provider = provider,
+                Requests = [new ImageBatchRequest("request-1", "image-model") { Prompt = "hello" }],
+            }
+        );
+
+        // request model ID is checked against provider.ExperimentalBatch().ModelIds
+        await Assert.ThrowsAsync<InvalidArgumentException>(() =>
+            BatchApi.StartBatchAsync(
+                new StartBatchOptions
+                {
+                    Provider = provider,
+                    Requests =
+                    [
+                        new TextBatchRequest("request-1", "image-model") { Prompt = "hello" },
+                    ],
+                }
+            )
+        );
     }
 
     [Fact]

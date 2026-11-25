@@ -44,6 +44,10 @@ These JavaScript packages are Node or browser products, not the model SDK:
 - `langchain`, `llamaindex`
 - `devtools`, `codemod`, `test-server`, `tui`, `harness*`, `workflow*`, `sandbox-*`, `policy-opa`, `code-mode`
 
+### Upstream tests not ported
+
+- `generateSpeech` test "should not measure output bytes when no telemetry integration is configured". Upstream counts `byteLength` reads on a `Uint8Array` subclass. A .NET `byte[]` has no observable length getter, and `GeneratedAudio` takes a `byte[]`, so no test can count reads. `GenerateSpeech` builds `GenerateSpeechAudioInfo.ByteLength` only inside the `OnEnd` branch, as upstream does. Decided in [#1754](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/1754).
+
 ## UI message stream
 
 `ToUIMessageStreamResult` emits `text/event-stream` with header `x-vercel-ai-ui-message-stream: v1` and these chunks: `start`, `start-step`, `text-start`, `text-delta`, `text-end`, `reasoning-start`, `reasoning-delta`, `reasoning-end`, `tool-input-start`, `tool-input-delta`, `tool-input-available`, `tool-input-error`, `tool-approval-request`, `tool-output-available`, `tool-output-error`, `source-url`, `finish-step`, `finish`, `abort`, `error`, and `data: [DONE]`. The `text-end` chunk carries `citations` when the step's text has them.
