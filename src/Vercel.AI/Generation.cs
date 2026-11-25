@@ -372,6 +372,10 @@ internal static class Generation
         var steeringRun = Steering.StartSteeringRun(options.ExperimentalSteering);
         // the step that has started but not ended, reported to onStepError when the call fails before the step produces a result:
         GenerateTextStepStartEvent? openStep = null;
+        // The generateText span and the step span end when these complete. The port's step loop is flat, so a step that a steering
+        // interrupt redoes stays in one span without upstream's callback around the step.
+        TaskCompletionSource<object?>? generateTextSpan = null;
+        TaskCompletionSource<object?>? stepSpan = null;
         try
         {
             var resolvedMaxRetries = Vercel.AI.Operations.OperationRetry.ResolveMaxRetries(
@@ -388,6 +392,19 @@ internal static class Generation
             var responseMessages = new List<ModelMessage>();
             var callId = (options.GenerateCallId ?? NewCallId)();
             var telemetryDispatcher = TelemetryDispatcher.Create(options);
+            generateTextSpan = new TaskCompletionSource<object?>();
+            telemetryDispatcher.StartTracingChannelContext(
+                TelemetryTracingEventType.GenerateText,
+                CreateStartEvent(
+                    options,
+                    callId,
+                    model,
+                    initialInstructions,
+                    initialMessages,
+                    resolvedMaxRetries
+                ),
+                generateTextSpan.Task
+            );
             if (options.OnStart != null)
             {
                 await NotifyAsync(
@@ -449,6 +466,13 @@ internal static class Generation
                 if (redo == null)
                 {
                     timeouts?.StartStep();
+                    stepSpan?.TrySetResult(null);
+                    stepSpan = new TaskCompletionSource<object?>();
+                    telemetryDispatcher.StartTracingChannelContext(
+                        TelemetryTracingEventType.Step,
+                        new TracingChannelStepEvent(callId, steps.Count),
+                        stepSpan.Task
+                    );
                 }
 
                 // A model from prepareStep applies to one step only. Maps to `prepareStepResult?.model ?? model`.
@@ -784,6 +808,7 @@ internal static class Generation
 
             steeringRun?.End(steeringEndReason);
             timeouts?.EndStep();
+            stepSpan?.TrySetResult(null);
             // Upstream notifies onEnd before it parses the output, so onEnd still fires when parsing throws.
             Exception? outputError = null;
             GenerateTextResult result;
@@ -844,6 +869,7 @@ internal static class Generation
                 ExceptionDispatchInfo.Capture(outputError).Throw();
             }
 
+            generateTextSpan?.TrySetResult(result);
             return result;
         }
         catch (ApiUserAbortException abortException)
@@ -851,6 +877,8 @@ internal static class Generation
             steeringRun?.End(SteeringNotDeliveredReason.Aborted);
             // generateText has no onAbort, so aborts also end the step here:
             await NotifyStepErrorAsync(options, openStep, abortException).ConfigureAwait(false);
+            stepSpan?.TrySetException(abortException);
+            generateTextSpan?.TrySetException(abortException);
             throw;
         }
         catch (Exception exception)
@@ -881,6 +909,8 @@ internal static class Generation
                     .ConfigureAwait(false);
             }
 
+            stepSpan?.TrySetException(error);
+            generateTextSpan?.TrySetException(error);
             if (!ReferenceEquals(error, exception))
             {
                 throw error;
@@ -1345,6 +1375,9 @@ internal static class Generation
             };
         }
         var cancellationToken = abort.Token;
+        // The streamText span and the step span end when these complete.
+        TaskCompletionSource<object?>? streamTextSpan = null;
+        TaskCompletionSource<object?>? stepSpan = null;
         try
         {
             using var scope = telemetry?.Begin("streamText", model.ModelId);
@@ -1360,6 +1393,20 @@ internal static class Generation
             var callId = (options.GenerateCallId ?? NewCallId)();
             var telemetryDispatcher = TelemetryDispatcher.Create(options);
             recorder.CallId = callId;
+            streamTextSpan = new TaskCompletionSource<object?>();
+            telemetryDispatcher.StartTracingChannelContext(
+                TelemetryTracingEventType.StreamText,
+                CreateStartEvent(
+                    options,
+                    callId,
+                    model,
+                    initialInstructions,
+                    initialMessages,
+                    Vercel.AI.Operations.OperationRetry.ResolveMaxRetries(options.MaxRetries),
+                    "ai.streamText"
+                ),
+                streamTextSpan.Task
+            );
             if (options.OnStart != null)
             {
                 await NotifyAsync(
@@ -1428,6 +1475,13 @@ internal static class Generation
                 if (redo == null)
                 {
                     timeouts?.StartStep();
+                    stepSpan?.TrySetResult(null);
+                    stepSpan = new TaskCompletionSource<object?>();
+                    telemetryDispatcher.StartTracingChannelContext(
+                        TelemetryTracingEventType.Step,
+                        new TracingChannelStepEvent(callId, steps.Count),
+                        stepSpan.Task
+                    );
                 }
 
                 // A model from prepareStep applies to one step only. Maps to `prepareStepResult?.model ?? model`.
@@ -2330,6 +2384,8 @@ internal static class Generation
         }
         catch (Exception exception)
         {
+            stepSpan?.TrySetException(exception);
+            streamTextSpan?.TrySetException(exception);
             abort.TryFinish();
             steeringRun?.End(
                 abort.Stopped || abort.Error != null
@@ -2361,6 +2417,8 @@ internal static class Generation
         }
         finally
         {
+            stepSpan?.TrySetResult(null);
+            streamTextSpan?.TrySetResult(null);
             // A stream that ends before the initial approvals settle has no initial response messages.
             initialResponseMessagesSource.TrySetResult(Array.Empty<ModelMessage>());
             timeouts?.Dispose();
@@ -2969,7 +3027,8 @@ internal static class Generation
                                 ToolExecutionCallbacks.ExecuteInTelemetryContext(
                                     options,
                                     cancellationToken
-                                )
+                                ),
+                                ToolExecutionCallbacks.RunInTracingChannelSpan(options)
                             )
                             .ConfigureAwait(false);
                         return result;
@@ -3858,7 +3917,8 @@ internal static class Generation
                             ToolExecutionCallbacks.ExecuteInTelemetryContext(
                                 options,
                                 cancellationToken
-                            )
+                            ),
+                            ToolExecutionCallbacks.RunInTracingChannelSpan(options)
                         )
                         .ConfigureAwait(false);
                     if (result == null)

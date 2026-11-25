@@ -15,7 +15,7 @@ internal static class ToolCallExecution
     /// <summary>
     /// Executes a single tool call and manages its lifecycle callbacks. Returns null when the tool is missing or has no execute function.
     /// Maps to <c>executeToolCall</c>. <paramref name="now"/> stands for upstream's module-level <c>now</c> and is the same clock
-    /// the loop uses. <c>runInTracingChannelSpan</c> is not ported, because the port has no telemetry dispatcher (#1380).
+    /// the loop uses. The tool execution runs inside <paramref name="runInTracingChannelSpan"/> as an <c>executeTool</c> span.
     /// </summary>
     internal static async Task<(ExecutedTool Output, double ToolExecutionMs)?> ExecuteToolCall(
         GeneratedToolCall toolCall,
@@ -33,7 +33,13 @@ internal static class ToolCallExecution
         >? onToolExecutionStart = null,
         IReadOnlyList<Func<ToolExecutionEndEvent, CancellationToken, Task>>? onToolExecutionEnd =
             null,
-        Func<ExecuteToolInTelemetryContextParams, Task>? executeToolInTelemetryContext = null
+        Func<ExecuteToolInTelemetryContextParams, Task>? executeToolInTelemetryContext = null,
+        Func<
+            string,
+            object,
+            Func<Task<(ExecutedTool Output, double ToolExecutionMs)?>>,
+            Task<(ExecutedTool Output, double ToolExecutionMs)?>
+        >? runInTracingChannelSpan = null
     )
     {
         var tool = Generation.FindTool(tools, toolCall.ToolName);
@@ -61,119 +67,133 @@ internal static class ToolCallExecution
             ToolContext = toolContext,
         };
 
-        await NotifyAsync(onToolExecutionStart, startEvent, abortSignal).ConfigureAwait(false);
-
-        // Like upstream, the tool timeout starts after onToolExecutionStart and cancels only this tool, not the call.
-        var toolTimeoutMs = TimeoutConfiguration.GetToolTimeoutMs(timeout, toolCall.ToolName);
-        using var toolTimeout =
-            toolTimeoutMs != null
-                ? CancellationTokenSource.CreateLinkedTokenSource(abortSignal)
-                : null;
-        toolTimeout?.CancelAfter(toolTimeoutMs!.Value);
-        var toolToken = toolTimeout?.Token ?? abortSignal;
-
-        var toolExecutionMs = 0d;
-        ExecutedTool executed;
-        try
+        async Task<(ExecutedTool Output, double ToolExecutionMs)?> ExecuteAsync()
         {
-            using var arguments = JsonDocument.Parse(
-                string.IsNullOrWhiteSpace(toolCall.ArgumentsJson) ? "{}" : toolCall.ArgumentsJson
-            );
-            var input = arguments.RootElement.Clone();
-            var output = default(string);
+            await NotifyAsync(onToolExecutionStart, startEvent, abortSignal).ConfigureAwait(false);
 
-            async Task Execute()
+            // Like upstream, the tool timeout starts after onToolExecutionStart and cancels only this tool, not the call.
+            var toolTimeoutMs = TimeoutConfiguration.GetToolTimeoutMs(timeout, toolCall.ToolName);
+            using var toolTimeout =
+                toolTimeoutMs != null
+                    ? CancellationTokenSource.CreateLinkedTokenSource(abortSignal)
+                    : null;
+            toolTimeout?.CancelAfter(toolTimeoutMs!.Value);
+            var toolToken = toolTimeout?.Token ?? abortSignal;
+
+            var toolExecutionMs = 0d;
+            ExecutedTool executed;
+            try
             {
-                var startMs = now();
-                try
+                using var arguments = JsonDocument.Parse(
+                    string.IsNullOrWhiteSpace(toolCall.ArgumentsJson)
+                        ? "{}"
+                        : toolCall.ArgumentsJson
+                );
+                var input = arguments.RootElement.Clone();
+                var output = default(string);
+
+                async Task Execute()
                 {
-                    output = await RunToolAsync(
-                            tool,
-                            toolCall,
-                            input,
-                            messages,
-                            toolToken,
-                            toolContext,
-                            experimentalSandbox,
-                            onPreliminaryToolResult
+                    var startMs = now();
+                    try
+                    {
+                        output = await RunToolAsync(
+                                tool,
+                                toolCall,
+                                input,
+                                messages,
+                                toolToken,
+                                toolContext,
+                                experimentalSandbox,
+                                onPreliminaryToolResult
+                            )
+                            .ConfigureAwait(false);
+                    }
+                    finally
+                    {
+                        toolExecutionMs = now() - startMs;
+                    }
+                }
+
+                // Integration wrappers keep nested AI SDK calls associated with this tool execution.
+                if (executeToolInTelemetryContext != null)
+                {
+                    await executeToolInTelemetryContext(
+                            new ExecuteToolInTelemetryContextParams(
+                                callId,
+                                toolCall.ToolCallId,
+                                toolCall,
+                                messages,
+                                toolContext,
+                                Execute
+                            )
                         )
                         .ConfigureAwait(false);
                 }
-                finally
+                else
                 {
-                    toolExecutionMs = now() - startMs;
+                    await Execute().ConfigureAwait(false);
                 }
-            }
 
-            // Integration wrappers keep nested AI SDK calls associated with this tool execution.
-            if (executeToolInTelemetryContext != null)
-            {
-                await executeToolInTelemetryContext(
-                        new ExecuteToolInTelemetryContextParams(
-                            callId,
-                            toolCall.ToolCallId,
-                            toolCall,
-                            messages,
-                            toolContext,
-                            Execute
-                        )
-                    )
-                    .ConfigureAwait(false);
-            }
-            else
-            {
-                await Execute().ConfigureAwait(false);
-            }
-
-            output = string.IsNullOrEmpty(output) ? "null" : output;
-            executed = new ExecutedTool(toolCall.ToolCallId, toolCall.ToolName, output, false)
-            {
-                InputJson = toolCall.ArgumentsJson,
-                Dynamic = toolCall.Dynamic,
-                Title = toolCall.Title,
-                ToolMetadata = toolCall.ToolMetadata,
-                ProviderMetadata = toolCall.ProviderMetadata,
-            };
-        }
-        catch (Exception thrown) when (!abortSignal.IsCancellationRequested)
-        {
-            // A tool that stops on its token reports the timeout, as upstream reports the abort reason of the tool signal.
-            var exception =
-                thrown is OperationCanceledException cancelled
-                && toolTimeout != null
-                && cancelled.CancellationToken == toolToken
-                && toolToken.IsCancellationRequested
-                    ? new TimeoutError("The operation was aborted due to timeout")
-                    : thrown;
-            var error = JsonSerializer.Serialize(new { error = exception.Message });
-            executed = new ExecutedTool(toolCall.ToolCallId, toolCall.ToolName, error, true)
-            {
-                InputJson = toolCall.ArgumentsJson,
-                Dynamic = toolCall.Dynamic,
-                Title = toolCall.Title,
-                ToolMetadata = toolCall.ToolMetadata,
-                ProviderMetadata = toolCall.ProviderMetadata,
-                Error = exception,
-            };
-        }
-
-        await NotifyAsync(
-                onToolExecutionEnd,
-                new ToolExecutionEndEvent(
-                    toolCall,
-                    messages,
-                    executed,
-                    TimeSpan.FromMilliseconds(toolExecutionMs)
-                )
+                output = string.IsNullOrEmpty(output) ? "null" : output;
+                executed = new ExecutedTool(toolCall.ToolCallId, toolCall.ToolName, output, false)
                 {
-                    CallId = callId,
-                    ToolContext = toolContext,
-                },
-                abortSignal
-            )
-            .ConfigureAwait(false);
+                    InputJson = toolCall.ArgumentsJson,
+                    Dynamic = toolCall.Dynamic,
+                    Title = toolCall.Title,
+                    ToolMetadata = toolCall.ToolMetadata,
+                    ProviderMetadata = toolCall.ProviderMetadata,
+                };
+            }
+            catch (Exception thrown) when (!abortSignal.IsCancellationRequested)
+            {
+                // A tool that stops on its token reports the timeout, as upstream reports the abort reason of the tool signal.
+                var exception =
+                    thrown is OperationCanceledException cancelled
+                    && toolTimeout != null
+                    && cancelled.CancellationToken == toolToken
+                    && toolToken.IsCancellationRequested
+                        ? new TimeoutError("The operation was aborted due to timeout")
+                        : thrown;
+                var error = JsonSerializer.Serialize(new { error = exception.Message });
+                executed = new ExecutedTool(toolCall.ToolCallId, toolCall.ToolName, error, true)
+                {
+                    InputJson = toolCall.ArgumentsJson,
+                    Dynamic = toolCall.Dynamic,
+                    Title = toolCall.Title,
+                    ToolMetadata = toolCall.ToolMetadata,
+                    ProviderMetadata = toolCall.ProviderMetadata,
+                    Error = exception,
+                };
+            }
 
-        return (executed, toolExecutionMs);
+            await NotifyAsync(
+                    onToolExecutionEnd,
+                    new ToolExecutionEndEvent(
+                        toolCall,
+                        messages,
+                        executed,
+                        TimeSpan.FromMilliseconds(toolExecutionMs)
+                    )
+                    {
+                        CallId = callId,
+                        ToolContext = toolContext,
+                    },
+                    abortSignal
+                )
+                .ConfigureAwait(false);
+
+            return (executed, toolExecutionMs);
+        }
+
+        return runInTracingChannelSpan == null
+            ? await ExecuteAsync().ConfigureAwait(false)
+            : await runInTracingChannelSpan(
+                    TelemetryTracingEventType.ExecuteTool,
+                    startEvent,
+                    ExecuteAsync
+                )
+                .ConfigureAwait(false);
     }
 
     // Maps to the `executeTool` call of upstream: every streamed value is a preliminary result and the last one is the final result.
@@ -302,6 +322,20 @@ internal static class ToolExecutionCallbacks
                 },
                 cancellationToken
             );
+    }
+
+    // Maps to `telemetryDispatcher.runInTracingChannelSpan`. Null when the call does not trace.
+    internal static Func<
+        string,
+        object,
+        Func<Task<(ExecutedTool Output, double ToolExecutionMs)?>>,
+        Task<(ExecutedTool Output, double ToolExecutionMs)?>
+    >? RunInTracingChannelSpan(GenerateTextOptions options)
+    {
+        var dispatcher = TelemetryDispatcher.Create(options);
+        return dispatcher.IsTracingEnabled
+            ? dispatcher.RunInTracingChannelSpan<(ExecutedTool Output, double ToolExecutionMs)?>
+            : null;
     }
 
     // Maps to `callbacks: [onToolExecutionStart, telemetryDispatcher.onToolExecutionStart]`.
