@@ -123,11 +123,7 @@ internal sealed class TelemetryDispatcher
             {
                 var inner = wrapped;
                 var current = wrapper;
-                wrapped = () =>
-                    current.ExecuteAsync(
-                        new ExecuteLanguageModelCallOptions<T>(augmented, inner),
-                        cancellationToken
-                    );
+                wrapped = () => RunRedactedAsync(current, augmented, inner, cancellationToken);
             }
         }
 
@@ -136,6 +132,83 @@ internal sealed class TelemetryDispatcher
             @event,
             wrapped
         );
+    }
+
+    // Each integration sees the result and the error through their provider-owned telemetry views. The caller gets the originals back.
+    private static async Task<T> RunRedactedAsync<T>(
+        IExecuteLanguageModelCall wrapper,
+        LanguageModelCallStartEvent augmented,
+        Func<Task<T>> inner,
+        CancellationToken cancellationToken
+    )
+    {
+        var originals = new List<(object Redacted, object Original)>();
+        T Redact(T original)
+        {
+            var redacted = RedactTelemetryCredentialsHelper.RedactTelemetryCredentials(original);
+            if (!ReferenceEquals(redacted, original))
+            {
+                originals.Add((redacted!, original!));
+            }
+
+            return redacted;
+        }
+
+        T Restore(T value)
+        {
+            foreach (var (redacted, original) in originals)
+            {
+                if (ReferenceEquals(redacted, value))
+                {
+                    return (T)original;
+                }
+            }
+
+            return value;
+        }
+
+        try
+        {
+            return Restore(
+                await wrapper
+                    .ExecuteAsync(new ExecuteLanguageModelCallOptions<T>(augmented, async () =>
+                        {
+                            try
+                            {
+                                return Redact(await inner().ConfigureAwait(false));
+                            }
+                            catch (Exception error) when (error is not OperationCanceledException)
+                            {
+                                var redacted =
+                                    RedactTelemetryCredentialsHelper.RedactTelemetryCredentials(
+                                        error
+                                    );
+                                if (!ReferenceEquals(redacted, error))
+                                {
+                                    originals.Add((redacted, error));
+                                    throw redacted;
+                                }
+
+                                throw;
+                            }
+                        }), cancellationToken)
+                    .ConfigureAwait(false)
+            );
+        }
+        catch (Exception error)
+        {
+            foreach (var (redacted, original) in originals)
+            {
+                if (ReferenceEquals(redacted, error) && original is Exception originalError)
+                {
+                    System
+                        .Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(originalError)
+                        .Throw();
+                }
+            }
+
+            throw;
+        }
     }
 
     /// <summary>
