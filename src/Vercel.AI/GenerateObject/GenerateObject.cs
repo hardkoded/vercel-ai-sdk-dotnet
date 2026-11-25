@@ -4,8 +4,10 @@
 
 using System.Text.Json;
 using Vercel.AI.GenerateText;
+using Vercel.AI.Operations;
 using Vercel.AI.Prompt;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 using Vercel.AI.Util;
 
 namespace Vercel.AI.GenerateObject;
@@ -189,6 +191,110 @@ public abstract class GenerateObjectEvent
 
     /// <summary>Requested model id.</summary>
     public string ModelId { get; }
+
+    /// <summary>Whether the call records inputs. Set by the telemetry dispatcher. Maps to <c>recordInputs</c>.</summary>
+    public bool? RecordInputs { get; private protected set; }
+
+    /// <summary>Whether the call records outputs. Set by the telemetry dispatcher. Maps to <c>recordOutputs</c>.</summary>
+    public bool? RecordOutputs { get; private protected set; }
+
+    /// <summary>Identifier of the telemetry function. Set by the telemetry dispatcher. Maps to <c>functionId</c>.</summary>
+    public string? FunctionId { get; private protected set; }
+
+    /// <summary>Version of the AI SDK. Set by the telemetry dispatcher. Maps to <c>aiVersion</c>.</summary>
+    public string? AiVersion { get; private protected set; }
+
+    /// <summary>Whether the telemetry settings hide the inputs.</summary>
+    private protected static bool HideInputs(TelemetryOptions? telemetry) =>
+        telemetry?.RecordInputs == false;
+
+    /// <summary>Whether the telemetry settings hide the outputs.</summary>
+    private protected static bool HideOutputs(TelemetryOptions? telemetry) =>
+        telemetry?.RecordOutputs == false;
+
+    /// <summary>Copies the event and adds the telemetry settings and the SDK version. Maps to the first step of <c>augmentEvent</c>.</summary>
+    private protected TEvent CloneWithTelemetry<TEvent>(TelemetryOptions? telemetry)
+        where TEvent : GenerateObjectEvent
+    {
+        var copy = (TEvent)MemberwiseClone();
+        copy.RecordInputs = telemetry?.RecordInputs;
+        copy.RecordOutputs = telemetry?.RecordOutputs;
+        copy.FunctionId = telemetry?.FunctionId;
+        copy.AiVersion = AiSdkVersion.Version;
+        return copy;
+    }
+
+    /// <summary>Drops the bodies and, for a hidden side, the messages of request and response metadata. Maps to the <c>request</c> and <c>response</c> branch of <c>filterTelemetryEvent</c>.</summary>
+    private protected static LanguageModelRequestMetadata FilterRequest(
+        LanguageModelRequestMetadata request,
+        TelemetryOptions? telemetry
+    )
+    {
+        if (!HideInputs(telemetry) && !HideOutputs(telemetry))
+        {
+            return request;
+        }
+
+        return new LanguageModelRequestMetadata
+        {
+            Url = request.Url,
+            Messages = HideInputs(telemetry) ? [] : request.Messages,
+        };
+    }
+
+    private protected static StepResponse FilterResponse(
+        StepResponse response,
+        TelemetryOptions? telemetry
+    )
+    {
+        if (!HideInputs(telemetry) && !HideOutputs(telemetry))
+        {
+            return response;
+        }
+
+        return new StepResponse(
+            response.Id,
+            response.Timestamp,
+            response.ModelId,
+            response.Headers,
+            HideOutputs(telemetry) ? [] : response.Messages
+        );
+    }
+
+    /// <summary>Applies the provider redactors to the bodies. Maps to <c>redactMetadata</c>.</summary>
+    private protected static LanguageModelRequestMetadata RedactRequest(
+        LanguageModelRequestMetadata request
+    )
+    {
+        if (request.RedactBody == null || request.Body is not { } body)
+        {
+            return request;
+        }
+
+        return new LanguageModelRequestMetadata
+        {
+            Url = request.Url,
+            Messages = request.Messages,
+            Body = TelemetryRedaction.RedactTelemetryValue(body, request.RedactBody),
+        };
+    }
+
+    private protected static StepResponse RedactResponse(StepResponse response)
+    {
+        if (response.RedactBody == null || response.Body is not { } body)
+        {
+            return response;
+        }
+
+        return new StepResponse(
+            response.Id,
+            response.Timestamp,
+            response.ModelId,
+            response.Headers,
+            response.Messages,
+            TelemetryRedaction.RedactTelemetryValue(body, response.RedactBody)
+        );
+    }
 }
 
 /// <summary>Event sent before object generation begins.</summary>
@@ -208,16 +314,16 @@ public sealed class GenerateObjectStartEvent : GenerateObjectEvent, IOperationSt
     }
 
     /// <summary>The simple prompt, when supplied.</summary>
-    public string? Prompt { get; }
+    public string? Prompt { get; internal set; }
 
     /// <summary>The prompt messages, when supplied.</summary>
-    public IReadOnlyList<ModelMessage>? Messages { get; }
+    public IReadOnlyList<ModelMessage>? Messages { get; internal set; }
 
     /// <summary>Identifies the operation type, <c>ai.generateObject</c> or <c>ai.streamObject</c>. Maps to <c>operationId</c>.</summary>
     public string OperationId { get; init; } = "ai.generateObject";
 
     /// <summary>The system message(s) provided to the model. Maps to <c>system</c>.</summary>
-    public Instructions? System { get; init; }
+    public Instructions? System { get; internal set; }
 
     /// <summary>Maximum number of tokens to generate. Maps to <c>maxOutputTokens</c>.</summary>
     public int? MaxOutputTokens { get; init; }
@@ -247,19 +353,37 @@ public sealed class GenerateObjectStartEvent : GenerateObjectEvent, IOperationSt
     public IReadOnlyDictionary<string, string?>? Headers { get; init; }
 
     /// <summary>Additional provider-specific options. Maps to <c>providerOptions</c>.</summary>
-    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; init; }
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; internal set; }
+
+    /// <summary>Maps to <c>augmentEvent</c>: a copy with the telemetry settings, without the inputs the call does not record.</summary>
+    internal GenerateObjectStartEvent AugmentEvent(TelemetryOptions? telemetry)
+    {
+        var copy = CloneWithTelemetry<GenerateObjectStartEvent>(telemetry);
+        if (HideInputs(telemetry))
+        {
+            copy.System = null;
+            copy.Prompt = null;
+            copy.Messages = [];
+            copy.Schema = null;
+            copy.SchemaName = null;
+            copy.SchemaDescription = null;
+            copy.ProviderOptions = new Dictionary<string, JsonElement>();
+        }
+
+        return copy;
+    }
 
     /// <summary>The output strategy type: <c>object</c>, <c>array</c>, <c>enum</c> or <c>no-schema</c>. Maps to <c>output</c>.</summary>
     public string Output { get; init; } = "object";
 
     /// <summary>The JSON Schema used for object generation, if any. Maps to <c>schema</c>.</summary>
-    public JsonElement? Schema { get; init; }
+    public JsonElement? Schema { get; internal set; }
 
     /// <summary>Optional name of the schema. Maps to <c>schemaName</c>.</summary>
-    public string? SchemaName { get; init; }
+    public string? SchemaName { get; internal set; }
 
     /// <summary>Optional description of the schema. Maps to <c>schemaDescription</c>.</summary>
-    public string? SchemaDescription { get; init; }
+    public string? SchemaDescription { get; internal set; }
 }
 
 /// <summary>Event sent immediately before the generate-object model call.</summary>
@@ -272,13 +396,26 @@ public sealed class GenerateObjectStepStartEvent : GenerateObjectEvent
     public int StepNumber => 0;
 
     /// <summary>Additional provider-specific options. Maps to <c>providerOptions</c>.</summary>
-    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; init; }
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; internal set; }
 
     /// <summary>Additional HTTP headers sent with the request. Maps to <c>headers</c>.</summary>
     public IReadOnlyDictionary<string, string?>? Headers { get; init; }
 
     /// <summary>The prompt messages in provider format. Maps to <c>promptMessages</c>.</summary>
-    public IReadOnlyList<ModelMessage>? PromptMessages { get; init; }
+    public IReadOnlyList<ModelMessage>? PromptMessages { get; internal set; }
+
+    /// <summary>Maps to <c>augmentEvent</c>: a copy with the telemetry settings, without the inputs the call does not record.</summary>
+    internal GenerateObjectStepStartEvent AugmentEvent(TelemetryOptions? telemetry)
+    {
+        var copy = CloneWithTelemetry<GenerateObjectStepStartEvent>(telemetry);
+        if (HideInputs(telemetry))
+        {
+            copy.ProviderOptions = new Dictionary<string, JsonElement>();
+            copy.PromptMessages = [];
+        }
+
+        return copy;
+    }
 }
 
 /// <summary>The raw result of the one model step made by <c>generateObject</c>.</summary>
@@ -338,10 +475,10 @@ public sealed class GenerateObjectStepEndEvent : GenerateObjectEvent
     public int StepNumber => 0;
 
     /// <summary>All text returned by the model, before provider-selected text is parsed.</summary>
-    public string ObjectText { get; }
+    public string ObjectText { get; internal set; }
 
     /// <summary>Reasoning returned by the model.</summary>
-    public string? Reasoning { get; }
+    public string? Reasoning { get; internal set; }
 
     /// <summary>Finish reason.</summary>
     public FinishReason FinishReason { get; }
@@ -353,23 +490,47 @@ public sealed class GenerateObjectStepEndEvent : GenerateObjectEvent
     public IReadOnlyList<CallWarning> Warnings { get; }
 
     /// <summary>Request metadata.</summary>
-    public LanguageModelRequestMetadata Request { get; }
+    public LanguageModelRequestMetadata Request { get; internal set; }
 
     /// <summary>Response metadata, including the raw response body.</summary>
-    public StepResponse Response { get; }
+    public StepResponse Response { get; internal set; }
 
     /// <summary>Provider-specific response metadata.</summary>
-    public JsonElement? ProviderMetadata { get; }
+    public JsonElement? ProviderMetadata { get; internal set; }
 
     /// <summary>Milliseconds from the start of the stream to the first chunk. Set only by <c>streamObject</c>.</summary>
     public double? MsToFirstChunk { get; }
+
+    /// <summary>Maps to <c>augmentEvent</c>: a copy with the telemetry settings, the content filter and the credential redaction.</summary>
+    internal GenerateObjectStepEndEvent AugmentEvent(TelemetryOptions? telemetry)
+    {
+        var copy = CloneWithTelemetry<GenerateObjectStepEndEvent>(telemetry);
+        if (HideOutputs(telemetry))
+        {
+            copy.ObjectText = "";
+            copy.Reasoning = null;
+        }
+
+        if (HideInputs(telemetry) || HideOutputs(telemetry))
+        {
+            // Raw provider payloads can hold either inputs or outputs.
+            copy.ProviderMetadata = null;
+        }
+
+        copy.Request = FilterRequest(Request, telemetry);
+        copy.Response = FilterResponse(Response, telemetry);
+        copy.Request = RedactRequest(copy.Request);
+        copy.Response = RedactResponse(copy.Response);
+        return copy;
+    }
 }
 
 /// <summary>Event sent after the generated object has been parsed and validated.</summary>
 public sealed class GenerateObjectEndEvent<T>
     : GenerateObjectEvent,
         IOperationEndEvent,
-        IRecordingFilterableEndEvent
+        IRecordingFilterableEndEvent,
+        IAugmentableEndEvent
 {
     internal GenerateObjectEndEvent(
         string callId,
@@ -425,7 +586,7 @@ public sealed class GenerateObjectEndEvent<T>
     public T Object { get; }
 
     /// <summary>The error, such as a type validation error when the final object does not match the schema. Set only by <c>streamObject</c>.</summary>
-    public Exception? Error { get; }
+    public Exception? Error { get; internal set; }
 
     /// <summary>Reasoning returned by the model.</summary>
     public string? Reasoning { get; init; }
@@ -440,13 +601,33 @@ public sealed class GenerateObjectEndEvent<T>
     public IReadOnlyList<CallWarning> Warnings { get; }
 
     /// <summary>Request metadata.</summary>
-    public LanguageModelRequestMetadata Request { get; }
+    public LanguageModelRequestMetadata Request { get; internal set; }
 
     /// <summary>Response metadata.</summary>
-    public StepResponse Response { get; }
+    public StepResponse Response { get; internal set; }
 
     /// <summary>Provider-specific response metadata.</summary>
     public JsonElement? ProviderMetadata { get; }
+
+    /// <summary>Maps to <c>augmentEvent</c>: the settings and version, the content filter and the credential redaction.</summary>
+    IOperationEndEvent IAugmentableEndEvent.AugmentEvent(TelemetryOptions? telemetry)
+    {
+        var source =
+            HideInputs(telemetry) || HideOutputs(telemetry)
+                ? (GenerateObjectEndEvent<T>)
+                    ((IRecordingFilterableEndEvent)this).FilterTelemetryEvent(
+                        HideInputs(telemetry),
+                        HideOutputs(telemetry)
+                    )
+                : this;
+        var copy = source.CloneWithTelemetry<GenerateObjectEndEvent<T>>(telemetry);
+        copy.Error = source.Error is null
+            ? null
+            : RedactTelemetryCredentialsHelper.RedactTelemetryCredentials(source.Error);
+        copy.Request = RedactRequest(source.Request);
+        copy.Response = RedactResponse(source.Response);
+        return copy;
+    }
 
     /// <summary>Maps to the object branches of <c>filterTelemetryEvent</c>: a copy without the output, the provider metadata, the error text and the request and response bodies.</summary>
     IOperationEndEvent IRecordingFilterableEndEvent.FilterTelemetryEvent(
@@ -482,6 +663,12 @@ public sealed class GenerateObjectEndEvent<T>
             Reasoning = hideOutputs ? null : Reasoning,
         };
     }
+}
+
+/// <summary>Adds the telemetry settings to an end event and redacts its credentials on a copy.</summary>
+internal interface IAugmentableEndEvent
+{
+    IOperationEndEvent AugmentEvent(TelemetryOptions? telemetry);
 }
 
 /// <summary>Filters an end event on a copy when <c>recordInputs</c> or <c>recordOutputs</c> is <c>false</c>.</summary>

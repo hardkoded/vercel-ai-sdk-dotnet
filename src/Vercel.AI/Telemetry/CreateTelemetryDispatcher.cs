@@ -300,11 +300,18 @@ internal sealed class TelemetryDispatcher
                 .ToList(),
             IsTracingEnabled = true,
             TracingTelemetry = telemetry,
-            OnObjectStepStart = Merge(integrations.Select(i => i.OnObjectStepStart)),
-            OnObjectStepEnd = Merge(integrations.Select(i => i.OnObjectStepEnd)),
+            OnObjectStepStart = Filter<GenerateObjectStepStartEvent>(
+                Merge(integrations.Select(i => i.OnObjectStepStart)),
+                e => e.AugmentEvent(telemetry)
+            ),
+            OnObjectStepEnd = Filter<GenerateObjectStepEndEvent>(
+                Merge(integrations.Select(i => i.OnObjectStepEnd)),
+                e => e.AugmentEvent(telemetry)
+            ),
             OnEnd = Filter<IOperationEndEvent>(Merge(integrations.Select(i => i.OnEnd)), e =>
                 e switch
                 {
+                    IAugmentableEndEvent augmentable => augmentable.AugmentEvent(telemetry),
                     GenerateTextResult result => AugmentResult(result, telemetry),
                     EmbedEndEvent embed => FilterTelemetryEventHelper.FilterTelemetryEvent(
                         embed,
@@ -351,6 +358,7 @@ internal sealed class TelemetryDispatcher
                         .WithTelemetry(telemetry)
                     : e switch
                     {
+                        GenerateObjectStartEvent objectStart => objectStart.AugmentEvent(telemetry),
                         EmbedStartEvent embed => FilterTelemetryEventHelper.FilterTelemetryEvent(
                             embed,
                             telemetry
