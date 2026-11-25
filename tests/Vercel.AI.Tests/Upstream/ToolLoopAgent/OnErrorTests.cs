@@ -122,11 +122,13 @@ public sealed class OnErrorTests
         var errors = new List<Exception>();
         using var cancellation = new CancellationTokenSource();
         var agent = AgentOf(
-            new StepErrorModel(doGenerate: (_, token) =>
-            {
-                cancellation.Cancel();
-                return StepErrorModel.HangUntilAborted<LanguageModelGenerateResult>(token);
-            }),
+            new StepErrorModel(
+                doGenerate: (_, token) =>
+                {
+                    cancellation.Cancel();
+                    return StepErrorModel.HangUntilAborted<LanguageModelGenerateResult>(token);
+                }
+            ),
             errors
         );
 
@@ -147,8 +149,9 @@ public sealed class OnErrorTests
     {
         var errors = new List<Exception>();
         var agent = AgentOf(
-            new StepErrorModel(doGenerate: (_, token) =>
-                StepErrorModel.HangUntilAborted<LanguageModelGenerateResult>(token)
+            new StepErrorModel(
+                doGenerate: (_, token) =>
+                    StepErrorModel.HangUntilAborted<LanguageModelGenerateResult>(token)
             ),
             errors
         );
@@ -170,11 +173,12 @@ public sealed class OnErrorTests
     {
         var errors = new List<Exception>();
         var agent = AgentOf(
-            new StepErrorModel(doGenerate: (_, _) =>
-                throw new InvalidOperationException(
-                    "Gateway request failed",
-                    new TimeoutError("timed out")
-                )
+            new StepErrorModel(
+                doGenerate: (_, _) =>
+                    throw new InvalidOperationException(
+                        "Gateway request failed",
+                        new TimeoutError("timed out")
+                    )
             ),
             errors
         );
@@ -198,14 +202,16 @@ public sealed class OnErrorTests
         var errors = new List<Exception>();
         var abortController = new AbortController();
         var agent = AgentOf(
-            new StepErrorModel(doStream: (_, _) =>
-            {
-                abortController.Abort();
-                throw new InvalidOperationException(
-                    "Gateway request failed",
-                    new OperationCanceledException("aborted")
-                );
-            }),
+            new StepErrorModel(
+                doStream: (_, _) =>
+                {
+                    abortController.Abort();
+                    throw new InvalidOperationException(
+                        "Gateway request failed",
+                        new OperationCanceledException("aborted")
+                    );
+                }
+            ),
             errors
         );
 
@@ -225,17 +231,21 @@ public sealed class OnErrorTests
     {
         var errors = new List<Exception>();
         var agent = AgentOf(
-            new StepErrorModel(doStream: async (_, token) =>
-            {
-                try
+            new StepErrorModel(
+                doStream: async (_, token) =>
                 {
-                    return await StepErrorModel.HangUntilAborted<LanguageModelStreamResult>(token);
+                    try
+                    {
+                        return await StepErrorModel.HangUntilAborted<LanguageModelStreamResult>(
+                            token
+                        );
+                    }
+                    catch (OperationCanceledException exception)
+                    {
+                        throw new InvalidOperationException("Gateway request failed", exception);
+                    }
                 }
-                catch (OperationCanceledException exception)
-                {
-                    throw new InvalidOperationException("Gateway request failed", exception);
-                }
-            }),
+            ),
             errors
         );
 
@@ -260,11 +270,13 @@ public sealed class OnErrorTests
         var errors = new List<Exception>();
         using var cancellation = new CancellationTokenSource();
         var agent = AgentOf(
-            new StepErrorModel(doGenerate: (_, _) =>
-            {
-                cancellation.Cancel();
-                throw new OperationCanceledException(cancellation.Token);
-            }),
+            new StepErrorModel(
+                doGenerate: (_, _) =>
+                {
+                    cancellation.Cancel();
+                    throw new OperationCanceledException(cancellation.Token);
+                }
+            ),
             errors
         );
 
