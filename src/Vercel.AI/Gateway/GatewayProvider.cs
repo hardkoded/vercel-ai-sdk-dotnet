@@ -915,23 +915,36 @@ public sealed class GatewayLanguageModel : ILanguageModel
             options.Headers,
             cancellationToken
         );
+        var json = V4Json.CallOptions(options);
         try
         {
             using var document = await _provider
                 .Http.SendJsonAsync(
                     HttpMethod.Post,
                     _provider.Route("language-model"),
-                    V4Json.CallOptions(options),
+                    json,
                     headers,
                     cancellationToken
                 )
                 .ConfigureAwait(false);
-            return V4Json.ParseGenerate(document.RootElement);
+            return V4Json.ParseGenerate(document.RootElement).WithRequest(Request(json));
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
             throw GatewayProvider.MapFailure(exception, headers);
         }
+    }
+
+    // The request body metadata keeps the body unchanged and carries the telemetry view that hides BYOK credentials.
+    private static LanguageModelStreamRequest Request(string json)
+    {
+        var request = LanguageModelStreamRequest.FromJson(json);
+        return new LanguageModelStreamRequest(request.Body)
+        {
+            RedactBody = RedactGatewayRequestCredentials
+                .WithGatewayRequestTelemetryRedaction(request.Body!.Value)
+                .Redact,
+        };
     }
 
     /// <inheritdoc />
@@ -970,7 +983,8 @@ public sealed class GatewayLanguageModel : ILanguageModel
 
         return sse.ToStreamResult(
             StreamAsync(sse.Events, options.IncludeRawChunks, headers, cancellationToken),
-            json
+            json,
+            Request(json).RedactBody
         );
     }
 
