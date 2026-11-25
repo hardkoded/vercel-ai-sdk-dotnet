@@ -189,12 +189,7 @@ internal sealed class StreamTextEventProcessor
             try
             {
                 await StreamTextErrorHandling
-                    .InvokeOnErrorAsync(
-                        _options,
-                        exception,
-                        CancellationToken.None,
-                        swallow: false
-                    )
+                    .InvokeOnErrorAsync(_options, exception, CancellationToken.None, swallow: false)
                     .ConfigureAwait(false);
             }
             catch (Exception callback)
