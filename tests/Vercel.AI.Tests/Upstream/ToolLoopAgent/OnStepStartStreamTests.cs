@@ -53,14 +53,11 @@ public sealed class OnStepStartStreamTests
             ToolLoopAgentInstructions.Client()
         );
         await ToolExecutionCallbackSupport.ConsumeAsync(
-            agent.Stream(
-                "Hello, world!",
-                onStepStart: (_, _) =>
+            agent.Stream("Hello, world!", onStepStart: (_, _) =>
             {
                 calls.Add("method");
                 return Task.CompletedTask;
-            }
-            )
+            })
         );
         Assert.Equal(["method"], calls);
     }
@@ -86,14 +83,11 @@ public sealed class OnStepStartStreamTests
             ToolLoopAgentInstructions.Client()
         );
         await ToolExecutionCallbackSupport.ConsumeAsync(
-            agent.Stream(
-                "Hello, world!",
-                onStepStart: (_, _) =>
+            agent.Stream("Hello, world!", onStepStart: (_, _) =>
             {
                 calls.Add("method");
                 return Task.CompletedTask;
-            }
-            )
+            })
         );
         Assert.Equal(["constructor", "method"], calls);
     }

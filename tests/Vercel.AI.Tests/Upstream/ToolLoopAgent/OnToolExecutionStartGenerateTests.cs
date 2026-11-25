@@ -54,14 +54,11 @@ public sealed class OnToolExecutionStartGenerateTests
             },
             ToolLoopAgentInstructions.Client()
         );
-        await agent.GenerateAsync(
-            "test",
-            onToolExecutionStart: (_, _) =>
-            {
-                calls.Add("method");
-                return Task.CompletedTask;
-            }
-        );
+        await agent.GenerateAsync("test", onToolExecutionStart: (_, _) =>
+        {
+            calls.Add("method");
+            return Task.CompletedTask;
+        });
         Assert.Equal(["method"], calls);
     }
 
@@ -86,14 +83,11 @@ public sealed class OnToolExecutionStartGenerateTests
             },
             ToolLoopAgentInstructions.Client()
         );
-        await agent.GenerateAsync(
-            "test",
-            onToolExecutionStart: (_, _) =>
-            {
-                calls.Add("method");
-                return Task.CompletedTask;
-            }
-        );
+        await agent.GenerateAsync("test", onToolExecutionStart: (_, _) =>
+        {
+            calls.Add("method");
+            return Task.CompletedTask;
+        });
         Assert.Equal(["constructor", "method"], calls);
     }
 
@@ -116,10 +110,10 @@ public sealed class OnToolExecutionStartGenerateTests
             ToolLoopAgentInstructions.Client()
         );
         await agent.GenerateAsync("test", onToolExecutionStart: (ev, _) =>
-            {
-                e = ev;
-                return Task.CompletedTask;
-            });
+        {
+            e = ev;
+            return Task.CompletedTask;
+        });
         Assert.Equal("call-0", e!.CallId);
         Assert.Equal("call-1", e.ToolCall.ToolCallId);
         Assert.Equal("testTool", e.ToolCall.ToolName);

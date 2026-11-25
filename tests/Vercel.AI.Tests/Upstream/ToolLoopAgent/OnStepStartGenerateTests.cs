@@ -52,14 +52,11 @@ public sealed class OnStepStartGenerateTests
             },
             ToolLoopAgentInstructions.Client()
         );
-        await agent.GenerateAsync(
-            "Hello, world!",
-            onStepStart: (_, _) =>
-            {
-                calls.Add("method");
-                return Task.CompletedTask;
-            }
-        );
+        await agent.GenerateAsync("Hello, world!", onStepStart: (_, _) =>
+        {
+            calls.Add("method");
+            return Task.CompletedTask;
+        });
         Assert.Equal(["method"], calls);
     }
 
@@ -83,14 +80,11 @@ public sealed class OnStepStartGenerateTests
             },
             ToolLoopAgentInstructions.Client()
         );
-        await agent.GenerateAsync(
-            "Hello, world!",
-            onStepStart: (_, _) =>
-            {
-                calls.Add("method");
-                return Task.CompletedTask;
-            }
-        );
+        await agent.GenerateAsync("Hello, world!", onStepStart: (_, _) =>
+        {
+            calls.Add("method");
+            return Task.CompletedTask;
+        });
         Assert.Equal(["constructor", "method"], calls);
     }
 

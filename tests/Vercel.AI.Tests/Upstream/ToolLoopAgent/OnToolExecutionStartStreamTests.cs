@@ -55,14 +55,11 @@ public sealed class OnToolExecutionStartStreamTests
             ToolLoopAgentInstructions.Client()
         );
         await ToolExecutionCallbackSupport.ConsumeAsync(
-            agent.Stream(
-                "test",
-                onToolExecutionStart: (_, _) =>
+            agent.Stream("test", onToolExecutionStart: (_, _) =>
             {
                 calls.Add("method");
                 return Task.CompletedTask;
-            }
-            )
+            })
         );
         Assert.Equal(["method"], calls);
     }
@@ -89,14 +86,11 @@ public sealed class OnToolExecutionStartStreamTests
             ToolLoopAgentInstructions.Client()
         );
         await ToolExecutionCallbackSupport.ConsumeAsync(
-            agent.Stream(
-                "test",
-                onToolExecutionStart: (_, _) =>
+            agent.Stream("test", onToolExecutionStart: (_, _) =>
             {
                 calls.Add("method");
                 return Task.CompletedTask;
-            }
-            )
+            })
         );
         Assert.Equal(["constructor", "method"], calls);
     }
@@ -119,11 +113,13 @@ public sealed class OnToolExecutionStartStreamTests
             },
             ToolLoopAgentInstructions.Client()
         );
-        await ToolExecutionCallbackSupport.ConsumeAsync(agent.Stream("test", onToolExecutionStart: (ev, _) =>
+        await ToolExecutionCallbackSupport.ConsumeAsync(
+            agent.Stream("test", onToolExecutionStart: (ev, _) =>
             {
                 e = ev;
                 return Task.CompletedTask;
-            }));
+            })
+        );
         Assert.Equal("call-1", e!.CallId);
         Assert.Equal("call-1", e.ToolCall.ToolCallId);
         Assert.Equal("testTool", e.ToolCall.ToolName);
