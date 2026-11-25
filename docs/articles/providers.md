@@ -1736,6 +1736,8 @@ Set reasoning with `LanguageModelCallOptions.Reasoning` or with the `quiverai` p
 
 Build the `quiverai` provider options with `QuiverAILanguageModelOptions` (`ReasoningEffort`, `ReasoningSummary`) and pass `options.ToProviderOptions()` as `LanguageModelCallOptions.ProviderOptions`. `QuiverAIModelCatalog.GetQuiverAILanguageModelEntry(modelId)` and `GetQuiverAIImageModelEntry(modelId)` return the capabilities, provider-option support, and request configuration of a model. `QuiverAIProviderOptions.Language` and `QuiverAIProviderOptions.Image` describe each option.
 
+Build the image `quiverai` provider options with `QuiverAIImageModelOptions` (`Operation`, `Instructions`, `ReasoningEffort`, `ReferenceImages`, `MaxReviewSteps`, `Attributes`, `Temperature`, `TopP`, `PresencePenalty`, `MaxOutputTokens`, `OrchestratorMaxOutputTokens`, `ShallowMaxOutputTokens`, `AutoCrop`, `TargetSize`) and pass `options.ToProviderOptions()` as `GenerateImageRequest.ProviderOptions`. `QuiverAIImageOperation` is `Generate`, `Vectorize`, `Animate`, or `Edit`.
+
 QuiverAI supports four efforts, so a top-level `Reasoning` value that is not one of them maps to the nearest supported effort and adds a `compatibility` warning. `none` and `minimal` map to `low`, and `max` maps to `xhigh`.
 
 The provider does not request encrypted reasoning. When it replays the conversation in a tool loop, it sends the opaque reasoning item ids and the safe summaries, in order, without the private reasoning text or the encrypted reasoning state.
