@@ -13,6 +13,7 @@ using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 using Vercel.AI.Tests.MoreProviders;
 using Vercel.AI.Tests.Upstream;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.Tests;
 
@@ -773,9 +774,9 @@ public sealed class FishAudioParityTests
         var provider = FishAudioProvider.Create(
             new OpenAICompatibleOptions { ApiKey = "test-api-key" }
         );
-        Assert.Throws<AiSdkException>(() => provider.LanguageModel("s1"));
-        Assert.Throws<AiSdkException>(() => provider.EmbeddingModel("s1"));
-        Assert.Throws<AiSdkException>(() => provider.ImageModel("s1"));
+        Assert.Throws<NoSuchModelError>(() => provider.LanguageModel("s1"));
+        Assert.Throws<NoSuchModelError>(() => provider.EmbeddingModel("s1"));
+        Assert.Throws<NoSuchModelError>(() => provider.ImageModel("s1"));
     }
 
     [Fact]
