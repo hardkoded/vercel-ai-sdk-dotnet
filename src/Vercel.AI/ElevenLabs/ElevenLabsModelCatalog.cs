@@ -273,8 +273,10 @@ internal static class ElevenLabsModelCatalog
     ];
 
     /// <summary>The merged catalog, keyed by model id. Maps to <c>elevenLabsModelCatalog</c>.</summary>
-    internal static IReadOnlyDictionary<string, ElevenLabsModelEntry> ElevenLabsModelCatalogEntries { get; } =
-        CreateEntries();
+    internal static IReadOnlyDictionary<
+        string,
+        ElevenLabsModelEntry
+    > ElevenLabsModelCatalogEntries { get; } = CreateEntries();
 
     /// <summary>Returns the entry of a speech model. Maps to <c>getElevenLabsSpeechModelEntry</c>.</summary>
     internal static ElevenLabsSpeechModelEntry GetElevenLabsSpeechModelEntry(string modelId)
@@ -366,10 +368,14 @@ internal static class ElevenLabsModelCatalog
         var providerOptions = new Dictionary<string, ModelCapability>(StringComparer.Ordinal);
         foreach (var key in ElevenLabsProviderOptions.Transcription.Keys)
         {
-            providerOptions[key] = known ? ModelCapability.From(!streaming) : ModelCapability.Unknown;
+            providerOptions[key] = known
+                ? ModelCapability.From(!streaming)
+                : ModelCapability.Unknown;
         }
 
-        providerOptions["languageCode"] = known ? ModelCapability.Supported : ModelCapability.Unknown;
+        providerOptions["languageCode"] = known
+            ? ModelCapability.Supported
+            : ModelCapability.Unknown;
         providerOptions["streaming"] = ModelCapability.From(streaming);
 
         return new ElevenLabsTranscriptionModelEntry(

@@ -1933,9 +1933,7 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
         private static bool IsRealtimeTranscriptionModelId(string modelId) =>
             ElevenLabsModelCatalog
                 .GetElevenLabsTranscriptionModelEntry(modelId)
-                .Capabilities
-                .Streaming
-                .IsSupported;
+                .Capabilities.Streaming.IsSupported;
 
         /// <inheritdoc />
         public async Task<TranscriptionResult> DoTranscribeAsync(
