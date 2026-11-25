@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 
@@ -43,6 +44,70 @@ internal static class MoonshotChatUsage
             noCacheInputTokens: promptTokens - cacheReadTokens - (cacheWriteTokens ?? 0),
             textTokens: Math.Max(0, completionTokens - reasoningTokens)
         );
+    }
+
+    /// <summary>
+    /// Reads the cache write tokens by TTL from the <c>msh-usage-cache-write-tokens-5m</c> and
+    /// <c>msh-usage-cache-write-tokens-1h</c> response headers. Maps to <c>extractCacheWriteTokensByTtl</c>.
+    /// </summary>
+    public static JsonObject? ExtractCacheWriteTokensByTtl(
+        IReadOnlyDictionary<string, string>? headers
+    )
+    {
+        var ttl5m = ParseTokenCountHeader(headers, "msh-usage-cache-write-tokens-5m");
+        var ttl1h = ParseTokenCountHeader(headers, "msh-usage-cache-write-tokens-1h");
+        if (ttl5m == null && ttl1h == null)
+        {
+            return null;
+        }
+
+        return new JsonObject
+        {
+            ["cacheWriteTokens"] = new JsonObject
+            {
+                ["ttl5m"] = ttl5m ?? 0,
+                ["ttl1h"] = ttl1h ?? 0,
+            },
+        };
+    }
+
+    /// <summary>Maps to <c>parseTokenCountHeader</c>: only a string of ASCII digits counts.</summary>
+    private static long? ParseTokenCountHeader(
+        IReadOnlyDictionary<string, string>? headers,
+        string name
+    )
+    {
+        if (headers == null)
+        {
+            return null;
+        }
+
+        string? value = null;
+        foreach (var pair in headers)
+        {
+            if (string.Equals(pair.Key, name, StringComparison.OrdinalIgnoreCase))
+            {
+                value = pair.Value;
+                break;
+            }
+        }
+
+        var trimmed = value?.Trim();
+        if (
+            string.IsNullOrEmpty(trimmed)
+            || !trimmed!.All(static c => c is >= '0' and <= '9')
+            || !long.TryParse(
+                trimmed,
+                System.Globalization.NumberStyles.None,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out var number
+            )
+        )
+        {
+            return null;
+        }
+
+        return number;
     }
 
     /// <summary>

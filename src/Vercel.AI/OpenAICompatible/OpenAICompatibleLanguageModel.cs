@@ -266,7 +266,8 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
             metadataKey,
             extracted,
             usage.AcceptedPredictionTokens,
-            usage.RejectedPredictionTokens
+            usage.RejectedPredictionTokens,
+            _provider.Options.ExtractResponseHeaderMetadata?.Invoke(responseHeaders)
         );
         var finishReason = MapFinish(raw);
         if (
@@ -656,7 +657,8 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
                 prepared.MetadataKey,
                 metadataExtractor?.BuildMetadata(),
                 converted.AcceptedPredictionTokens,
-                converted.RejectedPredictionTokens
+                converted.RejectedPredictionTokens,
+                _provider.Options.ExtractResponseHeaderMetadata?.Invoke(sse.Headers)
             )
         );
     }

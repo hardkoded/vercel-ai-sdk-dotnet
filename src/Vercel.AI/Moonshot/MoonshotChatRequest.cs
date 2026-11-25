@@ -37,6 +37,7 @@ internal static class MoonshotChatRequest
         ApplySamplingOptions(modelId, options, body, warnings);
         ApplyMaxOutputTokens(body);
         ApplyMessageNames(options, body, warnings);
+        ApplyPromptCacheOptions(body);
 
         var moonshot = ReadOptions(options.ProviderOptions);
         var requestedThinking = moonshot.TryGetPropertyValue("thinking", out var thinkingNode)
@@ -287,6 +288,28 @@ internal static class MoonshotChatRequest
         }
 
         return effort;
+    }
+
+    /// <summary>
+    /// Sends <c>providerOptions.moonshotai.promptCacheOptions</c> as <c>prompt_cache_options</c>. The mode defaults to
+    /// <c>implicit</c>. Maps to the <c>prompt_cache_options</c> field in <c>getArgs</c>.
+    /// </summary>
+    private static void ApplyPromptCacheOptions(JsonObject body)
+    {
+        var node = body["promptCacheOptions"];
+        body.Remove("promptCacheOptions");
+        if (node is not JsonObject cache)
+        {
+            return;
+        }
+
+        var options = new JsonObject { ["mode"] = StringOf(cache, "mode") ?? "implicit" };
+        if (StringOf(cache, "ttl") is { } ttl)
+        {
+            options["ttl"] = ttl;
+        }
+
+        body["prompt_cache_options"] = options;
     }
 
     /// <summary>Sends <c>maxOutputTokens</c> as <c>max_completion_tokens</c>, never <c>max_tokens</c>.</summary>
