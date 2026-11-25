@@ -45,6 +45,17 @@ public interface IMcpProtocolVersionDiscoveryTransport : IMcpTransport
     string? ProtocolVersion { get; set; }
 }
 
+/// <summary>
+/// A transport that can send a JSON-RPC notification, which has no id and gets no response.
+/// The client sends <c>notifications/initialized</c> through it after <c>initialize</c>. It is a separate interface because
+/// <see cref="IMcpTransport"/> cannot gain members on netstandard2.0.
+/// </summary>
+public interface IMcpNotificationTransport : IMcpTransport
+{
+    /// <summary>Sends the notification <paramref name="method"/>.</summary>
+    Task NotifyAsync(string method, JsonElement parameters, CancellationToken cancellationToken);
+}
+
 /// <summary>Options of <see cref="McpClient.ConnectAsync(IMcpTransport, McpClientOptions, CancellationToken)"/>. Maps to <c>MCPClientConfig</c>.</summary>
 public sealed class McpClientOptions
 {
@@ -80,8 +91,61 @@ public sealed class McpToolSchema
     public string? OutputSchema { get; set; }
 }
 
-/// <summary>Lists MCP tools and adapts them to <see cref="Tool"/>.</summary>
-public static class McpClient
+/// <summary>
+/// The name, version and optional title of an MCP client or server. Maps to upstream's <c>Configuration</c>.
+/// </summary>
+public sealed class McpConfiguration
+{
+    /// <summary>Creates a configuration.</summary>
+    public McpConfiguration(string name, string version, string? title = null)
+    {
+        Name = name;
+        Version = version;
+        Title = title;
+    }
+
+    /// <summary>The name.</summary>
+    public string Name { get; }
+
+    /// <summary>The version.</summary>
+    public string Version { get; }
+
+    /// <summary>The human-readable title, if the server sent one.</summary>
+    public string? Title { get; }
+}
+
+/// <summary>The result of the <c>initialize</c> request, or its <c>server/discover</c> equivalent. Maps to upstream's <c>InitializeResult</c>.</summary>
+public sealed class McpInitializeResult
+{
+    /// <summary>Creates a result.</summary>
+    public McpInitializeResult(
+        string protocolVersion,
+        JsonElement capabilities,
+        McpConfiguration serverInfo,
+        string? instructions = null
+    )
+    {
+        ProtocolVersion = protocolVersion;
+        Capabilities = capabilities;
+        ServerInfo = serverInfo;
+        Instructions = instructions;
+    }
+
+    /// <summary>The negotiated protocol version.</summary>
+    public string ProtocolVersion { get; }
+
+    /// <summary>The server capabilities.</summary>
+    public JsonElement Capabilities { get; }
+
+    /// <summary>The server name and version.</summary>
+    public McpConfiguration ServerInfo { get; }
+
+    /// <summary>The server instructions, if any.</summary>
+    public string? Instructions { get; }
+}
+
+/// <summary>An MCP client. It connects to a server, keeps what the server announced, and adapts MCP tools to <see cref="Tool"/>.</summary>
+public sealed class McpClient
 {
     /// <summary>Latest MCP protocol version. Maps to <c>LATEST_PROTOCOL_VERSION</c>.</summary>
     public const string LatestProtocolVersion = "2026-07-28";
@@ -90,6 +154,8 @@ public static class McpClient
     public const string LatestLegacyProtocolVersion = "2025-11-25";
 
     private const int DefaultProtocolDiscoveryTimeoutMilliseconds = 1000;
+    private const string DefaultClientName = "ai-sdk-mcp-client";
+    private const string DefaultClientVersion = "1.0.0";
 
     private static readonly string[] SupportedProtocolVersions =
     [
@@ -100,7 +166,33 @@ public static class McpClient
         "2024-11-05",
     ];
 
-    /// <summary>Calls <c>initialize</c>, then <c>tools/list</c>.</summary>
+    private readonly IMcpTransport _transport;
+    private readonly McpClientOptions _options;
+    private bool _isModern;
+    private string _protocolVersion = LatestLegacyProtocolVersion;
+    private JsonElement _serverCapabilities = JsonDocument.Parse("{}").RootElement.Clone();
+    private McpConfiguration _serverInfo = new(string.Empty, string.Empty);
+    private McpInitializeResult? _initializeResult;
+    private string? _serverInstructions;
+
+    private McpClient(IMcpTransport transport, McpClientOptions options)
+    {
+        _transport = transport;
+        _options = options;
+    }
+
+    /// <summary>The server name and version from initialization or discovery. Maps to <c>serverInfo</c>.</summary>
+    public McpConfiguration ServerInfo => _serverInfo;
+
+    /// <summary>The result of initialization or discovery. Maps to <c>initializeResult</c>.</summary>
+    public McpInitializeResult InitializeResult =>
+        _initializeResult
+        ?? new McpInitializeResult(_protocolVersion, _serverCapabilities, _serverInfo, null);
+
+    /// <summary>The server instructions from initialization or discovery, if any. Maps to <c>instructions</c>.</summary>
+    public string? Instructions => _serverInstructions;
+
+    /// <summary>Connects to the server and returns its tools: initializes, then calls <c>tools/list</c>.</summary>
     public static Task<IReadOnlyList<Tool>> ConnectAsync(
         IMcpTransport transport,
         CancellationToken cancellationToken = default
@@ -116,181 +208,63 @@ public static class McpClient
         CancellationToken cancellationToken = default
     )
     {
+        var client = await CreateAsync(transport, options, cancellationToken).ConfigureAwait(false);
+        return await client
+            .ListToolsAsync(options.Schemas, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Creates a client and initializes it: probes with <c>server/discover</c> when
+    /// <see cref="McpClientOptions.ProtocolVersionDiscovery"/> and the transport allow it, otherwise calls
+    /// <c>initialize</c> and sends <c>notifications/initialized</c>. Maps to <c>createMCPClient</c>.
+    /// </summary>
+    public static async Task<McpClient> CreateAsync(
+        IMcpTransport transport,
+        McpClientOptions? options = null,
+        CancellationToken cancellationToken = default
+    )
+    {
         if (transport is null)
         {
             throw new ArgumentNullException(nameof(transport));
         }
 
-        if (options is null)
-        {
-            throw new ArgumentNullException(nameof(options));
-        }
-
-        if (
-            options.ProtocolVersionDiscovery
-            && transport
-                is IMcpProtocolVersionDiscoveryTransport
-                {
-                    SupportsProtocolVersionDiscovery: true
-                } discoverable
-            && await TryProtocolDiscoveryAsync(discoverable, cancellationToken)
-                .ConfigureAwait(false)
-        )
-        {
-            return await ListToolsAsync(transport, options.Schemas, cancellationToken)
-                .ConfigureAwait(false);
-        }
-
-        if (transport is IMcpProtocolVersionDiscoveryTransport versioned)
-        {
-            versioned.ProtocolVersion = LatestLegacyProtocolVersion;
-        }
-
-        using var init = JsonDocument.Parse(
-            "{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{},\"clientInfo\":{\"name\":\"Vercel.AI.Mcp\",\"version\":\"0.1.0\"}}"
-        );
-        await transport
-            .CallAsync("initialize", init.RootElement, cancellationToken)
-            .ConfigureAwait(false);
-        return await ListToolsAsync(transport, options.Schemas, cancellationToken)
-            .ConfigureAwait(false);
+        var client = new McpClient(transport, options ?? new McpClientOptions());
+        await client.InitAsync(cancellationToken).ConfigureAwait(false);
+        return client;
     }
 
-    private static async Task<bool> TryProtocolDiscoveryAsync(
-        IMcpProtocolVersionDiscoveryTransport transport,
-        CancellationToken cancellationToken
-    )
-    {
-        transport.ProtocolVersion = LatestProtocolVersion;
-        using var timeout = transport.WaitsForProtocolVersionDiscovery
-            ? null
-            : CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeout?.CancelAfter(DefaultProtocolDiscoveryTimeoutMilliseconds);
-        try
-        {
-            using var empty = JsonDocument.Parse("{}");
-            JsonElement result;
-            try
-            {
-                result = await transport
-                    .CallAsync(
-                        "server/discover",
-                        empty.RootElement,
-                        timeout?.Token ?? cancellationToken
-                    )
-                    .ConfigureAwait(false);
-            }
-            catch (OperationCanceledException)
-                when (timeout is { IsCancellationRequested: true }
-                    && !cancellationToken.IsCancellationRequested
-                )
-            {
-                throw new MCPClientError(
-                    "Request timed out after " + DefaultProtocolDiscoveryTimeoutMilliseconds + "ms"
-                );
-            }
-
-            var supported =
-                result.TryGetProperty("supportedVersions", out var versions)
-                && versions.ValueKind == JsonValueKind.Array
-                    ? versions.EnumerateArray().Select(v => v.GetString()).ToList()
-                    : throw new MCPClientError("Server sent invalid server/discover result.");
-            if (!supported.Contains(LatestProtocolVersion))
-            {
-                throw new MCPClientError(
-                    "Server does not support the requested protocol version: "
-                        + LatestProtocolVersion
-                );
-            }
-
-            return true;
-        }
-        catch (MCPClientError error) when (error.Code is -32020 or -32021 or -32022)
-        {
-            if (
-                error.Code == -32022
-                && TryGetSupportedVersions(error.Data, out var supportedVersions)
-            )
-            {
-                if (
-                    !supportedVersions.Contains(LatestProtocolVersion)
-                    && supportedVersions.Any(version =>
-                        string.CompareOrdinal(version, LatestLegacyProtocolVersion) <= 0
-                        && SupportedProtocolVersions.Contains(version)
-                    )
-                )
-                {
-                    throw new MCPClientError(
-                        "MCP server rejected protocol version "
-                            + LatestProtocolVersion
-                            + " during discovery. Server-supported versions: "
-                            + string.Join(", ", supportedVersions)
-                            + ". The client does not automatically switch to legacy initialization after this error. "
-                            + "If this is a known legacy server, set ProtocolVersionDiscovery to false to use initialize.",
-                        code: error.Code,
-                        statusCode: error.StatusCode,
-                        url: error.Url,
-                        responseBody: error.ResponseBody,
-                        data: error.Data,
-                        cause: error
-                    );
-                }
-            }
-
-            throw;
-        }
-        catch (Exception exception)
-            when (transport.WaitsForProtocolVersionDiscovery && exception is not MCPClientError)
-        {
-            throw;
-        }
-        catch (MCPClientError)
-        {
-            return false;
-        }
-    }
-
-    private static bool TryGetSupportedVersions(JsonElement? data, out List<string> versions)
-    {
-        versions = [];
-        if (
-            data is { ValueKind: JsonValueKind.Object } element
-            && element.TryGetProperty("supported", out var supported)
-            && supported.ValueKind == JsonValueKind.Array
-            && supported.EnumerateArray().All(v => v.ValueKind == JsonValueKind.String)
-        )
-        {
-            versions = supported.EnumerateArray().Select(v => v.GetString()!).ToList();
-            return true;
-        }
-
-        return false;
-    }
-
-    /// <summary>Maps <c>tools/list</c> onto SDK tools. Execution calls <c>tools/call</c>.</summary>
+    /// <summary>Maps <c>tools/list</c> onto SDK tools without initializing. Execution calls <c>tools/call</c>.</summary>
     public static Task<IReadOnlyList<Tool>> ListToolsAsync(
         IMcpTransport transport,
         CancellationToken cancellationToken = default
-    ) => ListToolsAsync(transport, schemas: null, cancellationToken);
+    )
+    {
+        if (transport is null)
+        {
+            throw new ArgumentNullException(nameof(transport));
+        }
+
+        return new McpClient(transport, new McpClientOptions()).ListToolsAsync(cancellationToken);
+    }
+
+    /// <summary>Maps <c>tools/list</c> onto SDK tools. Execution calls <c>tools/call</c>.</summary>
+    public Task<IReadOnlyList<Tool>> ListToolsAsync(
+        CancellationToken cancellationToken = default
+    ) => ListToolsAsync(schemas: null, cancellationToken);
 
     /// <summary>
     /// Maps <c>tools/list</c> onto SDK tools. With <paramref name="schemas"/>, only the listed tools are returned,
     /// typed by their schemas. Maps to <c>client.tools({ schemas })</c>.
     /// </summary>
-    public static async Task<IReadOnlyList<Tool>> ListToolsAsync(
-        IMcpTransport transport,
+    public async Task<IReadOnlyList<Tool>> ListToolsAsync(
         IReadOnlyDictionary<string, McpToolSchema>? schemas,
         CancellationToken cancellationToken = default
     )
     {
-        if (transport is null)
-        {
-            throw new ArgumentNullException(nameof(transport));
-        }
-
         using var empty = JsonDocument.Parse("{}");
-        var listed = await transport
-            .CallAsync("tools/list", empty.RootElement, cancellationToken)
+        var listed = await RequestAsync("tools/list", empty.RootElement, cancellationToken)
             .ConfigureAwait(false);
         var tools = new List<Tool>();
         if (
@@ -328,14 +302,7 @@ public static class McpClient
             }
 
             var tool = Tool.Function(toolName, description, schema, (arguments, token) =>
-                CallToolAsync(
-                    transport,
-                    toolName,
-                    arguments,
-                    schemas is not null,
-                    outputSchema,
-                    token
-                )
+                CallToolAsync(toolName, arguments, schemas is not null, outputSchema, token)
             );
             if (outputSchema is not null)
             {
@@ -350,8 +317,283 @@ public static class McpClient
         return tools;
     }
 
-    private static async Task<string> CallToolAsync(
-        IMcpTransport transport,
+    private async Task InitAsync(CancellationToken cancellationToken)
+    {
+        if (
+            _options.ProtocolVersionDiscovery
+            && _transport
+                is IMcpProtocolVersionDiscoveryTransport
+                {
+                    SupportsProtocolVersionDiscovery: true
+                } discoverable
+            && await TryProtocolDiscoveryAsync(discoverable, cancellationToken)
+                .ConfigureAwait(false)
+        )
+        {
+            return;
+        }
+
+        _isModern = false;
+        _protocolVersion = LatestLegacyProtocolVersion;
+        SetTransportProtocolVersion(_protocolVersion);
+
+        var init = new JsonObject
+        {
+            ["protocolVersion"] = LatestLegacyProtocolVersion,
+            ["capabilities"] = new JsonObject(),
+            ["clientInfo"] = CreateClientInfo(),
+        };
+        using var parameters = JsonDocument.Parse(init.ToJsonString());
+        var result = await RequestAsync("initialize", parameters.RootElement, cancellationToken)
+            .ConfigureAwait(false);
+        ApplyInitializeResult(result);
+
+        // Complete initialization handshake.
+        if (_transport is IMcpNotificationTransport notifier)
+        {
+            using var empty = JsonDocument.Parse("{}");
+            await notifier
+                .NotifyAsync("notifications/initialized", empty.RootElement, cancellationToken)
+                .ConfigureAwait(false);
+        }
+    }
+
+    private static JsonObject CreateClientInfo() =>
+        new() { ["name"] = DefaultClientName, ["version"] = DefaultClientVersion };
+
+    private async Task<bool> TryProtocolDiscoveryAsync(
+        IMcpProtocolVersionDiscoveryTransport transport,
+        CancellationToken cancellationToken
+    )
+    {
+        _isModern = true;
+        _protocolVersion = LatestProtocolVersion;
+        SetTransportProtocolVersion(_protocolVersion);
+        using var timeout = transport.WaitsForProtocolVersionDiscovery
+            ? null
+            : CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout?.CancelAfter(DefaultProtocolDiscoveryTimeoutMilliseconds);
+        try
+        {
+            using var empty = JsonDocument.Parse("{}");
+            JsonElement result;
+            try
+            {
+                result = await RequestAsync(
+                        "server/discover",
+                        empty.RootElement,
+                        timeout?.Token ?? cancellationToken
+                    )
+                    .ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+                when (timeout is { IsCancellationRequested: true }
+                    && !cancellationToken.IsCancellationRequested
+                )
+            {
+                throw new MCPClientError(
+                    "Request timed out after " + DefaultProtocolDiscoveryTimeoutMilliseconds + "ms"
+                );
+            }
+
+            ApplyDiscoverResult(result);
+            return true;
+        }
+        catch (MCPClientError error) when (error.Code is -32020 or -32021 or -32022)
+        {
+            if (
+                error.Code == -32022
+                && TryGetSupportedVersions(error.Data, out var supportedVersions)
+            )
+            {
+                if (
+                    !supportedVersions.Contains(_protocolVersion)
+                    && supportedVersions.Any(version =>
+                        string.CompareOrdinal(version, LatestLegacyProtocolVersion) <= 0
+                        && SupportedProtocolVersions.Contains(version)
+                    )
+                )
+                {
+                    throw new MCPClientError(
+                        "MCP server rejected protocol version "
+                            + _protocolVersion
+                            + " during discovery. Server-supported versions: "
+                            + string.Join(", ", supportedVersions)
+                            + ". The client does not automatically switch to legacy initialization after this error. "
+                            + "If this is a known legacy server, set ProtocolVersionDiscovery to false to use initialize.",
+                        code: error.Code,
+                        statusCode: error.StatusCode,
+                        url: error.Url,
+                        responseBody: error.ResponseBody,
+                        data: error.Data,
+                        cause: error
+                    );
+                }
+            }
+
+            throw;
+        }
+        catch (Exception exception)
+            when (transport.WaitsForProtocolVersionDiscovery && exception is not MCPClientError)
+        {
+            throw;
+        }
+        catch (MCPClientError)
+        {
+            return false;
+        }
+    }
+
+    private void ApplyDiscoverResult(JsonElement result)
+    {
+        var supported =
+            result.TryGetProperty("supportedVersions", out var versions)
+            && versions.ValueKind == JsonValueKind.Array
+                ? versions.EnumerateArray().Select(v => v.GetString()).ToList()
+                : throw new MCPClientError("Server sent invalid server/discover result.");
+        if (!supported.Contains(_protocolVersion))
+        {
+            throw new MCPClientError(
+                "Server does not support the requested protocol version: " + _protocolVersion
+            );
+        }
+
+        if (
+            result.TryGetProperty("_meta", out var meta)
+            && meta.ValueKind == JsonValueKind.Object
+            && meta.TryGetProperty("io.modelcontextprotocol/serverInfo", out var info)
+            && TryReadConfiguration(info, out var serverInfo)
+        )
+        {
+            _serverInfo = serverInfo;
+        }
+
+        _serverCapabilities = result.TryGetProperty("capabilities", out var capabilities)
+            ? capabilities.Clone()
+            : _serverCapabilities;
+        _serverInstructions = ReadInstructions(result);
+        _initializeResult = new McpInitializeResult(
+            _protocolVersion,
+            _serverCapabilities,
+            _serverInfo,
+            _serverInstructions
+        );
+    }
+
+    private void ApplyInitializeResult(JsonElement result)
+    {
+        if (
+            result.ValueKind != JsonValueKind.Object
+            || !result.TryGetProperty("protocolVersion", out var version)
+            || version.ValueKind != JsonValueKind.String
+            || !result.TryGetProperty("capabilities", out var capabilities)
+            || capabilities.ValueKind != JsonValueKind.Object
+            || !result.TryGetProperty("serverInfo", out var info)
+            || !TryReadConfiguration(info, out var serverInfo)
+        )
+        {
+            throw new MCPClientError("Server sent invalid initialize result");
+        }
+
+        var protocolVersion = version.GetString()!;
+        if (!SupportedProtocolVersions.Contains(protocolVersion))
+        {
+            throw new MCPClientError(
+                "Server's protocol version is not supported: " + protocolVersion
+            );
+        }
+
+        _serverCapabilities = capabilities.Clone();
+        _isModern = false;
+        _protocolVersion = protocolVersion;
+        _serverInfo = serverInfo;
+        _serverInstructions = ReadInstructions(result);
+        _initializeResult = new McpInitializeResult(
+            protocolVersion,
+            _serverCapabilities,
+            serverInfo,
+            _serverInstructions
+        );
+        SetTransportProtocolVersion(protocolVersion);
+    }
+
+    private static bool TryReadConfiguration(
+        JsonElement element,
+        out McpConfiguration configuration
+    )
+    {
+        configuration = null!;
+        if (
+            element.ValueKind != JsonValueKind.Object
+            || !element.TryGetProperty("name", out var name)
+            || name.ValueKind != JsonValueKind.String
+            || !element.TryGetProperty("version", out var version)
+            || version.ValueKind != JsonValueKind.String
+        )
+        {
+            return false;
+        }
+
+        var title =
+            element.TryGetProperty("title", out var titleElement)
+            && titleElement.ValueKind == JsonValueKind.String
+                ? titleElement.GetString()
+                : null;
+        configuration = new McpConfiguration(name.GetString()!, version.GetString()!, title);
+        return true;
+    }
+
+    private static string? ReadInstructions(JsonElement result) =>
+        result.TryGetProperty("instructions", out var instructions)
+        && instructions.ValueKind == JsonValueKind.String
+            ? instructions.GetString()
+            : null;
+
+    private void SetTransportProtocolVersion(string version)
+    {
+        if (_transport is IMcpProtocolVersionDiscoveryTransport versioned)
+        {
+            versioned.ProtocolVersion = version;
+        }
+    }
+
+    /// <summary>Sends one request. A modern server gets the protocol metadata and must answer with a <c>resultType</c>.</summary>
+    private async Task<JsonElement> RequestAsync(
+        string method,
+        JsonElement parameters,
+        CancellationToken cancellationToken
+    )
+    {
+        if (!_isModern)
+        {
+            return await _transport
+                .CallAsync(method, parameters, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        var prepared = JsonNode.Parse(parameters.GetRawText()) as JsonObject ?? new JsonObject();
+        var meta = prepared["_meta"] as JsonObject ?? new JsonObject();
+        meta["io.modelcontextprotocol/protocolVersion"] = _protocolVersion;
+        meta["io.modelcontextprotocol/clientCapabilities"] = new JsonObject();
+        meta["io.modelcontextprotocol/clientInfo"] = CreateClientInfo();
+        prepared["_meta"] = meta;
+        using var document = JsonDocument.Parse(prepared.ToJsonString());
+        var result = await _transport
+            .CallAsync(method, document.RootElement, cancellationToken)
+            .ConfigureAwait(false);
+        if (
+            result.ValueKind != JsonValueKind.Object
+            || !result.TryGetProperty("resultType", out var resultType)
+            || resultType.ValueKind == JsonValueKind.Null
+        )
+        {
+            throw new MCPClientError("Modern MCP result is missing resultType");
+        }
+
+        return result;
+    }
+
+    private async Task<string> CallToolAsync(
         string name,
         JsonElement arguments,
         bool returnsErrorResult,
@@ -365,8 +607,7 @@ public static class McpClient
             ["arguments"] = JsonNode.Parse(arguments.GetRawText()),
         };
         using var document = JsonDocument.Parse(parameters.ToJsonString());
-        var result = await transport
-            .CallAsync("tools/call", document.RootElement, cancellationToken)
+        var result = await RequestAsync("tools/call", document.RootElement, cancellationToken)
             .ConfigureAwait(false);
         var normalized = CallToolResults.Normalize(result);
         if (
@@ -390,6 +631,23 @@ public static class McpClient
 
         // Upstream's execute returns the call-tool result itself. The port's execute returns its JSON text.
         return normalized.GetRawText();
+    }
+
+    private static bool TryGetSupportedVersions(JsonElement? data, out List<string> versions)
+    {
+        versions = [];
+        if (
+            data is { ValueKind: JsonValueKind.Object } element
+            && element.TryGetProperty("supported", out var supported)
+            && supported.ValueKind == JsonValueKind.Array
+            && supported.EnumerateArray().All(v => v.ValueKind == JsonValueKind.String)
+        )
+        {
+            versions = supported.EnumerateArray().Select(v => v.GetString()!).ToList();
+            return true;
+        }
+
+        return false;
     }
 
     /// <summary>Extracts and validates <c>structuredContent</c> from a tool result. Maps to <c>extractStructuredContent</c>.</summary>
@@ -607,7 +865,7 @@ public sealed class StdioMcpOptions
 }
 
 /// <summary>MCP over a child process using newline-delimited JSON-RPC messages.</summary>
-public sealed class StdioMcpTransport : IMcpTransport, IDisposable
+public sealed class StdioMcpTransport : IMcpNotificationTransport, IDisposable
 {
     private readonly Process? _process;
     private readonly Stream _input;
@@ -786,6 +1044,34 @@ public sealed class StdioMcpTransport : IMcpTransport, IDisposable
         }
     }
 
+    /// <inheritdoc />
+    public async Task NotifyAsync(
+        string method,
+        JsonElement parameters,
+        CancellationToken cancellationToken
+    )
+    {
+        var notification = new JsonObject
+        {
+            ["jsonrpc"] = "2.0",
+            ["method"] = method,
+            ["params"] = JsonNode.Parse(parameters.GetRawText()),
+        };
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            using var document = JsonDocument.Parse(notification.ToJsonString());
+            await McpNdjson
+                .WriteAsync(_input, document.RootElement, cancellationToken)
+                .ConfigureAwait(false);
+            await _input.FlushAsync(cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
     /// <summary>Kills the child process, if one was started.</summary>
     public void Dispose()
     {
@@ -876,7 +1162,9 @@ public sealed class StdioMcpTransport : IMcpTransport, IDisposable
 }
 
 /// <summary>MCP over Streamable HTTP. Posts JSON-RPC and accepts a JSON body or an SSE <c>data:</c> payload.</summary>
-public sealed class HttpMcpTransport : IMcpProtocolVersionDiscoveryTransport
+public sealed class HttpMcpTransport
+    : IMcpProtocolVersionDiscoveryTransport,
+        IMcpNotificationTransport
 {
     private readonly HttpClient _httpClient;
     private readonly Uri _endpoint;
@@ -989,6 +1277,50 @@ public sealed class HttpMcpTransport : IMcpProtocolVersionDiscoveryTransport
 
         using var document = JsonDocument.Parse(body);
         return StdioMcpTransport.Unwrap(document.RootElement);
+    }
+
+    /// <inheritdoc />
+    public async Task NotifyAsync(
+        string method,
+        JsonElement parameters,
+        CancellationToken cancellationToken
+    )
+    {
+        var notification = new JsonObject
+        {
+            ["jsonrpc"] = "2.0",
+            ["method"] = method,
+            ["params"] = JsonNode.Parse(parameters.GetRawText()),
+        };
+        using var message = new HttpRequestMessage(HttpMethod.Post, _endpoint)
+        {
+            Content = new StringContent(
+                notification.ToJsonString(),
+                Encoding.UTF8,
+                "application/json"
+            ),
+        };
+        message.Headers.Accept.ParseAdd("application/json");
+        message.Headers.Accept.ParseAdd("text/event-stream");
+        message.Headers.TryAddWithoutValidation(
+            "mcp-protocol-version",
+            ProtocolVersion ?? McpClient.LatestLegacyProtocolVersion
+        );
+        using var response = await _httpClient
+            .SendAsync(message, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
+            .ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await CancellableReads
+                .ReadAsStringAsync(response.Content, cancellationToken)
+                .ConfigureAwait(false);
+            throw new MCPClientError(
+                "MCP HTTP notification failed with status " + (int)response.StatusCode + ".",
+                statusCode: (int)response.StatusCode,
+                url: _endpoint.ToString(),
+                responseBody: body
+            );
+        }
     }
 
     private static bool TryParseJsonRpcError(string body, out JsonDocument document)

@@ -260,8 +260,8 @@ public sealed class OutputSchemaSupportTests
         string? outputSchema
     )
     {
-        var tools = await Client.ListToolsAsync(
-            new MockTransport(name, callResult, inputSchema),
+        var client = await Client.CreateAsync(new MockTransport(name, callResult, inputSchema));
+        var tools = await client.ListToolsAsync(
             new Dictionary<string, McpToolSchema>
             {
                 [name] = new McpToolSchema(inputSchema) { OutputSchema = outputSchema },
@@ -287,6 +287,8 @@ public sealed class OutputSchemaSupportTests
         {
             var json = method switch
             {
+                "initialize" =>
+                    "{\"protocolVersion\":\"2025-11-25\",\"capabilities\":{},\"serverInfo\":{\"name\":\"mock\",\"version\":\"1.0.0\"}}",
                 "tools/call" => callResult,
                 "tools/list" => "{\"tools\":[{\"name\":"
                     + JsonSerializer.Serialize(toolName)
