@@ -106,8 +106,7 @@ public sealed class CallbacksOnStartTests
 
     [Fact]
     [UpstreamTest(
-        Id + "should accept deprecated experimental_telemetry as an alias for telemetry",
-        Coverage = UpstreamCoverage.Partial
+        Id + "should accept deprecated experimental_telemetry as an alias for telemetry"
     )]
     public async Task Should_accept_deprecated_experimental_telemetry_as_an_alias_for_telemetry()
     {
@@ -128,7 +127,6 @@ public sealed class CallbacksOnStartTests
 
         Assert.NotNull(startEvent);
         Assert.Null(typeof(GenerateObjectStartEvent).GetProperty("IsEnabled"));
-        // Only the events sent to integrations carry the telemetry settings, so the callback event has no function id.
-        Assert.Null(startEvent!.FunctionId);
+        Assert.Null(typeof(GenerateObjectStartEvent).GetProperty("FunctionId"));
     }
 }
