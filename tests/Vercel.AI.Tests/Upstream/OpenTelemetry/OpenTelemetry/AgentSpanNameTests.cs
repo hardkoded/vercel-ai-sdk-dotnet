@@ -10,7 +10,7 @@ using OtelOptions = Vercel.AI.OpenTelemetry.OpenTelemetryOptions;
 namespace Vercel.AI.Tests.Upstream.OpenTelemetry.OpenTelemetry;
 
 /// <summary>Port of <c>open-telemetry.test.ts</c> &gt; <c>OpenTelemetry</c> &gt; <c>agentSpanName</c>, for <c>ai.generateText</c> and <c>ai.generateObject</c>.</summary>
-public sealed class OpenTelemetryTests
+public sealed class AgentSpanNameTests
 {
     private const string Test =
         "packages/otel/src/open-telemetry.test.ts::OpenTelemetry::agentSpanName::ai.generateText::";
