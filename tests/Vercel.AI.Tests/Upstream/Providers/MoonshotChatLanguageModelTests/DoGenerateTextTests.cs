@@ -80,8 +80,7 @@ public sealed class DoGenerateTextTests
         Assert.Equal(0.6, body["presence_penalty"]!.GetValue<double>());
     }
 
-    private const string TextFixture =
-        """
+    private const string TextFixture = """
         {"id":"chatcmpl-test-text","object":"chat.completion","created":1785880000,"model":"kimi-k3","choices":[{"index":0,"message":{"role":"assistant","content":"Hello, world!"},"finish_reason":"stop"}],"usage":{"prompt_tokens":9,"completion_tokens":5,"total_tokens":14}}
         """;
 
@@ -257,8 +256,7 @@ public sealed class DoGenerateTextTests
     )]
     public async Task Should_preserve_extra_top_level_and_nested_fields_in_raw_usage()
     {
-        const string usage =
-            """
+        const string usage = """
             {"prompt_tokens":100,"completion_tokens":50,"total_tokens":150,"cached_tokens":20,"provider_usage_id":"usage-123","prompt_tokens_details":{"cached_tokens":20,"cache_type":"ephemeral"},"completion_tokens_details":{"reasoning_tokens":10,"billable_tokens":42}}
             """;
         var capture = new UpstreamCapture
@@ -296,8 +294,7 @@ public sealed class DoGenerateTextTests
     {
         var capture = new UpstreamCapture
         {
-            ResponseBody =
-                """
+            ResponseBody = """
                 {"id":"chatcmpl-invalid-usage","created":1785880000,"model":"kimi-k3","choices":[{"message":{"role":"assistant","content":"Hello"},"finish_reason":"stop"}],"usage":{"prompt_tokens":"100","completion_tokens":50,"total_tokens":150}}
                 """,
         };

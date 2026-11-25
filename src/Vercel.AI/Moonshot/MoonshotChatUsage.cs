@@ -72,7 +72,10 @@ internal static class MoonshotChatUsage
 
         if (child.ValueKind != JsonValueKind.Object)
         {
-            throw new InvalidResponseDataException(parent.GetRawText(), "usage." + name + " must be an object.");
+            throw new InvalidResponseDataException(
+                parent.GetRawText(),
+                "usage." + name + " must be an object."
+            );
         }
 
         ValidateNumbers(child, "usage." + name, numbers);
