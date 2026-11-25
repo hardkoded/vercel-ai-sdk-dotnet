@@ -47,7 +47,7 @@ Creates a provider.
 | `httpClient` | [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient) |  |
 | `options` | [AmazonBedrockOptions](/api/Vercel.AI.AmazonBedrock/AmazonBedrockOptions/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L82)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L85)
 
 ## Fields
 
@@ -84,7 +84,7 @@ HTTP helper.
 
 **Value:** [ProviderHttp](/api/Vercel.AI.ProviderUtils/ProviderHttp/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L97)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L100)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockProvider_HttpClient_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockProvider_HttpClient"></a>
@@ -101,7 +101,7 @@ HTTP client that receives the signed request.
 
 **Value:** [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L94)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L97)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockProvider_Options_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockProvider_Options"></a>
@@ -118,7 +118,24 @@ Options.
 
 **Value:** [AmazonBedrockOptions](/api/Vercel.AI.AmazonBedrock/AmazonBedrockOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L91)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L94)
+
+<a id="Vercel_AI_AmazonBedrock_AmazonBedrockProvider_Tools_"></a>
+<a id="Vercel_AI_AmazonBedrock_AmazonBedrockProvider_Tools"></a>
+
+### Tools
+
+
+```csharp
+public IReadOnlyDictionary<string, Func<Tool>> Tools { get; }
+```
+
+
+The Anthropic provider tool factories, usable on Anthropic models. Maps to `provider.tools`.
+
+**Value:** [IReadOnlyDictionary&lt;string, Func&lt;Tool&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L82)
 
 ## Methods
 
@@ -146,7 +163,7 @@ Adds the provider headers, then [HeadersProvider](/api/Vercel.AI.AmazonBedrock/A
 
 **Returns:** [Task](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L135)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L138)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockProvider_Create_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockProvider_Create_Vercel_AI_AmazonBedrock_AmazonBedrockOptions_System_Net_Http_HttpMessageHandler_"></a>
@@ -170,7 +187,7 @@ Creates a provider.
 
 **Returns:** [AmazonBedrockProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L213)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L216)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockProvider_EmbeddingModel_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockProvider_EmbeddingModel_System_String_"></a>
@@ -193,7 +210,7 @@ Returns an embedding model.
 
 **Returns:** [IEmbeddingModel](/api/Vercel.AI.Provider/IEmbeddingModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L233)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L236)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockProvider_EmbeddingModel_System_String_Vercel_AI_AmazonBedrock_AmazonBedrockEmbeddingModelSettings_"></a>
 
@@ -216,7 +233,7 @@ Creates an embedding model with &lt;code class="paramref"&gt;settings&lt;/code&g
 
 **Returns:** [AmazonBedrockEmbeddingModel](/api/Vercel.AI.AmazonBedrock/AmazonBedrockEmbeddingModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L243)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L246)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockProvider_LanguageModel_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockProvider_LanguageModel_System_String_"></a>
@@ -239,7 +256,7 @@ Returns a language model.
 
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L225)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L228)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockProvider_LanguageModel_System_String_Vercel_AI_AmazonBedrock_AmazonBedrockChatModelSettings_"></a>
 
@@ -262,7 +279,7 @@ Creates a language model with &lt;code class="paramref"&gt;settings&lt;/code&gt;
 
 **Returns:** [AmazonBedrockLanguageModel](/api/Vercel.AI.AmazonBedrock/AmazonBedrockLanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L237)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L240)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockProvider_RerankingModel_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockProvider_RerankingModel_System_String_"></a>
@@ -285,4 +302,4 @@ Returns a reranking model.
 
 **Returns:** [IRerankingModel](/api/Vercel.AI.Provider/IRerankingModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L229)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L232)

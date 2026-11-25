@@ -18,7 +18,7 @@ public sealed class AnthropicComputerToolsetMemberConfig
 }
 
 /// <summary>Factories of the Anthropic provider-defined tools. Maps to <c>anthropic.tools</c>.</summary>
-public static class AnthropicTools
+public static partial class AnthropicTools
 {
     /// <summary>
     /// Member tools of the computer toolset. Each member is returned by the API as its own <c>tool_use</c> block;

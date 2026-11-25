@@ -101,35 +101,60 @@ public sealed class OpenTelemetryIntegrationWithDecideTests
         }
     }
 
-    [Fact]
-    [UpstreamTest(
-        Test + "creates decision spans through the %s API",
-        Coverage = UpstreamCoverage.Partial,
-        Commit = UpstreamCommit,
-        Note = "Only the current API is checked: the port's decide models do not report a response, so the model-call span has no gen_ai.response.id or gen_ai.response.model, and the deprecated experimental_evaluate path is not run."
-    )]
-    public async Task Creates_decision_spans_through_the_current_API()
+    [Theory]
+    [InlineData("current")]
+    [InlineData("deprecated")]
+    [UpstreamTest(Test + "creates decision spans through the %s API", Commit = UpstreamCommit)]
+    public async Task Creates_decision_spans_through_the_API(string api)
     {
         using var tracer = new MockTracer();
-
-        await DecideOperation.DecideAsync(
-            new DecideRequest
-            {
-                Model = new DecideModel
+        var model = new DecideModel
+        {
+            Result = new DecisionModelResult(
+                new Dictionary<string, DecisionAnswer>
                 {
-                    Result = new DecisionModelResult(
-                        new Dictionary<string, DecisionAnswer>
-                        {
-                            ["refund"] = new DecisionAnswer("boolean", probability: 0.9),
-                        },
-                        usage: new OperationUsage(12, 2)
-                    ),
+                    ["refund"] = new DecisionAnswer("boolean", probability: 0.9),
                 },
-                State = S(new Dictionary<string, object?> { ["message"] = "Please refund me" }),
-                Questions = RefundQuestions(),
-                Telemetry = Integration(tracer, experimentalDecision: true),
-            }
-        );
+                usage: new OperationUsage(12, 2),
+                response: new ProviderResponse(
+                    id: "test-response-id",
+                    modelId: "mock-model-resolved"
+                )
+            ),
+        };
+        var state = S(new Dictionary<string, object?> { ["message"] = "Please refund me" });
+        var telemetry = Integration(tracer, experimentalDecision: true);
+
+        if (api == "current")
+        {
+            await DecideOperation.DecideAsync(
+                new DecideRequest
+                {
+                    Model = model,
+                    State = state,
+                    Questions = RefundQuestions(),
+                    Telemetry = telemetry,
+                }
+            );
+        }
+        else
+        {
+#pragma warning disable CS0618, CS0672
+            await Evaluate.EvaluateAsync(
+                new EvaluateRequest
+                {
+                    Model = model,
+                    State = state,
+                    Questions = RefundQuestions()
+                        .ToDictionary(
+                            pair => pair.Key,
+                            pair => new EvaluationQuestion(pair.Value.Type, pair.Value.Instructions)
+                        ),
+                    Telemetry = telemetry,
+                }
+            );
+#pragma warning restore CS0618, CS0672
+        }
 
         var spans = tracer.Spans;
         Assert.Equal(2, spans.Count);
@@ -162,12 +187,149 @@ public sealed class OpenTelemetryIntegrationWithDecideTests
             new Dictionary<string, object?>
             {
                 ["ai.decision.answers"] = "{\"refund\":{\"type\":\"boolean\",\"probability\":0.9}}",
+                ["gen_ai.response.id"] = "test-response-id",
+                ["gen_ai.response.model"] = "mock-model-resolved",
                 ["gen_ai.usage.input_tokens"] = 12,
                 ["gen_ai.usage.output_tokens"] = 2,
             },
             spans[1].RuntimeAttributes
         );
     }
+
+    [Theory]
+    [InlineData("deprecated")]
+    [InlineData("current")]
+    [UpstreamTest(
+        Test + "honors %s subclass hooks with and without super calls",
+        Commit = UpstreamCommit
+    )]
+    public async Task Honors_subclass_hooks_with_and_without_super_calls(string hooks)
+    {
+        foreach (var callSuper in new[] { false, true })
+        {
+            var calls = new List<(string, string)>();
+            using var tracer = new MockTracer();
+            var options = new OtelOptions { Tracer = tracer.Source };
+            OtelIntegration integration =
+                hooks == "deprecated"
+                    ? new DeprecatedHooksIntegration(options, calls, callSuper)
+                    : new CurrentHooksIntegration(options, calls, callSuper);
+
+            await DecideOperation.DecideAsync(
+                new DecideRequest
+                {
+                    Model = new DecideModel
+                    {
+                        Result = new DecisionModelResult(
+                            new Dictionary<string, DecisionAnswer>
+                            {
+                                ["refund"] = new DecisionAnswer("boolean", probability: 0.9),
+                            }
+                        ),
+                    },
+                    State = "Please refund me",
+                    Questions = RefundQuestions(),
+                    Telemetry = new TelemetryOptions { Integrations = [integration] },
+                }
+            );
+
+            Assert.Equal(
+                new[]
+                {
+                    ("start", "ai.decide"),
+                    ("model-start", "ai.decide.doDecide"),
+                    ("model-end", "ai.decide.doDecide"),
+                    ("end", "ai.decide"),
+                },
+                calls
+            );
+            Assert.Equal(callSuper ? 2 : 0, tracer.Spans.Count);
+            Assert.All(tracer.Spans, span => Assert.True(span.Ended));
+        }
+    }
+
+#pragma warning disable CS0618, CS0672
+    private sealed class DeprecatedHooksIntegration(
+        OtelOptions options,
+        List<(string, string)> calls,
+        bool callSuper
+    ) : OtelIntegration(options)
+    {
+        public override Func<EvaluateEvent, CancellationToken, Task>? OnEvaluateStart =>
+            Hook("start", base.OnEvaluateStart);
+
+        public override Func<
+            EvaluateModelEvent,
+            CancellationToken,
+            Task
+        >? OnEvaluationModelCallStart => Hook("model-start", base.OnEvaluationModelCallStart);
+
+        public override Func<
+            EvaluateModelEvent,
+            CancellationToken,
+            Task
+        >? OnEvaluationModelCallEnd => Hook("model-end", base.OnEvaluationModelCallEnd);
+
+        public override Func<EvaluateEvent, CancellationToken, Task>? OnEvaluateEnd =>
+            Hook("end", base.OnEvaluateEnd);
+
+        private Func<TEvent, CancellationToken, Task> Hook<TEvent>(
+            string name,
+            Func<TEvent, CancellationToken, Task>? inner
+        )
+            where TEvent : class
+        {
+            return (e, ct) =>
+            {
+                calls.Add((name, OperationIdOf(e)));
+                return callSuper ? inner!(e, ct) : Task.CompletedTask;
+            };
+        }
+    }
+
+    private sealed class CurrentHooksIntegration(
+        OtelOptions options,
+        List<(string, string)> calls,
+        bool callSuper
+    ) : OtelIntegration(options)
+    {
+        public override Func<DecideEvent, CancellationToken, Task>? OnDecideStart =>
+            Hook("start", base.OnDecideStart);
+
+        public override Func<
+            DecisionModelEvent,
+            CancellationToken,
+            Task
+        >? OnDecisionModelCallStart => Hook("model-start", base.OnDecisionModelCallStart);
+
+        public override Func<DecisionModelEvent, CancellationToken, Task>? OnDecisionModelCallEnd =>
+            Hook("model-end", base.OnDecisionModelCallEnd);
+
+        public override Func<DecideEvent, CancellationToken, Task>? OnDecideEnd =>
+            Hook("end", base.OnDecideEnd);
+
+        private Func<TEvent, CancellationToken, Task> Hook<TEvent>(
+            string name,
+            Func<TEvent, CancellationToken, Task>? inner
+        )
+            where TEvent : class
+        {
+            return (e, ct) =>
+            {
+                calls.Add((name, OperationIdOf(e)));
+                return callSuper ? inner!(e, ct) : Task.CompletedTask;
+            };
+        }
+    }
+#pragma warning restore CS0618, CS0672
+
+    private static string OperationIdOf(object e) =>
+        e switch
+        {
+            DecideEvent decide => decide.OperationId,
+            DecisionModelEvent model => model.OperationId,
+            _ => throw new InvalidOperationException(),
+        };
 
     [Fact]
     [UpstreamTest(

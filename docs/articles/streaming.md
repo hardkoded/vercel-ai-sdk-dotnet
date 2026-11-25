@@ -86,7 +86,7 @@ The `GenerateTextResult` that `OnEnd` receives also exposes `CallId`, `StepNumbe
 
 Cancel the `CancellationToken` you passed to `StreamTextAsync`, or set `StreamTextOptions.AbortSignal` to cancel with a reason. The call rejects `Text`, `Steps`, `FinishReason`, and `Usage` at once. It does not wait for your callbacks or for the provider to close the response. A reason that is an exception is the exception the tasks fault with. A token faults them with an `OperationCanceledException`.
 
-The stream ends with an `AbortPart` after `OnAbort` returns. `OnAbort` receives the steps that finished before the cancel and the exception. `OnError` and `OnEnd` are not called.
+The stream ends with an `AbortPart` after `OnAbort` returns. `OnAbort` receives the call id (`CallId`), the steps that finished before the cancel, and the exception. `OnError` and `OnEnd` are not called.
 
 ```csharp
 var controller = new AbortController();
@@ -360,3 +360,7 @@ var result = client.StreamTextAsync(new StreamTextOptions
         IsTransient(error) ? new StreamTextOnErrorResult { Retry = true } : null),
 });
 ```
+
+## Extracting JSON from streamed text
+
+`ExtractJsonMiddleware` also wraps streams. Without a custom transform it strips a leading markdown code fence (` ```json `) and a trailing fence from each streamed text block while still streaming the content, holding back only text that could become the closing fence or trailing whitespace. With a custom `transform` passed to the constructor, each text block is buffered and transformed once at `TextEndStreamPart`.

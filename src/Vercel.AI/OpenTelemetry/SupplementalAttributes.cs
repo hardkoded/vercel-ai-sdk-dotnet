@@ -26,6 +26,12 @@ public enum OpenTelemetrySpanType
 
     /// <summary>An extraction model call span. Maps to <c>'experimental_extraction'</c>.</summary>
     ExperimentalExtraction,
+
+    /// <summary>An embedding model call span. Maps to <c>'embedding'</c>.</summary>
+    Embedding,
+
+    /// <summary>A reranking model call span. Maps to <c>'reranking'</c>.</summary>
+    Reranking,
 }
 
 /// <summary>The call an <see cref="EnrichSpan"/> callback is asked about. Maps to the callback options in <c>EnrichSpan</c>.</summary>
@@ -106,6 +112,12 @@ public sealed class OpenTelemetryOptions
     /// <summary>Emit provider metadata on response spans.</summary>
     public bool? ProviderMetadata { get; set; }
 
+    /// <summary>Emit embedding input and output values.</summary>
+    public bool? Embedding { get; set; }
+
+    /// <summary>Emit reranking input documents and output ranking.</summary>
+    public bool? Reranking { get; set; }
+
     /// <summary>Emit decision state, questions, and answers. Maps to <c>experimental_decision</c>.</summary>
     public bool? ExperimentalDecision { get; set; }
 
@@ -121,6 +133,9 @@ public sealed class OpenTelemetryOptions
 
     /// <summary>Emit request headers.</summary>
     public bool? Headers { get; set; }
+
+    /// <summary>Emit the tool choice of a step as <c>ai.prompt.toolChoice</c>. Maps to <c>toolChoice</c>.</summary>
+    public bool? ToolChoice { get; set; }
 }
 
 /// <summary>The enabled supplemental attribute groups. Maps to <c>SupplementalAttributeOptions</c>.</summary>
@@ -130,6 +145,10 @@ internal sealed class SupplementalAttributeOptions
 
     public bool ProviderMetadata { get; init; }
 
+    public bool Embedding { get; init; }
+
+    public bool Reranking { get; init; }
+
     public bool ExperimentalDecision { get; init; }
 
     public bool ExperimentalExtraction { get; init; }
@@ -137,6 +156,8 @@ internal sealed class SupplementalAttributeOptions
     public bool RuntimeContext { get; init; }
 
     public bool Headers { get; init; }
+
+    public bool ToolChoice { get; init; }
 
     /// <summary>Maps to <c>normalizeSupplementalAttributes</c>.</summary>
     public static SupplementalAttributeOptions Normalize(OpenTelemetryOptions options)
@@ -148,10 +169,13 @@ internal sealed class SupplementalAttributeOptions
         {
             Usage = options.Usage ?? false,
             ProviderMetadata = options.ProviderMetadata ?? false,
+            Embedding = options.Embedding ?? false,
+            Reranking = options.Reranking ?? false,
             ExperimentalDecision = decision,
             ExperimentalExtraction = options.ExperimentalExtraction ?? false,
             RuntimeContext = options.RuntimeContext ?? false,
             Headers = options.Headers ?? false,
+            ToolChoice = options.ToolChoice ?? false,
         };
     }
 
@@ -166,10 +190,13 @@ internal sealed class SupplementalAttributeOptions
         {
             SupplementalGroup.Usage => Usage,
             SupplementalGroup.ProviderMetadata => ProviderMetadata,
+            SupplementalGroup.Embedding => Embedding,
+            SupplementalGroup.Reranking => Reranking,
             SupplementalGroup.ExperimentalDecision => ExperimentalDecision,
             SupplementalGroup.ExperimentalExtraction => ExperimentalExtraction,
             SupplementalGroup.RuntimeContext => RuntimeContext,
             SupplementalGroup.Headers => Headers,
+            SupplementalGroup.ToolChoice => ToolChoice,
             _ => false,
         };
         if (!enabled || attributes is null)
@@ -185,10 +212,13 @@ internal enum SupplementalGroup
 {
     Usage,
     ProviderMetadata,
+    Embedding,
+    Reranking,
     ExperimentalDecision,
     ExperimentalExtraction,
     RuntimeContext,
     Headers,
+    ToolChoice,
 }
 
 /// <summary>Helpers of <c>supplemental-attributes.ts</c>.</summary>

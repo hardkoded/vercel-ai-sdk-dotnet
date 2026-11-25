@@ -20,6 +20,7 @@ Model Context Protocol client and transports.
 | [McpAppFingerprint](/api/Vercel.AI.Mcp/McpAppFingerprint/) | SHA-256 fingerprint of an MCP app resource. |
 | [McpClient](/api/Vercel.AI.Mcp/McpClient/) | Lists MCP tools and adapts them to Tool. |
 | [MCPClientError](/api/Vercel.AI.Mcp/MCPClientError/) | An MCP call failed. Carries the JSON-RPC and HTTP details when the transport has them. |
+| [McpClientOptions](/api/Vercel.AI.Mcp/McpClientOptions/) | Options of CancellationToken). Maps to MCPClientConfig. |
 | [McpNdjson](/api/Vercel.AI.Mcp/McpNdjson/) | Newline-delimited JSON used by the upstream stdio transport. |
 | [McpNdjson.Buffer](/api/Vercel.AI.Mcp/McpNdjson.Buffer/) | Buffer that reassembles newline-delimited messages split across chunks. |
 | [McpToolHeaders](/api/Vercel.AI.Mcp/McpToolHeaders/) | Reads x-mcp-header annotations and encodes Mcp-Param- headers. |
@@ -35,4 +36,5 @@ Model Context Protocol client and transports.
 
 | Type | Summary |
 | --- | --- |
+| [IMcpProtocolVersionDiscoveryTransport](/api/Vercel.AI.Mcp/IMcpProtocolVersionDiscoveryTransport/) | A transport that can probe the server with server/discover before legacy initialization. Maps to the supportsProtocolVersionDiscovery and waitsForProtocolVersionDiscovery members of upstream's MCPTransport. It is a separate interface because IMcpTransport cannot gain members on netstandard2.0. |
 | [IMcpTransport](/api/Vercel.AI.Mcp/IMcpTransport/) | Sends one JSON-RPC call and returns the result object. |

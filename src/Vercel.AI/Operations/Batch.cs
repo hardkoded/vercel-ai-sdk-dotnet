@@ -41,8 +41,8 @@ public sealed class BatchTool
     public Func<JsonElement, CancellationToken, Task<object?>>? Execute { get; }
 }
 
-/// <summary>One request in a batch.</summary>
-public sealed class BatchRequest
+/// <summary>One request in a batch, discriminated by <see cref="Type"/>. Maps to <c>BatchRequest</c>.</summary>
+public class BatchRequest
 {
     /// <summary>Creates a request.</summary>
     public BatchRequest(string id, string type, string model)
@@ -125,7 +125,23 @@ public sealed class BatchRequest
     public string? ToolChoice { get; set; }
 }
 
-/// <summary>Normalized request sent to <c>doStartBatch</c>.</summary>
+/// <summary>One text generation request within a batch. Maps to <c>TextBatchRequest</c>.</summary>
+public sealed class TextBatchRequest : BatchRequest
+{
+    /// <summary>Creates a text request.</summary>
+    public TextBatchRequest(string id, string model)
+        : base(id, "text", model) { }
+}
+
+/// <summary>One image generation request within a batch. Maps to <c>ImageBatchRequest</c>.</summary>
+public sealed class ImageBatchRequest : BatchRequest
+{
+    /// <summary>Creates an image request.</summary>
+    public ImageBatchRequest(string id, string model)
+        : base(id, "image", model) { }
+}
+
+/// <summary>Normalized request sent to <c>doStartBatch</c>. Maps to <c>BatchV4Request</c>.</summary>
 public sealed class NormalizedBatchRequest
 {
     /// <summary>Creates a normalized request.</summary>
@@ -456,8 +472,8 @@ public class BatchItemResult
     /// <summary>Status.</summary>
     public string Status { get; set; } = string.Empty;
 
-    /// <summary>Text content.</summary>
-    public IReadOnlyList<BatchContentPart>? Content { get; set; }
+    /// <summary>Text content as the generate-text content parts. Maps to <c>ContentPart</c>.</summary>
+    public IReadOnlyList<GeneratedContent>? Content { get; set; }
 
     /// <summary>Joined text.</summary>
     public string? Text { get; set; }
@@ -1280,7 +1296,7 @@ public static class Batch
 
         if (item.Text != null)
         {
-            var content = new List<BatchContentPart>();
+            var content = new List<GeneratedContent>();
             var text = new List<string>();
             JsonElement? pendingInput = null;
             string? pendingCall = null;
@@ -1289,7 +1305,7 @@ public static class Batch
                 if (part.Type == "text")
                 {
                     text.Add(part.Text ?? string.Empty);
-                    content.Add(part);
+                    content.Add(ToContentPart(part, null));
                 }
                 else if (part.Type == "tool-call")
                 {
@@ -1297,7 +1313,7 @@ public static class Batch
                     part.Input = input;
                     pendingInput = input;
                     pendingCall = part.ToolCallId;
-                    content.Add(part);
+                    content.Add(ToContentPart(part, null));
                 }
                 else if (part.Type == "tool-result")
                 {
@@ -1306,7 +1322,7 @@ public static class Batch
                         part.Input = pendingInput;
                     }
 
-                    content.Add(part);
+                    content.Add(ToContentPart(part, part.Input));
                 }
                 else if (part.Type == "file" || part.Type == "reasoning-file")
                 {
@@ -1327,11 +1343,11 @@ public static class Batch
                         part.FileBytes = downloaded.Data;
                     }
 
-                    content.Add(part);
+                    content.Add(ToContentPart(part, null));
                 }
                 else
                 {
-                    content.Add(part);
+                    content.Add(ToContentPart(part, null));
                 }
             }
 
@@ -1351,6 +1367,71 @@ public static class Batch
         }
 
         return result;
+    }
+
+    // Maps a provider content part to the generate-text content part. Upstream does this with asContent.
+    private static GeneratedContent ToContentPart(BatchContentPart part, JsonElement? input)
+    {
+        switch (part.Type)
+        {
+            case "text":
+                return new GeneratedText(
+                    part.Text ?? string.Empty,
+                    part.Citations,
+                    part.ProviderMetadata
+                );
+            case "reasoning":
+                return new GeneratedReasoning(part.Text ?? string.Empty, part.ProviderMetadata);
+            case "tool-call":
+                return new GeneratedToolCall(
+                    part.ToolCallId ?? string.Empty,
+                    part.ToolName ?? string.Empty,
+                    part.Input?.GetRawText() ?? "{}",
+                    part.ProviderMetadata
+                )
+                {
+                    ProviderExecuted = part.ProviderExecuted ?? false,
+                    Dynamic = part.Dynamic ?? false,
+                };
+            case "tool-result":
+                return new GeneratedToolResult(
+                    part.ToolCallId ?? string.Empty,
+                    part.ToolName ?? string.Empty,
+                    part.Output?.GetRawText() ?? "null",
+                    part.IsError ?? false
+                )
+                {
+                    ProviderMetadata = part.ProviderMetadata,
+                    Dynamic = part.Dynamic ?? false,
+                    ProviderExecuted = part.ProviderExecuted ?? true,
+                    InputJson = input?.GetRawText(),
+                };
+            case "file":
+                return new GeneratedFile(part.FileBytes ?? [], part.MediaType ?? string.Empty);
+            case "reasoning-file":
+                return new GeneratedReasoningFile(
+                    part.FileBytes ?? [],
+                    part.MediaType ?? string.Empty,
+                    part.ProviderMetadata
+                );
+            case "source":
+                return part.SourceType == "document"
+                    ? new GeneratedDocumentSource(
+                        part.SourceId ?? string.Empty,
+                        part.MediaType ?? string.Empty,
+                        part.Title ?? string.Empty,
+                        null,
+                        part.ProviderMetadata
+                    )
+                    : new GeneratedSource(
+                        part.SourceId ?? string.Empty,
+                        part.Url ?? string.Empty,
+                        part.Title,
+                        part.ProviderMetadata
+                    );
+            default:
+                return new GeneratedCustom(part.Kind ?? part.Type, part.ProviderMetadata);
+        }
     }
 
     private static string? ToIsoTimestamp(DateTime? timestamp) =>

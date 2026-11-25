@@ -18,6 +18,19 @@ internal enum MoonshotModelFamily
 /// <summary>Moonshot AI model catalog. Maps to <c>moonshotai-model-catalog.ts</c>.</summary>
 internal static class MoonshotModelCatalog
 {
+    /// <summary>
+    /// Whether the model fixes its sampling options. Maps to <c>isMoonshotAIKimiModel</c>
+    /// (<c>capabilities.language.sampling.temperature</c> is false for every <c>kimi-*</c> family).
+    /// </summary>
+    public static bool IsMoonshotKimiModel(string modelId)
+    {
+        return ResolveModelFamily(modelId)
+            is MoonshotModelFamily.KimiK25
+                or MoonshotModelFamily.KimiK26
+                or MoonshotModelFamily.KimiK27
+                or MoonshotModelFamily.KimiK3;
+    }
+
     /// <summary>Resolves the model family of a model id. Maps to <c>resolveModelFamily</c>.</summary>
     public static MoonshotModelFamily ResolveModelFamily(string modelId)
     {

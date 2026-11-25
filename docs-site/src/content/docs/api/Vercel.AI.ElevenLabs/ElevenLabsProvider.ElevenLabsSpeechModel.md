@@ -15,7 +15,7 @@ Namespace: [Vercel.AI.ElevenLabs](/api/Vercel.AI.ElevenLabs/)
 
 
 ```csharp
-public sealed class ElevenLabsProvider.ElevenLabsSpeechModel : ISpeechModel
+public sealed class ElevenLabsProvider.ElevenLabsSpeechModel : ISpeechModel, ISpeechCaller
 ```
 
 
@@ -23,9 +23,9 @@ ElevenLabs text-to-speech model.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-**Implements:** [ISpeechModel](/api/Vercel.AI.Provider/ISpeechModel/)
+**Implements:** [ISpeechModel](/api/Vercel.AI.Provider/ISpeechModel/), [ISpeechCaller](/api/Vercel.AI.Operations/ISpeechCaller/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L802)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L803)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates a speech model.
 | `provider` | [ElevenLabsProvider](/api/Vercel.AI.ElevenLabs/ElevenLabsProvider/) |  |
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L827)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L828)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L837)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L838)
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsProvider_ElevenLabsSpeechModel_Provider_"></a>
 <a id="Vercel_AI_ElevenLabs_ElevenLabsProvider_ElevenLabsSpeechModel_Provider"></a>
@@ -85,11 +85,34 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L834)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L835)
 
 ## Methods
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsProvider_ElevenLabsSpeechModel_DoGenerateAsync_"></a>
+<a id="Vercel_AI_ElevenLabs_ElevenLabsProvider_ElevenLabsSpeechModel_DoGenerateAsync_Vercel_AI_Operations_SpeechModelCall_System_Threading_CancellationToken_"></a>
+
+### DoGenerateAsync(SpeechModelCall, CancellationToken)
+
+
+```csharp
+public Task<SpeechModelResult> DoGenerateAsync(SpeechModelCall call, CancellationToken cancellationToken)
+```
+
+
+Generates speech audio.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `call` | [SpeechModelCall](/api/Vercel.AI.Operations/SpeechModelCall/) |  |
+| `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
+
+**Returns:** [Task&lt;SpeechModelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L871)
+
 <a id="Vercel_AI_ElevenLabs_ElevenLabsProvider_ElevenLabsSpeechModel_DoGenerateAsync_Vercel_AI_Provider_SpeechCallOptions_System_Threading_CancellationToken_"></a>
 
 ### DoGenerateAsync(SpeechCallOptions, CancellationToken)
@@ -111,7 +134,7 @@ Synthesizes speech.
 
 **Returns:** [Task&lt;SpeechResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L840)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L841)
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsProvider_ElevenLabsSpeechModel_GenerateAsync_"></a>
 <a id="Vercel_AI_ElevenLabs_ElevenLabsProvider_ElevenLabsSpeechModel_GenerateAsync_Vercel_AI_ElevenLabs_ElevenLabsSpeechRequest_System_Threading_CancellationToken_"></a>
@@ -135,4 +158,4 @@ Synthesizes speech and returns the audio with warnings and response metadata.
 
 **Returns:** [Task&lt;ElevenLabsSpeechResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L870)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L937)

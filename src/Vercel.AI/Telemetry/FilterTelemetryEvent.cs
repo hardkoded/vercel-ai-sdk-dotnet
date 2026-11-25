@@ -377,7 +377,11 @@ internal static class FilterTelemetryEventHelper
             source.Usage,
             telemetry?.RecordInputs,
             telemetry?.RecordOutputs,
-            telemetry?.FunctionId
+            telemetry?.FunctionId,
+            source.Warnings,
+            source.Rounding,
+            source.ProviderMetadata,
+            source.Response
         )
         {
             AiVersion = AiSdkVersion.Version,
@@ -630,6 +634,63 @@ internal static class FilterTelemetryEventHelper
             source.ModelId,
             source.DocumentsType,
             telemetry?.RecordOutputs == false ? [] : source.Ranking
+        )
+        {
+            AiVersion = AiSdkVersion.Version,
+            RecordInputs = telemetry?.RecordInputs,
+            RecordOutputs = telemetry?.RecordOutputs,
+            FunctionId = telemetry?.FunctionId,
+        };
+    }
+
+    /// <summary>Filters the start event of <c>generateSpeech</c>.</summary>
+    internal static GenerateSpeechStartEvent FilterTelemetryEvent(
+        GenerateSpeechStartEvent source,
+        TelemetryOptions? telemetry
+    )
+    {
+        var hideInputs = telemetry?.RecordInputs == false;
+        return new GenerateSpeechStartEvent(
+            source.CallId,
+            source.Provider,
+            source.ModelId,
+            hideInputs ? string.Empty : source.Text,
+            source.Voice,
+            source.OutputFormat,
+            hideInputs ? null : source.Instructions,
+            source.Speed,
+            source.Language,
+            source.MaxRetries,
+            source.Headers,
+            hideInputs ? OperationJson.Parse("{}") : source.ProviderOptions
+        )
+        {
+            AiVersion = AiSdkVersion.Version,
+            RecordInputs = telemetry?.RecordInputs,
+            RecordOutputs = telemetry?.RecordOutputs,
+            FunctionId = telemetry?.FunctionId,
+        };
+    }
+
+    /// <summary>Filters the end event of <c>generateSpeech</c>.</summary>
+    internal static GenerateSpeechEndEvent FilterTelemetryEvent(
+        GenerateSpeechEndEvent source,
+        TelemetryOptions? telemetry
+    )
+    {
+        var hideInputs = telemetry?.RecordInputs == false;
+        var hidden = hideInputs || telemetry?.RecordOutputs == false;
+        return new GenerateSpeechEndEvent(
+            source.CallId,
+            source.Provider,
+            source.ModelId,
+            hideInputs ? string.Empty : source.Text,
+            source.Audio,
+            source.Usage,
+            source.Warnings,
+            // Raw provider metadata can contain inputs or outputs, so any hidden side hides it.
+            hidden ? null : source.ProviderMetadata,
+            hidden ? WithoutBody(source.Response)! : source.Response
         )
         {
             AiVersion = AiSdkVersion.Version,

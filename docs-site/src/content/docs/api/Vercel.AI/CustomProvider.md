@@ -26,7 +26,7 @@ A provider backed by caller-supplied models. Maps to `customProvider`. A model i
 
 **Implements:** [IDecisionProvider](/api/Vercel.AI.Operations/IDecisionProvider/), [IExtractionProvider](/api/Vercel.AI.Operations/IExtractionProvider/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L715)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L785)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates a custom provider.
 | --- | --- | --- |
 | `name` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L741)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L811)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Provider asked for model ids that are not registered here.
 
 **Value:** [ProviderBase](/api/Vercel.AI.Provider/ProviderBase/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L745)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L815)
 
 <a id="Vercel_AI_CustomProvider_Files_"></a>
 <a id="Vercel_AI_CustomProvider_Files"></a>
@@ -85,7 +85,7 @@ File store. When null, the fallback provider's file store is used.
 
 **Value:** [IFileStore](/api/Vercel.AI.Provider/IFileStore/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L748)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L818)
 
 <a id="Vercel_AI_CustomProvider_Skills_"></a>
 <a id="Vercel_AI_CustomProvider_Skills"></a>
@@ -102,7 +102,7 @@ Skill store. When null, the fallback provider's skill store is used.
 
 **Value:** [ISkillStore](/api/Vercel.AI.Provider/ISkillStore/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L751)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L821)
 
 ## Methods
 
@@ -129,7 +129,7 @@ Registers a string alias for a decision model. The id is resolved through
 
 **Returns:** [CustomProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L845)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L915)
 
 <a id="Vercel_AI_CustomProvider_AddDecisionModel_System_String_Vercel_AI_Operations_IDecisionCaller_"></a>
 
@@ -152,7 +152,7 @@ Registers a decision model under &lt;code class="paramref"&gt;modelId&lt;/code&g
 
 **Returns:** [CustomProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L831)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L901)
 
 <a id="Vercel_AI_CustomProvider_AddEmbeddingModel_"></a>
 <a id="Vercel_AI_CustomProvider_AddEmbeddingModel_System_String_Vercel_AI_Provider_IEmbeddingModel_"></a>
@@ -176,7 +176,7 @@ Registers an embedding model under &lt;code class="paramref"&gt;modelId&lt;/code
 
 **Returns:** [CustomProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L782)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L852)
 
 <a id="Vercel_AI_CustomProvider_AddEmbeddingModel_Vercel_AI_Provider_IEmbeddingModel_"></a>
 
@@ -198,7 +198,7 @@ Registers an embedding model under its own model id.
 
 **Returns:** [CustomProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L771)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L841)
 
 <a id="Vercel_AI_CustomProvider_AddEvaluationModel_"></a>
 <a id="Vercel_AI_CustomProvider_AddEvaluationModel_System_String_Vercel_AI_Operations_IEvaluationCaller_"></a>
@@ -228,7 +228,7 @@ These models are ignored once any model is added with `AddDecisionModel`.
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L861)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L931)
 
 <a id="Vercel_AI_CustomProvider_AddEvaluationModel_System_String_Vercel_AI_Provider_IEvaluationModel_"></a>
 
@@ -256,7 +256,7 @@ Deprecated name of `IRubricModel)`. Registers a rubric model, not a decision mod
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L824)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L894)
 
 <a id="Vercel_AI_CustomProvider_AddExtractionModel_"></a>
 <a id="Vercel_AI_CustomProvider_AddExtractionModel_System_String_System_String_"></a>
@@ -281,7 +281,7 @@ Registers a string alias for an extraction model. The id is resolved through
 
 **Returns:** [CustomProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L883)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L953)
 
 <a id="Vercel_AI_CustomProvider_AddExtractionModel_System_String_Vercel_AI_Operations_IExtractionCaller_"></a>
 
@@ -304,7 +304,7 @@ Registers an extraction model under &lt;code class="paramref"&gt;modelId&lt;/cod
 
 **Returns:** [CustomProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L869)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L939)
 
 <a id="Vercel_AI_CustomProvider_AddImageModel_"></a>
 <a id="Vercel_AI_CustomProvider_AddImageModel_System_String_Vercel_AI_Provider_IImageModel_"></a>
@@ -328,7 +328,7 @@ Registers an image model under &lt;code class="paramref"&gt;modelId&lt;/code&gt;
 
 **Returns:** [CustomProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L788)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L858)
 
 <a id="Vercel_AI_CustomProvider_AddLanguageModel_"></a>
 <a id="Vercel_AI_CustomProvider_AddLanguageModel_System_String_Vercel_AI_Provider_ILanguageModel_"></a>
@@ -352,7 +352,7 @@ Registers a language model under &lt;code class="paramref"&gt;modelId&lt;/code&g
 
 **Returns:** [CustomProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L765)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L835)
 
 <a id="Vercel_AI_CustomProvider_AddLanguageModel_Vercel_AI_Provider_ILanguageModel_"></a>
 
@@ -374,7 +374,7 @@ Registers a language model under its own model id.
 
 **Returns:** [CustomProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L754)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L824)
 
 <a id="Vercel_AI_CustomProvider_AddRerankingModel_"></a>
 <a id="Vercel_AI_CustomProvider_AddRerankingModel_System_String_Vercel_AI_Provider_IRerankingModel_"></a>
@@ -398,7 +398,7 @@ Registers a reranking model under &lt;code class="paramref"&gt;modelId&lt;/code&
 
 **Returns:** [CustomProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L806)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L876)
 
 <a id="Vercel_AI_CustomProvider_AddRubricModel_"></a>
 <a id="Vercel_AI_CustomProvider_AddRubricModel_System_String_Vercel_AI_Provider_IRubricModel_"></a>
@@ -422,7 +422,7 @@ Registers a model that scores a candidate against a rubric under &lt;code class=
 
 **Returns:** [CustomProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L818)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L888)
 
 <a id="Vercel_AI_CustomProvider_AddSpeechModel_"></a>
 <a id="Vercel_AI_CustomProvider_AddSpeechModel_System_String_Vercel_AI_Provider_ISpeechModel_"></a>
@@ -446,7 +446,7 @@ Registers a speech model under &lt;code class="paramref"&gt;modelId&lt;/code&gt;
 
 **Returns:** [CustomProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L800)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L870)
 
 <a id="Vercel_AI_CustomProvider_AddTranscriptionModel_"></a>
 <a id="Vercel_AI_CustomProvider_AddTranscriptionModel_System_String_Vercel_AI_Provider_ITranscriptionModel_"></a>
@@ -470,7 +470,7 @@ Registers a transcription model under &lt;code class="paramref"&gt;modelId&lt;/c
 
 **Returns:** [CustomProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L794)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L864)
 
 <a id="Vercel_AI_CustomProvider_AddVideoModel_"></a>
 <a id="Vercel_AI_CustomProvider_AddVideoModel_System_String_Vercel_AI_Provider_IVideoModel_"></a>
@@ -494,7 +494,7 @@ Registers a video model under &lt;code class="paramref"&gt;modelId&lt;/code&gt;.
 
 **Returns:** [CustomProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L812)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L882)
 
 <a id="Vercel_AI_CustomProvider_DecisionModel_"></a>
 <a id="Vercel_AI_CustomProvider_DecisionModel_System_String_"></a>
@@ -518,7 +518,7 @@ when it implements [IDecisionProvider](/api/Vercel.AI.Operations/IDecisionProvid
 
 **Returns:** [IDecisionCaller](/api/Vercel.AI.Operations/IDecisionCaller/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L955)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L1025)
 
 <a id="Vercel_AI_CustomProvider_EmbeddingModel_"></a>
 <a id="Vercel_AI_CustomProvider_EmbeddingModel_System_String_"></a>
@@ -541,7 +541,7 @@ Returns an embedding model.
 
 **Returns:** [IEmbeddingModel](/api/Vercel.AI.Provider/IEmbeddingModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L904)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L974)
 
 <a id="Vercel_AI_CustomProvider_EvaluationModel_"></a>
 <a id="Vercel_AI_CustomProvider_EvaluationModel_System_String_"></a>
@@ -570,7 +570,7 @@ Deprecated alias of [DecisionModel(string)](#Vercel_AI_CustomProvider_DecisionMo
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L970)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L1040)
 
 <a id="Vercel_AI_CustomProvider_ExtractionModel_"></a>
 <a id="Vercel_AI_CustomProvider_ExtractionModel_System_String_"></a>
@@ -594,7 +594,7 @@ when it implements [IExtractionProvider](/api/Vercel.AI.Operations/IExtractionPr
 
 **Returns:** [IExtractionCaller](/api/Vercel.AI.Operations/IExtractionCaller/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L980)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L1050)
 
 <a id="Vercel_AI_CustomProvider_FileStore_"></a>
 <a id="Vercel_AI_CustomProvider_FileStore"></a>
@@ -611,7 +611,7 @@ Returns a file store.
 
 **Returns:** [IFileStore](/api/Vercel.AI.Provider/IFileStore/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L996)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L1066)
 
 <a id="Vercel_AI_CustomProvider_ImageModel_"></a>
 <a id="Vercel_AI_CustomProvider_ImageModel_System_String_"></a>
@@ -634,7 +634,7 @@ Returns an image model.
 
 **Returns:** [IImageModel](/api/Vercel.AI.Provider/IImageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L912)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L982)
 
 <a id="Vercel_AI_CustomProvider_LanguageModel_"></a>
 <a id="Vercel_AI_CustomProvider_LanguageModel_System_String_"></a>
@@ -657,7 +657,7 @@ Returns a language model.
 
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L896)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L966)
 
 <a id="Vercel_AI_CustomProvider_RerankingModel_"></a>
 <a id="Vercel_AI_CustomProvider_RerankingModel_System_String_"></a>
@@ -680,7 +680,7 @@ Returns a reranking model.
 
 **Returns:** [IRerankingModel](/api/Vercel.AI.Provider/IRerankingModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L932)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L1002)
 
 <a id="Vercel_AI_CustomProvider_RubricModel_"></a>
 <a id="Vercel_AI_CustomProvider_RubricModel_System_String_"></a>
@@ -703,7 +703,7 @@ Returns a model that scores a candidate against a rubric.
 
 **Returns:** [IRubricModel](/api/Vercel.AI.Provider/IRubricModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L946)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L1016)
 
 <a id="Vercel_AI_CustomProvider_SkillStore_"></a>
 <a id="Vercel_AI_CustomProvider_SkillStore"></a>
@@ -720,7 +720,7 @@ Returns a skill store.
 
 **Returns:** [ISkillStore](/api/Vercel.AI.Provider/ISkillStore/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L1002)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L1072)
 
 <a id="Vercel_AI_CustomProvider_SpeechModel_"></a>
 <a id="Vercel_AI_CustomProvider_SpeechModel_System_String_"></a>
@@ -743,7 +743,7 @@ Returns a speech model.
 
 **Returns:** [ISpeechModel](/api/Vercel.AI.Provider/ISpeechModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L926)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L996)
 
 <a id="Vercel_AI_CustomProvider_TranscriptionModel_"></a>
 <a id="Vercel_AI_CustomProvider_TranscriptionModel_System_String_"></a>
@@ -766,7 +766,7 @@ Returns a transcription model.
 
 **Returns:** [ITranscriptionModel](/api/Vercel.AI.Provider/ITranscriptionModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L918)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L988)
 
 <a id="Vercel_AI_CustomProvider_VideoModel_"></a>
 <a id="Vercel_AI_CustomProvider_VideoModel_System_String_"></a>
@@ -789,4 +789,4 @@ Returns a video model.
 
 **Returns:** [IVideoModel](/api/Vercel.AI.Provider/IVideoModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L940)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Agent.cs#L1010)

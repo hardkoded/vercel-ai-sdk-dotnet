@@ -93,24 +93,22 @@ public sealed class GatewayRerankingModel : IRerankingModel, IRerankCaller
         {
             foreach (var pair in call.Headers)
             {
-                // Upstream applies the model headers after the caller headers, so a caller cannot override them.
-                if (
-                    string.Equals(pair.Key, "ai-model-id", StringComparison.OrdinalIgnoreCase)
-                    || string.Equals(
-                        pair.Key,
-                        "ai-reranking-model-specification-version",
-                        StringComparison.OrdinalIgnoreCase
-                    )
-                )
-                {
-                    continue;
-                }
-
                 headers[pair.Key] = pair.Value;
             }
         }
 
         ProviderTextResponse response;
+        var requestHeaders = await _provider
+            .HeadersAsync(
+                "ai-reranking-model-specification-version",
+                "4",
+                "ai-model-id",
+                ModelId,
+                null,
+                headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         try
         {
             response = await _provider
@@ -118,30 +116,22 @@ public sealed class GatewayRerankingModel : IRerankingModel, IRerankCaller
                     HttpMethod.Post,
                     _provider.Route("reranking-model"),
                     body.ToJsonString(),
-                    await _provider.HeadersAsync(
-                        "ai-reranking-model-specification-version",
-                        "4",
-                        "ai-model-id",
-                        ModelId,
-                        null,
-                        headers,
-                        cancellationToken
-                    ),
+                    requestHeaders,
                     cancellationToken
                 )
                 .ConfigureAwait(false);
         }
         catch (ApiException exception)
         {
-            throw GatewayProvider.MapFailure(exception);
+            throw GatewayProvider.MapFailure(exception, requestHeaders);
         }
         catch (ApiTimeoutException exception)
         {
-            throw GatewayProvider.MapFailure(exception);
+            throw GatewayProvider.MapFailure(exception, requestHeaders);
         }
         catch (ApiConnectionException exception)
         {
-            throw GatewayProvider.MapFailure(exception);
+            throw GatewayProvider.MapFailure(exception, requestHeaders);
         }
 
         JsonElement root;

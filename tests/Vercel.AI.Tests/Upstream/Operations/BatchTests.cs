@@ -5,6 +5,7 @@
 using System.Text;
 using System.Text.Json;
 using Vercel.AI.Operations;
+using Vercel.AI.Provider;
 
 namespace Vercel.AI.Tests;
 
@@ -580,9 +581,12 @@ public sealed class BatchTests
                 }
             )
         );
-        var call = results[0].Content![0];
+        var call = Assert.IsType<GeneratedToolCall>(results[0].Content![0]);
         Assert.Equal("tool-call", call.Type);
-        Assert.Equal("Paris", call.Input!.Value.GetProperty("city").GetString());
+        Assert.Equal(
+            "Paris",
+            OperationJson.Parse(call.ArgumentsJson).GetProperty("city").GetString()
+        );
         Assert.True(call.ProviderExecuted);
         var usage = results[0].Usage!;
         Assert.Equal((int?)3, usage.InputTokens);
@@ -663,7 +667,11 @@ public sealed class BatchTests
                 },
             }
         );
-        Assert.Equal("Paris", results[0].Content![1].Input!.Value.GetProperty("city").GetString());
+        var toolResult = Assert.IsType<GeneratedToolResult>(results[0].Content![1]);
+        Assert.Equal(
+            "Paris",
+            OperationJson.Parse(toolResult.InputJson!).GetProperty("city").GetString()
+        );
         Assert.Equal(0, executed);
     }
 
@@ -696,8 +704,14 @@ public sealed class BatchTests
             );
             var file = results[0].Content![0];
             Assert.Equal(type, file.Type);
-            Assert.Equal("Hello World", Encoding.UTF8.GetString(file.FileBytes!));
-            Assert.Equal("SGVsbG8gV29ybGQ=", Convert.ToBase64String(file.FileBytes!));
+            var bytes = file switch
+            {
+                GeneratedFile generated => generated.Data,
+                GeneratedReasoningFile reasoning => reasoning.Data,
+                _ => throw new InvalidOperationException("Unexpected content " + file.GetType()),
+            };
+            Assert.Equal("Hello World", Encoding.UTF8.GetString(bytes));
+            Assert.Equal("SGVsbG8gV29ybGQ=", Convert.ToBase64String(bytes));
         }
     }
 

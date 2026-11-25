@@ -78,6 +78,9 @@ public sealed class AmazonBedrockProvider : ProviderBase
     /// <summary>Provider id.</summary>
     public const string ProviderName = "amazon-bedrock";
 
+    /// <summary>The Anthropic provider tool factories, usable on Anthropic models. Maps to <c>provider.tools</c>.</summary>
+    public IReadOnlyDictionary<string, Func<Tool>> Tools => Anthropic.AnthropicTools.Factories;
+
     /// <summary>Creates a provider.</summary>
     public AmazonBedrockProvider(HttpClient httpClient, AmazonBedrockOptions? options = null)
         : base(ProviderName)

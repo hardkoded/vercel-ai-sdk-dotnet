@@ -25,7 +25,7 @@ AssemblyAI text-to-speech model. Requests are buffered, not streamed.
 
 **Implements:** [ISpeechModel](/api/Vercel.AI.Provider/ISpeechModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L507)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L495)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates a speech model.
 | `provider` | [AssemblyAIProvider](/api/Vercel.AI.AssemblyAI/AssemblyAIProvider/) |  |
 | `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L535)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L523)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L545)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L533)
 
 <a id="Vercel_AI_AssemblyAI_AssemblyAIProvider_AssemblyAISpeechModel_Provider_"></a>
 <a id="Vercel_AI_AssemblyAI_AssemblyAIProvider_AssemblyAISpeechModel_Provider"></a>
@@ -85,7 +85,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L542)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L530)
 
 ## Methods
 
@@ -111,7 +111,7 @@ Synthesizes speech.
 
 **Returns:** [Task&lt;SpeechResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L548)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L536)
 
 <a id="Vercel_AI_AssemblyAI_AssemblyAIProvider_AssemblyAISpeechModel_GenerateAsync_"></a>
 <a id="Vercel_AI_AssemblyAI_AssemblyAIProvider_AssemblyAISpeechModel_GenerateAsync_Vercel_AI_AssemblyAI_AssemblyAISpeechRequest_System_Threading_CancellationToken_"></a>
@@ -135,4 +135,4 @@ Synthesizes speech and returns the audio with warnings, usage, and response meta
 
 **Returns:** [Task&lt;AssemblyAISpeechResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L576)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AssemblyAI/AssemblyAIProvider.cs#L564)
