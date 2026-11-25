@@ -134,6 +134,9 @@ public sealed class OpenTelemetryOptions
     /// <summary>Emit request headers.</summary>
     public bool? Headers { get; set; }
 
+    /// <summary>Emit the tool choice of a step as <c>ai.prompt.toolChoice</c>. Maps to <c>toolChoice</c>.</summary>
+    public bool? ToolChoice { get; set; }
+
     /// <summary>Emit object generation schema information.</summary>
     public bool? Schema { get; set; }
 }
@@ -157,6 +160,7 @@ internal sealed class SupplementalAttributeOptions
 
     public bool Headers { get; init; }
 
+    public bool ToolChoice { get; init; }
     public bool Schema { get; init; }
 
     /// <summary>Maps to <c>normalizeSupplementalAttributes</c>.</summary>
@@ -175,6 +179,7 @@ internal sealed class SupplementalAttributeOptions
             ExperimentalExtraction = options.ExperimentalExtraction ?? false,
             RuntimeContext = options.RuntimeContext ?? false,
             Headers = options.Headers ?? false,
+            ToolChoice = options.ToolChoice ?? false,
             Schema = options.Schema ?? false,
         };
     }
@@ -196,6 +201,7 @@ internal sealed class SupplementalAttributeOptions
             SupplementalGroup.ExperimentalExtraction => ExperimentalExtraction,
             SupplementalGroup.RuntimeContext => RuntimeContext,
             SupplementalGroup.Headers => Headers,
+            SupplementalGroup.ToolChoice => ToolChoice,
             SupplementalGroup.Schema => Schema,
             _ => false,
         };
@@ -218,6 +224,7 @@ internal enum SupplementalGroup
     ExperimentalExtraction,
     RuntimeContext,
     Headers,
+    ToolChoice,
     Schema,
 }
 

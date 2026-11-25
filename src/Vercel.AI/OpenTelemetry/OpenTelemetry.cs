@@ -4,6 +4,9 @@
 
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Diagnostics.Metrics;
+using System.Globalization;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.GenerateObject;
 using Vercel.AI.Operations;
@@ -19,13 +22,46 @@ namespace Vercel.AI.OpenTelemetry;
 /// </summary>
 /// <remarks>
 /// Only the callbacks <see cref="ITelemetry"/> has are ported: text generation (root, step, model call, and tool spans), object
-/// generation, embed, rerank, speech, transcription, decide, and extract. The durable and inference duration parts of upstream
-/// need events the port does not emit yet.
+/// generation, embed, rerank, speech, transcription, decide, and extract. The durable parts of upstream need events
+/// the port does not emit yet.
 /// </remarks>
 public class OpenTelemetry : ITelemetry
 {
     private static readonly Lazy<ActivitySource> DefaultTracer = new(() =>
         new ActivitySource("gen_ai")
+    );
+
+    private static readonly double[] InferenceDurationBucketBoundaries =
+    [
+        0.01,
+        0.02,
+        0.04,
+        0.08,
+        0.16,
+        0.32,
+        0.64,
+        1.28,
+        2.56,
+        5.12,
+        10.24,
+        20.48,
+        40.96,
+        81.92,
+    ];
+
+    private static readonly Lazy<Histogram<double>> InferenceDuration = new(() =>
+        new Meter("gen_ai").CreateHistogram<double>(
+            "gen_ai.client.inference.duration",
+            "s",
+            "GenAI client inference operation duration."
+#if NET9_0_OR_GREATER
+            ,
+            advice: new InstrumentAdvice<double>
+            {
+                HistogramBucketBoundaries = InferenceDurationBucketBoundaries,
+            }
+#endif
+        )
     );
 
     private readonly ConcurrentDictionary<string, CallState> _callStates = new(
@@ -325,7 +361,12 @@ public class OpenTelemetry : ITelemetry
         };
 
     /// <inheritdoc />
-    public Func<GenerateTextStepErrorEvent, CancellationToken, Task>? OnStepError => null;
+    public Func<GenerateTextStepErrorEvent, CancellationToken, Task>? OnStepError =>
+        (e, _) =>
+        {
+            OnStepErrorCore(e);
+            return Task.CompletedTask;
+        };
 
     /// <inheritdoc />
     public Func<EmbeddingModelCallStartEvent, CancellationToken, Task>? OnEmbedStart =>
@@ -441,6 +482,72 @@ public class OpenTelemetry : ITelemetry
         var current = Activity.Current;
         span.Stop();
         Activity.Current = current == span ? span.Parent : current;
+    }
+
+    private static double? MsToSeconds(double? durationMs) => durationMs / 1000;
+
+    /// <summary>Maps to <c>getGenAIClientPerformanceAttributes</c>.</summary>
+    private static Dictionary<string, object?> GetGenAIClientPerformanceAttributes(
+        Vercel.AI.GenerateText.ModelCallPerformance? performance,
+        TimeSpan responseTime
+    ) =>
+        new()
+        {
+            ["gen_ai.client.operation.duration"] = MsToSeconds(
+                performance?.ResponseTimeMs ?? responseTime.TotalMilliseconds
+            ),
+            ["gen_ai.client.operation.time_to_first_chunk"] = MsToSeconds(
+                performance?.TimeToFirstOutputMs
+            ),
+            ["gen_ai.client.operation.time_per_output_chunk"] = MsToSeconds(
+                performance?.TimeBetweenOutputChunksMs?.Avg
+            ),
+        };
+
+    private static string ToolChoiceJson(ToolChoice toolChoice) =>
+        toolChoice is ToolChoice.NamedChoice named
+            ? "{\"type\":\"tool\",\"toolName\":" + JsonSerializer.Serialize(named.ToolName) + "}"
+            : "{\"type\":" + JsonSerializer.Serialize(toolChoice.Type) + "}";
+
+    /// <summary>Maps to <c>recordInferenceDuration</c>.</summary>
+    private static void RecordInferenceDuration(
+        CallState state,
+        double? responseTimeMs = null,
+        string? provider = null,
+        string? responseModelId = null,
+        string? errorType = null
+    )
+    {
+        var inference = state.InferenceMetrics;
+        if (inference is null)
+        {
+            return;
+        }
+
+        state.InferenceMetrics = null;
+        var durationMs = responseTimeMs
+            ?? (Stopwatch.GetTimestamp() - inference.StartTimestamp) * 1000.0 / Stopwatch.Frequency;
+
+        var attributes = TelemetryAttributes.SelectAttributes(
+            state.Telemetry,
+            new Dictionary<string, object?>
+            {
+                ["gen_ai.operation.name"] = "chat",
+                ["gen_ai.provider.name"] = GenAiConventions.MapProviderName(
+                    provider ?? inference.Provider
+                ),
+                ["gen_ai.request.model"] = inference.ModelId,
+                ["gen_ai.response.model"] = responseModelId,
+                ["error.type"] = errorType,
+            }
+        );
+        var tags = new TagList();
+        foreach (var pair in attributes)
+        {
+            tags.Add(new KeyValuePair<string, object?>(pair.Key, pair.Value));
+        }
+
+        InferenceDuration.Value.Record(durationMs / 1000, tags);
     }
 
     private static string? CallIdOf(IOperationEndEvent e) =>
@@ -817,7 +924,7 @@ public class OpenTelemetry : ITelemetry
                 TelemetryAttributes.SelectAttributes(
                     state.Telemetry,
                     Merge(
-                        ServerAttributes.Get(e.Request.Url),
+                        ServerAttributes.GetServerAttributes(e.Request.Url),
                         new Dictionary<string, object?>
                         {
                             ["gen_ai.response.finish_reasons"] = new[]
@@ -928,7 +1035,17 @@ public class OpenTelemetry : ITelemetry
                 state.Telemetry,
                 new Dictionary<string, object?> { ["gen_ai.operation.name"] = "agent_step" }
             ),
-            state.BaseSupplementalAttributes
+            state.BaseSupplementalAttributes,
+            _supplementalAttributes.Select(
+                state.Telemetry,
+                SupplementalGroup.ToolChoice,
+                new Dictionary<string, object?>
+                {
+                    ["ai.prompt.toolChoice"] = In(() =>
+                        e.ToolChoice is { } toolChoice ? ToolChoiceJson(toolChoice) : null
+                    ),
+                }
+            )
         );
 
         state.StepSpan = StartSpan(
@@ -958,10 +1075,17 @@ public class OpenTelemetry : ITelemetry
             state.InferenceSpan.SetStatus(ActivityStatusCode.Error);
             End(state.InferenceSpan);
             state.InferenceSpan = null;
+            state.InferenceContext = null;
         }
 
         var toolDefinitions = e.Tools?.Select(GenAiConventions.ToToolDefinition).ToList();
         state.InferenceToolDefinitions = toolDefinitions;
+        RecordInferenceDuration(state, errorType: "_OTHER");
+        state.InferenceMetrics = new InferenceMetrics(
+            Stopwatch.GetTimestamp(),
+            e.Provider,
+            e.ModelId
+        );
 
         var attributes = TelemetryAttributes.SelectAttributes(
             state.Telemetry,
@@ -1017,6 +1141,7 @@ public class OpenTelemetry : ITelemetry
             ),
             state.StepSpan.Context
         );
+        state.InferenceContext = state.InferenceSpan?.Context;
     }
 
     private void OnLanguageModelCallEndCore(LanguageModelCallEndEvent e)
@@ -1027,6 +1152,13 @@ public class OpenTelemetry : ITelemetry
         }
 
         var span = state.InferenceSpan;
+        RecordInferenceDuration(
+            state,
+            e.Performance?.ResponseTimeMs ?? e.ResponseTime.TotalMilliseconds,
+            e.Provider,
+            e.ModelId,
+            e.FinishReason == FinishReason.Error ? "_OTHER" : null
+        );
         if (e.FinishReason == FinishReason.Error)
         {
             span.SetStatus(ActivityStatusCode.Error);
@@ -1065,6 +1197,13 @@ public class OpenTelemetry : ITelemetry
             Merge(
                 TelemetryAttributes.SelectAttributes(
                     state.Telemetry,
+                    Merge(
+                        GetGenAIClientPerformanceAttributes(e.Performance, e.ResponseTime),
+                        ServerAttributes.GetServerAttributes(e.Request?.Url)
+                    )
+                ),
+                TelemetryAttributes.SelectAttributes(
+                    state.Telemetry,
                     new Dictionary<string, object?>
                     {
                         ["gen_ai.provider.name"] = GenAiConventions.MapProviderName(e.Provider),
@@ -1101,9 +1240,93 @@ public class OpenTelemetry : ITelemetry
             )
         );
 
+        RecordProviderExecutedToolSpans(state, e);
+
         End(span);
         state.InferenceSpan = null;
         state.InferenceToolDefinitions = null;
+        state.InferenceContext = null;
+    }
+
+    /// <summary>Records the <c>execute_tool</c> spans of the provider-executed tools of a model call, which the model call reports itself.</summary>
+    private void RecordProviderExecutedToolSpans(CallState state, LanguageModelCallEndEvent e)
+    {
+        if (state.InferenceContext is not { } inferenceContext)
+        {
+            return;
+        }
+
+        var finalToolOutputs = new Dictionary<string, GeneratedToolResult>(StringComparer.Ordinal);
+        foreach (var part in e.Content)
+        {
+            // The port has no tool-error part, and no preliminary result: a failed result is a result with IsError.
+            if (part is GeneratedToolResult result)
+            {
+                finalToolOutputs[result.ToolCallId] = result;
+            }
+        }
+
+        var recordedToolCallIds = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var part in e.Content)
+        {
+            if (
+                part is not GeneratedToolCall { ProviderExecuted: true } toolCall
+                || !recordedToolCallIds.Add(toolCall.ToolCallId)
+            )
+            {
+                continue;
+            }
+
+            var toolSpan = StartSpan(
+                "execute_tool " + toolCall.ToolName,
+                ActivityKind.Internal,
+                GetSpanAttributes(
+                    TelemetryAttributes.SelectAttributes(
+                        state.Telemetry,
+                        new Dictionary<string, object?>
+                        {
+                            ["gen_ai.operation.name"] = "execute_tool",
+                            ["gen_ai.tool.name"] = toolCall.ToolName,
+                            ["gen_ai.tool.call.id"] = toolCall.ToolCallId,
+                            ["gen_ai.tool.type"] = "extension",
+                            ["gen_ai.tool.call.arguments"] = In(() => toolCall.ArgumentsJson),
+                        }
+                    ),
+                    OpenTelemetrySpanType.Tool,
+                    state.OperationId,
+                    e.CallId!,
+                    state.RuntimeContext
+                ),
+                inferenceContext
+            );
+            if (toolSpan is null)
+            {
+                continue;
+            }
+
+            if (finalToolOutputs.TryGetValue(toolCall.ToolCallId, out var output))
+            {
+                if (!output.IsError)
+                {
+                    SetAttributes(
+                        toolSpan,
+                        TelemetryAttributes.SelectAttributes(
+                            state.Telemetry,
+                            new Dictionary<string, object?>
+                            {
+                                ["gen_ai.tool.call.result"] = Out(() => output.ResultJson),
+                            }
+                        )
+                    );
+                }
+                else
+                {
+                    TelemetrySpan.RecordError(toolSpan, (object?)output.Error ?? "error");
+                }
+            }
+
+            End(toolSpan);
+        }
     }
 
     private void OnToolExecutionStartCore(ToolExecutionStartEvent e)
@@ -1200,6 +1423,12 @@ public class OpenTelemetry : ITelemetry
             return;
         }
 
+        // Streams can close after an error chunk without a model-call end event.
+        RecordInferenceDuration(
+            state,
+            errorType: e.FinishReason == FinishReason.Error ? "_OTHER" : null
+        );
+
         if (e.FinishReason == FinishReason.Error)
         {
             state.StepSpan.SetStatus(ActivityStatusCode.Error);
@@ -1221,6 +1450,25 @@ public class OpenTelemetry : ITelemetry
             )
         );
 
+        End(state.StepSpan);
+        state.StepSpan = null;
+    }
+
+    private void OnStepErrorCore(GenerateTextStepErrorEvent e)
+    {
+        if (!TryGetCallState(e.CallId, out var state) || state.StepSpan is null)
+        {
+            return;
+        }
+
+        if (state.InferenceSpan is not null)
+        {
+            TelemetrySpan.RecordError(state.InferenceSpan, e.Error);
+            End(state.InferenceSpan);
+            state.InferenceSpan = null;
+        }
+
+        TelemetrySpan.RecordError(state.StepSpan, e.Error);
         End(state.StepSpan);
         state.StepSpan = null;
     }
@@ -2161,6 +2409,7 @@ public class OpenTelemetry : ITelemetry
             return;
         }
 
+        RecordInferenceDuration(state, errorType: "AbortError");
         EndOpenSpans(state, null);
         End(state.RootSpan);
         _callStates.TryRemove(e.CallId, out _);
@@ -2173,6 +2422,15 @@ public class OpenTelemetry : ITelemetry
             return;
         }
 
+        RecordInferenceDuration(
+            state,
+            errorType: e.Error switch
+            {
+                OperationCanceledException => "AbortError",
+                Exception error => error.GetType().Name,
+                _ => "_OTHER",
+            }
+        );
         EndOpenSpans(state, e.Error);
         TelemetrySpan.RecordError(state.RootSpan, e.Error);
         End(state.RootSpan);
@@ -2205,6 +2463,7 @@ public class OpenTelemetry : ITelemetry
         state.ToolSpans.Clear();
         Finish(state.InferenceSpan);
         state.InferenceSpan = null;
+        state.InferenceContext = null;
         Finish(state.StepSpan);
         state.StepSpan = null;
         foreach (var embedSpan in state.EmbedSpans.Values)
@@ -2251,6 +2510,8 @@ public class OpenTelemetry : ITelemetry
             ["ai.usage.outputTokenDetails.reasoningTokens"] = usage.ReasoningTokens,
         };
 
+    private sealed record InferenceMetrics(long StartTimestamp, string Provider, string ModelId);
+
     private sealed class CallState(string operationId, TelemetrySelection telemetry)
     {
         public string OperationId { get; } = operationId;
@@ -2263,8 +2524,11 @@ public class OpenTelemetry : ITelemetry
 
         public Activity? InferenceSpan { get; set; }
 
-        public List<JsonObject>? InferenceToolDefinitions { get; set; }
+        public ActivityContext? InferenceContext { get; set; }
 
+        public InferenceMetrics? InferenceMetrics { get; set; }
+
+        public List<JsonObject>? InferenceToolDefinitions { get; set; }
         public ConcurrentDictionary<string, Activity> EmbedSpans { get; } =
             new(StringComparer.Ordinal);
 

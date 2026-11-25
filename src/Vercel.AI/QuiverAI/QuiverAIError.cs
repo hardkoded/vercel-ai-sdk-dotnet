@@ -11,6 +11,12 @@ namespace Vercel.AI.QuiverAI;
 /// <summary>QuiverAI error bodies, like upstream's <c>quiverai-error.ts</c>: <c>{status, code, message, request_id}</c>.</summary>
 internal static class QuiverAIError
 {
+    /// <summary>Maps to <c>isRetryable</c> of <c>quiveraiFailedResponseHandler</c>: only 429 and 5xx.</summary>
+    internal static bool IsRetryable(int statusCode)
+    {
+        return statusCode == 429 || statusCode >= 500;
+    }
+
     /// <summary>The message of a QuiverAI error body. Maps to the <c>errorToMessage</c> of <c>quiveraiFailedResponseHandler</c>.</summary>
     internal static string ErrorToMessage(int statusCode, string body)
     {

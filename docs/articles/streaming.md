@@ -360,3 +360,7 @@ var result = client.StreamTextAsync(new StreamTextOptions
         IsTransient(error) ? new StreamTextOnErrorResult { Retry = true } : null),
 });
 ```
+
+## Extracting JSON from streamed text
+
+`ExtractJsonMiddleware` also wraps streams. Without a custom transform it strips a leading markdown code fence (` ```json `) and a trailing fence from each streamed text block while still streaming the content, holding back only text that could become the closing fence or trailing whitespace. With a custom `transform` passed to the constructor, each text block is buffered and transformed once at `TextEndStreamPart`.
