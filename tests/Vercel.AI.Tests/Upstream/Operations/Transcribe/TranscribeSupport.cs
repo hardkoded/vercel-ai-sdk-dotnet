@@ -107,6 +107,8 @@ internal static class TranscribeSupport
 
         public bool LockAudio { get; set; }
 
+        public Func<TranscriptionStreamCall, Task>? BeforeStream { get; set; }
+
         public TaskCompletionSource<bool> Started { get; } = new TaskCompletionSource<bool>();
 
         public TaskCompletionSource<bool> SetupCancelled { get; } =
@@ -149,6 +151,11 @@ internal static class TranscribeSupport
             if (LockAudio)
             {
                 call.Audio.Lock();
+            }
+
+            if (BeforeStream != null)
+            {
+                await BeforeStream(call);
             }
 
             if (SetupError != null)

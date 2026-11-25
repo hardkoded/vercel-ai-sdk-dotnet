@@ -115,25 +115,27 @@ internal sealed class TelemetryDispatcher
         CancellationToken cancellationToken
     )
     {
-        if (ExecuteLanguageModelCallWrappers.Count == 0)
-        {
-            return execute();
-        }
-
-        var augmented = AugmentEvent(@event, Options);
         var wrapped = execute;
-        foreach (var wrapper in ExecuteLanguageModelCallWrappers)
+        if (ExecuteLanguageModelCallWrappers.Count > 0)
         {
-            var inner = wrapped;
-            var current = wrapper;
-            wrapped = () =>
-                current.ExecuteAsync(
-                    new ExecuteLanguageModelCallOptions<T>(augmented, inner),
-                    cancellationToken
-                );
+            var augmented = AugmentEvent(@event, Options);
+            foreach (var wrapper in ExecuteLanguageModelCallWrappers)
+            {
+                var inner = wrapped;
+                var current = wrapper;
+                wrapped = () =>
+                    current.ExecuteAsync(
+                        new ExecuteLanguageModelCallOptions<T>(augmented, inner),
+                        cancellationToken
+                    );
+            }
         }
 
-        return wrapped();
+        return RunInTracingChannelSpan(
+            TelemetryTracingEventType.LanguageModelCall,
+            @event,
+            wrapped
+        );
     }
 
     /// <summary>
@@ -242,6 +244,30 @@ internal sealed class TelemetryDispatcher
                 recordResult
             )
             .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Opens a tracing channel span whose completion is observed separately. Streamed operations use it, so that the span lives as long
+    /// as the stream. Maps to <c>startTracingChannelContext</c>. Null when tracing is off or nothing subscribes.
+    /// </summary>
+    internal TracingChannelContext? StartTracingChannelContext(
+        string type,
+        object @event,
+        Task<object?> completion
+    )
+    {
+        if (!IsTracingEnabled)
+        {
+            return null;
+        }
+
+        var recordResult =
+            TracingTelemetry?.RecordInputs != false && TracingTelemetry?.RecordOutputs != false;
+        return TracingChannelPublisher.OpenTelemetryChannelSpanContext(
+            new TelemetryTracingChannelMessage(type, AugmentTracingEvent(@event)),
+            completion,
+            recordResult
+        );
     }
 
     /// <summary>The integrations a call resolves: the per-call ones, or the global ones. Maps to the lookup in <c>createTelemetryDispatcher</c>.</summary>
@@ -593,6 +619,38 @@ internal sealed class TelemetryDispatcher
                     ),
                     telemetry
                 );
+            case GenerateTextStartEvent textStart:
+                return textStart
+                    .WithContexts(
+                        FilterIncludedContextHelper.FilterIncludedContext(
+                            textStart.RuntimeContext,
+                            telemetry?.IncludeRuntimeContext
+                        ),
+                        FilterIncludedContextHelper.FilterToolsContext(
+                            textStart.ToolsContext,
+                            telemetry?.IncludeToolsContext
+                        )
+                    )
+                    .WithTelemetry(telemetry);
+            case LanguageModelCallStartEvent modelCall:
+                return AugmentEvent(modelCall, telemetry);
+            case ToolExecutionStartEvent toolExecution:
+                return FilterTelemetryEventHelper.FilterToolEvent(
+                    new ToolExecutionStartEvent(toolExecution.ToolCall, toolExecution.Messages)
+                    {
+                        CallId = toolExecution.CallId,
+                        ToolContext = FilterToolContext(toolExecution, telemetry),
+                    },
+                    telemetry
+                );
+            case TracingChannelStepEvent step:
+                return new TracingChannelStepEvent(step.CallId, step.StepNumber)
+                {
+                    RecordInputs = telemetry?.RecordInputs,
+                    RecordOutputs = telemetry?.RecordOutputs,
+                    FunctionId = telemetry?.FunctionId,
+                    AiVersion = Operations.AiSdkVersion.Version,
+                };
             default:
                 return value;
         }

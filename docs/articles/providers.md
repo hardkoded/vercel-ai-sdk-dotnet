@@ -2065,6 +2065,8 @@ The Google Batch API does not reliably enforce JSON schemas, so `GoogleBatchApi.
 
 `GatewayOptions`, `OpenAIOptions`, `AnthropicOptions`, and `GoogleOptions` each take an optional `BatchResultDownloads` setting. It configures the download of JSON Lines batch results. `provider.ExperimentalBatch()` returns the batch API whose `DoGetResultsAsync` reads them.
 
+A batch API can declare the model ids it accepts through `IBatchApi.ModelIds` (`BatchModelIds.Text` and `BatchModelIds.Image`, upstream `BatchV4<ModelIds>`). `Batch.StartBatchAsync` throws `InvalidArgumentException` for a request whose model is not in the list for its modality. A null list, which every built-in batch API returns, accepts any id.
+
 - **BatchResultDownloads** _BatchResultDownloads_
 
   Settings for downloading JSON Lines batch results. For Google, the setting applies to file-based results.
@@ -2615,7 +2617,7 @@ var result = await Transcribe.TranscribeAsync(new TranscribeRequest
 
 Upstream traces telemetry events on the Node.js `ai:telemetry` tracing channel (`AI_SDK_TELEMETRY_TRACING_CHANNEL`). The port publishes on a `System.Diagnostics.DiagnosticListener` with the same name, `TracingChannel.AiSdkTelemetryTracingChannel`. Subscribe with `DiagnosticListener.AllListeners` and pick the listener by name. Each tracing-channel sub-channel is one event name: `start`, `end`, `asyncStart`, `asyncEnd`, and `error`. The value of each event is a `TelemetryTracingChannelMessage` with `Type` (one of the `TelemetryTracingEventType` constants), `Event` (the telemetry event of the span), `Result` (set before `asyncEnd`), and `Error` (set before `error`). `bindStore` has no .NET counterpart, so there is no `bindStart`; use `AsyncLocal` values set in the subscriber of `start` if you need to carry context.
 
-Only `Extract.ExtractAsync` (`experimental_extract`) and `Decide.DecideAsync` (`experimental_decide`) publish spans so far. The other span types are declared, because upstream declares them, but nothing publishes them yet. A span follows the per-call `TelemetryOptions`:
+`GenerateText` and `StreamText` publish a `generateText` or `streamText` span, a `step` span per step (its event is a `TracingChannelStepEvent` with `CallId` and `StepNumber`; a step that a steering interrupt redoes stays in one span), a `languageModelCall` span around each provider call (the `LanguageModelCallStartEvent`), and an `executeTool` span around each tool execution (the `ToolExecutionStartEvent`). `Extract.ExtractAsync` (`experimental_extract`) and `Decide.DecideAsync` (`experimental_decide`) publish their spans too. The embed, embedMany, rerank, generateSpeech, transcribe and streamTranscribe types are declared, because upstream declares them, but nothing publishes them yet. A `streamText` or `step` span ends when the stream finishes or fails, and its `Result` is not set. A span follows the per-call `TelemetryOptions`:
 
 - `IsEnabled = false` publishes nothing for the call.
 - The event has `AiVersion`, `RecordInputs`, `RecordOutputs`, and `FunctionId`, and `RuntimeContext` holds only the keys of `IncludeRuntimeContext`.

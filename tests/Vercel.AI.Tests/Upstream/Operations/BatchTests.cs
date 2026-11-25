@@ -845,6 +845,8 @@ public sealed class BatchTests
         public IReadOnlyDictionary<string, string> SupportedUrls { get; } =
             new Dictionary<string, string>();
 
+        public BatchModelIds? ModelIds { get; set; }
+
         public bool CanCancel { get; set; } = true;
 
         public bool CanList { get; set; } = true;
