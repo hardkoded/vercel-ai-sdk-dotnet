@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 using Vercel.AI.Tests.Upstream.Gateway.GatewayLanguageModel;
@@ -36,11 +37,32 @@ public sealed class GatewayBYOKTelemetryRedactionTests
 
     /// <summary>The application-facing body keeps the credentials; only the telemetry view hides them.</summary>
     private static void ExpectTelemetryViewRedacted(
+        string wireBody,
         JsonElement? body,
         Func<JsonElement, JsonElement>? redact
     )
     {
         Assert.Contains(ByokSecret, body!.Value.GetRawText());
+        Assert.True(
+            JsonNode.DeepEquals(JsonNode.Parse(wireBody), JsonNode.Parse(body.Value.GetRawText())),
+            "request.body is the body that was sent."
+        );
+        Assert.Equal(
+            "Hello",
+            body.Value.GetProperty("prompt")[0]
+                .GetProperty("content")[0]
+                .GetProperty("text")
+                .GetString()
+        );
+        Assert.Equal(
+            ByokSecret,
+            body.Value.GetProperty("providerOptions")
+                .GetProperty("gateway")
+                .GetProperty("byok")
+                .GetProperty("openai")[0]
+                .GetProperty("apiKey")
+                .GetString()
+        );
 
         var telemetryView = TelemetryRedaction
             .RedactTelemetryValue(body.Value, redact)!
@@ -52,7 +74,8 @@ public sealed class GatewayBYOKTelemetryRedactionTests
     [Fact]
     [UpstreamTest(
         "packages/gateway/src/gateway-byok-telemetry.test.ts::Gateway BYOK telemetry redaction::redacts the request body metadata of a generate call",
-        Coverage = UpstreamCoverage.Covered,
+        Coverage = UpstreamCoverage.Partial,
+        Note = "Upstream compares the whole body with toStrictEqual against the literal args. The port compares it with the wire body it sent and checks the prompt and provider options, because its wire body has more fields.",
         Commit = "83026e8e0f12930e1792aa9928bb4025d2cd8fd8"
     )]
     public async Task Redacts_the_request_body_metadata_of_a_generate_call()
@@ -69,13 +92,18 @@ public sealed class GatewayBYOKTelemetryRedactionTests
             .DoGenerateAsync(Options(), CancellationToken.None);
 
         Assert.Contains(ByokSecret, server.RequestBody);
-        ExpectTelemetryViewRedacted(result.Request?.Body, result.Request?.RedactBody);
+        ExpectTelemetryViewRedacted(
+            server.RequestBody,
+            result.Request?.Body,
+            result.Request?.RedactBody
+        );
     }
 
     [Fact]
     [UpstreamTest(
         "packages/gateway/src/gateway-byok-telemetry.test.ts::Gateway BYOK telemetry redaction::redacts the request body metadata of a stream call",
-        Coverage = UpstreamCoverage.Covered,
+        Coverage = UpstreamCoverage.Partial,
+        Note = "Upstream compares the whole body with toStrictEqual against the literal args. The port compares it with the wire body it sent and checks the prompt and provider options, because its wire body has more fields.",
         Commit = "83026e8e0f12930e1792aa9928bb4025d2cd8fd8"
     )]
     public async Task Redacts_the_request_body_metadata_of_a_stream_call()
@@ -87,6 +115,10 @@ public sealed class GatewayBYOKTelemetryRedactionTests
             .DoStreamAsync(Options(), CancellationToken.None);
 
         Assert.Contains(ByokSecret, server.RequestBody);
-        ExpectTelemetryViewRedacted(result.Request!.Body, result.Request.RedactBody);
+        ExpectTelemetryViewRedacted(
+            server.RequestBody,
+            result.Request!.Body,
+            result.Request.RedactBody
+        );
     }
 }

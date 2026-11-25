@@ -938,11 +938,16 @@ public sealed class GatewayLanguageModel : ILanguageModel
     // The request body metadata keeps the body unchanged and carries the telemetry view that hides BYOK credentials.
     private static LanguageModelStreamRequest Request(string json)
     {
-        var request = LanguageModelStreamRequest.FromJson(json);
-        return new LanguageModelStreamRequest(request.Body)
+        // The body was serialized by V4Json.CallOptions, so it is read back with a depth limit that cannot reject it.
+        using var document = JsonDocument.Parse(
+            json,
+            new JsonDocumentOptions { MaxDepth = int.MaxValue }
+        );
+        var body = document.RootElement.Clone();
+        return new LanguageModelStreamRequest(body)
         {
             RedactBody = RedactGatewayRequestCredentials
-                .WithGatewayRequestTelemetryRedaction(request.Body!.Value)
+                .WithGatewayRequestTelemetryRedaction(body)
                 .Redact,
         };
     }
@@ -981,10 +986,21 @@ public sealed class GatewayLanguageModel : ILanguageModel
             throw GatewayProvider.MapFailure(exception, headers);
         }
 
+        Func<JsonElement, JsonElement>? redactBody;
+        try
+        {
+            redactBody = Request(json).RedactBody;
+        }
+        catch
+        {
+            sse.Resource.Dispose();
+            throw;
+        }
+
         return sse.ToStreamResult(
             StreamAsync(sse.Events, options.IncludeRawChunks, headers, cancellationToken),
             json,
-            Request(json).RedactBody
+            redactBody
         );
     }
 
