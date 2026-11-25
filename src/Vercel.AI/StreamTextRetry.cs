@@ -330,6 +330,11 @@ internal sealed class StreamTextErrorHandling
             {
                 await options.OnError(error, cancellationToken).ConfigureAwait(false);
             }
+            else
+            {
+                // Default onError of streamText: console.error(error).
+                Console.Error.WriteLine(error);
+            }
 
             if (
                 reportToTelemetry
