@@ -1716,13 +1716,12 @@ public class OpenTelemetry : ITelemetry
         };
 
         var operationName = GenAiConventions.MapOperationName(e.OperationId);
-        var baseSupplemental = new Dictionary<string, object?>(
+        var baseSupplemental = Merge(
             _supplementalAttributes.Select(
                 telemetry,
                 SupplementalGroup.Headers,
                 SupplementalAttributeHelpers.GetHeaderAttributes(e.Headers)
-            ),
-            StringComparer.Ordinal
+            )
         );
 
         var attributes = Merge(
