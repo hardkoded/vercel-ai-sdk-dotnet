@@ -593,8 +593,8 @@ public class AgentOptions
     public Func<GenerateTextStepErrorEvent, CancellationToken, Task>? OnStepError { get; set; }
 
     /// <summary>
-    /// Called when an error occurs. For <see cref="Agent.Stream(string, CancellationToken, Vercel.AI.Util.AbortSignal?, TimeoutConfiguration?, ISteering?, Vercel.AI.ProviderUtils.ISandboxSession?)"/> it receives the errors of the stream.
-    /// For <see cref="Agent.GenerateAsync(string, CancellationToken, TimeoutConfiguration?, ISteering?, Vercel.AI.ProviderUtils.ISandboxSession?)"/> it receives the error before it is thrown.
+    /// Called when an error occurs. For <c>Agent.Stream</c> it receives the errors of the stream.
+    /// For <c>Agent.GenerateAsync</c> it receives the error before it is thrown.
     /// Aborts and timeouts are not reported. It can only be set here and not per call. Maps to <c>onError</c> of the <c>ToolLoopAgent</c> settings.
     /// </summary>
     public Func<Exception, CancellationToken, Task>? OnError { get; set; }
