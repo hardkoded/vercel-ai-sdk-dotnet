@@ -202,7 +202,7 @@ public sealed class Agent : IAgent
 #pragma warning restore CS0618
         prepared.OnStepError = Options.OnStepError;
         prepared.OnError = null;
-        #pragma warning disable CS0618 // ExperimentalOnStart is the deprecated alias of OnStart
+#pragma warning disable CS0618 // ExperimentalOnStart is the deprecated alias of OnStart
         prepared.OnStart = MergeCallbacks(
             Options.OnStart ?? Options.ExperimentalOnStart,
             MergeCallbacks(prepared.OnStart, callbacks.OnStart)
@@ -446,14 +446,14 @@ public sealed class Agent : IAgent
                 PrepareStep = prepared.PrepareStep,
                 ExperimentalSteering = experimentalSteering ?? prepared.ExperimentalSteering,
                 ExperimentalSandbox = prepared.ExperimentalSandbox,
-                #pragma warning disable CS0618 // OnStepFinish is the deprecated alias of OnStepEnd
+#pragma warning disable CS0618 // OnStepFinish is the deprecated alias of OnStepEnd
                 OnStepEnd = MergeCallbacks(
                     Options.OnStepEnd ?? Options.OnStepFinish,
                     callbacks.OnStepEnd ?? prepared.OnStepEnd
                 ),
 #pragma warning restore CS0618
                 OnStepError = Options.OnStepError,
-                #pragma warning disable CS0618 // ExperimentalOnStart is the deprecated alias of OnStart
+#pragma warning disable CS0618 // ExperimentalOnStart is the deprecated alias of OnStart
                 OnStart = MergeCallbacks(
                     Options.OnStart ?? Options.ExperimentalOnStart,
                     MergeCallbacks(prepared.OnStart, callbacks.OnStart)
@@ -634,7 +634,11 @@ internal sealed class AgentCallCallbacks
 
     internal Func<GenerateTextStepStartEvent, CancellationToken, Task>? OnStepStart { get; init; }
 
-    internal Func<ToolExecutionStartEvent, CancellationToken, Task>? OnToolExecutionStart { get; init; }
+    internal Func<
+        ToolExecutionStartEvent,
+        CancellationToken,
+        Task
+    >? OnToolExecutionStart { get; init; }
 
     internal Func<ToolExecutionEndEvent, CancellationToken, Task>? OnToolExecutionEnd { get; init; }
 
@@ -729,7 +733,11 @@ public class AgentOptions
 
     /// <summary>Deprecated alias for <see cref="OnStepStart"/>; <see cref="OnStepStart"/> wins when both are set. Maps to <c>experimental_onStepStart</c> of the <c>ToolLoopAgent</c> settings.</summary>
     [Obsolete("Use OnStepStart instead.")]
-    public Func<GenerateTextStepStartEvent, CancellationToken, Task>? ExperimentalOnStepStart { get; set; }
+    public Func<
+        GenerateTextStepStartEvent,
+        CancellationToken,
+        Task
+    >? ExperimentalOnStepStart { get; set; }
 
     /// <summary>Deprecated alias for <see cref="OnStart"/>; <see cref="OnStart"/> wins when both are set. Maps to <c>experimental_onStart</c> of the <c>ToolLoopAgent</c> settings.</summary>
     [Obsolete("Use OnStart instead.")]

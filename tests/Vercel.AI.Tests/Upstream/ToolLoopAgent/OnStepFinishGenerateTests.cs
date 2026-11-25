@@ -18,7 +18,10 @@ public sealed class OnStepFinishGenerateTests
         "packages/ai/src/agent/tool-loop-agent.test.ts::ToolLoopAgent > onStepFinish > generate::";
 
     [Fact]
-    [UpstreamTest(Prefix + "should call onStepEnd from constructor and generate method in order", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should call onStepEnd from constructor and generate method in order",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ShouldCallOnStepEndFromConstructorAndGenerateMethodInOrder()
     {
         var calls = new List<string>();
@@ -35,15 +38,18 @@ public sealed class OnStepFinishGenerateTests
             ToolLoopAgentInstructions.Client()
         );
         await agent.GenerateAsync("Hello, world!", onStepEnd: (_, _) =>
-            {
-                calls.Add("method");
-                return Task.CompletedTask;
-            });
+        {
+            calls.Add("method");
+            return Task.CompletedTask;
+        });
         Assert.Equal(["constructor", "method"], calls);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should prefer onStepEnd over deprecated onStepFinish", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should prefer onStepEnd over deprecated onStepFinish",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ShouldPreferOnStepEndOverDeprecatedOnStepFinish()
     {
         var calls = new List<string>();
@@ -81,7 +87,10 @@ public sealed class OnStepFinishGenerateTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should call onStepFinish from constructor", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should call onStepFinish from constructor",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ShouldCallOnStepFinishFromConstructor()
     {
         var calls = new List<string>();
@@ -102,7 +111,10 @@ public sealed class OnStepFinishGenerateTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should call onStepFinish from generate method", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should call onStepFinish from generate method",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ShouldCallOnStepFinishFromGenerateMethod()
     {
         var calls = new List<string>();
@@ -114,15 +126,18 @@ public sealed class OnStepFinishGenerateTests
             ToolLoopAgentInstructions.Client()
         );
         await agent.GenerateAsync("Hello, world!", onStepFinish: (_, _) =>
-            {
-                calls.Add("method");
-                return Task.CompletedTask;
-            });
+        {
+            calls.Add("method");
+            return Task.CompletedTask;
+        });
         Assert.Equal(["method"], calls);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should call both constructor and method onStepFinish in correct order", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should call both constructor and method onStepFinish in correct order",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ShouldCallBothConstructorAndMethodOnStepFinishInCorrectOrder()
     {
         var calls = new List<string>();
@@ -139,15 +154,18 @@ public sealed class OnStepFinishGenerateTests
             ToolLoopAgentInstructions.Client()
         );
         await agent.GenerateAsync("Hello, world!", onStepFinish: (_, _) =>
-            {
-                calls.Add("method");
-                return Task.CompletedTask;
-            });
+        {
+            calls.Add("method");
+            return Task.CompletedTask;
+        });
         Assert.Equal(["constructor", "method"], calls);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should pass stepResult to onStepFinish callback", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should pass stepResult to onStepFinish callback",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ShouldPassStepResultToOnStepFinishCallback()
     {
         StepResult? captured = null;

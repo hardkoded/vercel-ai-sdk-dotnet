@@ -275,7 +275,8 @@ public sealed class ToolLoopAgentExperimentalSteeringTests
             Func<GenerateTextStartEvent, CancellationToken, Task>? onStart = null,
             Func<GenerateTextResult, CancellationToken, Task>? onEnd = null,
             Func<GenerateTextStartEvent, CancellationToken, Task>? experimentalOnStart = null,
-            Func<GenerateTextStepStartEvent, CancellationToken, Task>? experimentalOnStepStart = null,
+            Func<GenerateTextStepStartEvent, CancellationToken, Task>? experimentalOnStepStart =
+                null,
             Func<StepResult, CancellationToken, Task>? onStepFinish = null,
             Func<GenerateTextResult, CancellationToken, Task>? onFinish = null
         )

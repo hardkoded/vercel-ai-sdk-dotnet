@@ -18,7 +18,10 @@ public sealed class OnEndGenerateTests
         "packages/ai/src/agent/tool-loop-agent.test.ts::ToolLoopAgent > onEnd > generate::";
 
     [Fact]
-    [UpstreamTest(Prefix + "should call onFinish from constructor", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should call onFinish from constructor",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ShouldCallOnFinishFromConstructor()
     {
         var calls = new List<string>();
@@ -39,7 +42,10 @@ public sealed class OnEndGenerateTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should call onFinish from generate method", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should call onFinish from generate method",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ShouldCallOnFinishFromGenerateMethod()
     {
         var calls = new List<string>();
@@ -51,15 +57,18 @@ public sealed class OnEndGenerateTests
             ToolLoopAgentInstructions.Client()
         );
         await agent.GenerateAsync("Hello, world!", onFinish: (_, _) =>
-            {
-                calls.Add("method");
-                return Task.CompletedTask;
-            });
+        {
+            calls.Add("method");
+            return Task.CompletedTask;
+        });
         Assert.Equal(["method"], calls);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should call both constructor and method in correct order", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should call both constructor and method in correct order",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ShouldCallBothConstructorAndMethodInCorrectOrder()
     {
         var calls = new List<string>();
@@ -76,15 +85,18 @@ public sealed class OnEndGenerateTests
             ToolLoopAgentInstructions.Client()
         );
         await agent.GenerateAsync("Hello, world!", onFinish: (_, _) =>
-            {
-                calls.Add("method");
-                return Task.CompletedTask;
-            });
+        {
+            calls.Add("method");
+            return Task.CompletedTask;
+        });
         Assert.Equal(["constructor", "method"], calls);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should pass correct event information", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should pass correct event information",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ShouldPassCorrectEventInformation()
     {
         GenerateTextResult? captured = null;

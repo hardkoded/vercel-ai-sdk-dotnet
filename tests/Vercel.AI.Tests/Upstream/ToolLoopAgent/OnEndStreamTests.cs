@@ -18,7 +18,10 @@ public sealed class OnEndStreamTests
         "packages/ai/src/agent/tool-loop-agent.test.ts::ToolLoopAgent > onEnd > stream::";
 
     [Fact]
-    [UpstreamTest(Prefix + "should call onFinish from constructor", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should call onFinish from constructor",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ShouldCallOnFinishFromConstructor()
     {
         var calls = new List<string>();
@@ -39,27 +42,32 @@ public sealed class OnEndStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should call onFinish from stream method", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should call onFinish from stream method",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ShouldCallOnFinishFromStreamMethod()
     {
         var calls = new List<string>();
         var agent = new Agent(
-            new AgentOptions
-            {
-                Model = SteeringTestModel.Stream(() => HelloWorldStream(true)),
-            },
+            new AgentOptions { Model = SteeringTestModel.Stream(() => HelloWorldStream(true)) },
             ToolLoopAgentInstructions.Client()
         );
-        await ToolExecutionCallbackSupport.ConsumeAsync(agent.Stream("Hello, world!", onFinish: (_, _) =>
+        await ToolExecutionCallbackSupport.ConsumeAsync(
+            agent.Stream("Hello, world!", onFinish: (_, _) =>
             {
                 calls.Add("method");
                 return Task.CompletedTask;
-            }));
+            })
+        );
         Assert.Equal(["method"], calls);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should call both constructor and method in correct order", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should call both constructor and method in correct order",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ShouldCallBothConstructorAndMethodInCorrectOrder()
     {
         var calls = new List<string>();
@@ -75,33 +83,33 @@ public sealed class OnEndStreamTests
             },
             ToolLoopAgentInstructions.Client()
         );
-        await ToolExecutionCallbackSupport.ConsumeAsync(agent.Stream("Hello, world!", onFinish: (_, _) =>
+        await ToolExecutionCallbackSupport.ConsumeAsync(
+            agent.Stream("Hello, world!", onFinish: (_, _) =>
             {
                 calls.Add("method");
                 return Task.CompletedTask;
-            }));
+            })
+        );
         Assert.Equal(["constructor", "method"], calls);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should pass correct event information", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should pass correct event information",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task ShouldPassCorrectEventInformation()
     {
         GenerateTextResult? captured = null;
         var agent = new Agent(
-            new AgentOptions
-            {
-                Model = SteeringTestModel.Stream(() => HelloWorldStream(true)),
-            },
+            new AgentOptions { Model = SteeringTestModel.Stream(() => HelloWorldStream(true)) },
             ToolLoopAgentInstructions.Client()
         );
-        await ToolExecutionCallbackSupport.ConsumeAsync(
-            agent.Stream("test", onFinish: (r, _) =>
+        await ToolExecutionCallbackSupport.ConsumeAsync(agent.Stream("test", onFinish: (r, _) =>
             {
                 captured = r;
                 return Task.CompletedTask;
-            })
-        );
+            }));
         Assert.Equal("Hello, world!", captured!.Text);
         Assert.Equal(FinishReason.Stop, captured.FinishReason);
         Assert.Single(captured.Steps);
@@ -120,7 +128,11 @@ public sealed class OnEndStreamTests
                 FinishReason.Stop,
                 SteeringTestSupport.Usage,
                 "stop",
-                metadata ? JsonDocument.Parse("{\"testProvider\":{\"testKey\":\"testValue\"}}").RootElement.Clone() : null
+                metadata
+                    ? JsonDocument
+                        .Parse("{\"testProvider\":{\"testKey\":\"testValue\"}}")
+                        .RootElement.Clone()
+                    : null
             ),
         };
 }
