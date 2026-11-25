@@ -53,6 +53,31 @@ public sealed class McpClientOptions
     /// to legacy initialization. Disable it for legacy servers that require <c>initialize</c> to be the first request. Default true.
     /// </summary>
     public bool ProtocolVersionDiscovery { get; set; } = true;
+
+    /// <summary>
+    /// Explicit schemas per tool name. Only the listed tools are returned, as typed tools. Null discovers every tool.
+    /// Maps to the <c>schemas</c> option of <c>client.tools()</c>.
+    /// </summary>
+    public IReadOnlyDictionary<string, McpToolSchema>? Schemas { get; set; }
+}
+
+/// <summary>The schemas of one MCP tool. Maps to an entry of the <c>schemas</c> option of <c>client.tools()</c>.</summary>
+public sealed class McpToolSchema
+{
+    /// <summary>Creates the schemas with the JSON Schema of the tool input.</summary>
+    public McpToolSchema(string inputSchema)
+    {
+        InputSchema = inputSchema ?? throw new ArgumentNullException(nameof(inputSchema));
+    }
+
+    /// <summary>JSON Schema of the tool input.</summary>
+    public string InputSchema { get; }
+
+    /// <summary>
+    /// JSON Schema of the tool output. When set, the tool returns the <c>structuredContent</c> of the result, or the JSON
+    /// in its first text content, validated against it. Without it the tool returns the call-tool result.
+    /// </summary>
+    public string? OutputSchema { get; set; }
 }
 
 /// <summary>Lists MCP tools and adapts them to <see cref="Tool"/>.</summary>
@@ -112,7 +137,8 @@ public static class McpClient
                 .ConfigureAwait(false)
         )
         {
-            return await ListToolsAsync(transport, cancellationToken).ConfigureAwait(false);
+            return await ListToolsAsync(transport, options.Schemas, cancellationToken)
+                .ConfigureAwait(false);
         }
 
         if (transport is IMcpProtocolVersionDiscoveryTransport versioned)
@@ -126,7 +152,8 @@ public static class McpClient
         await transport
             .CallAsync("initialize", init.RootElement, cancellationToken)
             .ConfigureAwait(false);
-        return await ListToolsAsync(transport, cancellationToken).ConfigureAwait(false);
+        return await ListToolsAsync(transport, options.Schemas, cancellationToken)
+            .ConfigureAwait(false);
     }
 
     private static async Task<bool> TryProtocolDiscoveryAsync(
@@ -241,8 +268,18 @@ public static class McpClient
     }
 
     /// <summary>Maps <c>tools/list</c> onto SDK tools. Execution calls <c>tools/call</c>.</summary>
+    public static Task<IReadOnlyList<Tool>> ListToolsAsync(
+        IMcpTransport transport,
+        CancellationToken cancellationToken = default
+    ) => ListToolsAsync(transport, schemas: null, cancellationToken);
+
+    /// <summary>
+    /// Maps <c>tools/list</c> onto SDK tools. With <paramref name="schemas"/>, only the listed tools are returned,
+    /// typed by their schemas. Maps to <c>client.tools({ schemas })</c>.
+    /// </summary>
     public static async Task<IReadOnlyList<Tool>> ListToolsAsync(
         IMcpTransport transport,
+        IReadOnlyDictionary<string, McpToolSchema>? schemas,
         CancellationToken cancellationToken = default
     )
     {
@@ -276,9 +313,36 @@ public static class McpClient
                 ? schemaElement.GetRawText()
                 : "{}";
             var toolName = name;
+            JsonNode? outputSchema = null;
+            if (schemas is not null)
+            {
+                if (!schemas.TryGetValue(name, out var toolSchema))
+                {
+                    continue;
+                }
+
+                schema = toolSchema.InputSchema;
+                outputSchema = toolSchema.OutputSchema is null
+                    ? null
+                    : JsonNode.Parse(toolSchema.OutputSchema);
+            }
+
             var tool = Tool.Function(toolName, description, schema, (arguments, token) =>
-                CallToolAsync(transport, toolName, arguments, token)
+                CallToolAsync(
+                    transport,
+                    toolName,
+                    arguments,
+                    schemas is not null,
+                    outputSchema,
+                    token
+                )
             );
+            if (outputSchema is not null)
+            {
+                using var outputDocument = JsonDocument.Parse(outputSchema.ToJsonString());
+                tool.OutputSchema = outputDocument.RootElement.Clone();
+            }
+
             tool.ToModelOutput = McpToModelOutput;
             tools.Add(tool);
         }
@@ -290,6 +354,8 @@ public static class McpClient
         IMcpTransport transport,
         string name,
         JsonElement arguments,
+        bool returnsErrorResult,
+        JsonNode? outputSchema,
         CancellationToken cancellationToken
     )
     {
@@ -308,11 +374,93 @@ public static class McpClient
             && isError.ValueKind == JsonValueKind.True
         )
         {
+            // With explicit schemas, upstream's execute returns the error result instead of throwing.
+            if (returnsErrorResult)
+            {
+                return normalized.GetRawText();
+            }
+
             throw new AiSdkException(ReadText(normalized));
+        }
+
+        if (outputSchema is not null)
+        {
+            return ExtractStructuredContent(normalized, outputSchema, name).GetRawText();
         }
 
         // Upstream's execute returns the call-tool result itself. The port's execute returns its JSON text.
         return normalized.GetRawText();
+    }
+
+    /// <summary>Extracts and validates <c>structuredContent</c> from a tool result. Maps to <c>extractStructuredContent</c>.</summary>
+    private static JsonElement ExtractStructuredContent(
+        JsonElement result,
+        JsonNode outputSchema,
+        string toolName
+    )
+    {
+        if (
+            result.TryGetProperty("structuredContent", out var structured)
+            && structured.ValueKind != JsonValueKind.Null
+            && structured.ValueKind != JsonValueKind.Undefined
+        )
+        {
+            var validation = JsonParsing.SafeValidateTypes(structured, outputSchema);
+            if (!validation.Success)
+            {
+                throw new MCPClientError(
+                    "Tool \""
+                        + toolName
+                        + "\" returned structuredContent that does not match the expected outputSchema",
+                    cause: validation.Error
+                );
+            }
+
+            return validation.Value!.Value;
+        }
+
+        // Fallback
+        if (
+            result.TryGetProperty("content", out var content)
+            && content.ValueKind == JsonValueKind.Array
+        )
+        {
+            foreach (var part in content.EnumerateArray())
+            {
+                if (
+                    part.ValueKind == JsonValueKind.Object
+                    && part.TryGetProperty("type", out var type)
+                    && type.ValueKind == JsonValueKind.String
+                    && type.GetString() == "text"
+                )
+                {
+                    if (
+                        !part.TryGetProperty("text", out var text)
+                        || text.ValueKind != JsonValueKind.String
+                    )
+                    {
+                        break;
+                    }
+
+                    var parsed = JsonParsing.SafeParse(text.GetString()!, outputSchema);
+                    if (!parsed.Success)
+                    {
+                        throw new MCPClientError(
+                            "Tool \""
+                                + toolName
+                                + "\" returned content that does not match the expected outputSchema",
+                            cause: parsed.Error
+                        );
+                    }
+
+                    return parsed.Value!.Value;
+                }
+            }
+        }
+
+        throw new MCPClientError(
+            "Tool \"" + toolName + "\" did not return structuredContent or parseable text content"
+        );
     }
 
     /// <summary>Converts a tool output to the result sent to the model. Maps to <c>mcpToModelOutput</c>.</summary>
