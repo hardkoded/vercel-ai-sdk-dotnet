@@ -13,7 +13,7 @@ namespace Vercel.AI.Tests.Upstream.OpenTelemetry.OpenTelemetry;
 public sealed class OnEndGenerateTextTests
 {
     private const string Test =
-        "packages/otel/src/open-telemetry.test.ts::OpenTelemetry::onEnd (generateText)::";
+        "packages/otel/src/open-telemetry.test.ts::OpenTelemetry > onEnd (generateText)::";
 
     private static async Task<MockTracer> Run()
     {

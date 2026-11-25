@@ -18,7 +18,7 @@ namespace Vercel.AI.Tests.Upstream.OpenTelemetry.OpenTelemetry;
 public sealed class GenerateTextIntegrationTests
 {
     private const string Test =
-        "packages/otel/src/open-telemetry.test.ts::OpenTelemetry::generateText integration::";
+        "packages/otel/src/open-telemetry.test.ts::OpenTelemetry > generateText integration::";
 
     private static AiClient Client() =>
         new(GatewayProvider.Create(new GatewayOptions { ApiKey = "test" }));

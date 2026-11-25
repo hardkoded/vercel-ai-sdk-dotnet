@@ -16,7 +16,7 @@ namespace Vercel.AI.Tests.Upstream.OpenTelemetry.OpenTelemetry;
 public sealed class OnStepStartTests
 {
     private const string Test =
-        "packages/otel/src/open-telemetry.test.ts::OpenTelemetry::onStepStart::";
+        "packages/otel/src/open-telemetry.test.ts::OpenTelemetry > onStepStart::";
 
     private static async Task<(MockTracer Tracer, OtelIntegration Integration)> Start()
     {

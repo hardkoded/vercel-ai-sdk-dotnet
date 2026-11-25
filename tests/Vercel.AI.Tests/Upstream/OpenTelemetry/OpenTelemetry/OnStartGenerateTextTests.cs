@@ -14,7 +14,7 @@ namespace Vercel.AI.Tests.Upstream.OpenTelemetry.OpenTelemetry;
 public sealed class OnStartGenerateTextTests
 {
     private const string Test =
-        "packages/otel/src/open-telemetry.test.ts::OpenTelemetry::onStart (generateText)::";
+        "packages/otel/src/open-telemetry.test.ts::OpenTelemetry > onStart (generateText)::";
 
     [Fact]
     [UpstreamTest(

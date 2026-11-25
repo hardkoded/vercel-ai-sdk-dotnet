@@ -14,7 +14,7 @@ namespace Vercel.AI.Tests.Upstream.OpenTelemetry.OpenTelemetry;
 public sealed class OnStepFinishTests
 {
     private const string Test =
-        "packages/otel/src/open-telemetry.test.ts::OpenTelemetry::onStepFinish::";
+        "packages/otel/src/open-telemetry.test.ts::OpenTelemetry > onStepFinish::";
 
     [Fact]
     [UpstreamTest(

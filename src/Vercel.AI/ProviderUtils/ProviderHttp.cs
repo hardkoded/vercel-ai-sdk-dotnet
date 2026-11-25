@@ -20,6 +20,9 @@ public sealed class ProviderHttp
     /// <summary>Provider hook that turns a failed response into the exception message. Maps to a provider's <c>failedResponseHandler</c>. Null uses the shared extraction.</summary>
     internal Func<int, string, string>? ErrorToMessage { get; set; }
 
+    /// <summary>Provider hook that decides whether a failed status is retryable. Maps to a provider's <c>isRetryable</c> in its <c>failedResponseHandler</c>. Null uses <see cref="IsRetryable(int)"/>.</summary>
+    internal Func<int, bool>? IsRetryableStatus { get; set; }
+
     /// <summary>
     /// Test hook, called once per attempt with the caller's token, before the request is sent. HttpClient hands the message
     /// handler a linked token it disposes when headers arrive, so a test cannot see the caller's token from the handler.
@@ -70,7 +73,7 @@ public sealed class ProviderHttp
             .ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
-            throw MapStatusWithHeaders(
+            throw MapFailure(
                 (int)response.StatusCode,
                 ErrorMessage((int)response.StatusCode, body),
                 body,
@@ -112,7 +115,7 @@ public sealed class ProviderHttp
                 .ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
             {
-                throw MapStatusWithHeaders(
+                throw MapFailure(
                     (int)response.StatusCode,
                     ErrorMessage((int)response.StatusCode, body),
                     body,
@@ -156,7 +159,7 @@ public sealed class ProviderHttp
             var body = await CancellableReads
                 .ReadAsStringAsync(response.Content, cancellationToken)
                 .ConfigureAwait(false);
-            throw MapStatusWithHeaders(
+            throw MapFailure(
                 (int)response.StatusCode,
                 ErrorMessage((int)response.StatusCode, body),
                 body,
@@ -229,7 +232,7 @@ public sealed class ProviderHttp
         if (!response.IsSuccessStatusCode)
         {
             var text = Encoding.UTF8.GetString(bytes);
-            throw MapStatusWithHeaders(
+            throw MapFailure(
                 (int)response.StatusCode,
                 ErrorMessage((int)response.StatusCode, text),
                 text,
@@ -265,7 +268,7 @@ public sealed class ProviderHttp
                 var text = await CancellableReads
                     .ReadAsStringAsync(response.Content, cancellationToken)
                     .ConfigureAwait(false);
-                throw MapStatusWithHeaders(
+                throw MapFailure(
                     (int)response.StatusCode,
                     ErrorMessage((int)response.StatusCode, text),
                     text,
@@ -377,7 +380,7 @@ public sealed class ProviderHttp
                 var body = await CancellableReads
                     .ReadAsStringAsync(response.Content, cancellationToken)
                     .ConfigureAwait(false);
-                throw MapStatusWithHeaders(
+                throw MapFailure(
                     (int)response.StatusCode,
                     ErrorMessage((int)response.StatusCode, body),
                     body,
@@ -486,7 +489,7 @@ public sealed class ProviderHttp
                 var body = await CancellableReads
                     .ReadAsStringAsync(response.Content, cancellationToken)
                     .ConfigureAwait(false);
-                throw MapStatusWithHeaders(
+                throw MapFailure(
                     (int)response.StatusCode,
                     ErrorMessage((int)response.StatusCode, body),
                     body,
@@ -559,6 +562,24 @@ public sealed class ProviderHttp
         return MapStatusWithHeaders(statusCode, message, body, null);
     }
 
+    private ApiException MapFailure(
+        int statusCode,
+        string message,
+        string? body,
+        IReadOnlyDictionary<string, string>? responseHeaders,
+        string? url = null
+    )
+    {
+        return MapStatusWithHeaders(
+            statusCode,
+            message,
+            body,
+            responseHeaders,
+            url,
+            isRetryable: IsRetryableStatus?.Invoke(statusCode)
+        );
+    }
+
     private string ErrorMessage(int statusCode, string body)
     {
         return ErrorToMessage?.Invoke(statusCode, body)
@@ -572,9 +593,12 @@ public sealed class ProviderHttp
         string? body,
         IReadOnlyDictionary<string, string>? responseHeaders,
         string? url = null,
-        object? requestBodyValues = null
+        object? requestBodyValues = null,
+        bool? isRetryable = null
     )
     {
+        var retryable = isRetryable
+            ?? Vercel.AI.Util.StreamProviderError.IsRetryableStatusCode(statusCode);
         return statusCode switch
         {
             400 => new BadRequestException(message, body)
@@ -582,48 +606,56 @@ public sealed class ProviderHttp
                 ResponseHeaders = responseHeaders,
                 Url = url,
                 RequestBodyValues = requestBodyValues,
+                IsRetryable = retryable,
             },
             401 => new AuthenticationException(message, body)
             {
                 ResponseHeaders = responseHeaders,
                 Url = url,
                 RequestBodyValues = requestBodyValues,
+                IsRetryable = retryable,
             },
             403 => new PermissionDeniedException(message, body)
             {
                 ResponseHeaders = responseHeaders,
                 Url = url,
                 RequestBodyValues = requestBodyValues,
+                IsRetryable = retryable,
             },
             404 => new NotFoundException(message, body)
             {
                 ResponseHeaders = responseHeaders,
                 Url = url,
                 RequestBodyValues = requestBodyValues,
+                IsRetryable = retryable,
             },
             422 => new UnprocessableEntityException(message, body)
             {
                 ResponseHeaders = responseHeaders,
                 Url = url,
                 RequestBodyValues = requestBodyValues,
+                IsRetryable = retryable,
             },
             429 => new RateLimitException(message, body)
             {
                 ResponseHeaders = responseHeaders,
                 Url = url,
                 RequestBodyValues = requestBodyValues,
+                IsRetryable = retryable,
             },
             >= 500 and <= 599 => new InternalServerException(message, statusCode, body)
             {
                 ResponseHeaders = responseHeaders,
                 Url = url,
                 RequestBodyValues = requestBodyValues,
+                IsRetryable = retryable,
             },
             _ => new ApiException(message, statusCode, body)
             {
                 ResponseHeaders = responseHeaders,
                 Url = url,
                 RequestBodyValues = requestBodyValues,
+                IsRetryable = retryable,
             },
         };
     }
@@ -689,7 +721,10 @@ public sealed class ProviderHttp
                 ).ConfigureAwait(false);
                 if (
                     response.IsSuccessStatusCode
-                    || !IsRetryable((int)response.StatusCode)
+                    || !(
+                        IsRetryableStatus?.Invoke((int)response.StatusCode)
+                        ?? IsRetryable((int)response.StatusCode)
+                    )
                     || attempt >= _retry.MaxRetries
                 )
                 {

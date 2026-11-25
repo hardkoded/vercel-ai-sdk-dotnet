@@ -308,7 +308,12 @@ public class OpenTelemetry : ITelemetry
         };
 
     /// <inheritdoc />
-    public Func<GenerateTextStepErrorEvent, CancellationToken, Task>? OnStepError => null;
+    public Func<GenerateTextStepErrorEvent, CancellationToken, Task>? OnStepError =>
+        (e, _) =>
+        {
+            OnStepErrorCore(e);
+            return Task.CompletedTask;
+        };
 
     /// <inheritdoc />
     public Func<EmbeddingModelCallStartEvent, CancellationToken, Task>? OnEmbedStart =>
@@ -929,6 +934,25 @@ public class OpenTelemetry : ITelemetry
             )
         );
 
+        End(state.StepSpan);
+        state.StepSpan = null;
+    }
+
+    private void OnStepErrorCore(GenerateTextStepErrorEvent e)
+    {
+        if (!TryGetCallState(e.CallId, out var state) || state.StepSpan is null)
+        {
+            return;
+        }
+
+        if (state.InferenceSpan is not null)
+        {
+            TelemetrySpan.RecordError(state.InferenceSpan, e.Error);
+            End(state.InferenceSpan);
+            state.InferenceSpan = null;
+        }
+
+        TelemetrySpan.RecordError(state.StepSpan, e.Error);
         End(state.StepSpan);
         state.StepSpan = null;
     }
