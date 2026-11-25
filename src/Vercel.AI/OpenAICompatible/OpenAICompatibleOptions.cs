@@ -154,6 +154,12 @@ public class OpenAICompatibleOptions
         JsonObject
     >? TransformChatRequest { get; set; }
 
+    /// <summary>
+    /// Reads provider metadata from the response headers. The entries are added to the provider metadata of the
+    /// result and of the stream finish part. Maps to <c>extractCacheWriteTokensByTtl(responseHeaders)</c> in the Moonshot AI chat model.
+    /// </summary>
+    internal Func<IReadOnlyDictionary<string, string>?, JsonObject?>? ExtractResponseHeaderMetadata { get; set; }
+
     /// <summary>Streams <c>tool-input-start</c>, <c>tool-input-delta</c> and <c>tool-input-end</c> parts for every tool call, not only for the JSON response tool.</summary>
     internal bool StreamToolInput { get; set; }
 
