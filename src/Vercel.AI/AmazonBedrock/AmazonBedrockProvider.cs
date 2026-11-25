@@ -280,6 +280,9 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
         _modelFamily = settings?.ModelFamily;
     }
 
+    /// <summary>The model family passed in the settings, if any.</summary>
+    internal AmazonBedrockChatModelFamily? ModelFamily => _modelFamily;
+
     /// <inheritdoc />
     public string SpecificationVersion => "V4";
 
