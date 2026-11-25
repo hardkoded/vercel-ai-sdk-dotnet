@@ -11,13 +11,15 @@ namespace Vercel.AI.Tests.QuiverAIImageModelOptions;
 
 public sealed class QuiverAIImageModelOptionsTests
 {
+    private const string Commit = "4fb2fd377d2e0f626c947c4d8fff8a59628bbace";
     private const string Prefix =
         "packages/quiverai/src/quiverai-image-model-options.test-d.ts::QuiverAIImageModelOptions::";
 
     [Fact]
     [UpstreamTest(
         Prefix + "supports SVG animation as an image operation",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
     )]
     public void SupportsSvgAnimationAsAnImageOperation()
     {
@@ -29,7 +31,8 @@ public sealed class QuiverAIImageModelOptionsTests
     [Fact]
     [UpstreamTest(
         Prefix + "supports SVG editing with references and settings",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
     )]
     public void SupportsSvgEditingWithReferencesAndSettings()
     {
@@ -70,7 +73,11 @@ public sealed class QuiverAIImageModelOptionsTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "supports all image operations", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "supports all image operations",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
+    )]
     public void SupportsAllImageOperations()
     {
         Assert.Equal(
