@@ -1734,6 +1734,8 @@ var model = provider.LanguageModel("arrow-2");
 
 Set reasoning with `LanguageModelCallOptions.Reasoning` or with the `quiverai` provider options `reasoningEffort` (`low`, `medium`, `high`, or `xhigh`) and `reasoningSummary` (`auto`). The model validates the provider options first and throws an `InvalidArgumentException` for an unsupported value. A native `reasoningEffort` wins over `Reasoning`.
 
+Build the `quiverai` provider options with `QuiverAILanguageModelOptions` (`ReasoningEffort`, `ReasoningSummary`) and pass `options.ToProviderOptions()` as `LanguageModelCallOptions.ProviderOptions`. `QuiverAIModelCatalog.GetQuiverAILanguageModelEntry(modelId)` and `GetQuiverAIImageModelEntry(modelId)` return the capabilities, provider-option support, and request configuration of a model. `QuiverAIProviderOptions.Language` and `QuiverAIProviderOptions.Image` describe each option.
+
 QuiverAI supports four efforts, so a top-level `Reasoning` value that is not one of them maps to the nearest supported effort and adds a `compatibility` warning. `none` and `minimal` map to `low`, and `max` maps to `xhigh`.
 
 The provider does not request encrypted reasoning. When it replays the conversation in a tool loop, it sends the opaque reasoning item ids and the safe summaries, in order, without the private reasoning text or the encrypted reasoning state.
