@@ -832,11 +832,8 @@ public sealed class StreamSpeechResult
 
         public ValueTask DisposeAsync()
         {
-            if (_owner._usage.IsPending)
-            {
-                _owner.CancelFromConsumer();
-            }
-
+            // After finish nothing reads the rest, so release a pump blocked on a full queue too.
+            _owner.CancelFromConsumer();
             return default;
         }
 

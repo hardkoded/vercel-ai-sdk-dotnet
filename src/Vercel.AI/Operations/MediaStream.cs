@@ -489,14 +489,18 @@ public sealed class PartQueue<T>
     private readonly Queue<T> _items = new Queue<T>();
     private readonly Queue<TaskCompletionSource<bool>> _waiters =
         new Queue<TaskCompletionSource<bool>>();
-    private readonly Queue<TaskCompletionSource<bool>> _spaceWaiters =
-        new Queue<TaskCompletionSource<bool>>();
+    private readonly List<TaskCompletionSource<bool>> _spaceWaiters =
+        new List<TaskCompletionSource<bool>>();
     private readonly int _capacity;
     private Exception? _error;
     private bool _completed;
 
+    /// <summary>Creates an unbounded queue.</summary>
+    public PartQueue()
+        : this(0) { }
+
     /// <summary>Creates a queue. A <paramref name="capacity"/> above zero bounds <see cref="EnqueueAsync"/>; zero is unbounded.</summary>
-    public PartQueue(int capacity = 0)
+    public PartQueue(int capacity)
     {
         _capacity = capacity;
     }
@@ -509,33 +513,58 @@ public sealed class PartQueue<T>
     {
         while (true)
         {
-            Task wait;
+            cancellationToken.ThrowIfCancellationRequested();
+            TaskCompletionSource<bool>? reader = null;
+            TaskCompletionSource<bool> source;
             lock (_items)
             {
-                if (_completed || _capacity <= 0 || _items.Count < _capacity)
+                if (_completed)
                 {
-                    break;
+                    return;
                 }
 
-                var source = new TaskCompletionSource<bool>(
-                    TaskCreationOptions.RunContinuationsAsynchronously
-                );
-                _spaceWaiters.Enqueue(source);
-                wait = source.Task;
+                if (_capacity <= 0 || _items.Count < _capacity)
+                {
+                    _items.Enqueue(item);
+                    if (_waiters.Count > 0)
+                    {
+                        reader = _waiters.Dequeue();
+                    }
+
+                    source = null!;
+                }
+                else
+                {
+                    source = new TaskCompletionSource<bool>(
+                        TaskCreationOptions.RunContinuationsAsynchronously
+                    );
+                    _spaceWaiters.Add(source);
+                }
             }
 
-            var aborted = new TaskCompletionSource<bool>();
-            using (cancellationToken.Register(() => aborted.TrySetResult(true)))
+            if (source == null)
             {
-                var finished = await Task.WhenAny(wait, aborted.Task).ConfigureAwait(false);
-                if (finished != wait)
+                reader?.TrySetResult(true);
+                return;
+            }
+
+            using (cancellationToken.Register(() => source.TrySetCanceled(cancellationToken)))
+            {
+                try
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
+                    await source.Task.ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    lock (_items)
+                    {
+                        _spaceWaiters.Remove(source);
+                    }
+
+                    throw;
                 }
             }
         }
-
-        Enqueue(item);
     }
 
     /// <summary>Adds a part.</summary>
@@ -574,10 +603,8 @@ public sealed class PartQueue<T>
             _error = error;
             waiters = new List<TaskCompletionSource<bool>>(_waiters);
             _waiters.Clear();
-            while (_spaceWaiters.Count > 0)
-            {
-                waiters.Add(_spaceWaiters.Dequeue());
-            }
+            waiters.AddRange(_spaceWaiters);
+            _spaceWaiters.Clear();
         }
 
         foreach (var waiter in waiters)
@@ -643,7 +670,8 @@ public sealed class PartQueue<T>
             item = _items.Dequeue();
             if (_spaceWaiters.Count > 0)
             {
-                space = _spaceWaiters.Dequeue();
+                space = _spaceWaiters[0];
+                _spaceWaiters.RemoveAt(0);
             }
         }
 
