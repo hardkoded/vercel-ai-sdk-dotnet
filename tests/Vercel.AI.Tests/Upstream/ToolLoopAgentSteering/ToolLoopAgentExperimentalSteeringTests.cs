@@ -271,7 +271,13 @@ public sealed class ToolLoopAgentExperimentalSteeringTests
             Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox = null,
             Func<GenerateTextStepStartEvent, CancellationToken, Task>? onStepStart = null,
             Func<ToolExecutionStartEvent, CancellationToken, Task>? onToolExecutionStart = null,
-            Func<ToolExecutionEndEvent, CancellationToken, Task>? onToolExecutionEnd = null
+            Func<ToolExecutionEndEvent, CancellationToken, Task>? onToolExecutionEnd = null,
+            Func<GenerateTextStartEvent, CancellationToken, Task>? onStart = null,
+            Func<GenerateTextResult, CancellationToken, Task>? onEnd = null,
+            Func<GenerateTextStartEvent, CancellationToken, Task>? experimentalOnStart = null,
+            Func<GenerateTextStepStartEvent, CancellationToken, Task>? experimentalOnStepStart = null,
+            Func<StepResult, CancellationToken, Task>? onStepFinish = null,
+            Func<GenerateTextResult, CancellationToken, Task>? onFinish = null
         )
         {
             StreamCalls++;
