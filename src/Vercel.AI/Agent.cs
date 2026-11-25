@@ -25,7 +25,10 @@ public interface IAgent
         TimeoutConfiguration? timeout = null,
         ISteering? experimentalSteering = null,
         Func<StepResult, CancellationToken, Task>? onStepEnd = null,
-        Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox = null
+        Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox = null,
+        Func<GenerateTextStepStartEvent, CancellationToken, Task>? onStepStart = null,
+        Func<ToolExecutionStartEvent, CancellationToken, Task>? onToolExecutionStart = null,
+        Func<ToolExecutionEndEvent, CancellationToken, Task>? onToolExecutionEnd = null
     );
 }
 
@@ -45,7 +48,10 @@ public interface IAgent<TCallOptions>
         TimeoutConfiguration? timeout = null,
         ISteering? experimentalSteering = null,
         Func<StepResult, CancellationToken, Task>? onStepEnd = null,
-        Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox = null
+        Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox = null,
+        Func<GenerateTextStepStartEvent, CancellationToken, Task>? onStepStart = null,
+        Func<ToolExecutionStartEvent, CancellationToken, Task>? onToolExecutionStart = null,
+        Func<ToolExecutionEndEvent, CancellationToken, Task>? onToolExecutionEnd = null
     );
 }
 
@@ -82,14 +88,20 @@ public sealed class Agent : IAgent
         CancellationToken cancellationToken = default,
         TimeoutConfiguration? timeout = null,
         ISteering? experimentalSteering = null,
-        Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox = null
+        Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox = null,
+        Func<GenerateTextStepStartEvent, CancellationToken, Task>? onStepStart = null,
+        Func<ToolExecutionStartEvent, CancellationToken, Task>? onToolExecutionStart = null,
+        Func<ToolExecutionEndEvent, CancellationToken, Task>? onToolExecutionEnd = null
     )
     {
         return GenerateAsync(
             CreateOptions(prompt, null, experimentalSandbox),
             cancellationToken,
             timeout,
-            experimentalSteering
+            experimentalSteering,
+            onStepStart,
+            onToolExecutionStart,
+            onToolExecutionEnd
         );
     }
 
@@ -102,7 +114,10 @@ public sealed class Agent : IAgent
         CancellationToken cancellationToken = default,
         TimeoutConfiguration? timeout = null,
         ISteering? experimentalSteering = null,
-        Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox = null
+        Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox = null,
+        Func<GenerateTextStepStartEvent, CancellationToken, Task>? onStepStart = null,
+        Func<ToolExecutionStartEvent, CancellationToken, Task>? onToolExecutionStart = null,
+        Func<ToolExecutionEndEvent, CancellationToken, Task>? onToolExecutionEnd = null
     )
     {
         return GenerateAsync(
@@ -113,7 +128,10 @@ public sealed class Agent : IAgent
             ),
             cancellationToken,
             timeout,
-            experimentalSteering
+            experimentalSteering,
+            onStepStart,
+            onToolExecutionStart,
+            onToolExecutionEnd
         );
     }
 
@@ -121,15 +139,31 @@ public sealed class Agent : IAgent
         GenerateTextOptions call,
         CancellationToken cancellationToken,
         TimeoutConfiguration? timeout,
-        ISteering? experimentalSteering
-    ) => GenerateCoreAsync(call, cancellationToken, timeout, experimentalSteering, null);
+        ISteering? experimentalSteering,
+        Func<GenerateTextStepStartEvent, CancellationToken, Task>? onStepStart,
+        Func<ToolExecutionStartEvent, CancellationToken, Task>? onToolExecutionStart,
+        Func<ToolExecutionEndEvent, CancellationToken, Task>? onToolExecutionEnd
+    ) =>
+        GenerateCoreAsync(
+            call,
+            cancellationToken,
+            timeout,
+            experimentalSteering,
+            null,
+            onStepStart,
+            onToolExecutionStart,
+            onToolExecutionEnd
+        );
 
     internal async Task<GenerateTextResult> GenerateCoreAsync(
         GenerateTextOptions call,
         CancellationToken cancellationToken,
         TimeoutConfiguration? timeout,
         ISteering? experimentalSteering,
-        Func<GenerateTextOptions, GenerateTextOptions?>? prepareCall
+        Func<GenerateTextOptions, GenerateTextOptions?>? prepareCall,
+        Func<GenerateTextStepStartEvent, CancellationToken, Task>? onStepStart,
+        Func<ToolExecutionStartEvent, CancellationToken, Task>? onToolExecutionStart,
+        Func<ToolExecutionEndEvent, CancellationToken, Task>? onToolExecutionEnd
     )
     {
         var prepared = Prepare(call, prepareCall).ShallowCopy();
@@ -140,15 +174,20 @@ public sealed class Agent : IAgent
         prepared.OnStepError = Options.OnStepError;
         prepared.OnError = null;
         prepared.OnStart = MergeCallbacks(Options.OnStart, prepared.OnStart);
-        prepared.OnStepStart = MergeCallbacks(Options.OnStepStart, prepared.OnStepStart);
+        prepared.OnStepStart = MergeCallbacks(
+            Options.OnStepStart,
+            MergeCallbacks(prepared.OnStepStart, onStepStart)
+        );
         prepared.OnToolExecutionStart = MergeCallbacks(
             Options.OnToolExecutionStart,
-            prepared.OnToolExecutionStart
+            MergeCallbacks(prepared.OnToolExecutionStart, onToolExecutionStart)
         );
         prepared.OnToolExecutionEnd = MergeCallbacks(
             Options.OnToolExecutionEnd,
-            prepared.OnToolExecutionEnd
+            MergeCallbacks(prepared.OnToolExecutionEnd, onToolExecutionEnd)
         );
+        prepared.GenerateCallId = Options.GenerateCallId ?? prepared.GenerateCallId;
+        prepared.NowMs = Options.NowMs ?? prepared.NowMs;
         prepared.OnLanguageModelCallStart = MergeCallbacks(
             Options.OnLanguageModelCallStart,
             prepared.OnLanguageModelCallStart
@@ -199,7 +238,10 @@ public sealed class Agent : IAgent
         Vercel.AI.Util.AbortSignal? abortSignal = null,
         TimeoutConfiguration? timeout = null,
         ISteering? experimentalSteering = null,
-        Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox = null
+        Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox = null,
+        Func<GenerateTextStepStartEvent, CancellationToken, Task>? onStepStart = null,
+        Func<ToolExecutionStartEvent, CancellationToken, Task>? onToolExecutionStart = null,
+        Func<ToolExecutionEndEvent, CancellationToken, Task>? onToolExecutionEnd = null
     )
     {
         return Stream(
@@ -207,7 +249,11 @@ public sealed class Agent : IAgent
             cancellationToken,
             abortSignal,
             timeout,
-            experimentalSteering
+            experimentalSteering,
+            null,
+            onStepStart,
+            onToolExecutionStart,
+            onToolExecutionEnd
         );
     }
 
@@ -223,7 +269,10 @@ public sealed class Agent : IAgent
         TimeoutConfiguration? timeout = null,
         ISteering? experimentalSteering = null,
         Func<StepResult, CancellationToken, Task>? onStepEnd = null,
-        Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox = null
+        Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox = null,
+        Func<GenerateTextStepStartEvent, CancellationToken, Task>? onStepStart = null,
+        Func<ToolExecutionStartEvent, CancellationToken, Task>? onToolExecutionStart = null,
+        Func<ToolExecutionEndEvent, CancellationToken, Task>? onToolExecutionEnd = null
     )
     {
         return Stream(
@@ -236,7 +285,10 @@ public sealed class Agent : IAgent
             abortSignal,
             timeout,
             experimentalSteering,
-            onStepEnd
+            onStepEnd,
+            onStepStart,
+            onToolExecutionStart,
+            onToolExecutionEnd
         );
     }
 
@@ -248,7 +300,10 @@ public sealed class Agent : IAgent
         TimeoutConfiguration? timeout,
         ISteering? experimentalSteering,
         Func<StepResult, CancellationToken, Task>? onStepEnd,
-        Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox
+        Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox,
+        Func<GenerateTextStepStartEvent, CancellationToken, Task>? onStepStart,
+        Func<ToolExecutionStartEvent, CancellationToken, Task>? onToolExecutionStart,
+        Func<ToolExecutionEndEvent, CancellationToken, Task>? onToolExecutionEnd
     )
     {
         return Stream(
@@ -258,7 +313,10 @@ public sealed class Agent : IAgent
             timeout,
             experimentalSteering,
             onStepEnd,
-            experimentalSandbox
+            experimentalSandbox,
+            onStepStart,
+            onToolExecutionStart,
+            onToolExecutionEnd
         );
     }
 
@@ -268,7 +326,10 @@ public sealed class Agent : IAgent
         Vercel.AI.Util.AbortSignal? abortSignal,
         TimeoutConfiguration? timeout,
         ISteering? experimentalSteering,
-        Func<StepResult, CancellationToken, Task>? onStepEnd = null
+        Func<StepResult, CancellationToken, Task>? onStepEnd,
+        Func<GenerateTextStepStartEvent, CancellationToken, Task>? onStepStart,
+        Func<ToolExecutionStartEvent, CancellationToken, Task>? onToolExecutionStart,
+        Func<ToolExecutionEndEvent, CancellationToken, Task>? onToolExecutionEnd
     ) =>
         StreamCore(
             call,
@@ -277,7 +338,10 @@ public sealed class Agent : IAgent
             timeout,
             experimentalSteering,
             onStepEnd,
-            null
+            null,
+            onStepStart,
+            onToolExecutionStart,
+            onToolExecutionEnd
         );
 
     internal StreamTextResult StreamCore(
@@ -287,7 +351,10 @@ public sealed class Agent : IAgent
         TimeoutConfiguration? timeout,
         ISteering? experimentalSteering,
         Func<StepResult, CancellationToken, Task>? onStepEnd,
-        Func<GenerateTextOptions, GenerateTextOptions?>? prepareCall
+        Func<GenerateTextOptions, GenerateTextOptions?>? prepareCall,
+        Func<GenerateTextStepStartEvent, CancellationToken, Task>? onStepStart,
+        Func<ToolExecutionStartEvent, CancellationToken, Task>? onToolExecutionStart,
+        Func<ToolExecutionEndEvent, CancellationToken, Task>? onToolExecutionEnd
     )
     {
         var prepared = Prepare(call, prepareCall);
@@ -327,15 +394,20 @@ public sealed class Agent : IAgent
                 OnStepEnd = MergeCallbacks(Options.OnStepEnd, onStepEnd ?? prepared.OnStepEnd),
                 OnStepError = Options.OnStepError,
                 OnStart = MergeCallbacks(Options.OnStart, prepared.OnStart),
-                OnStepStart = MergeCallbacks(Options.OnStepStart, prepared.OnStepStart),
+                OnStepStart = MergeCallbacks(
+                    Options.OnStepStart,
+                    MergeCallbacks(prepared.OnStepStart, onStepStart)
+                ),
                 OnToolExecutionStart = MergeCallbacks(
                     Options.OnToolExecutionStart,
-                    prepared.OnToolExecutionStart
+                    MergeCallbacks(prepared.OnToolExecutionStart, onToolExecutionStart)
                 ),
                 OnToolExecutionEnd = MergeCallbacks(
                     Options.OnToolExecutionEnd,
-                    prepared.OnToolExecutionEnd
+                    MergeCallbacks(prepared.OnToolExecutionEnd, onToolExecutionEnd)
                 ),
+                GenerateCallId = Options.GenerateCallId ?? prepared.GenerateCallId,
+                NowMs = Options.NowMs ?? prepared.NowMs,
                 OnLanguageModelCallStart = MergeCallbacks(
                     Options.OnLanguageModelCallStart,
                     prepared.OnLanguageModelCallStart
@@ -498,8 +570,8 @@ public class AgentOptions
     public Instructions? Instructions { get; set; }
 
     /// <summary>
-    /// Whether system messages are allowed in the messages passed to <see cref="Agent.GenerateAsync(IReadOnlyList{ModelMessage}, CancellationToken, TimeoutConfiguration?, ISteering?, Vercel.AI.ProviderUtils.ISandboxSession?)"/>
-    /// and <see cref="Agent.Stream(IReadOnlyList{ModelMessage}, CancellationToken, Vercel.AI.Util.AbortSignal?, TimeoutConfiguration?, ISteering?, Func{StepResult, CancellationToken, Task}?, Vercel.AI.ProviderUtils.ISandboxSession?)"/>.
+    /// Whether system messages are allowed in the messages passed to <see cref="Agent.GenerateAsync(IReadOnlyList{ModelMessage}, CancellationToken, TimeoutConfiguration?, ISteering?, Vercel.AI.ProviderUtils.ISandboxSession?, Func{GenerateTextStepStartEvent, CancellationToken, Task}?, Func{ToolExecutionStartEvent, CancellationToken, Task}?, Func{ToolExecutionEndEvent, CancellationToken, Task}?)"/>
+    /// and <see cref="Agent.Stream(IReadOnlyList{ModelMessage}, CancellationToken, Vercel.AI.Util.AbortSignal?, TimeoutConfiguration?, ISteering?, Func{StepResult, CancellationToken, Task}?, Vercel.AI.ProviderUtils.ISandboxSession?, Func{GenerateTextStepStartEvent, CancellationToken, Task}?, Func{ToolExecutionStartEvent, CancellationToken, Task}?, Func{ToolExecutionEndEvent, CancellationToken, Task}?)"/>.
     /// Defaults to false, which rejects them with an <see cref="InvalidPromptException"/>. Use <see cref="Instructions"/> for the system prompt instead.
     /// <see cref="PrepareCall"/> can replace it. Maps to <c>allowSystemInMessages</c>.
     /// </summary>
@@ -551,6 +623,12 @@ public class AgentOptions
 
     /// <summary>Called after a tool ran. It runs together with the callback of the call. Maps to <c>onToolExecutionEnd</c> of the <c>ToolLoopAgent</c> settings.</summary>
     public Func<ToolExecutionEndEvent, CancellationToken, Task>? OnToolExecutionEnd { get; set; }
+
+    /// <summary>Generates the id of each call. Tests replace it. Maps to <c>_internal.generateCallId</c>.</summary>
+    internal Func<string>? GenerateCallId { get; set; }
+
+    /// <summary>The clock for step timing in milliseconds. Tests replace it. Maps to the mocked <c>now</c>.</summary>
+    internal Func<double>? NowMs { get; set; }
 
     /// <summary>Called before each provider model call. It runs together with the callback of the call. Maps to <c>onLanguageModelCallStart</c> of the <c>ToolLoopAgent</c> settings.</summary>
     public Func<
@@ -621,19 +699,19 @@ public class AgentOptions
     >? RefineToolInput { get; set; }
 
     /// <summary>
-    /// Timeout of each <see cref="Agent.GenerateAsync(string, CancellationToken, TimeoutConfiguration?, ISteering?, Vercel.AI.ProviderUtils.ISandboxSession?)"/> and <see cref="Agent.Stream(string, CancellationToken, Vercel.AI.Util.AbortSignal?, TimeoutConfiguration?, ISteering?, Vercel.AI.ProviderUtils.ISandboxSession?)"/> call. See <see cref="GenerateTextOptions.Timeout"/>.
+    /// Timeout of each <see cref="Agent.GenerateAsync(string, CancellationToken, TimeoutConfiguration?, ISteering?, Vercel.AI.ProviderUtils.ISandboxSession?, Func{GenerateTextStepStartEvent, CancellationToken, Task}?, Func{ToolExecutionStartEvent, CancellationToken, Task}?, Func{ToolExecutionEndEvent, CancellationToken, Task}?)"/> and <see cref="Agent.Stream(string, CancellationToken, Vercel.AI.Util.AbortSignal?, TimeoutConfiguration?, ISteering?, Vercel.AI.ProviderUtils.ISandboxSession?, Func{GenerateTextStepStartEvent, CancellationToken, Task}?, Func{ToolExecutionStartEvent, CancellationToken, Task}?, Func{ToolExecutionEndEvent, CancellationToken, Task}?)"/> call. See <see cref="GenerateTextOptions.Timeout"/>.
     /// <see cref="PrepareCall"/> can replace it. Maps to <c>timeout</c> of <c>ToolLoopAgentSettings</c>.
     /// </summary>
     public TimeoutConfiguration? Timeout { get; set; }
 
     /// <summary>
-    /// Called before each <see cref="Agent.GenerateAsync(string, CancellationToken, TimeoutConfiguration?, ISteering?, Vercel.AI.ProviderUtils.ISandboxSession?)"/> and <see cref="Agent.Stream(string, CancellationToken, Vercel.AI.Util.AbortSignal?, TimeoutConfiguration?, ISteering?, Vercel.AI.ProviderUtils.ISandboxSession?)"/> call with the options the agent would use,
+    /// Called before each <see cref="Agent.GenerateAsync(string, CancellationToken, TimeoutConfiguration?, ISteering?, Vercel.AI.ProviderUtils.ISandboxSession?, Func{GenerateTextStepStartEvent, CancellationToken, Task}?, Func{ToolExecutionStartEvent, CancellationToken, Task}?, Func{ToolExecutionEndEvent, CancellationToken, Task}?)"/> and <see cref="Agent.Stream(string, CancellationToken, Vercel.AI.Util.AbortSignal?, TimeoutConfiguration?, ISteering?, Vercel.AI.ProviderUtils.ISandboxSession?, Func{GenerateTextStepStartEvent, CancellationToken, Task}?, Func{ToolExecutionStartEvent, CancellationToken, Task}?, Func{ToolExecutionEndEvent, CancellationToken, Task}?)"/> call with the options the agent would use,
     /// including the default <see cref="GenerateTextOptions.StopWhen"/>. Return replacement options, or null to keep them.
     /// A returned options object that sets <see cref="GenerateTextOptions.StopWhen"/> replaces the default limit. Maps to <c>prepareCall</c>.
     /// </summary>
     public Func<GenerateTextOptions, GenerateTextOptions?>? PrepareCall { get; set; }
 
-    /// <summary>Called after <see cref="Agent.Stream(string, CancellationToken, Vercel.AI.Util.AbortSignal?, TimeoutConfiguration?, ISteering?, Vercel.AI.ProviderUtils.ISandboxSession?)"/> is aborted. See <see cref="StreamTextOptions.OnAbort"/>.</summary>
+    /// <summary>Called after <see cref="Agent.Stream(string, CancellationToken, Vercel.AI.Util.AbortSignal?, TimeoutConfiguration?, ISteering?, Vercel.AI.ProviderUtils.ISandboxSession?, Func{GenerateTextStepStartEvent, CancellationToken, Task}?, Func{ToolExecutionStartEvent, CancellationToken, Task}?, Func{ToolExecutionEndEvent, CancellationToken, Task}?)"/> is aborted. See <see cref="StreamTextOptions.OnAbort"/>.</summary>
     public Func<StreamAbortContext, CancellationToken, Task>? OnAbort { get; set; }
 }
 
@@ -1222,7 +1300,10 @@ public sealed class Agent<TCallOptions> : IAgent<TCallOptions>
         CancellationToken cancellationToken = default,
         TimeoutConfiguration? timeout = null,
         ISteering? experimentalSteering = null,
-        Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox = null
+        Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox = null,
+        Func<GenerateTextStepStartEvent, CancellationToken, Task>? onStepStart = null,
+        Func<ToolExecutionStartEvent, CancellationToken, Task>? onToolExecutionStart = null,
+        Func<ToolExecutionEndEvent, CancellationToken, Task>? onToolExecutionEnd = null
     )
     {
         var prepare = PrepareFor(options);
@@ -1231,7 +1312,10 @@ public sealed class Agent<TCallOptions> : IAgent<TCallOptions>
             cancellationToken,
             timeout,
             experimentalSteering,
-            prepare
+            prepare,
+            onStepStart,
+            onToolExecutionStart,
+            onToolExecutionEnd
         );
     }
 
@@ -1242,7 +1326,10 @@ public sealed class Agent<TCallOptions> : IAgent<TCallOptions>
         CancellationToken cancellationToken = default,
         TimeoutConfiguration? timeout = null,
         ISteering? experimentalSteering = null,
-        Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox = null
+        Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox = null,
+        Func<GenerateTextStepStartEvent, CancellationToken, Task>? onStepStart = null,
+        Func<ToolExecutionStartEvent, CancellationToken, Task>? onToolExecutionStart = null,
+        Func<ToolExecutionEndEvent, CancellationToken, Task>? onToolExecutionEnd = null
     )
     {
         var prepare = PrepareFor(options);
@@ -1255,7 +1342,10 @@ public sealed class Agent<TCallOptions> : IAgent<TCallOptions>
             cancellationToken,
             timeout,
             experimentalSteering,
-            prepare
+            prepare,
+            onStepStart,
+            onToolExecutionStart,
+            onToolExecutionEnd
         );
     }
 
@@ -1267,7 +1357,10 @@ public sealed class Agent<TCallOptions> : IAgent<TCallOptions>
         Vercel.AI.Util.AbortSignal? abortSignal = null,
         TimeoutConfiguration? timeout = null,
         ISteering? experimentalSteering = null,
-        Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox = null
+        Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox = null,
+        Func<GenerateTextStepStartEvent, CancellationToken, Task>? onStepStart = null,
+        Func<ToolExecutionStartEvent, CancellationToken, Task>? onToolExecutionStart = null,
+        Func<ToolExecutionEndEvent, CancellationToken, Task>? onToolExecutionEnd = null
     )
     {
         var prepare = PrepareFor(options);
@@ -1278,7 +1371,10 @@ public sealed class Agent<TCallOptions> : IAgent<TCallOptions>
             timeout,
             experimentalSteering,
             null,
-            prepare
+            prepare,
+            onStepStart,
+            onToolExecutionStart,
+            onToolExecutionEnd
         );
     }
 
@@ -1291,7 +1387,10 @@ public sealed class Agent<TCallOptions> : IAgent<TCallOptions>
         TimeoutConfiguration? timeout = null,
         ISteering? experimentalSteering = null,
         Func<StepResult, CancellationToken, Task>? onStepEnd = null,
-        Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox = null
+        Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox = null,
+        Func<GenerateTextStepStartEvent, CancellationToken, Task>? onStepStart = null,
+        Func<ToolExecutionStartEvent, CancellationToken, Task>? onToolExecutionStart = null,
+        Func<ToolExecutionEndEvent, CancellationToken, Task>? onToolExecutionEnd = null
     )
     {
         var prepare = PrepareFor(options);
@@ -1306,7 +1405,10 @@ public sealed class Agent<TCallOptions> : IAgent<TCallOptions>
             timeout,
             experimentalSteering,
             onStepEnd,
-            prepare
+            prepare,
+            onStepStart,
+            onToolExecutionStart,
+            onToolExecutionEnd
         );
     }
 

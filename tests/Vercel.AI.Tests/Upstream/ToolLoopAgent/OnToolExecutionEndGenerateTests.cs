@@ -41,8 +41,7 @@ public sealed class OnToolExecutionEndGenerateTests
     [Fact]
     [UpstreamTest(
         Prefix + "should call onToolExecutionEnd from generate method",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The call-level callback is set through PrepareCall, because the agent methods take no per-call callbacks."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task ShouldCallOnToolExecutionEndFromGenerateMethod()
     {
@@ -52,27 +51,21 @@ public sealed class OnToolExecutionEndGenerateTests
             {
                 Model = ToolLoopAgentToolCalls.GenerateModel(out _),
                 Tools = [ToolLoopAgentToolCalls.TestTool((value, _) => value + "-result")],
-                PrepareCall = call =>
-                {
-                    call.OnToolExecutionEnd = (_, _) =>
-                    {
-                        calls.Add("method");
-                        return Task.CompletedTask;
-                    };
-                    return call;
-                },
             },
             ToolLoopAgentInstructions.Client()
         );
-        await agent.GenerateAsync("test");
+        await agent.GenerateAsync("test", onToolExecutionEnd: (_, _) =>
+        {
+            calls.Add("method");
+            return Task.CompletedTask;
+        });
         Assert.Equal(["method"], calls);
     }
 
     [Fact]
     [UpstreamTest(
         Prefix + "should call both constructor and method in correct order",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The call-level callback is set through PrepareCall, because the agent methods take no per-call callbacks."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task ShouldCallBothConstructorAndMethodInCorrectOrder()
     {
@@ -87,27 +80,21 @@ public sealed class OnToolExecutionEndGenerateTests
                     calls.Add("constructor");
                     return Task.CompletedTask;
                 },
-                PrepareCall = call =>
-                {
-                    call.OnToolExecutionEnd = (_, _) =>
-                    {
-                        calls.Add("method");
-                        return Task.CompletedTask;
-                    };
-                    return call;
-                },
             },
             ToolLoopAgentInstructions.Client()
         );
-        await agent.GenerateAsync("test");
+        await agent.GenerateAsync("test", onToolExecutionEnd: (_, _) =>
+        {
+            calls.Add("method");
+            return Task.CompletedTask;
+        });
         Assert.Equal(["constructor", "method"], calls);
     }
 
     [Fact]
     [UpstreamTest(
         Prefix + "should pass correct event information on success",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The test does not compare callId, which is generated per call in the port, nor toolExecutionMs."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task ShouldPassCorrectEventInformationOnSuccess()
     {
@@ -115,22 +102,20 @@ public sealed class OnToolExecutionEndGenerateTests
         var agent = new Agent(
             new AgentOptions
             {
-                Model = ToolLoopAgentToolCalls.GenerateModel(out _),
+                Model = ToolLoopAgentToolCalls.GenerateModel(out _, "{ \"value\": \"hello\" }"),
                 Tools = [ToolLoopAgentToolCalls.TestTool((value, _) => value + "-result")],
-                OnToolExecutionEnd = (ev, _) =>
-                {
-                    e = ev;
-                    return Task.CompletedTask;
-                },
+                GenerateCallId = () => "call-2",
+                NowMs = () => 0,
             },
             ToolLoopAgentInstructions.Client()
         );
-        await agent.GenerateAsync("test");
-        Assert.Equal("call-1", e!.ToolCall.ToolCallId);
-        Assert.Equal("testTool", e.ToolCall.ToolName);
-        Assert.Contains("test", e.ToolCall.ArgumentsJson);
-        Assert.Single(e.Messages);
-        Assert.Equal("call-1", e.ToolOutput.ToolCallId);
-        Assert.Equal("\"test-result\"", e.ToolOutput.OutputJson);
+        await agent.GenerateAsync("test", onToolExecutionEnd: (ev, _) =>
+        {
+            e = ev;
+            return Task.CompletedTask;
+        });
+        ToolLoopAgentToolCalls.AssertToolExecutionEvent(e!, "call-2", "hello");
+        ToolLoopAgentToolCalls.AssertToolOutput(e!.ToolOutput, "hello");
+        Assert.Equal(TimeSpan.Zero, e.ToolExecutionTime);
     }
 }

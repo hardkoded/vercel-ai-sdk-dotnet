@@ -83,6 +83,8 @@ var tools = await client.GenerateTextAsync(new GenerateTextOptions
 
 `AgentOptions.Timeout` takes the same configuration for every `Agent.GenerateAsync` and `Agent.Stream` call. `PrepareCall` can replace it. Maps to `timeout` of `ToolLoopAgentSettings`. `Agent.GenerateAsync` and `Agent.Stream` also take a `timeout` argument for one call. It replaces both `AgentOptions.Timeout` and the timeout that `PrepareCall` returns.
 
+`Agent.GenerateAsync`, `Agent.Stream`, `IAgent.Stream` and the `Agent<TCallOptions>` overloads take `onStepStart`, `onToolExecutionStart` and `onToolExecutionEnd` arguments for one call (maps to the `onStepStart`, `onToolExecutionStart` and `onToolExecutionEnd` parameters of `generate` and `stream`). Each runs after the matching `AgentOptions` callback, and after the one `PrepareCall` returns. They are not passed to `PrepareCall`.
+
 `AgentOptions.Headers` sets extra HTTP headers for every request. `Agent` appends `ai-sdk-agent/tool-loop` to the `user-agent` header, keeping a caller-provided value, so usage can be attributed to the agent. Maps to `agentHeaders` of `ToolLoopAgent`.
 
 When a limit passes, the `CancellationToken` of the model call and of every tool call is cancelled, and `LanguageModelCallOptions.AbortSignal` aborts with a `TimeoutError` reason. `GenerateTextAsync` throws that `TimeoutError`. The results of `StreamTextAsync` fault with it, as they do for any abort reason that is an exception. The model and the tools must observe the token to stop early. `AbortSignal` is `null` when the call has no timeout and no `StreamTextOptions.AbortSignal`.

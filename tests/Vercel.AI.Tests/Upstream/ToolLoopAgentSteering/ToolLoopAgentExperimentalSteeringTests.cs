@@ -268,7 +268,10 @@ public sealed class ToolLoopAgentExperimentalSteeringTests
             TimeoutConfiguration? timeout = null,
             ISteering? experimentalSteering = null,
             Func<StepResult, CancellationToken, Task>? onStepEnd = null,
-            Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox = null
+            Vercel.AI.ProviderUtils.ISandboxSession? experimentalSandbox = null,
+            Func<GenerateTextStepStartEvent, CancellationToken, Task>? onStepStart = null,
+            Func<ToolExecutionStartEvent, CancellationToken, Task>? onToolExecutionStart = null,
+            Func<ToolExecutionEndEvent, CancellationToken, Task>? onToolExecutionEnd = null
         )
         {
             StreamCalls++;
