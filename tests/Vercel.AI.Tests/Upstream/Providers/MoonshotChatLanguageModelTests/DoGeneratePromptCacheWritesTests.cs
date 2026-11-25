@@ -34,7 +34,10 @@ public sealed class DoGeneratePromptCacheWritesTests
     {
         var capture = Capture();
         var options = UpstreamChat.Prompt();
-        options.ProviderOptions = UpstreamChat.Bag("moonshotai", "{\"promptCacheOptions\":{\"ttl\":\"1h\"}}");
+        options.ProviderOptions = UpstreamChat.Bag(
+            "moonshotai",
+            "{\"promptCacheOptions\":{\"ttl\":\"1h\"}}"
+        );
 
         await Model(capture, "kimi-k3.1-pro").DoGenerateAsync(options, CancellationToken.None);
 
@@ -102,7 +105,9 @@ public sealed class DoGeneratePromptCacheWritesTests
         Assert.Equal(187, result.Usage.NoCacheInputTokens);
         Assert.Equal(1024, result.Usage.CacheReadTokens);
         Assert.Equal(21248, result.Usage.CacheWriteTokens);
-        var split = result.ProviderMetadata!.Value.GetProperty("moonshotai").GetProperty("cacheWriteTokens");
+        var split = result
+            .ProviderMetadata!.Value.GetProperty("moonshotai")
+            .GetProperty("cacheWriteTokens");
         Assert.Equal(0, split.GetProperty("ttl5m").GetInt32());
         Assert.Equal(21248, split.GetProperty("ttl1h").GetInt32());
     }
@@ -137,7 +142,9 @@ public sealed class DoGeneratePromptCacheWritesTests
         var finish = Assert.Single(parts.OfType<FinishStreamPart>());
         Assert.Equal(21248, finish.Usage.CacheWriteTokens);
         Assert.Equal(187, finish.Usage.NoCacheInputTokens);
-        var split = finish.ProviderMetadata!.Value.GetProperty("moonshotai").GetProperty("cacheWriteTokens");
+        var split = finish
+            .ProviderMetadata!.Value.GetProperty("moonshotai")
+            .GetProperty("cacheWriteTokens");
         Assert.Equal(0, split.GetProperty("ttl5m").GetInt32());
         Assert.Equal(21248, split.GetProperty("ttl1h").GetInt32());
     }
@@ -156,7 +163,9 @@ public sealed class DoGeneratePromptCacheWritesTests
             .DoGenerateAsync(UpstreamChat.Prompt(), CancellationToken.None);
 
         Assert.False(
-            result.ProviderMetadata!.Value.GetProperty("moonshotai").TryGetProperty("cacheWriteTokens", out _)
+            result
+                .ProviderMetadata!.Value.GetProperty("moonshotai")
+                .TryGetProperty("cacheWriteTokens", out _)
         );
     }
 
