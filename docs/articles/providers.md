@@ -2069,7 +2069,7 @@ The Google Batch API does not reliably enforce JSON schemas, so `GoogleBatchApi.
 
 `GatewayOptions`, `OpenAIOptions`, `AnthropicOptions`, and `GoogleOptions` each take an optional `BatchResultDownloads` setting. It configures the download of JSON Lines batch results. `provider.ExperimentalBatch()` returns the batch API whose `DoGetResultsAsync` reads them.
 
-A batch API can declare the model ids it accepts through `IBatchApi.ModelIds` (`BatchModelIds.Text` and `BatchModelIds.Image`, upstream `BatchV4<ModelIds>`). `Batch.StartBatchAsync` throws `InvalidArgumentException` for a request whose model is not in the list for its modality. A null list, which every built-in batch API returns, accepts any id.
+A batch API can declare the model ids it accepts through `IBatchApi.ModelIds` (`BatchModelIds.Text` and `BatchModelIds.Image`, upstream `BatchV4<ModelIds>`). `Batch.StartBatchAsync` throws `InvalidArgumentException` for a request whose model is not in the list for its modality. A null list, which every built-in batch API returns, accepts any id. Derive a class from `BatchModelIds` and implement `IBatchApi<TModelIds>` to expose a typed `ModelIds` (upstream `BatchV4<ModelIds>`). `NormalizedBatchRequest.ToTextCallOptions()` and `ToImageCallOptions()` give the typed view of `Options` that upstream types as a `Pick` of the language or image model call options. C# has no string-literal unions, so a wrong model id is still caught when the batch starts, not at compile time, and `Options` stays a `JsonElement`.
 
 - **BatchResultDownloads** _BatchResultDownloads_
 

@@ -298,6 +298,20 @@ public sealed class BatchTypesTests
         Assert.DoesNotContain("abortSignal", textKeys);
         Assert.DoesNotContain("headers", textKeys);
         Assert.True(imageKeys.IsSubsetOf(allowedImage));
+
+        // The typed views Pick the same call options.
+        var textOptions = text.ToTextCallOptions();
+        Assert.Equal(1, textOptions.MaxOutputTokens);
+        Assert.Equal(["x"], textOptions.StopSequences);
+        Assert.Equal("low", textOptions.Reasoning);
+        var imageOptions = image.ToImageCallOptions();
+        Assert.Equal("hello", imageOptions.Prompt);
+        Assert.Equal(1, imageOptions.Count);
+        Assert.Equal("1x1", imageOptions.Size);
+        Assert.Equal("1:1", imageOptions.AspectRatio);
+        Assert.Equal(1, imageOptions.Seed);
+        Assert.Throws<InvalidOperationException>(() => text.ToImageCallOptions());
+        Assert.Throws<InvalidOperationException>(() => image.ToTextCallOptions());
     }
 
     [Fact]
@@ -346,6 +360,12 @@ public sealed class BatchTypesTests
         Assert.Equal(
             typeof(BatchModelIds),
             typeof(IBatchApi).GetProperty("ModelIds")!.PropertyType
+        );
+        // BatchV4<TModelIds>: a typed batch API narrows ModelIds to its own type.
+        Assert.True(typeof(IBatchApi).IsAssignableFrom(typeof(IBatchApi<BatchModelIds>)));
+        Assert.Equal(
+            typeof(BatchModelIds),
+            typeof(IBatchApi<BatchModelIds>).GetProperty("ModelIds")!.PropertyType
         );
         Assert.Equal(
             typeof(IReadOnlyList<string>),
