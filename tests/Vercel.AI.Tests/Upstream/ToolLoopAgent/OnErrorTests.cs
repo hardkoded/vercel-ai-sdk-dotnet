@@ -286,4 +286,41 @@ public sealed class OnErrorTests
 
         Assert.Empty(errors);
     }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should keep the default stream error logging when no onError is set",
+        Coverage = UpstreamCoverage.Covered,
+        Note = "Console.Error stands in for console.error.",
+        Commit = Commit
+    )]
+    public async Task ShouldKeepTheDefaultStreamErrorLoggingWhenNoOnErrorIsSet()
+    {
+        var original = Console.Error;
+        using var captured = new StringWriter();
+        Console.SetError(captured);
+        try
+        {
+            var agent = new Agent(
+                new AgentOptions
+                {
+                    Model =
+                        new Vercel.AI.Tests.StreamText.StreamTextAbortSupport.ScriptedStreamModel(
+                            StartOnly
+                        ),
+                },
+                ToolLoopAgentInstructions.Client()
+            );
+
+            var result = agent.Stream("Hello, world!");
+            await foreach (var _ in result.Stream()) { }
+            await Assert.ThrowsAsync<NoOutputGeneratedException>(() => result.Text);
+
+            Assert.Contains(nameof(NoOutputGeneratedException), captured.ToString());
+        }
+        finally
+        {
+            Console.SetError(original);
+        }
+    }
 }
