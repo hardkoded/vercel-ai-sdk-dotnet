@@ -23,7 +23,7 @@ How to start an MCP stdio server. Mirrors the upstream `StdioConfig`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L428)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L694)
 
 ## Constructors
 
@@ -46,7 +46,7 @@ Creates options for &lt;code class="paramref"&gt;command&lt;/code&gt;.
 | --- | --- | --- |
 | `command` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L431)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L697)
 
 ## Properties
 
@@ -65,7 +65,7 @@ Command arguments.
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L440)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L706)
 
 <a id="Vercel_AI_Mcp_StdioMcpOptions_Command_"></a>
 <a id="Vercel_AI_Mcp_StdioMcpOptions_Command"></a>
@@ -82,7 +82,7 @@ Executable to start.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L437)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L703)
 
 <a id="Vercel_AI_Mcp_StdioMcpOptions_Environment_"></a>
 <a id="Vercel_AI_Mcp_StdioMcpOptions_Environment"></a>
@@ -99,7 +99,7 @@ Extra environment variables. The child gets these plus a small set of safe inher
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L443)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L709)
 
 <a id="Vercel_AI_Mcp_StdioMcpOptions_RedirectStandardError_"></a>
 <a id="Vercel_AI_Mcp_StdioMcpOptions_RedirectStandardError"></a>
@@ -116,7 +116,7 @@ True pipes stderr to [StandardError](/api/Vercel.AI.Mcp/StdioMcpTransport/#Verce
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L449)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L715)
 
 <a id="Vercel_AI_Mcp_StdioMcpOptions_Shell_"></a>
 <a id="Vercel_AI_Mcp_StdioMcpOptions_Shell"></a>
@@ -134,7 +134,7 @@ such as the Windows `npx` work. Arguments are joined with spaces and are not quo
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L455)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L721)
 
 <a id="Vercel_AI_Mcp_StdioMcpOptions_ShellPath_"></a>
 <a id="Vercel_AI_Mcp_StdioMcpOptions_ShellPath"></a>
@@ -151,7 +151,7 @@ The shell executable to use. Setting it implies [Shell](#Vercel_AI_Mcp_StdioMcpO
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L458)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L724)
 
 <a id="Vercel_AI_Mcp_StdioMcpOptions_WorkingDirectory_"></a>
 <a id="Vercel_AI_Mcp_StdioMcpOptions_WorkingDirectory"></a>
@@ -168,4 +168,4 @@ Working directory. Null uses the current directory.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L446)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L712)

@@ -408,6 +408,14 @@ A server that answers with `-32022` and lists only legacy versions in `data.supp
 
 `HttpMcpTransport.ProtocolVersion` (upstream's `protocolVersion`) is sent as the `mcp-protocol-version` header. It starts as `McpClient.LatestLegacyProtocolVersion`. The client sets it to `McpClient.LatestProtocolVersion` before `server/discover` and back to the legacy version before `initialize`. A transport whose `WaitsForProtocolVersionDiscovery` is `false` gets a 1000ms limit for discovery. When it expires, `ConnectAsync` falls back to `initialize`. A slow response from a transport that waits is awaited with no limit.
 
+## MCP client instance
+
+`McpClient.CreateAsync(transport, options)` maps `createMCPClient`. It initializes the connection and returns a client that keeps what the server announced: `ServerInfo` (`serverInfo`), `InitializeResult` (`initializeResult`) and `Instructions` (`instructions`). `ListToolsAsync()` on the instance lists the tools, and `McpClient.ConnectAsync(transport)` stays as a shortcut for `CreateAsync` followed by `ListToolsAsync`.
+
+After `server/discover` the client treats the server as modern. It adds `io.modelcontextprotocol/protocolVersion`, `io.modelcontextprotocol/clientCapabilities` and `io.modelcontextprotocol/clientInfo` to the `_meta` of every request, and throws an `MCPClientError` (`Modern MCP result is missing resultType`) when a result has no `resultType`. After `initialize` the client sets the negotiated protocol version on the transport and sends `notifications/initialized` through `IMcpNotificationTransport.NotifyAsync`. `StdioMcpTransport`, `HttpMcpTransport` and `SseMcpTransport` implement it. A transport that does not implement it gets no notification. `initialize` sends the client info `ai-sdk-mcp-client` `1.0.0`, like upstream's defaults.
+
+An `initialize` result must carry `protocolVersion`, `capabilities` and `serverInfo`, and the version must be one the client supports. Otherwise `CreateAsync` throws an `MCPClientError`.
+
 ## MCP tool output
 
 Tools from `McpClient` set `ToModelOutput`, which maps upstream's `mcpToModelOutput`. The output of an MCP tool is the JSON text of the call-tool result, and `ToModelOutput` converts it for the model:
