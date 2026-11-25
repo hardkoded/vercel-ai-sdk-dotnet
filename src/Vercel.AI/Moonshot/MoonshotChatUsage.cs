@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 
 namespace Vercel.AI.Moonshot;
@@ -18,6 +19,7 @@ internal static class MoonshotChatUsage
             return LanguageModelUsage.Null;
         }
 
+        Validate(element);
         var promptTokens = ReadNumber(element, "prompt_tokens") ?? 0;
         var completionTokens = ReadNumber(element, "completion_tokens") ?? 0;
         var details = Child(element, "prompt_tokens_details");
@@ -41,6 +43,60 @@ internal static class MoonshotChatUsage
             noCacheInputTokens: promptTokens - cacheReadTokens - (cacheWriteTokens ?? 0),
             textTokens: Math.Max(0, completionTokens - reasoningTokens)
         );
+    }
+
+    /// <summary>
+    /// Checks the known usage fields the way <c>tokenUsageSchema</c> does: numbers or null, nested objects or null.
+    /// Other fields pass through into <see cref="LanguageModelUsage.Raw"/>.
+    /// </summary>
+    private static void Validate(JsonElement usage)
+    {
+        ValidateNumbers(
+            usage,
+            "usage",
+            "prompt_tokens",
+            "completion_tokens",
+            "cached_tokens",
+            "total_tokens"
+        );
+        ValidateObject(usage, "prompt_tokens_details", "cached_tokens", "cache_write_tokens");
+        ValidateObject(usage, "completion_tokens_details", "reasoning_tokens");
+    }
+
+    private static void ValidateObject(JsonElement parent, string name, params string[] numbers)
+    {
+        if (!parent.TryGetProperty(name, out var child) || child.ValueKind == JsonValueKind.Null)
+        {
+            return;
+        }
+
+        if (child.ValueKind != JsonValueKind.Object)
+        {
+            throw new InvalidResponseDataException(
+                parent.GetRawText(),
+                "usage." + name + " must be an object."
+            );
+        }
+
+        ValidateNumbers(child, "usage." + name, numbers);
+    }
+
+    private static void ValidateNumbers(JsonElement parent, string path, params string[] names)
+    {
+        foreach (var name in names)
+        {
+            if (
+                parent.TryGetProperty(name, out var value)
+                && value.ValueKind != JsonValueKind.Null
+                && value.ValueKind != JsonValueKind.Number
+            )
+            {
+                throw new InvalidResponseDataException(
+                    parent.GetRawText(),
+                    path + "." + name + " must be a number."
+                );
+            }
+        }
     }
 
     private static JsonElement? Child(JsonElement parent, string name)
