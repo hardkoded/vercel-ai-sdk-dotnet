@@ -5,6 +5,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.ByteDance;
 
@@ -29,7 +30,13 @@ public sealed class ByteDanceProvider : OpenAICompatibleProvider
     /// <inheritdoc />
     public override ILanguageModel LanguageModel(string modelId)
     {
-        throw new AiSdkException("ByteDance does not provide language models.");
+        throw new NoSuchModelError(modelId, "languageModel");
+    }
+
+    /// <inheritdoc />
+    public override IEmbeddingModel EmbeddingModel(string modelId)
+    {
+        throw new NoSuchModelError(modelId, "embeddingModel");
     }
 
     /// <summary>Creates a provider.</summary>
