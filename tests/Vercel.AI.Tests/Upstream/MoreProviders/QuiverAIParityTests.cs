@@ -12,6 +12,7 @@ using Vercel.AI.Provider;
 using Vercel.AI.QuiverAI;
 using Vercel.AI.Tests.MoreProviders;
 using Vercel.AI.Tests.Upstream;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.Tests;
 
@@ -405,14 +406,14 @@ public sealed class QuiverAIParityTests
     [UpstreamTest(
         Provider + "creates language models and throws for unsupported embedding models",
         Coverage = UpstreamCoverage.Partial,
-        Note = "The factory throws AiSdkException. The port has no NoSuchModelError or textEmbeddingModel alias."
+        Note = "The port has no textEmbeddingModel alias."
     )]
     public void CreatesLanguageModelsAndThrowsForUnsupportedEmbeddingModels()
     {
         var provider = CreateProvider(Handler());
         Assert.Equal("arrow-2", provider.LanguageModel("arrow-2").ModelId);
         Assert.Equal("quiverai.responses", provider.LanguageModel("arrow-2-telos").Provider);
-        Assert.Throws<AiSdkException>(() => provider.EmbeddingModel("embed-model"));
+        Assert.Throws<NoSuchModelError>(() => provider.EmbeddingModel("embed-model"));
     }
 
     [Fact]
