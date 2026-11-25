@@ -343,7 +343,10 @@ public sealed class BatchTypesTests
         Assert.Equal(typeof(string), PropertyType<BatchStatus>("Status"));
 
         // BatchV4<{ text: 'model-a' | 'model-b'; image: 'image-model' }>: the batch API declares its model ids.
-        Assert.Equal(typeof(BatchModelIds), typeof(IBatchApi).GetProperty("ModelIds")!.PropertyType);
+        Assert.Equal(
+            typeof(BatchModelIds),
+            typeof(IBatchApi).GetProperty("ModelIds")!.PropertyType
+        );
         Assert.Equal(
             typeof(IReadOnlyList<string>),
             typeof(BatchModelIds).GetProperty("Text")!.PropertyType
@@ -391,7 +394,10 @@ public sealed class BatchTypesTests
                 new StartBatchOptions
                 {
                     Provider = provider,
-                    Requests = [new TextBatchRequest("request-1", "image-model") { Prompt = "hello" }],
+                    Requests =
+                    [
+                        new TextBatchRequest("request-1", "image-model") { Prompt = "hello" },
+                    ],
                 }
             )
         );
