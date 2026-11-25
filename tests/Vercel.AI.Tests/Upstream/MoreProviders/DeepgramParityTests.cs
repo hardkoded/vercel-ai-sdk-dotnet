@@ -427,6 +427,7 @@ public sealed class DeepgramParityTests
             result.ProviderMetadata,
             "{\"deepgram\":{\"modelName\":\"aura-2-helena-en\",\"modelUuid\":\"4fa750e6-8ade-4394-849f-c104ced3741e\",\"additionalModelUuids\":[\"0ec06c9b-0aa0-44d0-a001-3ec57d32229e\",\"2e5096c7-7bf1-435e-bbdd-f673f88d0ebd\"],\"charCount\":69,\"breaksApplied\":0,\"pronunciationsApplied\":2,\"pronunciationWarnings\":\"1 unknown word\",\"requestId\":\"01a00436-34a3-7cb0-b491-53339eed8eb1\"}}"
         );
+        Assert.Equal(69, result.Usage!.Characters);
     }
 
     [Fact]
@@ -442,6 +443,7 @@ public sealed class DeepgramParityTests
                 CancellationToken.None
             );
         Upstream.JsonAssert.Equal(result.ProviderMetadata, "{\"deepgram\":{}}");
+        Assert.Null(result.Usage);
     }
 
     [Fact]
