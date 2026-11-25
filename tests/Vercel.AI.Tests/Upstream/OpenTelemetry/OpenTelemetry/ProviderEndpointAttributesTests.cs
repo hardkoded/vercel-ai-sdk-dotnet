@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Vercel.AI.Gateway;
+using Vercel.AI.GenerateObject;
 using Vercel.AI.Provider;
 using Vercel.AI.Tests.Upstream.GenerateText;
 using OtelIntegration = Vercel.AI.OpenTelemetry.OpenTelemetry;
@@ -18,6 +19,14 @@ public sealed class ProviderEndpointAttributesTests
         "packages/otel/src/open-telemetry.test.ts::OpenTelemetry::provider endpoint attributes::";
     private const string Url =
         "https://user:password@model.example.test:8443/private?key=secret#fragment";
+
+    private const string ObjectSchema =
+        "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}},\"required\":[\"value\"]}";
+
+    private sealed class ObjectValue
+    {
+        public string Value { get; set; } = string.Empty;
+    }
 
     private static readonly LanguageModelUsage Usage = new(2, 1, 3);
 
@@ -56,11 +65,12 @@ public sealed class ProviderEndpointAttributesTests
     [Theory]
     [InlineData("generate")]
     [InlineData("stream")]
+    [InlineData("generateObject")]
+    [InlineData("streamObject")]
     [UpstreamTest(
         Test + "records the endpoint reported by a %s call without URL secrets",
-        Coverage = UpstreamCoverage.Partial,
-        Commit = UpstreamCommit,
-        Note = "Only the generate and stream modes run: the integration has no generateObject or streamObject callbacks yet."
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit
     )]
     public async Task Records_the_endpoint_reported_by_a_call_without_URL_secrets(string mode)
     {
@@ -91,6 +101,35 @@ public sealed class ProviderEndpointAttributesTests
                     }
                 );
         }
+        else if (mode == "generateObject")
+        {
+            await Client()
+                .GenerateObjectAsync(
+                    new GenerateObjectOptions<ObjectValue>
+                    {
+                        Model = Model(Url),
+                        Prompt = "hello",
+                        Schema = ObjectSchema,
+                        Telemetry = telemetry,
+                    }
+                );
+        }
+        else if (mode == "streamObject")
+        {
+            await foreach (
+                var _ in Client()
+                    .StreamObjectAsync(
+                        new StreamObjectOptions<ObjectValue>
+                        {
+                            Model = Model(Url),
+                            Prompt = "hello",
+                            Schema = ObjectSchema,
+                            Telemetry = telemetry,
+                        }
+                    )
+                    .PartialObjectStream()
+            ) { }
+        }
         else
         {
             var result = Client()
@@ -117,7 +156,10 @@ public sealed class ProviderEndpointAttributesTests
             "password|private|secret|fragment",
             string.Join(",", span.Attributes.Select(pair => pair.Key + "=" + pair.Value))
         );
-        Assert.Equal("https://model.example.test:8443", Assert.Single(ends).Request?.Url);
+        if (mode is "generate" or "stream")
+        {
+            Assert.Equal("https://model.example.test:8443", Assert.Single(ends).Request?.Url);
+        }
     }
 
     [Fact]
