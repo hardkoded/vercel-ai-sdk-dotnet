@@ -799,6 +799,12 @@ public interface IBatchApi
     /// <summary>Supported URL patterns (regular expression text) by media type for requests in this batch API.</summary>
     IReadOnlyDictionary<string, string> SupportedUrls { get; }
 
+    /// <summary>
+    /// Model IDs this batch API accepts for each modality. Maps to the <c>ModelIds</c> type argument of <c>BatchV4</c>.
+    /// Null leaves every modality open.
+    /// </summary>
+    BatchModelIds? ModelIds { get; }
+
     /// <summary>True when cancellation is implemented.</summary>
     bool CanCancel { get; }
 
@@ -834,6 +840,20 @@ public interface IBatchApi
 
     /// <summary>Lists batches. The implementation is invoked on this instance.</summary>
     Task<BatchListResult> DoListAsync(BatchOperationCall call, CancellationToken cancellationToken);
+}
+
+/// <summary>
+/// Model IDs accepted by each batch modality. Maps to <c>BatchV4ModelIds</c>. C# has no string-literal union types, so a
+/// batch API declares the closed set at runtime and <see cref="Batch.StartBatchAsync"/> checks every request against it.
+/// A null list leaves that modality open.
+/// </summary>
+public sealed class BatchModelIds
+{
+    /// <summary>Model IDs accepted by text requests. Null accepts any id.</summary>
+    public IReadOnlyList<string>? Text { get; set; }
+
+    /// <summary>Model IDs accepted by image requests. Null accepts any id.</summary>
+    public IReadOnlyList<string>? Image { get; set; }
 }
 
 /// <summary>Provider that exposes <c>experimental_batch()</c>.</summary>
@@ -1024,6 +1044,7 @@ public static class Batch
         var requests = request.Requests ?? Array.Empty<BatchRequest>();
         ValidateRequests(requests);
         var api = Resolve(request);
+        ValidateModelIds(api, requests);
         using var scope = Token(request, cancellationToken);
         var token = scope.Token;
         var normalized = new List<NormalizedBatchRequest>();
@@ -1105,6 +1126,38 @@ public static class Batch
         started.Version = 2;
         started.Provider = api.Provider;
         return started;
+    }
+
+    private static void ValidateModelIds(IBatchApi api, IReadOnlyList<BatchRequest> requests)
+    {
+        var ids = api.ModelIds;
+        if (ids == null)
+        {
+            return;
+        }
+
+        foreach (var item in requests)
+        {
+            var allowed = item.Type switch
+            {
+                "text" => ids.Text,
+                "image" => ids.Image,
+                _ => null,
+            };
+            if (allowed != null && !allowed.Contains(item.Model, StringComparer.Ordinal))
+            {
+                throw new InvalidArgumentException(
+                    "requests",
+                    item.Id,
+                    "model \""
+                        + item.Model
+                        + "\" is not a "
+                        + item.Type
+                        + " model of the batch API. Expected one of: "
+                        + string.Join(", ", allowed)
+                );
+            }
+        }
     }
 
     /// <summary>Reads the latest status.</summary>

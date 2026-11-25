@@ -84,3 +84,34 @@ public sealed class TelemetryTracingChannelMessage
     /// <summary>The error of the operation. Set on <c>error</c>.</summary>
     public Exception? Error { get; set; }
 }
+
+/// <summary>
+/// The event of a <c>step</c> span. Upstream publishes the object literal <c>{ callId, stepNumber }</c>, which needs a type here.
+/// </summary>
+public sealed class TracingChannelStepEvent
+{
+    /// <summary>Creates the event of a step span.</summary>
+    public TracingChannelStepEvent(string callId, int stepNumber)
+    {
+        CallId = callId;
+        StepNumber = stepNumber;
+    }
+
+    /// <summary>The id of the call that the step belongs to.</summary>
+    public string CallId { get; }
+
+    /// <summary>The number of the step, starting at zero.</summary>
+    public int StepNumber { get; }
+
+    /// <summary>Whether inputs are recorded. Null when the call does not say.</summary>
+    public bool? RecordInputs { get; init; }
+
+    /// <summary>Whether outputs are recorded. Null when the call does not say.</summary>
+    public bool? RecordOutputs { get; init; }
+
+    /// <summary>The function id of the telemetry settings.</summary>
+    public string? FunctionId { get; init; }
+
+    /// <summary>The version of the SDK.</summary>
+    public string? AiVersion { get; init; }
+}

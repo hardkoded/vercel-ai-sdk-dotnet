@@ -63,6 +63,10 @@ internal static class TracingChannelSupport
         {
             Vercel.AI.Operations.ExtractStartEvent extract => extract.CallId,
             Vercel.AI.Operations.DecideEvent decide => decide.CallId,
+            GenerateTextStartEvent text => text.CallId,
+            TracingChannelStepEvent step => step.CallId,
+            LanguageModelCallStartEvent modelCall => modelCall.CallId,
+            ToolExecutionStartEvent tool => tool.CallId,
             _ => null,
         };
     }

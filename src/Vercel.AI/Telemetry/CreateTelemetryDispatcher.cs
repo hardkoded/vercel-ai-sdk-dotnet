@@ -115,21 +115,23 @@ internal sealed class TelemetryDispatcher
         CancellationToken cancellationToken
     )
     {
-        if (ExecuteLanguageModelCallWrappers.Count == 0)
-        {
-            return execute();
-        }
-
-        var augmented = AugmentEvent(@event, Options);
         var wrapped = execute;
-        foreach (var wrapper in ExecuteLanguageModelCallWrappers)
+        if (ExecuteLanguageModelCallWrappers.Count > 0)
         {
-            var inner = wrapped;
-            var current = wrapper;
-            wrapped = () => RunRedactedAsync(current, augmented, inner, cancellationToken);
+            var augmented = AugmentEvent(@event, Options);
+            foreach (var wrapper in ExecuteLanguageModelCallWrappers)
+            {
+                var inner = wrapped;
+                var current = wrapper;
+                wrapped = () => RunRedactedAsync(current, augmented, inner, cancellationToken);
+            }
         }
 
-        return wrapped();
+        return RunInTracingChannelSpan(
+            TelemetryTracingEventType.LanguageModelCall,
+            @event,
+            wrapped
+        );
     }
 
     // Each integration sees the result and the error through their provider-owned telemetry views. The caller gets the originals back.
@@ -317,6 +319,30 @@ internal sealed class TelemetryDispatcher
             .ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Opens a tracing channel span whose completion is observed separately. Streamed operations use it, so that the span lives as long
+    /// as the stream. Maps to <c>startTracingChannelContext</c>. Null when tracing is off or nothing subscribes.
+    /// </summary>
+    internal TracingChannelContext? StartTracingChannelContext(
+        string type,
+        object @event,
+        Task<object?> completion
+    )
+    {
+        if (!IsTracingEnabled)
+        {
+            return null;
+        }
+
+        var recordResult =
+            TracingTelemetry?.RecordInputs != false && TracingTelemetry?.RecordOutputs != false;
+        return TracingChannelPublisher.OpenTelemetryChannelSpanContext(
+            new TelemetryTracingChannelMessage(type, AugmentTracingEvent(@event)),
+            completion,
+            recordResult
+        );
+    }
+
     /// <summary>The integrations a call resolves: the per-call ones, or the global ones. Maps to the lookup in <c>createTelemetryDispatcher</c>.</summary>
     internal static IReadOnlyList<ITelemetry> ResolveIntegrations(TelemetryOptions? telemetry)
     {
@@ -373,11 +399,18 @@ internal sealed class TelemetryDispatcher
                 .ToList(),
             IsTracingEnabled = true,
             TracingTelemetry = telemetry,
-            OnObjectStepStart = Merge(integrations.Select(i => i.OnObjectStepStart)),
-            OnObjectStepEnd = Merge(integrations.Select(i => i.OnObjectStepEnd)),
+            OnObjectStepStart = Filter<GenerateObjectStepStartEvent>(
+                Merge(integrations.Select(i => i.OnObjectStepStart)),
+                e => e.AugmentEvent(telemetry)
+            ),
+            OnObjectStepEnd = Filter<GenerateObjectStepEndEvent>(
+                Merge(integrations.Select(i => i.OnObjectStepEnd)),
+                e => e.AugmentEvent(telemetry)
+            ),
             OnEnd = Filter<IOperationEndEvent>(Merge(integrations.Select(i => i.OnEnd)), e =>
                 e switch
                 {
+                    IAugmentableEndEvent augmentable => augmentable.AugmentEvent(telemetry),
                     GenerateTextResult result => AugmentResult(result, telemetry),
                     EmbedEndEvent embed => FilterTelemetryEventHelper.FilterTelemetryEvent(
                         embed,
@@ -424,6 +457,7 @@ internal sealed class TelemetryDispatcher
                         .WithTelemetry(telemetry)
                     : e switch
                     {
+                        GenerateObjectStartEvent objectStart => objectStart.AugmentEvent(telemetry),
                         EmbedStartEvent embed => FilterTelemetryEventHelper.FilterTelemetryEvent(
                             embed,
                             telemetry
@@ -658,6 +692,38 @@ internal sealed class TelemetryDispatcher
                     ),
                     telemetry
                 );
+            case GenerateTextStartEvent textStart:
+                return textStart
+                    .WithContexts(
+                        FilterIncludedContextHelper.FilterIncludedContext(
+                            textStart.RuntimeContext,
+                            telemetry?.IncludeRuntimeContext
+                        ),
+                        FilterIncludedContextHelper.FilterToolsContext(
+                            textStart.ToolsContext,
+                            telemetry?.IncludeToolsContext
+                        )
+                    )
+                    .WithTelemetry(telemetry);
+            case LanguageModelCallStartEvent modelCall:
+                return AugmentEvent(modelCall, telemetry);
+            case ToolExecutionStartEvent toolExecution:
+                return FilterTelemetryEventHelper.FilterToolEvent(
+                    new ToolExecutionStartEvent(toolExecution.ToolCall, toolExecution.Messages)
+                    {
+                        CallId = toolExecution.CallId,
+                        ToolContext = FilterToolContext(toolExecution, telemetry),
+                    },
+                    telemetry
+                );
+            case TracingChannelStepEvent step:
+                return new TracingChannelStepEvent(step.CallId, step.StepNumber)
+                {
+                    RecordInputs = telemetry?.RecordInputs,
+                    RecordOutputs = telemetry?.RecordOutputs,
+                    FunctionId = telemetry?.FunctionId,
+                    AiVersion = Operations.AiSdkVersion.Version,
+                };
             default:
                 return value;
         }

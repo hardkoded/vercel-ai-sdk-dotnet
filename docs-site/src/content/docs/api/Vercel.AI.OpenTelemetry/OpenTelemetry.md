@@ -28,7 +28,7 @@ Telemetry integration that records GenAI spans on an [ActivitySource](https://le
 **Implements:** [ITelemetry](/api/Vercel.AI/ITelemetry/)
 
 Only the callbacks [ITelemetry](/api/Vercel.AI/ITelemetry/) has are ported: text generation (root, step, model call, and tool spans), embed,
-rerank, speech, transcription, decide, and extract. The object, durable, and inference duration parts of upstream need events
+rerank, speech, transcription, decide, and extract. The object and durable parts of upstream need events
 the port does not emit yet.
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/OpenTelemetry.cs#L23)
