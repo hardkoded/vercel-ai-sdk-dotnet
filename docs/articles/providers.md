@@ -2065,6 +2065,8 @@ The Google Batch API does not reliably enforce JSON schemas, so `GoogleBatchApi.
 
 `GatewayOptions`, `OpenAIOptions`, `AnthropicOptions`, and `GoogleOptions` each take an optional `BatchResultDownloads` setting. It configures the download of JSON Lines batch results. `provider.ExperimentalBatch()` returns the batch API whose `DoGetResultsAsync` reads them.
 
+A batch API can declare the model ids it accepts through `IBatchApi.ModelIds` (`BatchModelIds.Text` and `BatchModelIds.Image`, upstream `BatchV4<ModelIds>`). `Batch.StartBatchAsync` throws `InvalidArgumentException` for a request whose model is not in the list for its modality. A null list, which every built-in batch API returns, accepts any id.
+
 - **BatchResultDownloads** _BatchResultDownloads_
 
   Settings for downloading JSON Lines batch results. For Google, the setting applies to file-based results.
