@@ -2,11 +2,17 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using Vercel.AI.GenerateText;
 using Vercel.AI.Operations;
 using Vercel.AI.Prompt;
+using Vercel.AI.Provider;
+using Vercel.AI.Tests.StreamText;
+using Vercel.AI.Tests.Upstream.GenerateTextSteeringInterrupt;
 using Vercel.AI.Tests.Upstream.Operations.Decide;
+using Vercel.AI.Tests.Upstream.Steering;
 using Vercel.AI.Util;
 using static Vercel.AI.Tests.DecisionFixtures;
+using static Vercel.AI.Tests.Upstream.GenerateTextSteeringInterrupt.SteeringInterruptTestSupport;
 using static Vercel.AI.Tests.Upstream.Operations.Decide.DecideSupport;
 using static Vercel.AI.Tests.Upstream.Operations.Extract.ExtractSupport;
 using static Vercel.AI.Tests.Upstream.Telemetry.TracingChannel.TracingChannelSupport;
@@ -16,8 +22,8 @@ using ExtractOperation = Vercel.AI.Operations.Extract;
 namespace Vercel.AI.Tests.Upstream.Telemetry.TracingChannel;
 
 /// <summary>
-/// Port of the extract and decide tests of <c>tracing-channel.test.ts</c> &gt; <c>telemetry tracing channel publisher</c>.
-/// The other tests of the file need spans the port does not publish yet.
+/// Port of <c>tracing-channel.test.ts</c> &gt; <c>telemetry tracing channel publisher</c>. The tests that need the embed, embedMany or
+/// rerank spans (#1666), a store bound to the channel, or the OpenAI request redaction are not ported yet.
 /// </summary>
 public sealed class TelemetryTracingChannelPublisherTests
 {
@@ -329,5 +335,399 @@ public sealed class TelemetryTracingChannelPublisherTests
             new Dictionary<string, object?> { ["requestId"] = "request-1" },
             decide.RuntimeContext
         );
+    }
+
+    private static string[] ToolSequence() =>
+        [
+            "start generateText",
+            "start step",
+            "start languageModelCall",
+            "asyncEnd languageModelCall",
+            "start executeTool",
+            "asyncEnd executeTool",
+            "asyncEnd step",
+            "start step",
+            "start languageModelCall",
+            "asyncEnd languageModelCall",
+            "asyncEnd step",
+            "asyncEnd generateText",
+        ];
+
+    private static Tool WeatherTool() =>
+        Tool.Function("weather", "Get the weather", WeatherSchema, (_, _) =>
+            Task.FromResult("\"Weather in Paris: sunny\"")
+        );
+
+    [Fact]
+    [UpstreamTest(
+        "packages/ai/src/telemetry/tracing-channel.test.ts::telemetry tracing channel publisher::does not trace callback-only lifecycle events",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit
+    )]
+    public async Task Does_not_trace_callback_only_lifecycle_events()
+    {
+        var startEvent = new GenerateTextStartEvent { CallId = "tracing-channel-callback-only" };
+
+        var messages = await CollectStartMessages(startEvent.CallId, async () =>
+        {
+            var telemetry = TelemetryDispatcher.Create((TelemetryOptions?)null);
+
+            if (telemetry.OnStart is { } onStart)
+            {
+                await onStart(startEvent, CancellationToken.None);
+            }
+        });
+
+        Assert.Empty(messages);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/ai/src/telemetry/tracing-channel.test.ts::telemetry tracing channel publisher::does not trace semantic spans when telemetry is disabled",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit
+    )]
+    public async Task Does_not_trace_semantic_spans_when_telemetry_is_disabled()
+    {
+        var startEvent = new GenerateTextStartEvent { CallId = "tracing-channel-disabled" };
+
+        var messages = await CollectStartMessages(startEvent.CallId, async () =>
+        {
+            var telemetry = TelemetryDispatcher.Create(new TelemetryOptions { IsEnabled = false });
+
+            await telemetry.RunInTracingChannelSpan<object?>(
+                TelemetryTracingEventType.GenerateText,
+                startEvent,
+                () => Task.FromResult<object?>(null)
+            );
+        });
+
+        Assert.Empty(messages);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/ai/src/telemetry/tracing-channel.test.ts::telemetry tracing channel publisher::traces semantic spans with telemetry settings",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit,
+        Note = "The event is a GenerateTextStartEvent, because the port types its events. The SDK version is the real one, because the port does not mock it."
+    )]
+    public async Task Traces_semantic_spans_with_telemetry_settings()
+    {
+        var startEvent = new GenerateTextStartEvent { CallId = "tracing-channel-generate-text" };
+
+        var messages = await CollectStartMessages(startEvent.CallId, async () =>
+        {
+            var telemetry = TelemetryDispatcher.Create(
+                new TelemetryOptions { FunctionId = "enabled-function" }
+            );
+
+            await telemetry.RunInTracingChannelSpan<object?>(
+                TelemetryTracingEventType.GenerateText,
+                startEvent,
+                () => Task.FromResult<object?>(null)
+            );
+        });
+
+        var message = Assert.Single(messages);
+        Assert.Equal("generateText", message.Type);
+        var traced = Assert.IsType<GenerateTextStartEvent>(message.Event);
+        Assert.Equal(AiSdkVersion.Version, traced.AiVersion);
+        Assert.Equal("tracing-channel-generate-text", traced.CallId);
+        Assert.Equal("enabled-function", traced.FunctionId);
+        Assert.Null(traced.RecordInputs);
+        Assert.Null(traced.RecordOutputs);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/ai/src/telemetry/tracing-channel.test.ts::telemetry tracing channel publisher::traces the current generateText lifecycle sequence with a tool call",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit,
+        Note = "Node reports bindStart. The port reports start, because a DiagnosticListener has no bindStore."
+    )]
+    public async Task Traces_the_current_generateText_lifecycle_sequence_with_a_tool_call()
+    {
+        var responseCount = 0;
+        var model = new InterruptTestModel
+        {
+            Generate = (_, _) =>
+                Task.FromResult(
+                    responseCount++ switch
+                    {
+                        0 => ToolCallResponse(),
+                        1 => TextResponse("It is sunny."),
+                        _ => throw new InvalidOperationException(
+                            $"Unexpected response count: {responseCount}"
+                        ),
+                    }
+                ),
+        };
+
+        var sequence = await CollectEventSequence("tracing-channel-generate-text-tool", async () =>
+        {
+            await Client()
+                .GenerateTextAsync(
+                    new GenerateTextOptions
+                    {
+                        Model = model,
+                        Prompt = "What is the weather in San Francisco?",
+                        StopWhen = StopWhen.IsStepCount(3),
+                        Tools = [WeatherTool()],
+                        Telemetry = new TelemetryOptions
+                        {
+                            FunctionId = "tracing-channel-generate-text-test",
+                        },
+                        GenerateCallId = () => "tracing-channel-generate-text-tool",
+                    }
+                );
+        });
+
+        Assert.Equal(ToolSequence(), sequence);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/ai/src/telemetry/tracing-channel.test.ts::telemetry tracing channel publisher::traces the current streamText lifecycle sequence with a tool call",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit,
+        Note = "Node reports bindStart. The port reports start, because a DiagnosticListener has no bindStore."
+    )]
+    public async Task Traces_the_current_streamText_lifecycle_sequence_with_a_tool_call()
+    {
+        var responseCount = 0;
+        var model = new InterruptTestModel
+        {
+            Stream = (_, _) =>
+                Task.FromResult(
+                    responseCount++ switch
+                    {
+                        0 => ToResult([
+                            new StreamStartStreamPart([]),
+                            new ToolCallStreamPart(
+                                "weather-tool-call",
+                                "weather",
+                                "{\"city\":\"San Francisco\"}"
+                            ),
+                            new FinishStreamPart(FinishReason.ToolCalls, UsageOf(10), "tool_calls"),
+                        ]),
+                        1 => ToResult(TextStream("It is sunny.")),
+                        _ => throw new InvalidOperationException(
+                            $"Unexpected response count: {responseCount}"
+                        ),
+                    }
+                ),
+        };
+
+        var sequence = await CollectEventSequence("tracing-channel-stream-text-tool", async () =>
+        {
+            var result = Client()
+                .StreamTextAsync(
+                    new StreamTextOptions
+                    {
+                        Model = model,
+                        Prompt = "What is the weather in San Francisco?",
+                        StopWhen = StopWhen.IsStepCount(3),
+                        Tools = [WeatherTool()],
+                        Telemetry = new TelemetryOptions
+                        {
+                            FunctionId = "tracing-channel-stream-text-test",
+                        },
+                        GenerateCallId = () => "tracing-channel-stream-text-tool",
+                    }
+                );
+
+            await result.ConsumeStreamAsync();
+        });
+
+        Assert.Equal(
+            ToolSequence().Select(item => item.Replace("generateText", "streamText")),
+            sequence
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/ai/src/telemetry/tracing-channel.test.ts::telemetry tracing channel publisher::traces one step span when a steering interrupt redoes the generateText model call",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit,
+        Note = "Node reports bindStart. The port reports start, because a DiagnosticListener has no bindStore."
+    )]
+    public async Task Traces_one_step_span_when_a_steering_interrupt_redoes_the_generateText_model_call()
+    {
+        var steering = CreateSteering();
+        var model = InterruptTestModel.HangingFirstCall(
+            options =>
+            {
+                _ = steering.SteerAsync(
+                    "Use Paris, Texas instead.",
+                    new SteerOptions { Interrupt = true }
+                );
+            },
+            _ => TextResponse("It is sunny.")
+        );
+
+        var sequence = await CollectEventSequence(
+            "tracing-channel-generate-text-interrupt",
+            async () =>
+            {
+                await Client()
+                    .GenerateTextAsync(
+                        new GenerateTextOptions
+                        {
+                            Model = model,
+                            Prompt = PromptText,
+                            ExperimentalSteering = steering,
+                            Telemetry = new TelemetryOptions
+                            {
+                                FunctionId = "tracing-channel-generate-text-interrupt-test",
+                            },
+                            GenerateCallId = () => "tracing-channel-generate-text-interrupt",
+                        }
+                    );
+            }
+        );
+
+        Assert.Equal(2, model.DoGenerateCalls.Count);
+        Assert.Equal(
+            [
+                "start generateText",
+                "start step",
+                "start languageModelCall",
+                "asyncEnd languageModelCall",
+                "start languageModelCall",
+                "asyncEnd languageModelCall",
+                "asyncEnd step",
+                "asyncEnd generateText",
+            ],
+            sequence
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/ai/src/telemetry/tracing-channel.test.ts::telemetry tracing channel publisher::traces one step span when a steering interrupt redoes the streamText model call",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit,
+        Note = "Node reports bindStart. The port reports start, because a DiagnosticListener has no bindStore."
+    )]
+    public async Task Traces_one_step_span_when_a_steering_interrupt_redoes_the_streamText_model_call()
+    {
+        var steering = CreateSteering();
+        InterruptTestModel? model = null;
+        model = new InterruptTestModel
+        {
+            Stream = (options, token) =>
+            {
+                if (model!.DoStreamCalls.Count == 1)
+                {
+                    _ = Task.Run(async () =>
+                    {
+                        await Task.Delay(1);
+                        await steering.SteerAsync(
+                            "Use Paris, Texas instead.",
+                            new SteerOptions { Interrupt = true }
+                        );
+                    });
+                    return Task.FromResult(
+                        HangingStream(options, token, [new StreamStartStreamPart([])])
+                    );
+                }
+
+                return Task.FromResult(ToResult(TextStream("It is sunny.")));
+            },
+        };
+
+        var sequence = await CollectEventSequence(
+            "tracing-channel-stream-text-interrupt",
+            async () =>
+            {
+                var result = Client()
+                    .StreamTextAsync(
+                        new StreamTextOptions
+                        {
+                            Model = model,
+                            Prompt = PromptText,
+                            ExperimentalSteering = steering,
+                            Telemetry = new TelemetryOptions
+                            {
+                                FunctionId = "tracing-channel-stream-text-interrupt-test",
+                            },
+                            GenerateCallId = () => "tracing-channel-stream-text-interrupt",
+                        }
+                    );
+
+                await result.ConsumeStreamAsync();
+            }
+        );
+
+        Assert.Equal(2, model.DoStreamCalls.Count);
+        Assert.Equal(
+            [
+                "start streamText",
+                "start step",
+                "start languageModelCall",
+                "asyncEnd languageModelCall",
+                "start languageModelCall",
+                "asyncEnd languageModelCall",
+                "asyncEnd step",
+                "asyncEnd streamText",
+            ],
+            sequence
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/ai/src/telemetry/tracing-channel.test.ts::telemetry tracing channel publisher::preserves streamText abort behavior with a tracing-channel subscriber",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit
+    )]
+    public async Task Preserves_streamText_abort_behavior_with_a_tracing_channel_subscriber()
+    {
+        var abortController = new AbortController();
+        var onAbortEvents = new List<StreamAbortContext>();
+        var onErrorEvents = new List<Exception>();
+
+        async IAsyncEnumerable<LanguageModelStreamPart> Parts()
+        {
+            yield return new StreamStartStreamPart(null);
+            abortController.Abort(new JsError("The user aborted a request."));
+            await Task.CompletedTask;
+            throw new OperationCanceledException("The user aborted a request.");
+        }
+
+        await Collect(async () =>
+        {
+            var result = StreamTextAbortSupport
+                .Client()
+                .StreamTextAsync(
+                    new StreamTextOptions
+                    {
+                        AbortSignal = abortController.Signal,
+                        Model = new StreamTextAbortSupport.ScriptedStreamModel(Parts),
+                        Prompt = "test-input",
+                        OnAbort = (e, _) =>
+                        {
+                            onAbortEvents.Add(e);
+                            return Task.CompletedTask;
+                        },
+                        OnError = (e, _) =>
+                        {
+                            onErrorEvents.Add(e);
+                            return Task.CompletedTask;
+                        },
+                        Telemetry = new TelemetryOptions
+                        {
+                            FunctionId = "tracing-channel-stream-text-abort-test",
+                        },
+                    }
+                );
+
+            await result.ConsumeStreamAsync();
+        });
+
+        Assert.Single(onAbortEvents);
+        Assert.Empty(onErrorEvents);
     }
 }
