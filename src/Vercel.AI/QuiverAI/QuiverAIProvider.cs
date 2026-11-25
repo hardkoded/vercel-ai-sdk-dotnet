@@ -8,6 +8,7 @@ using Vercel.AI.OpenResponses;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.QuiverAI;
 
@@ -58,6 +59,12 @@ public sealed class QuiverAIProvider : OpenAICompatibleProvider
             ? new HttpClient()
             : new HttpClient(handler, disposeHandler: false);
         return new QuiverAIProvider(client, options);
+    }
+
+    /// <inheritdoc />
+    public override IEmbeddingModel EmbeddingModel(string modelId)
+    {
+        throw new NoSuchModelError(modelId, "embeddingModel");
     }
 
     /// <inheritdoc />
