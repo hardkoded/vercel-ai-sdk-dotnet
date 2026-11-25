@@ -91,13 +91,6 @@ public sealed class HttpMcpTransportTests
                 var method = message.RootElement.GetProperty("method").GetString()!;
                 methods.Add(method);
                 var id = message.RootElement.GetProperty("id").GetRawText();
-                if (method == "tools/list")
-                {
-                    return Json(
-                        "{\"jsonrpc\":\"2.0\",\"id\":" + id + ",\"result\":{\"tools\":[]}}"
-                    );
-                }
-
                 if (method != "server/discover")
                 {
                     return Json(
@@ -120,11 +113,11 @@ public sealed class HttpMcpTransportTests
             }
         );
 
-        await McpClient.ConnectAsync(
+        await McpClient.CreateAsync(
             new HttpMcpTransport(new HttpClient(handler), new Uri("http://localhost:4000/mcp"))
         );
 
-        Assert.Equal(["server/discover", "tools/list"], methods);
+        Assert.Equal(["server/discover"], methods);
     }
 
     [Fact]

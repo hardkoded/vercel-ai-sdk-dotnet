@@ -266,7 +266,19 @@ public sealed class GladiaProvider : OpenAICompatibleProvider
     /// <inheritdoc />
     public override ILanguageModel LanguageModel(string modelId)
     {
-        throw new AiSdkException("Gladia does not provide language models.");
+        throw new NoSuchModelError(modelId, "languageModel");
+    }
+
+    /// <inheritdoc />
+    public override IEmbeddingModel EmbeddingModel(string modelId)
+    {
+        throw new NoSuchModelError(modelId, "embeddingModel");
+    }
+
+    /// <inheritdoc />
+    public override IImageModel ImageModel(string modelId)
+    {
+        throw new NoSuchModelError(modelId, "imageModel");
     }
 
     /// <summary>Creates the pre-recorded transcription model.</summary>

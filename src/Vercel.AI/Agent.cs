@@ -593,8 +593,8 @@ public class AgentOptions
     public Func<GenerateTextStepErrorEvent, CancellationToken, Task>? OnStepError { get; set; }
 
     /// <summary>
-    /// Called when an error occurs. For <c>Agent.Stream</c> it receives the errors of the stream.
-    /// For <c>Agent.GenerateAsync</c> it receives the error before it is thrown.
+    /// Called when an error occurs. For <see cref="Agent.Stream(string, CancellationToken, AbortSignal?, TimeoutConfiguration?, ISteering?, ISandboxSession?, Func{GenerateTextStepStartEvent, CancellationToken, Task}?, Func{ToolExecutionStartEvent, CancellationToken, Task}?, Func{ToolExecutionEndEvent, CancellationToken, Task}?)"/> it receives the errors of the stream.
+    /// For <see cref="Agent.GenerateAsync(string, CancellationToken, TimeoutConfiguration?, ISteering?, ISandboxSession?, Func{GenerateTextStepStartEvent, CancellationToken, Task}?, Func{ToolExecutionStartEvent, CancellationToken, Task}?, Func{ToolExecutionEndEvent, CancellationToken, Task}?)"/> it receives the error before it is thrown.
     /// Aborts and timeouts are not reported. It can only be set here and not per call. Maps to <c>onError</c> of the <c>ToolLoopAgent</c> settings.
     /// </summary>
     public Func<Exception, CancellationToken, Task>? OnError { get; set; }
@@ -699,19 +699,19 @@ public class AgentOptions
     >? RefineToolInput { get; set; }
 
     /// <summary>
-    /// Timeout of each <c>Agent.GenerateAsync</c> and <c>Agent.Stream</c> call. See <see cref="GenerateTextOptions.Timeout"/>.
+    /// Timeout of each <see cref="Agent.GenerateAsync(string, CancellationToken, TimeoutConfiguration?, ISteering?, Vercel.AI.ProviderUtils.ISandboxSession?, Func{GenerateTextStepStartEvent, CancellationToken, Task}?, Func{ToolExecutionStartEvent, CancellationToken, Task}?, Func{ToolExecutionEndEvent, CancellationToken, Task}?)"/> and <see cref="Agent.Stream(string, CancellationToken, Vercel.AI.Util.AbortSignal?, TimeoutConfiguration?, ISteering?, Vercel.AI.ProviderUtils.ISandboxSession?, Func{GenerateTextStepStartEvent, CancellationToken, Task}?, Func{ToolExecutionStartEvent, CancellationToken, Task}?, Func{ToolExecutionEndEvent, CancellationToken, Task}?)"/> call. See <see cref="GenerateTextOptions.Timeout"/>.
     /// <see cref="PrepareCall"/> can replace it. Maps to <c>timeout</c> of <c>ToolLoopAgentSettings</c>.
     /// </summary>
     public TimeoutConfiguration? Timeout { get; set; }
 
     /// <summary>
-    /// Called before each <c>Agent.GenerateAsync</c> and <c>Agent.Stream</c> call with the options the agent would use,
+    /// Called before each <see cref="Agent.GenerateAsync(string, CancellationToken, TimeoutConfiguration?, ISteering?, Vercel.AI.ProviderUtils.ISandboxSession?, Func{GenerateTextStepStartEvent, CancellationToken, Task}?, Func{ToolExecutionStartEvent, CancellationToken, Task}?, Func{ToolExecutionEndEvent, CancellationToken, Task}?)"/> and <see cref="Agent.Stream(string, CancellationToken, Vercel.AI.Util.AbortSignal?, TimeoutConfiguration?, ISteering?, Vercel.AI.ProviderUtils.ISandboxSession?, Func{GenerateTextStepStartEvent, CancellationToken, Task}?, Func{ToolExecutionStartEvent, CancellationToken, Task}?, Func{ToolExecutionEndEvent, CancellationToken, Task}?)"/> call with the options the agent would use,
     /// including the default <see cref="GenerateTextOptions.StopWhen"/>. Return replacement options, or null to keep them.
     /// A returned options object that sets <see cref="GenerateTextOptions.StopWhen"/> replaces the default limit. Maps to <c>prepareCall</c>.
     /// </summary>
     public Func<GenerateTextOptions, GenerateTextOptions?>? PrepareCall { get; set; }
 
-    /// <summary>Called after <c>Agent.Stream</c> is aborted. See <see cref="StreamTextOptions.OnAbort"/>.</summary>
+    /// <summary>Called after <see cref="Agent.Stream(string, CancellationToken, Vercel.AI.Util.AbortSignal?, TimeoutConfiguration?, ISteering?, Vercel.AI.ProviderUtils.ISandboxSession?, Func{GenerateTextStepStartEvent, CancellationToken, Task}?, Func{ToolExecutionStartEvent, CancellationToken, Task}?, Func{ToolExecutionEndEvent, CancellationToken, Task}?)"/> is aborted. See <see cref="StreamTextOptions.OnAbort"/>.</summary>
     public Func<StreamAbortContext, CancellationToken, Task>? OnAbort { get; set; }
 }
 

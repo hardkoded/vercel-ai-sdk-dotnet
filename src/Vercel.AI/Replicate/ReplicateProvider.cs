@@ -7,6 +7,7 @@ using Vercel.AI.GenerateText;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.Replicate;
 
@@ -33,7 +34,13 @@ public sealed class ReplicateProvider : OpenAICompatibleProvider
     /// <inheritdoc />
     public override ILanguageModel LanguageModel(string modelId)
     {
-        throw new AiSdkException("Replicate does not provide language models.");
+        throw new NoSuchModelError(modelId, "languageModel");
+    }
+
+    /// <inheritdoc />
+    public override IEmbeddingModel EmbeddingModel(string modelId)
+    {
+        throw new NoSuchModelError(modelId, "embeddingModel");
     }
 
     /// <summary>Creates a provider.</summary>

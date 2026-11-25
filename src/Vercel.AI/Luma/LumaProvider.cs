@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.Luma;
 
@@ -30,7 +31,13 @@ public sealed class LumaProvider : OpenAICompatibleProvider
     /// <inheritdoc />
     public override ILanguageModel LanguageModel(string modelId)
     {
-        throw new AiSdkException("Luma does not provide language models.");
+        throw new NoSuchModelError(modelId, "languageModel");
+    }
+
+    /// <inheritdoc />
+    public override IEmbeddingModel EmbeddingModel(string modelId)
+    {
+        throw new NoSuchModelError(modelId, "embeddingModel");
     }
 
     /// <inheritdoc />
