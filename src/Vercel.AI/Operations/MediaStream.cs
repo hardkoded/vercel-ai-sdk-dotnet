@@ -489,8 +489,54 @@ public sealed class PartQueue<T>
     private readonly Queue<T> _items = new Queue<T>();
     private readonly Queue<TaskCompletionSource<bool>> _waiters =
         new Queue<TaskCompletionSource<bool>>();
+    private readonly Queue<TaskCompletionSource<bool>> _spaceWaiters =
+        new Queue<TaskCompletionSource<bool>>();
+    private readonly int _capacity;
     private Exception? _error;
     private bool _completed;
+
+    /// <summary>Creates a queue. A <paramref name="capacity"/> above zero bounds <see cref="EnqueueAsync"/>; zero is unbounded.</summary>
+    public PartQueue(int capacity = 0)
+    {
+        _capacity = capacity;
+    }
+
+    /// <summary>
+    /// Adds a part, waiting while a bounded queue is full so a slow consumer applies backpressure to the producer.
+    /// Returns when the part was added, or when the queue completed.
+    /// </summary>
+    public async Task EnqueueAsync(T item, CancellationToken cancellationToken)
+    {
+        while (true)
+        {
+            Task wait;
+            lock (_items)
+            {
+                if (_completed || _capacity <= 0 || _items.Count < _capacity)
+                {
+                    break;
+                }
+
+                var source = new TaskCompletionSource<bool>(
+                    TaskCreationOptions.RunContinuationsAsynchronously
+                );
+                _spaceWaiters.Enqueue(source);
+                wait = source.Task;
+            }
+
+            var aborted = new TaskCompletionSource<bool>();
+            using (cancellationToken.Register(() => aborted.TrySetResult(true)))
+            {
+                var finished = await Task.WhenAny(wait, aborted.Task).ConfigureAwait(false);
+                if (finished != wait)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                }
+            }
+        }
+
+        Enqueue(item);
+    }
 
     /// <summary>Adds a part.</summary>
     public void Enqueue(T item)
@@ -528,6 +574,10 @@ public sealed class PartQueue<T>
             _error = error;
             waiters = new List<TaskCompletionSource<bool>>(_waiters);
             _waiters.Clear();
+            while (_spaceWaiters.Count > 0)
+            {
+                waiters.Add(_spaceWaiters.Dequeue());
+            }
         }
 
         foreach (var waiter in waiters)
@@ -586,9 +636,18 @@ public sealed class PartQueue<T>
     /// <summary>Removes the next part. Call after <see cref="WaitAsync"/> returns true.</summary>
     public T Dequeue()
     {
+        TaskCompletionSource<bool>? space = null;
+        T item;
         lock (_items)
         {
-            return _items.Dequeue();
+            item = _items.Dequeue();
+            if (_spaceWaiters.Count > 0)
+            {
+                space = _spaceWaiters.Dequeue();
+            }
         }
+
+        space?.TrySetResult(true);
+        return item;
     }
 }
