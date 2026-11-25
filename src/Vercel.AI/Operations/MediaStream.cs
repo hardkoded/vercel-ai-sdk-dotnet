@@ -663,19 +663,21 @@ public sealed class PartQueue<T>
     /// <summary>Removes the next part. Call after <see cref="WaitAsync"/> returns true.</summary>
     public T Dequeue()
     {
-        TaskCompletionSource<bool>? space = null;
+        TaskCompletionSource<bool>[] space;
         T item;
         lock (_items)
         {
             item = _items.Dequeue();
-            if (_spaceWaiters.Count > 0)
-            {
-                space = _spaceWaiters[0];
-                _spaceWaiters.RemoveAt(0);
-            }
+            // Wake every blocked producer: one may have been cancelled but not yet removed, and each re-checks capacity.
+            space = _spaceWaiters.ToArray();
+            _spaceWaiters.Clear();
         }
 
-        space?.TrySetResult(true);
+        foreach (var waiter in space)
+        {
+            waiter.TrySetResult(true);
+        }
+
         return item;
     }
 }
