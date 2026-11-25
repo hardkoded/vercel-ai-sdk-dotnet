@@ -40,8 +40,7 @@ public sealed class OnStepStartStreamTests
     [Fact]
     [UpstreamTest(
         Prefix + "should call onStepStart from stream method",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The call-level callback is set through PrepareCall, because the agent methods take no per-call callbacks."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task ShouldCallOnStepStartFromStreamMethod()
     {
@@ -50,27 +49,26 @@ public sealed class OnStepStartStreamTests
             new AgentOptions
             {
                 Model = SteeringTestModel.Stream(() => SteeringTestSupport.TextStream("Hello")),
-                PrepareCall = call =>
-                {
-                    call.OnStepStart = (_, _) =>
-                    {
-                        calls.Add("method");
-                        return Task.CompletedTask;
-                    };
-                    return call;
-                },
             },
             ToolLoopAgentInstructions.Client()
         );
-        await ToolExecutionCallbackSupport.ConsumeAsync(agent.Stream("Hello, world!"));
+        await ToolExecutionCallbackSupport.ConsumeAsync(
+            agent.Stream(
+                "Hello, world!",
+                onStepStart: (_, _) =>
+            {
+                calls.Add("method");
+                return Task.CompletedTask;
+            }
+            )
+        );
         Assert.Equal(["method"], calls);
     }
 
     [Fact]
     [UpstreamTest(
         Prefix + "should call both constructor and method onStepStart in correct order",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The call-level callback is set through PrepareCall, because the agent methods take no per-call callbacks."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task ShouldCallBothConstructorAndMethodOnStepStartInCorrectOrder()
     {
@@ -84,19 +82,19 @@ public sealed class OnStepStartStreamTests
                     calls.Add("constructor");
                     return Task.CompletedTask;
                 },
-                PrepareCall = call =>
-                {
-                    call.OnStepStart = (_, _) =>
-                    {
-                        calls.Add("method");
-                        return Task.CompletedTask;
-                    };
-                    return call;
-                },
             },
             ToolLoopAgentInstructions.Client()
         );
-        await ToolExecutionCallbackSupport.ConsumeAsync(agent.Stream("Hello, world!"));
+        await ToolExecutionCallbackSupport.ConsumeAsync(
+            agent.Stream(
+                "Hello, world!",
+                onStepStart: (_, _) =>
+            {
+                calls.Add("method");
+                return Task.CompletedTask;
+            }
+            )
+        );
         Assert.Equal(["constructor", "method"], calls);
     }
 
