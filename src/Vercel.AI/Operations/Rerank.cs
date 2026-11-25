@@ -618,105 +618,123 @@ public static class Rerank
             request.Headers,
             request.ProviderOptions
         );
-        await NotifyStartAsync(start, onStart, telemetryDispatcher, token).ConfigureAwait(false);
-        try
-        {
-            var outcome = await OperationRetry
-                .ExecuteAsync(
-                    maxRetries,
-                    token,
-                    request.AbortReason,
-                    async ct =>
-                    {
-                        await telemetryDispatcher
-                            .OnRerankStartAsync(
-                                new RerankingModelCallStartEvent(
-                                    callId,
-                                    "ai.rerank.doRerank",
-                                    model.Provider,
-                                    model.ModelId,
-                                    documents,
-                                    sent.Type,
-                                    request.Query,
-                                    request.TopN
-                                ),
-                                ct
-                            )
-                            .ConfigureAwait(false);
-
-                        var response = await model
-                            .DoRerankAsync(
-                                new RerankModelCall(
-                                    sent,
-                                    request.Query,
-                                    request.TopN,
-                                    request.ProviderOptions,
-                                    request.Headers,
-                                    ct
-                                ),
-                                ct
-                            )
-                            .ConfigureAwait(false);
-                        await telemetryDispatcher
-                            .OnRerankEndAsync(
-                                new RerankingModelCallEndEvent(
-                                    callId,
-                                    "ai.rerank.doRerank",
-                                    model.Provider,
-                                    model.ModelId,
-                                    sent.Type,
-                                    response.Ranking
-                                ),
-                                ct
-                            )
-                            .ConfigureAwait(false);
-
-                        return response;
-                    },
-                    null
-                )
-                .ConfigureAwait(false);
-            Validate(outcome.Ranking, documents);
-            WarningLog.Write(outcome.Warnings, model.Provider, model.ModelId);
-            var ranking = new List<RankedDocument>();
-            foreach (var rank in outcome.Ranking)
+        return await telemetryDispatcher
+            .RunInTracingChannelSpan(TelemetryTracingEventType.Rerank, start, async () =>
             {
-                ranking.Add(
-                    new RankedDocument(rank.Index, rank.RelevanceScore, documents[rank.Index])
-                );
-            }
+                await NotifyStartAsync(start, onStart, telemetryDispatcher, token)
+                    .ConfigureAwait(false);
+                try
+                {
+                    var outcome = await OperationRetry
+                        .ExecuteAsync(
+                            maxRetries,
+                            token,
+                            request.AbortReason,
+                            async ct =>
+                            {
+                                await telemetryDispatcher
+                                    .OnRerankStartAsync(
+                                        new RerankingModelCallStartEvent(
+                                            callId,
+                                            "ai.rerank.doRerank",
+                                            model.Provider,
+                                            model.ModelId,
+                                            documents,
+                                            sent.Type,
+                                            request.Query,
+                                            request.TopN
+                                        ),
+                                        ct
+                                    )
+                                    .ConfigureAwait(false);
 
-            var providerResponse = outcome.Response;
-            var responseInfo = new RerankResponseInfo(
-                providerResponse?.Id,
-                providerResponse?.Timestamp ?? now(),
-                providerResponse?.ModelId ?? model.ModelId,
-                providerResponse?.Headers,
-                providerResponse?.Body
-            );
-            var callbackRanking = new List<RankedDocument>(ranking);
-            var end = new RerankEndEvent(
-                callId,
-                "ai.rerank",
-                context,
-                model.Provider,
-                model.ModelId,
-                documents,
-                request.Query,
-                callbackRanking,
-                outcome.Warnings,
-                outcome.ProviderMetadata,
-                responseInfo
-            );
-            await NotifyEndAsync(end, onEnd, telemetryDispatcher, token).ConfigureAwait(false);
-            return new RerankResult(documents, ranking, outcome.ProviderMetadata, responseInfo);
-        }
-        catch (Exception error)
-        {
-            await telemetryDispatcher.OnErrorAsync(callId, error, token).ConfigureAwait(false);
+                                var response = await model
+                                    .DoRerankAsync(
+                                        new RerankModelCall(
+                                            sent,
+                                            request.Query,
+                                            request.TopN,
+                                            request.ProviderOptions,
+                                            request.Headers,
+                                            ct
+                                        ),
+                                        ct
+                                    )
+                                    .ConfigureAwait(false);
+                                await telemetryDispatcher
+                                    .OnRerankEndAsync(
+                                        new RerankingModelCallEndEvent(
+                                            callId,
+                                            "ai.rerank.doRerank",
+                                            model.Provider,
+                                            model.ModelId,
+                                            sent.Type,
+                                            response.Ranking
+                                        ),
+                                        ct
+                                    )
+                                    .ConfigureAwait(false);
 
-            throw;
-        }
+                                return response;
+                            },
+                            null
+                        )
+                        .ConfigureAwait(false);
+                    Validate(outcome.Ranking, documents);
+                    WarningLog.Write(outcome.Warnings, model.Provider, model.ModelId);
+                    var ranking = new List<RankedDocument>();
+                    foreach (var rank in outcome.Ranking)
+                    {
+                        ranking.Add(
+                            new RankedDocument(
+                                rank.Index,
+                                rank.RelevanceScore,
+                                documents[rank.Index]
+                            )
+                        );
+                    }
+
+                    var providerResponse = outcome.Response;
+                    var responseInfo = new RerankResponseInfo(
+                        providerResponse?.Id,
+                        providerResponse?.Timestamp ?? now(),
+                        providerResponse?.ModelId ?? model.ModelId,
+                        providerResponse?.Headers,
+                        providerResponse?.Body
+                    );
+                    var callbackRanking = new List<RankedDocument>(ranking);
+                    var end = new RerankEndEvent(
+                        callId,
+                        "ai.rerank",
+                        context,
+                        model.Provider,
+                        model.ModelId,
+                        documents,
+                        request.Query,
+                        callbackRanking,
+                        outcome.Warnings,
+                        outcome.ProviderMetadata,
+                        responseInfo
+                    );
+                    await NotifyEndAsync(end, onEnd, telemetryDispatcher, token)
+                        .ConfigureAwait(false);
+                    return new RerankResult(
+                        documents,
+                        ranking,
+                        outcome.ProviderMetadata,
+                        responseInfo
+                    );
+                }
+                catch (Exception error)
+                {
+                    await telemetryDispatcher
+                        .OnErrorAsync(callId, error, token)
+                        .ConfigureAwait(false);
+
+                    throw;
+                }
+            })
+            .ConfigureAwait(false);
     }
 
     private static void Validate(

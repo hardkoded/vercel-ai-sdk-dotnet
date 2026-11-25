@@ -203,6 +203,10 @@ internal static class FilterTelemetryEventHelper
                     {
                         CallId = source.CallId,
                         ToolContext = source.ToolContext,
+                        RecordInputs = source.RecordInputs,
+                        RecordOutputs = source.RecordOutputs,
+                        FunctionId = source.FunctionId,
+                        AiVersion = source.AiVersion,
                     };
         }
 
@@ -230,6 +234,10 @@ internal static class FilterTelemetryEventHelper
                 {
                     CallId = end.CallId,
                     ToolContext = end.ToolContext,
+                    RecordInputs = end.RecordInputs,
+                    RecordOutputs = end.RecordOutputs,
+                    FunctionId = end.FunctionId,
+                    AiVersion = end.AiVersion,
                 };
     }
 
