@@ -114,10 +114,6 @@ public sealed class OnToolExecutionStartGenerateTests
             e = ev;
             return Task.CompletedTask;
         });
-        Assert.Equal("call-0", e!.CallId);
-        Assert.Equal("call-1", e.ToolCall.ToolCallId);
-        Assert.Equal("testTool", e.ToolCall.ToolName);
-        Assert.Contains("test", e.ToolCall.ArgumentsJson);
-        Assert.Single(e.Messages);
+        ToolLoopAgentToolCalls.AssertToolExecutionEvent(e!, "call-0", "test");
     }
 }

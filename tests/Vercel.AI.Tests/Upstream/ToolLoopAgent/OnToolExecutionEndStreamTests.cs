@@ -106,7 +106,7 @@ public sealed class OnToolExecutionEndStreamTests
         var agent = new Agent(
             new AgentOptions
             {
-                Model = ToolLoopAgentToolCalls.StreamModel(out _),
+                Model = ToolLoopAgentToolCalls.StreamModel(out _, "{ \"value\": \"hello\" }"),
                 Tools = [ToolLoopAgentToolCalls.TestTool((value, _) => value + "-result")],
                 GenerateCallId = () => "call-3",
                 NowMs = () => 0,
@@ -120,13 +120,8 @@ public sealed class OnToolExecutionEndStreamTests
                 return Task.CompletedTask;
             })
         );
-        Assert.Equal("call-3", e!.CallId);
-        Assert.Equal("call-1", e.ToolCall.ToolCallId);
-        Assert.Equal("testTool", e.ToolCall.ToolName);
-        Assert.Contains("test", e.ToolCall.ArgumentsJson);
-        Assert.Single(e.Messages);
-        Assert.Equal("call-1", e.ToolOutput.ToolCallId);
-        Assert.Equal("\"test-result\"", e.ToolOutput.OutputJson);
+        ToolLoopAgentToolCalls.AssertToolExecutionEvent(e!, "call-3", "hello");
+        ToolLoopAgentToolCalls.AssertToolOutput(e!.ToolOutput, "hello");
         Assert.Equal(TimeSpan.Zero, e.ToolExecutionTime);
     }
 }
