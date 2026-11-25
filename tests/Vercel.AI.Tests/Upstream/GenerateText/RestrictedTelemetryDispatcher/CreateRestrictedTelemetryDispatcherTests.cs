@@ -298,7 +298,8 @@ public sealed class CreateRestrictedTelemetryDispatcherTests
 
     [Fact]
     [UpstreamTest(
-        Id + "filters runtimeContext and toolsContext for step error events and keeps the error"
+        Id + "filters runtimeContext and toolsContext for step error events and keeps the error",
+        Commit = "cd1c98ed42c3eb3463f6f69eab45a269f6dff1ac"
     )]
     public async Task Filters_runtimeContext_and_toolsContext_for_step_error_events_and_keeps_the_error()
     {
