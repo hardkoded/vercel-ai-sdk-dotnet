@@ -425,7 +425,7 @@ The `redirect` option and OAuth (`authProvider`) are not ported ([#585](https://
 
 A server that answers with `-32022` and lists only legacy versions in `data.supported` makes `ConnectAsync` throw an `MCPClientError` that explains the mismatch. It does not fall back to `initialize`. The error keeps `Code`, `Data`, `StatusCode` and `Url`, and its `InnerException` is the original error. A network error during discovery is rethrown too, with no fallback.
 
-`HttpMcpTransport.ProtocolVersion` (upstream's `protocolVersion`) is sent as the `mcp-protocol-version` header. It starts as `McpClient.LatestLegacyProtocolVersion`. The client sets it to `McpClient.LatestProtocolVersion` before `server/discover` and back to the legacy version before `initialize`. A transport whose `WaitsForProtocolVersionDiscovery` is `false` gets a 1000ms limit for discovery. When it expires, `ConnectAsync` falls back to `initialize`. A slow response from a transport that waits is awaited with no limit.
+`IMcpProtocolVersionDiscoveryTransport.ProtocolVersion` (upstream's `protocolVersion`) is get-only, and the client writes the negotiated version through `SetProtocolVersion` (upstream's `setProtocolVersion`), so a transport can keep it in its own state. `HttpMcpTransport.ProtocolVersion` is sent as the `mcp-protocol-version` header. It starts as `McpClient.LatestLegacyProtocolVersion`. The client sets it to `McpClient.LatestProtocolVersion` before `server/discover` and back to the legacy version before `initialize`. A transport whose `WaitsForProtocolVersionDiscovery` is `false` gets a 1000ms limit for discovery. When it expires, `ConnectAsync` falls back to `initialize`. A slow response from a transport that waits is awaited with no limit.
 
 ## MCP client instance
 
