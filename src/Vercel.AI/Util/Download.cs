@@ -718,9 +718,20 @@ public static class Download
     )
     {
         // The default fetch uses the runtime transport. It does not validate resolved DNS addresses or pin connections. An
-        // application that downloads untrusted URLs passes a DNS-validating fetch (the equivalent of guarded-fetch) instead.
+        // application that downloads untrusted URLs passes a DNS-validating fetch (see GuardedFetch) instead.
         using (var handler = new HttpClientHandler { AllowAutoRedirect = false })
         using (var client = new HttpClient(handler))
+        {
+            return await SendAsync(client, url, request).ConfigureAwait(false);
+        }
+    }
+
+    internal static async Task<DownloadResponse> SendAsync(
+        HttpClient client,
+        string url,
+        DownloadRequest request
+    )
+    {
         using (var message = new HttpRequestMessage(new HttpMethod(request.Method), url))
         {
             if (request.Body != null)
