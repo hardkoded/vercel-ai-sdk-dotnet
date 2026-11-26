@@ -167,7 +167,7 @@ public sealed class AiClient : IAiClient
         return (GenerateTextResult<string>)result;
     }
 
-    private static JsonElement? ParseSchema(string schema)
+    private static JsonElement? ParseSchema(string? schema)
     {
         if (string.IsNullOrEmpty(schema))
         {
@@ -199,6 +199,14 @@ public sealed class AiClient : IAiClient
                     ),
                 }
             )
+        );
+
+        GenerateObject.StreamObject.ValidateObjectGenerationInput(
+            options.Output,
+            options.Schema,
+            options.SchemaName,
+            options.SchemaDescription,
+            options.EnumValues
         );
 
         var model = ResolveLanguage(options.Model, options.ModelId);
@@ -235,7 +243,13 @@ public sealed class AiClient : IAiClient
                     ),
                     Headers = Generation.WithUserAgentHeader(options.Headers),
                     ProviderOptions = options.ProviderOptions,
-                    Output = "object",
+                    Output = options.Output switch
+                    {
+                        StreamObjectOutput.Array => "array",
+                        StreamObjectOutput.Enum => "enum",
+                        StreamObjectOutput.NoSchema => "no-schema",
+                        _ => "object",
+                    },
                     Schema = ParseSchema(options.Schema),
                     SchemaName = options.SchemaName,
                     SchemaDescription = options.SchemaDescription,
@@ -263,11 +277,21 @@ public sealed class AiClient : IAiClient
                 Instructions = options.Instructions,
                 Prompt = options.Prompt,
                 Messages = options.Messages,
-                Output = OutputSpec.Object(
-                    options.Schema,
-                    options.SchemaName,
-                    options.SchemaDescription
-                ),
+                Output = options.Output switch
+                {
+                    StreamObjectOutput.Array => OutputSpec.Array(
+                        options.Schema!,
+                        name: options.SchemaName,
+                        description: options.SchemaDescription
+                    ),
+                    StreamObjectOutput.Enum => OutputSpec.Choice(options.EnumValues!),
+                    StreamObjectOutput.NoSchema => OutputSpec.Json(),
+                    _ => OutputSpec.Object(
+                        options.Schema!,
+                        options.SchemaName,
+                        options.SchemaDescription
+                    ),
+                },
                 MaxOutputTokens = options.MaxOutputTokens,
                 Temperature = options.Temperature,
                 TopP = options.TopP,
@@ -281,7 +305,7 @@ public sealed class AiClient : IAiClient
                 Headers = options.Headers,
                 ProviderOptions = options.ProviderOptions,
                 // generateObject always returns the response body.
-                Include = new GenerateTextInclude { ResponseBody = true },
+                Include = new GenerateTextInclude { RequestBody = true, ResponseBody = true },
                 RepairOutput = (options.RepairText ?? options.ExperimentalRepairText)
                     is { } repairText
                     ? (text, error, token) =>
@@ -387,7 +411,7 @@ public sealed class AiClient : IAiClient
                 );
             }
 
-            var result = new GenerateObjectResult<T>(value, generated);
+            var result = new GenerateObjectResult<T>(value, generated, generated.Output!.Value);
             var endEvent = new GenerateObjectEndEvent<T>(
                 callId,
                 model.Provider,
