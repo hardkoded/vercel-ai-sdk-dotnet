@@ -2,12 +2,14 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
 using Vercel.AI.Gateway;
 using Vercel.AI.GenerateText;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 using Vercel.AI.Testing;
 using Vercel.AI.Tests.Upstream.GenerateText;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.Tests.Upstream.ToolLoopAgent;
 
@@ -192,5 +194,83 @@ public sealed class StreamTests
             new[] { "middle", "alpha", "zebra" },
             model.Calls[0].Tools!.Select(tool => tool.Name)
         );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/ai/src/agent/tool-loop-agent.test.ts::ToolLoopAgent > stream::should use prepareCall",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task ShouldUsePrepareCall()
+    {
+        var model = new TestLanguageModel();
+        var agent = new Agent<PrepareCallOptions>(
+            new AgentOptions<PrepareCallOptions>
+            {
+                Model = model,
+                PrepareCall = (call, options) =>
+                {
+                    call.ProviderOptions = ToolLoopAgentInstructions.Options(options.Value);
+                    return call;
+                },
+            },
+            ToolLoopAgentInstructions.Client()
+        );
+
+        var result = agent.Stream("Hello, world!", new PrepareCallOptions { Value = "test" });
+        await ToolExecutionCallbackSupport.ConsumeAsync(result);
+
+        var options = Assert.IsAssignableFrom<IReadOnlyDictionary<string, JsonElement>>(
+            Assert.Single(model.Calls).ProviderOptions
+        );
+        Assert.Equal("test", options["test"].GetProperty("value").GetString());
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/ai/src/agent/tool-loop-agent.test.ts::ToolLoopAgent > stream::should pass abortSignal to streamText",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task ShouldPassAbortSignalToStreamText()
+    {
+        var abortController = new AbortController();
+        var model = new TestLanguageModel();
+        var agent = new Agent(
+            new AgentOptions { Model = model },
+            ToolLoopAgentInstructions.Client()
+        );
+
+        var result = agent.Stream("Hello, world!", abortSignal: abortController.Signal);
+        await ToolExecutionCallbackSupport.ConsumeAsync(result);
+
+        Assert.Same(abortController.Signal, Assert.Single(model.Calls).AbortSignal);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/ai/src/agent/tool-loop-agent.test.ts::ToolLoopAgent > stream::should forward include to streamText",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task ShouldForwardIncludeToStreamText()
+    {
+        var model = new TestLanguageModel();
+        var agent = new Agent(
+            new AgentOptions
+            {
+                Model = model,
+                Include = new AgentInclude { RawChunks = true },
+            },
+            ToolLoopAgentInstructions.Client()
+        );
+
+        var result = agent.Stream("Hello, world!");
+        await ToolExecutionCallbackSupport.ConsumeAsync(result);
+
+        Assert.True(Assert.Single(model.Calls).IncludeRawChunks);
+    }
+
+    private sealed class PrepareCallOptions
+    {
+        public string Value { get; set; } = "";
     }
 }
