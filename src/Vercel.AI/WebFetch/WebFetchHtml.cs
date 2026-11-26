@@ -24,6 +24,12 @@ public sealed class WebFetchDefuddleOptions
 
     /// <summary>Remove elements that are hidden from view. Defaults to <c>true</c>.</summary>
     public bool RemoveHiddenElements { get; set; } = true;
+
+    /// <summary>Remove elements that match the exact clutter selectors (ads, social widgets, ...). Defaults to <c>true</c>.</summary>
+    public bool RemoveExactSelectors { get; set; } = true;
+
+    /// <summary>Remove elements whose class, id or test attributes contain a clutter pattern. Defaults to <c>true</c>.</summary>
+    public bool RemovePartialSelectors { get; set; } = true;
 }
 
 internal static class WebFetchHtml
@@ -297,6 +303,17 @@ internal static class WebFetchHtml
         if (!string.IsNullOrEmpty(options.ContentSelector))
         {
             main = document.QuerySelector(options.ContentSelector!);
+        }
+
+        if (options.RemoveExactSelectors || options.RemovePartialSelectors)
+        {
+            DefuddleSelectors.RemoveBySelector(
+                document,
+                options.RemoveExactSelectors,
+                options.RemovePartialSelectors,
+                main,
+                !options.RemoveHiddenElements
+            );
         }
 
         if (main == null)

@@ -360,7 +360,7 @@ Requests prefer markdown using the `Accept: text/markdown` header, which many do
 
 JavaScript is not executed. Pages that render their content in the browser may return little or no content, in which case the model is told that the page may require JavaScript.
 
-The port converts HTML with [AngleSharp](https://anglesharp.github.io/) and a built-in extractor instead of [defuddle](https://github.com/kepano/defuddle). The extractor sometimes selects the wrong part of a page. If you fetch pages with a known structure, set `DefuddleOptions.ContentSelector` to choose the main content element. `WebFetchDefuddleOptions` also has `RemoveImages` and `RemoveHiddenElements`; the other defuddle options are not ported ([#756](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/756)).
+The port converts HTML with [AngleSharp](https://anglesharp.github.io/) and a built-in extractor instead of [defuddle](https://github.com/kepano/defuddle). The extractor sometimes selects the wrong part of a page. If you fetch pages with a known structure, set `DefuddleOptions.ContentSelector` to choose the main content element. `WebFetchDefuddleOptions` also has `RemoveImages`, `RemoveHiddenElements`, `RemoveExactSelectors` and `RemovePartialSelectors`. The last two use defuddle's lists of ad, social and navigation clutter selectors. The other defuddle options are not ported ([#756](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/756)).
 
 ```csharp
 var webFetch = WebFetchTools.Create(new WebFetchToolOptions
