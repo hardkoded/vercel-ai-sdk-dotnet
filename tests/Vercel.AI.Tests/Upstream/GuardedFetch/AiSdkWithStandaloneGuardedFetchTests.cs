@@ -11,7 +11,7 @@ using Vercel.AI.Util;
 namespace Vercel.AI.Tests.Upstream.GuardedFetch;
 
 /// <summary>Port of <c>guarded-fetch.test.ts</c> &gt; <c>AI SDK with standalone guarded-fetch</c>.</summary>
-public sealed class GuardedFetchTests
+public sealed class AiSdkWithStandaloneGuardedFetchTests
 {
     private const string Prefix =
         "examples/ai-functions/src/reproduction/guarded-fetch.test.ts::AI SDK with standalone guarded-fetch::";
@@ -113,7 +113,8 @@ public sealed class GuardedFetchTests
     [MemberData(nameof(UnsafeAddresses))]
     [UpstreamTest(
         Prefix + "blocks unsafe DNS results before core downloads connect: $addresses",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Partial,
+        Note = "Missing: the case [{ address: '8.8.8.8', family: 6 }] (a .NET IPAddress has no separate family tag) and the resolve4/resolve6 call assertions; the injected resolver replaces c-ares."
     )]
     public async Task Blocks_unsafe_DNS_results_before_core_downloads_connect(string[] addresses)
     {

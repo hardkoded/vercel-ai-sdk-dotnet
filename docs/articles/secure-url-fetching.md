@@ -25,9 +25,9 @@ var result = await Download.CreateDownload(fetch: guardedFetch)
     .InvokeAsync(new DownloadRequestItem(new Uri("https://example.com/file.png"), false));
 ```
 
-On net10.0 the connect callback of `SocketsHttpHandler` resolves the host, rejects the connection when any resolved address is local, private, or reserved, and connects to the validated address, so a DNS answer cannot change between the check and the connection. On netstandard2.0 the addresses are resolved and validated before the request, but the runtime resolves again when it connects, so DNS rebinding is not prevented there. Restrict network egress on that target.
+On net10.0 the connect callback of `SocketsHttpHandler` resolves the host, rejects the connection when any resolved address is local, private, or reserved, and connects to the validated address, so a DNS answer cannot change between the check and the connection. On netstandard2.0 the addresses are resolved and validated before the request, but the runtime resolves again when it connects, so DNS rebinding is not prevented there. Restrict network egress on that target. `GuardedFetch` never uses a proxy, so a proxy variable such as `HTTPS_PROXY` is ignored. Restrict egress at the platform level if you need one.
 
-`new GuardedFetch(trustedOrigins)` lists developer-configured origins, such as `http://localhost:11434`, whose connections skip the address check. Never build the list from response data. `GuardedFetch.IsSafeIpAddress(address)` tells whether an address is public.
+`new GuardedFetch(trustedOrigins)` lists developer-configured origins, such as `http://localhost:11434`, whose connections skip the address check. A trusted origin only skips the address check. `Download.CreateDownload` and `Download.GetAsync` still reject `localhost` and private IP literals in the URL, so pass the same origin as `trustedOrigin` to `Download.FetchWithValidatedRedirectsAsync` or `Download.FetchWithValidatedEndpointAsync` to reach it. Never build the list from response data. `GuardedFetch.IsSafeIpAddress(address)` tells whether an address is public.
 
 The `.internal` rule is defense in depth. It does not replace network-level protection.
 

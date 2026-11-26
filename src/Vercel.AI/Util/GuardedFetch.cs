@@ -15,6 +15,8 @@ namespace Vercel.AI.Util;
 /// callback, so a DNS answer cannot change between validation and connection. On netstandard2.0 the addresses are resolved
 /// and validated before the request, and the runtime resolves again when it connects, so rebinding is not prevented there.
 /// Pass it as the <c>fetch</c> of <see cref="Download.CreateDownload"/>. Dispose it to release pooled connections.
+/// It does not use a proxy, because a proxy would resolve the target itself. Restrict egress at the platform level to use one.
+/// Both targets throw <see cref="DownloadError"/> for an unsafe address.
 /// </summary>
 public sealed class GuardedFetch : IDisposable
 {
@@ -42,10 +44,11 @@ public sealed class GuardedFetch : IDisposable
         var handler = new SocketsHttpHandler
         {
             AllowAutoRedirect = false,
+            UseProxy = false,
             ConnectCallback = ConnectAsync,
         };
 #else
-        var handler = new HttpClientHandler { AllowAutoRedirect = false };
+        var handler = new HttpClientHandler { AllowAutoRedirect = false, UseProxy = false };
 #endif
         _client = new HttpClient(handler);
     }
@@ -67,7 +70,15 @@ public sealed class GuardedFetch : IDisposable
             AssertPublic(uri.Host, addresses);
         }
 #endif
-        return await Download.SendAsync(_client, url, request).ConfigureAwait(false);
+        try
+        {
+            return await Download.SendAsync(_client, url, request).ConfigureAwait(false);
+        }
+        catch (HttpRequestException error) when (error.InnerException is DownloadError inner)
+        {
+            // The runtime wraps an exception thrown by the connect callback.
+            throw inner;
+        }
     }
 
     /// <summary>Converts the transport to the <see cref="DownloadFetch"/> delegate.</summary>
