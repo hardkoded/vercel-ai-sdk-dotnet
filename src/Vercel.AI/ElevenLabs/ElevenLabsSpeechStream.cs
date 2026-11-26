@@ -560,6 +560,7 @@ internal sealed class ElevenLabsSpeechStreamSession
     private readonly CancellationTokenSource _textCancellation = new CancellationTokenSource();
     private readonly object _textGate = new object();
     private bool _textDisposed;
+    private Task? _pendingRead;
     private WebSocketConnection? _connection;
     private Timer? _keepaliveTimer;
     private bool _finished;
@@ -868,8 +869,33 @@ internal sealed class ElevenLabsSpeechStreamSession
         }
         finally
         {
-            DisposeText();
+            // Cancel first, so a failure here still releases a source that is waiting on the token.
+            CancelText();
+            var pending = _pendingRead;
+            if (pending == null)
+            {
+                DisposeText();
+            }
+            else
+            {
+                // The source ignored the cancel and is still reading with the token: dispose once the read settles.
+                _ = DisposeTextAfterAsync(pending);
+            }
         }
+    }
+
+    private async Task DisposeTextAfterAsync(Task read)
+    {
+        try
+        {
+            await read.ConfigureAwait(false);
+        }
+        catch (Exception)
+        {
+            // The read failed after the stream ended; nothing is left to report it to.
+        }
+
+        DisposeText();
     }
 
     // Cancel and dispose share one lock, because a CancellationTokenSource does not support concurrent disposal and use.
@@ -987,6 +1013,7 @@ internal sealed class ElevenLabsSpeechStreamSession
             else
             {
                 // The source ignored the cancel and is still reading: dispose it once the read ends.
+                _pendingRead = next;
                 _ = DisposeAfterAsync(next, enumerator);
             }
         }
