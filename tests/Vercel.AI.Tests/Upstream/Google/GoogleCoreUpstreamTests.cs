@@ -364,13 +364,14 @@ public sealed class GoogleCoreUpstreamTests
 
     [Fact]
     [UpstreamTest(
-        "packages/google/src/google-json-accumulator.test.ts::GoogleJSONAccumulator > flat paths::should skip args with no resolvable value",
-        Coverage = UpstreamCoverage.Covered
+        "packages/google/src/google-json-accumulator.test.ts::GoogleJSONAccumulator > flat paths::should treat a value-less arg for a new path as an empty object",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "bbe2bd1163bd251ced45a72610af71a597eca4bf"
     )]
-    public void Skips_args_without_a_value()
+    public void Should_treat_a_value_less_arg_for_a_new_path_as_an_empty_object()
     {
         var update = new GoogleJsonAccumulator().Process(new[] { Arg("$.something") });
-        AssertUpdate(update, "{}", "");
+        AssertUpdate(update, "{\"something\":{}}", "{\"something\":{");
     }
 
     [Fact]
