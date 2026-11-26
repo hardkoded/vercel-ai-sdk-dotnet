@@ -302,7 +302,7 @@ public sealed class McpClient
             }
 
             var tool = Tool.Function(toolName, description, schema, (arguments, token) =>
-                CallToolAsync(toolName, arguments, schemas is not null, outputSchema, token)
+                CallToolAsync(toolName, arguments, outputSchema, token)
             );
             if (outputSchema is not null)
             {
@@ -596,7 +596,6 @@ public sealed class McpClient
     private async Task<string> CallToolAsync(
         string name,
         JsonElement arguments,
-        bool returnsErrorResult,
         JsonNode? outputSchema,
         CancellationToken cancellationToken
     )
@@ -615,13 +614,8 @@ public sealed class McpClient
             && isError.ValueKind == JsonValueKind.True
         )
         {
-            // With explicit schemas, upstream's execute returns the error result instead of throwing.
-            if (returnsErrorResult)
-            {
-                return normalized.GetRawText();
-            }
-
-            throw new AiSdkException(ReadText(normalized));
+            // Upstream's execute returns the error result instead of throwing, in every schema mode.
+            return normalized.GetRawText();
         }
 
         if (outputSchema is not null)
@@ -802,31 +796,6 @@ public sealed class McpClient
         }
 
         return new ContentToolModelOutput(parts);
-    }
-
-    private static string ReadText(JsonElement result)
-    {
-        if (
-            result.TryGetProperty("content", out var content)
-            && content.ValueKind == JsonValueKind.Array
-        )
-        {
-            var builder = new StringBuilder();
-            foreach (var part in content.EnumerateArray())
-            {
-                if (part.TryGetProperty("text", out var text))
-                {
-                    builder.Append(text.GetString());
-                }
-            }
-
-            if (builder.Length > 0)
-            {
-                return builder.ToString();
-            }
-        }
-
-        return result.GetRawText();
     }
 }
 
