@@ -31,7 +31,8 @@ public sealed class ResolveLanguageModelTests
 
     [Fact]
     [UpstreamTest(
-        Id + "resolveLanguageModel > when a string is provided and the global default provider is not set::should return a gateway language model",
+        Id
+            + "resolveLanguageModel > when a string is provided and the global default provider is not set::should return a gateway language model",
         Coverage = UpstreamCoverage.Covered
     )]
     public void ShouldReturnAGatewayLanguageModel()
@@ -46,12 +47,16 @@ public sealed class ResolveLanguageModelTests
 
     [Fact]
     [UpstreamTest(
-        Id + "resolveLanguageModel > when a string is provided and the global default provider is set::should return a language model from the global default provider",
+        Id
+            + "resolveLanguageModel > when a string is provided and the global default provider is set::should return a language model from the global default provider",
         Coverage = UpstreamCoverage.Covered
     )]
     public void ShouldReturnALanguageModelFromTheGlobalDefaultProvider()
     {
-        var provider = new CustomProvider().AddLanguageModel("test-model-id", new Vercel.AI.Testing.TestLanguageModel("actual-test-model-id"));
+        var provider = new CustomProvider().AddLanguageModel(
+            "test-model-id",
+            new Vercel.AI.Testing.TestLanguageModel("actual-test-model-id")
+        );
         using var scope = new GlobalProviderScope(provider);
 
         var resolved = Resolve.ResolveLanguageModel(null, "test-model-id");

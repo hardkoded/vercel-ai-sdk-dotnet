@@ -16,7 +16,8 @@ public sealed class ResolveEmbeddingModelTests
 
     [Fact]
     [UpstreamTest(
-        Id + "resolveEmbeddingModel > when an embedding model v4 is provided::should return it as-is",
+        Id
+            + "resolveEmbeddingModel > when an embedding model v4 is provided::should return it as-is",
         Coverage = UpstreamCoverage.Covered
     )]
     public void ShouldReturnItAsIs()
@@ -31,7 +32,8 @@ public sealed class ResolveEmbeddingModelTests
 
     [Fact]
     [UpstreamTest(
-        Id + "resolveEmbeddingModel > when a string is provided and the global default provider is not set::should return a gateway embedding model",
+        Id
+            + "resolveEmbeddingModel > when a string is provided and the global default provider is not set::should return a gateway embedding model",
         Coverage = UpstreamCoverage.Covered
     )]
     public void ShouldReturnAGatewayEmbeddingModel()
@@ -46,12 +48,16 @@ public sealed class ResolveEmbeddingModelTests
 
     [Fact]
     [UpstreamTest(
-        Id + "resolveEmbeddingModel > when a string is provided and the global default provider is set::should return a embedding model from the global default provider",
+        Id
+            + "resolveEmbeddingModel > when a string is provided and the global default provider is set::should return a embedding model from the global default provider",
         Coverage = UpstreamCoverage.Covered
     )]
     public void ShouldReturnAEmbeddingModelFromTheGlobalDefaultProvider()
     {
-        var provider = new CustomProvider().AddEmbeddingModel("test-model-id", new FakeEmbeddingModel("global-test-provider", "actual-test-model-id"));
+        var provider = new CustomProvider().AddEmbeddingModel(
+            "test-model-id",
+            new FakeEmbeddingModel("global-test-provider", "actual-test-model-id")
+        );
         using var scope = new GlobalProviderScope(provider);
 
         var resolved = Resolve.ResolveEmbeddingModel(null, "test-model-id");

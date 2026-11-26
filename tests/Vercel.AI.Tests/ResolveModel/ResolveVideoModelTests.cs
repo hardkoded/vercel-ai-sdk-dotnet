@@ -32,12 +32,16 @@ public sealed class ResolveVideoModelTests
 
     [Fact]
     [UpstreamTest(
-        Id + "resolveVideoModel > when a string is provided and the global default provider is set::should return a video model from the global default provider",
+        Id
+            + "resolveVideoModel > when a string is provided and the global default provider is set::should return a video model from the global default provider",
         Coverage = UpstreamCoverage.Covered
     )]
     public void ShouldReturnAVideoModelFromTheGlobalDefaultProvider()
     {
-        var provider = new CustomProvider().AddVideoModel("test-model-id", new FakeVideoModel("global-test-provider", "actual-test-model-id"));
+        var provider = new CustomProvider().AddVideoModel(
+            "test-model-id",
+            new FakeVideoModel("global-test-provider", "actual-test-model-id")
+        );
         using var scope = new GlobalProviderScope(provider);
 
         var resolved = Resolve.ResolveVideoModel(null, "test-model-id");
@@ -48,7 +52,8 @@ public sealed class ResolveVideoModelTests
 
     [Fact]
     [UpstreamTest(
-        Id + "resolveVideoModel > when a string is provided and the provider does not support video models::should throw an error",
+        Id
+            + "resolveVideoModel > when a string is provided and the provider does not support video models::should throw an error",
         Coverage = UpstreamCoverage.Partial,
         Note = "Asserts that an error is thrown; upstream also asserts its message text."
     )]
@@ -56,30 +61,36 @@ public sealed class ResolveVideoModelTests
     {
         using var scope = new GlobalProviderScope(new CustomProvider());
 
-        Assert.ThrowsAny<Exception>(() => Resolve.ResolveVideoModel(null, "test-model-id"));
+        Assert.Throws<NoSuchModelError>(() => Resolve.ResolveVideoModel(null, "test-model-id"));
     }
 
     [Fact]
     [UpstreamTest(
-        Id + "resolveVideoModel > when a model with unsupported specification version is provided::should throw UnsupportedModelVersionError",
+        Id
+            + "resolveVideoModel > when a model with unsupported specification version is provided::should throw UnsupportedModelVersionError",
         Coverage = UpstreamCoverage.Covered
     )]
     public void ShouldThrowUnsupportedModelVersionError()
     {
         var model = new FakeVideoModel("test-provider", "test-model-id", "v1");
 
-        Assert.Throws<UnsupportedModelVersionException>(() => Resolve.ResolveVideoModel(model, null));
+        Assert.Throws<UnsupportedModelVersionException>(() =>
+            Resolve.ResolveVideoModel(model, null)
+        );
     }
 
     [Fact]
     [UpstreamTest(
-        Id + "resolveVideoModel > when a model with unsupported specification version is provided::should throw UnsupportedModelVersionError for v2 models",
+        Id
+            + "resolveVideoModel > when a model with unsupported specification version is provided::should throw UnsupportedModelVersionError for v2 models",
         Coverage = UpstreamCoverage.Covered
     )]
     public void ShouldThrowUnsupportedModelVersionErrorForV2Models()
     {
         var model = new FakeVideoModel("test-provider", "test-model-id", "v2");
 
-        Assert.Throws<UnsupportedModelVersionException>(() => Resolve.ResolveVideoModel(model, null));
+        Assert.Throws<UnsupportedModelVersionException>(() =>
+            Resolve.ResolveVideoModel(model, null)
+        );
     }
 }

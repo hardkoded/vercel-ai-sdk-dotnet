@@ -16,7 +16,8 @@ public sealed class ResolveRerankingModelTests
 
     [Fact]
     [UpstreamTest(
-        Id + "resolveRerankingModel > when a reranking model v4 is provided::should return it as-is",
+        Id
+            + "resolveRerankingModel > when a reranking model v4 is provided::should return it as-is",
         Coverage = UpstreamCoverage.Covered
     )]
     public void ShouldReturnItAsIs()
@@ -30,12 +31,16 @@ public sealed class ResolveRerankingModelTests
 
     [Fact]
     [UpstreamTest(
-        Id + "resolveRerankingModel > when a string is provided and the global default provider is set::should return a reranking model from the global default provider",
+        Id
+            + "resolveRerankingModel > when a string is provided and the global default provider is set::should return a reranking model from the global default provider",
         Coverage = UpstreamCoverage.Covered
     )]
     public void ShouldReturnARerankingModelFromTheGlobalDefaultProvider()
     {
-        var provider = new CustomProvider().AddRerankingModel("test-model-id", new FakeRerankingModel("global-test-provider", "actual-test-model-id"));
+        var provider = new CustomProvider().AddRerankingModel(
+            "test-model-id",
+            new FakeRerankingModel("global-test-provider", "actual-test-model-id")
+        );
         using var scope = new GlobalProviderScope(provider);
 
         var resolved = Resolve.ResolveRerankingModel(null, "test-model-id");
@@ -46,7 +51,8 @@ public sealed class ResolveRerankingModelTests
 
     [Fact]
     [UpstreamTest(
-        Id + "resolveRerankingModel > when a string is provided and the provider does not support reranking models::should throw an error",
+        Id
+            + "resolveRerankingModel > when a string is provided and the provider does not support reranking models::should throw an error",
         Coverage = UpstreamCoverage.Partial,
         Note = "Asserts that an error is thrown; upstream also asserts its message text."
     )]
@@ -54,6 +60,6 @@ public sealed class ResolveRerankingModelTests
     {
         using var scope = new GlobalProviderScope(new CustomProvider());
 
-        Assert.ThrowsAny<Exception>(() => Resolve.ResolveRerankingModel(null, "test-model-id"));
+        Assert.Throws<NoSuchModelError>(() => Resolve.ResolveRerankingModel(null, "test-model-id"));
     }
 }

@@ -16,7 +16,8 @@ public sealed class ResolveImageModelTests
 
     [Fact]
     [UpstreamTest(
-        Id + "resolveImageModel > when a string is provided and the global default provider is not set::should return a gateway image model",
+        Id
+            + "resolveImageModel > when a string is provided and the global default provider is not set::should return a gateway image model",
         Coverage = UpstreamCoverage.Covered
     )]
     public void ShouldReturnAGatewayImageModel()
@@ -31,12 +32,16 @@ public sealed class ResolveImageModelTests
 
     [Fact]
     [UpstreamTest(
-        Id + "resolveImageModel > when a string is provided and the global default provider is set::should return an image model from the global default provider",
+        Id
+            + "resolveImageModel > when a string is provided and the global default provider is set::should return an image model from the global default provider",
         Coverage = UpstreamCoverage.Covered
     )]
     public void ShouldReturnAnImageModelFromTheGlobalDefaultProvider()
     {
-        var provider = new CustomProvider().AddImageModel("test-model-id", new FakeImageModel("global-test-provider", "actual-test-model-id"));
+        var provider = new CustomProvider().AddImageModel(
+            "test-model-id",
+            new FakeImageModel("global-test-provider", "actual-test-model-id")
+        );
         using var scope = new GlobalProviderScope(provider);
 
         var resolved = Resolve.ResolveImageModel(null, "test-model-id");

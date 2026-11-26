@@ -15,8 +15,9 @@ namespace Vercel.AI;
 /// </summary>
 internal static class ResolveModel
 {
-    private static readonly Lazy<GatewayProvider> SharedGateway = new(() =>
-        GatewayProvider.Create()
+    private static readonly Lazy<GatewayProvider> SharedGateway = new(
+        () => GatewayProvider.Create(),
+        LazyThreadSafetyMode.PublicationOnly
     );
 
     /// <summary>Maps to <c>resolveLanguageModel</c>.</summary>
@@ -103,8 +104,6 @@ internal static class ResolveModel
     private static ProviderBase GetGlobalProvider()
     {
         return DecisionModels.DefaultProvider
-            ?? (
-                DecisionModels.GatewayFactory is { } factory ? factory() : SharedGateway.Value
-            );
+            ?? (DecisionModels.GatewayFactory is { } factory ? factory() : SharedGateway.Value);
     }
 }

@@ -30,12 +30,16 @@ public sealed class ResolveSpeechModelTests
 
     [Fact]
     [UpstreamTest(
-        Id + "resolveSpeechModel > when a string is provided and the global default provider is set::should return a speech model from the global default provider",
+        Id
+            + "resolveSpeechModel > when a string is provided and the global default provider is set::should return a speech model from the global default provider",
         Coverage = UpstreamCoverage.Covered
     )]
     public void ShouldReturnASpeechModelFromTheGlobalDefaultProvider()
     {
-        var provider = new CustomProvider().AddSpeechModel("test-model-id", new FakeSpeechModel("global-test-provider", "actual-test-model-id"));
+        var provider = new CustomProvider().AddSpeechModel(
+            "test-model-id",
+            new FakeSpeechModel("global-test-provider", "actual-test-model-id")
+        );
         using var scope = new GlobalProviderScope(provider);
 
         var resolved = Resolve.ResolveSpeechModel(null, "test-model-id");

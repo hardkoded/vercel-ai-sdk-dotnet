@@ -16,7 +16,8 @@ public sealed class ResolveTranscriptionModelTests
 
     [Fact]
     [UpstreamTest(
-        Id + "resolveTranscriptionModel > when a transcription model v4 is provided::should return it as-is",
+        Id
+            + "resolveTranscriptionModel > when a transcription model v4 is provided::should return it as-is",
         Coverage = UpstreamCoverage.Covered
     )]
     public void ShouldReturnItAsIs()
@@ -30,12 +31,16 @@ public sealed class ResolveTranscriptionModelTests
 
     [Fact]
     [UpstreamTest(
-        Id + "resolveTranscriptionModel > when a string is provided and the global default provider is set::should return a transcription model from the global default provider",
+        Id
+            + "resolveTranscriptionModel > when a string is provided and the global default provider is set::should return a transcription model from the global default provider",
         Coverage = UpstreamCoverage.Covered
     )]
     public void ShouldReturnATranscriptionModelFromTheGlobalDefaultProvider()
     {
-        var provider = new CustomProvider().AddTranscriptionModel("test-model-id", new FakeTranscriptionModel("global-test-provider", "actual-test-model-id"));
+        var provider = new CustomProvider().AddTranscriptionModel(
+            "test-model-id",
+            new FakeTranscriptionModel("global-test-provider", "actual-test-model-id")
+        );
         using var scope = new GlobalProviderScope(provider);
 
         var resolved = Resolve.ResolveTranscriptionModel(null, "test-model-id");

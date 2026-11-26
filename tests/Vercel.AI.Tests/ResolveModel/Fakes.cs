@@ -95,13 +95,20 @@ internal sealed class FakeRerankingModel(string provider, string modelId) : IRer
 internal sealed class GlobalProviderScope : IDisposable
 {
     private readonly ProviderBase? _previous = DecisionModels.DefaultProvider;
+    private readonly Func<Vercel.AI.Gateway.GatewayProvider>? _previousFactory =
+        DecisionModels.GatewayFactory;
 
     public GlobalProviderScope(ProviderBase? provider)
     {
         DecisionModels.DefaultProvider = provider;
+        DecisionModels.GatewayFactory = null;
     }
 
-    public void Dispose() => DecisionModels.DefaultProvider = _previous;
+    public void Dispose()
+    {
+        DecisionModels.DefaultProvider = _previous;
+        DecisionModels.GatewayFactory = _previousFactory;
+    }
 }
 
 /// <summary>Tests that touch the global default provider cannot run in parallel.</summary>
