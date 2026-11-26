@@ -45,7 +45,7 @@ var result = StreamSpeech.Start(new StreamSpeechRequest
 
 Use `FullStream` instead of `AudioStream` when you need per-chunk metadata: each `audio` part carries the chunk `AudioFormat` (for example `audio/pcm` at 24000 Hz) and optional `ProviderMetadata`. Audio chunks are not standalone files; concatenate them in order.
 
-`AudioStream` and `FullStream` share one live stream, so only one of them can be accessed, once. Access the stream before awaiting `Usage`, `Warnings`, `Responses`, or `ProviderMetadata`; accessing a result promise first consumes the stream internally. Both streams expose `Cancel()`. Cancelling, or disposing an enumerator early, aborts the model call through `SpeechModelStreamCall.CancellationToken` and rejects the result promises with an `OperationCanceledException`.
+`AudioStream` and `FullStream` share one live stream, so only one of them can be accessed, once. Access the stream before awaiting `Usage`, `Warnings`, `Responses`, or `ProviderMetadata`; accessing a result promise first consumes the stream internally. Both streams expose `Cancel()`. Cancelling, or disposing an enumerator early, aborts the model call through `SpeechModelStreamCall.CancellationToken` and rejects the result promises with an `OperationCanceledException`. A stream that is not read stalls under backpressure and keeps the provider call open: the output holds one part, so a slow consumer pauses reads from the model.
 
 ### Result
 
