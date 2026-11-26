@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Vercel.AI.Provider;
+using Vercel.AI.Testing;
 using Json = global::Vercel.AI.ExtractJsonMiddleware;
 
 namespace Vercel.AI.Tests.Upstream.Middleware.ExtractJsonMiddleware;
@@ -30,8 +31,12 @@ public sealed class WrapStreamTests
     )
     {
         var wrapped = await new Json(transform).WrapStreamAsync(
-            new LanguageModelCallOptions(),
-            (_, _) => Task.FromResult(new LanguageModelStreamResult(Stream(input))),
+            new LanguageModelWrapContext(
+                new LanguageModelCallOptions(),
+                new TestLanguageModel(),
+                _ => throw new NotSupportedException(),
+                _ => Task.FromResult(new LanguageModelStreamResult(Stream(input)))
+            ),
             CancellationToken.None
         );
         var parts = new List<LanguageModelStreamPart>();
@@ -123,18 +128,22 @@ public sealed class WrapStreamTests
     {
         var middleware = new Json();
         var wrapped = await middleware.WrapStreamAsync(
-            new LanguageModelCallOptions(),
-            (_, _) =>
-                Task.FromResult(
-                    new LanguageModelStreamResult(
-                        Stream(
-                            new TextStartStreamPart("t"),
-                            new TextDeltaStreamPart("t", "there"),
-                            new TextDeltaStreamPart("t", " altogether?"),
-                            new TextEndStreamPart("t")
+            new LanguageModelWrapContext(
+                new LanguageModelCallOptions(),
+                new TestLanguageModel(),
+                _ => throw new NotSupportedException(),
+                _ =>
+                    Task.FromResult(
+                        new LanguageModelStreamResult(
+                            Stream(
+                                new TextStartStreamPart("t"),
+                                new TextDeltaStreamPart("t", "there"),
+                                new TextDeltaStreamPart("t", " altogether?"),
+                                new TextEndStreamPart("t")
+                            )
                         )
                     )
-                ),
+            ),
             CancellationToken.None
         );
 

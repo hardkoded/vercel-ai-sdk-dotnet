@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
@@ -10,46 +11,117 @@ using Vercel.AI.Util;
 
 namespace Vercel.AI;
 
-/// <summary>Wraps <c>doGenerate</c> and <c>doStream</c>. Maps to language-model middleware.</summary>
-public interface ILanguageModelMiddleware
+/// <summary>Whether a call is a generate or a stream call. Maps to the <c>type</c> argument of <c>transformParams</c>.</summary>
+public enum LanguageModelCallType
 {
-    /// <summary>Wraps a generate call.</summary>
-    Task<LanguageModelGenerateResult> WrapGenerateAsync(
-        LanguageModelCallOptions options,
-        Func<LanguageModelCallOptions, CancellationToken, Task<LanguageModelGenerateResult>> next,
-        CancellationToken cancellationToken
-    );
+    /// <summary>A <c>doGenerate</c> call.</summary>
+    Generate,
 
-    /// <summary>Wraps a stream call.</summary>
-    Task<LanguageModelStreamResult> WrapStreamAsync(
-        LanguageModelCallOptions options,
-        Func<LanguageModelCallOptions, CancellationToken, Task<LanguageModelStreamResult>> next,
-        CancellationToken cancellationToken
-    );
+    /// <summary>A <c>doStream</c> call.</summary>
+    Stream,
 }
 
-/// <summary>Passes both operations through.</summary>
+/// <summary>What <c>wrapGenerate</c> and <c>wrapStream</c> receive: the call options, the model, and both ways to continue.</summary>
+public sealed class LanguageModelWrapContext
+{
+    private readonly Func<CancellationToken, Task<LanguageModelGenerateResult>> _doGenerate;
+    private readonly Func<CancellationToken, Task<LanguageModelStreamResult>> _doStream;
+
+    /// <summary>Creates a context.</summary>
+    public LanguageModelWrapContext(
+        LanguageModelCallOptions options,
+        ILanguageModel model,
+        Func<CancellationToken, Task<LanguageModelGenerateResult>> doGenerate,
+        Func<CancellationToken, Task<LanguageModelStreamResult>> doStream
+    )
+    {
+        Options = options ?? throw new ArgumentNullException(nameof(options));
+        Model = model ?? throw new ArgumentNullException(nameof(model));
+        _doGenerate = doGenerate ?? throw new ArgumentNullException(nameof(doGenerate));
+        _doStream = doStream ?? throw new ArgumentNullException(nameof(doStream));
+    }
+
+    /// <summary>The call options after <c>transformParams</c>. Maps to <c>params</c>.</summary>
+    public LanguageModelCallOptions Options { get; }
+
+    /// <summary>The wrapped model.</summary>
+    public ILanguageModel Model { get; }
+
+    /// <summary>Calls <c>doGenerate</c> of the wrapped model with <see cref="Options"/>.</summary>
+    public Task<LanguageModelGenerateResult> DoGenerateAsync(CancellationToken cancellationToken) =>
+        _doGenerate(cancellationToken);
+
+    /// <summary>Calls <c>doStream</c> of the wrapped model with <see cref="Options"/>.</summary>
+    public Task<LanguageModelStreamResult> DoStreamAsync(CancellationToken cancellationToken) =>
+        _doStream(cancellationToken);
+}
+
+/// <summary>Language-model middleware. Maps to <c>LanguageModelMiddleware</c>.</summary>
+public interface ILanguageModelMiddleware
+{
+    /// <summary>Transforms the call options before the call. Maps to <c>transformParams</c>.</summary>
+    Task<LanguageModelCallOptions> TransformParamsAsync(
+        LanguageModelCallOptions options,
+        LanguageModelCallType type,
+        ILanguageModel model,
+        CancellationToken cancellationToken
+    );
+
+    /// <summary>Wraps a generate call. Maps to <c>wrapGenerate</c>.</summary>
+    Task<LanguageModelGenerateResult> WrapGenerateAsync(
+        LanguageModelWrapContext context,
+        CancellationToken cancellationToken
+    );
+
+    /// <summary>Wraps a stream call. Maps to <c>wrapStream</c>.</summary>
+    Task<LanguageModelStreamResult> WrapStreamAsync(
+        LanguageModelWrapContext context,
+        CancellationToken cancellationToken
+    );
+
+    /// <summary>Overrides the provider id. Null keeps the model's. Maps to <c>overrideProvider</c>.</summary>
+    string? OverrideProvider(ILanguageModel model);
+
+    /// <summary>Overrides the model id. Null keeps the model's. Maps to <c>overrideModelId</c>.</summary>
+    string? OverrideModelId(ILanguageModel model);
+
+    /// <summary>Overrides the supported URLs. Null keeps the model's. Maps to <c>overrideSupportedUrls</c>.</summary>
+    IReadOnlyDictionary<string, string>? OverrideSupportedUrls(ILanguageModel model);
+}
+
+/// <summary>Passes every operation through. Override what the middleware changes.</summary>
 public abstract class LanguageModelMiddleware : ILanguageModelMiddleware
 {
     /// <inheritdoc />
-    public virtual Task<LanguageModelGenerateResult> WrapGenerateAsync(
+    public virtual Task<LanguageModelCallOptions> TransformParamsAsync(
         LanguageModelCallOptions options,
-        Func<LanguageModelCallOptions, CancellationToken, Task<LanguageModelGenerateResult>> next,
+        LanguageModelCallType type,
+        ILanguageModel model,
         CancellationToken cancellationToken
-    )
-    {
-        return next(options, cancellationToken);
-    }
+    ) => Task.FromResult(options);
+
+    /// <inheritdoc />
+    public virtual Task<LanguageModelGenerateResult> WrapGenerateAsync(
+        LanguageModelWrapContext context,
+        CancellationToken cancellationToken
+    ) => context.DoGenerateAsync(cancellationToken);
 
     /// <inheritdoc />
     public virtual Task<LanguageModelStreamResult> WrapStreamAsync(
-        LanguageModelCallOptions options,
-        Func<LanguageModelCallOptions, CancellationToken, Task<LanguageModelStreamResult>> next,
+        LanguageModelWrapContext context,
         CancellationToken cancellationToken
-    )
-    {
-        return next(options, cancellationToken);
-    }
+    ) => context.DoStreamAsync(cancellationToken);
+
+    /// <inheritdoc />
+    public virtual string? OverrideProvider(ILanguageModel model) => null;
+
+    /// <inheritdoc />
+    public virtual string? OverrideModelId(ILanguageModel model) => null;
+
+    /// <inheritdoc />
+    public virtual IReadOnlyDictionary<string, string>? OverrideSupportedUrls(
+        ILanguageModel model
+    ) => null;
 }
 
 /// <summary>Wraps a language model with middleware. Maps to <c>wrapLanguageModel</c>.</summary>
@@ -59,6 +131,17 @@ public static class LanguageModelMiddlewareExtensions
     public static ILanguageModel WrapLanguageModel(
         this ILanguageModel model,
         params ILanguageModelMiddleware[] middleware
+    ) => WrapLanguageModel(model, middleware, null, null);
+
+    /// <summary>
+    /// Wraps <paramref name="model"/> so middleware runs outside-in. The first middleware transforms the input first, and the last is wrapped directly around the model.
+    /// <paramref name="modelId"/> and <paramref name="providerId"/> override the ids of every wrapper.
+    /// </summary>
+    public static ILanguageModel WrapLanguageModel(
+        this ILanguageModel model,
+        IEnumerable<ILanguageModelMiddleware> middleware,
+        string? modelId = null,
+        string? providerId = null
     )
     {
         if (model is null)
@@ -69,9 +152,9 @@ public static class LanguageModelMiddlewareExtensions
         ILanguageModel current = model;
         if (middleware != null)
         {
-            for (var i = middleware.Length - 1; i >= 0; i--)
+            foreach (var item in middleware.Reverse())
             {
-                current = new MiddlewareLanguageModel(current, middleware[i]);
+                current = new MiddlewareLanguageModel(current, item, modelId, providerId);
             }
         }
 
@@ -147,12 +230,11 @@ public sealed class ExtractReasoningMiddleware : LanguageModelMiddleware
 
     /// <inheritdoc />
     public override async Task<LanguageModelGenerateResult> WrapGenerateAsync(
-        LanguageModelCallOptions options,
-        Func<LanguageModelCallOptions, CancellationToken, Task<LanguageModelGenerateResult>> next,
+        LanguageModelWrapContext context,
         CancellationToken cancellationToken
     )
     {
-        var result = await next(options, cancellationToken).ConfigureAwait(false);
+        var result = await context.DoGenerateAsync(cancellationToken).ConfigureAwait(false);
         var content = new List<GeneratedContent>();
         foreach (var part in result.Content)
         {
@@ -208,12 +290,11 @@ public sealed class ExtractReasoningMiddleware : LanguageModelMiddleware
 
     /// <inheritdoc />
     public override async Task<LanguageModelStreamResult> WrapStreamAsync(
-        LanguageModelCallOptions options,
-        Func<LanguageModelCallOptions, CancellationToken, Task<LanguageModelStreamResult>> next,
+        LanguageModelWrapContext context,
         CancellationToken cancellationToken
     )
     {
-        var inner = await next(options, cancellationToken).ConfigureAwait(false);
+        var inner = await context.DoStreamAsync(cancellationToken).ConfigureAwait(false);
         return new LanguageModelStreamResult(
             Extract(inner.Stream, cancellationToken),
             inner.Request,
@@ -416,12 +497,11 @@ public sealed class ExtractJsonMiddleware : LanguageModelMiddleware
 
     /// <inheritdoc />
     public override async Task<LanguageModelGenerateResult> WrapGenerateAsync(
-        LanguageModelCallOptions options,
-        Func<LanguageModelCallOptions, CancellationToken, Task<LanguageModelGenerateResult>> next,
+        LanguageModelWrapContext context,
         CancellationToken cancellationToken
     )
     {
-        var result = await next(options, cancellationToken).ConfigureAwait(false);
+        var result = await context.DoGenerateAsync(cancellationToken).ConfigureAwait(false);
         var content = new List<GeneratedContent>();
         foreach (var part in result.Content)
         {
@@ -442,12 +522,11 @@ public sealed class ExtractJsonMiddleware : LanguageModelMiddleware
 
     /// <inheritdoc />
     public override async Task<LanguageModelStreamResult> WrapStreamAsync(
-        LanguageModelCallOptions options,
-        Func<LanguageModelCallOptions, CancellationToken, Task<LanguageModelStreamResult>> next,
+        LanguageModelWrapContext context,
         CancellationToken cancellationToken
     )
     {
-        var inner = await next(options, cancellationToken).ConfigureAwait(false);
+        var inner = await context.DoStreamAsync(cancellationToken).ConfigureAwait(false);
         return new LanguageModelStreamResult(
             Transform(inner.Stream, cancellationToken),
             inner.Request,
@@ -646,6 +725,56 @@ public sealed class ExtractJsonMiddleware : LanguageModelMiddleware
 
 internal static class MiddlewareResults
 {
+    // Maps a generated content part to the stream part with the same shape.
+    public static LanguageModelStreamPart ToStreamPart(GeneratedContent part) =>
+        part switch
+        {
+            GeneratedToolCall call => new ToolCallStreamPart(
+                call.ToolCallId,
+                call.ToolName,
+                call.ArgumentsJson,
+                call.ProviderMetadata
+            )
+            {
+                ProviderExecuted = call.ProviderExecuted,
+                Dynamic = call.Dynamic,
+            },
+            GeneratedToolResult result => new ToolResultStreamPart(
+                result.ToolCallId,
+                result.ToolName,
+                System.Text.Json.JsonDocument.Parse(result.ResultJson).RootElement.Clone()
+            )
+            {
+                IsError = result.IsError,
+                ProviderMetadata = result.ProviderMetadata,
+            },
+            GeneratedToolApprovalRequest request => new ToolApprovalRequestStreamPart(
+                request.ApprovalId,
+                request.ToolCallId
+            ),
+            GeneratedSource source => new SourceStreamPart(
+                source.Id,
+                source.Url,
+                source.Title,
+                source.ProviderMetadata
+            ),
+            GeneratedDocumentSource document => new DocumentSourceStreamPart(
+                document.Id,
+                document.MediaType,
+                document.Title,
+                document.Filename,
+                document.ProviderMetadata
+            ),
+            GeneratedFile file => new FileStreamPart(file.Data, file.MediaType),
+            GeneratedReasoningFile file => new ReasoningFileStreamPart(
+                file.Data,
+                file.MediaType,
+                file.ProviderMetadata
+            ),
+            GeneratedCustom custom => new CustomStreamPart(custom.Kind, custom.ProviderMetadata),
+            _ => throw new NotSupportedException("Unsupported content part: " + part.Type),
+        };
+
     public static LanguageModelGenerateResult CopyResult(
         IReadOnlyList<GeneratedContent> content,
         LanguageModelGenerateResult result,
@@ -670,20 +799,20 @@ internal static class MiddlewareResults
     }
 }
 
-/// <summary>Turns a non-streaming model into text deltas. Maps to <c>simulateStreamingMiddleware</c>.</summary>
+/// <summary>Turns a non-streaming model into a stream of one call. Maps to <c>simulateStreamingMiddleware</c>.</summary>
 public sealed class SimulateStreamingMiddleware : LanguageModelMiddleware
 {
-    /// <summary>Generates once and yields the text as a single delta.</summary>
-    public async Task<LanguageModelStreamResult> Simulate(
-        ILanguageModel model,
-        LanguageModelCallOptions options,
+    /// <inheritdoc />
+    public override async Task<LanguageModelStreamResult> WrapStreamAsync(
+        LanguageModelWrapContext context,
         CancellationToken cancellationToken
     )
     {
-        var result = await model.DoGenerateAsync(options, cancellationToken).ConfigureAwait(false);
+        var result = await context.DoGenerateAsync(cancellationToken).ConfigureAwait(false);
         return new LanguageModelStreamResult(
             Parts(result),
-            response: new LanguageModelStreamResponse(result.ResponseHeaders)
+            result.Request,
+            new LanguageModelStreamResponse(result.ResponseHeaders)
         );
     }
 
@@ -692,23 +821,47 @@ public sealed class SimulateStreamingMiddleware : LanguageModelMiddleware
     )
     {
         await Task.CompletedTask.ConfigureAwait(false);
+        yield return new StreamStartStreamPart(result.Warnings);
+        yield return new ResponseMetadataStreamPart(
+            result.ResponseId,
+            result.ResponseModelId,
+            result.ResponseTimestamp
+        );
+
         var id = 0;
         foreach (var part in result.Content)
         {
-            if (
-                part is GeneratedText generatedText
-                && (generatedText.Text.Length > 0 || (generatedText.Citations?.Count ?? 0) > 0)
-            )
+            switch (part)
             {
-                var textId = id.ToString(System.Globalization.CultureInfo.InvariantCulture);
-                yield return new TextStartStreamPart(textId);
-                if (generatedText.Text.Length > 0)
-                {
-                    yield return new TextDeltaStreamPart(textId, generatedText.Text);
-                }
+                case GeneratedText generatedText:
+                    if (generatedText.Text.Length > 0 || (generatedText.Citations?.Count ?? 0) > 0)
+                    {
+                        var textId = id.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                        yield return new TextStartStreamPart(
+                            textId,
+                            generatedText.ProviderMetadata
+                        );
+                        yield return new TextDeltaStreamPart(textId, generatedText.Text);
+                        yield return new TextEndStreamPart(textId, generatedText.Citations);
+                        id++;
+                    }
 
-                yield return new TextEndStreamPart(textId, generatedText.Citations);
-                id++;
+                    break;
+                case GeneratedReasoning reasoning:
+                    var reasoningId = id.ToString(
+                        System.Globalization.CultureInfo.InvariantCulture
+                    );
+                    yield return new ReasoningStartStreamPart(
+                        reasoningId,
+                        reasoning.ProviderMetadata
+                    );
+                    yield return new ReasoningDeltaStreamPart(reasoningId, reasoning.Text);
+                    yield return new ReasoningEndStreamPart(reasoningId);
+                    id++;
+                    break;
+                default:
+                    yield return MiddlewareResults.ToStreamPart(part);
+                    break;
             }
         }
 
@@ -721,97 +874,185 @@ public sealed class SimulateStreamingMiddleware : LanguageModelMiddleware
     }
 }
 
-/// <summary>Fills sampling settings when the caller left them unset. Maps to <c>defaultSettingsMiddleware</c>.</summary>
+/// <summary>Fills call settings the caller left unset. Maps to <c>defaultSettingsMiddleware</c>.</summary>
 public sealed class DefaultSettingsMiddleware : LanguageModelMiddleware
 {
-    /// <summary>Creates middleware with default sampling settings.</summary>
-    public DefaultSettingsMiddleware(double? temperature = null, int? maxOutputTokens = null)
+    /// <summary>Creates middleware. Every setting of <paramref name="settings"/> other than the prompt is a default.</summary>
+    public DefaultSettingsMiddleware(LanguageModelCallOptions settings)
     {
-        Temperature = temperature;
-        MaxOutputTokens = maxOutputTokens;
+        Settings = settings ?? throw new ArgumentNullException(nameof(settings));
     }
 
-    /// <summary>Default temperature.</summary>
-    public double? Temperature { get; }
-
-    /// <summary>Default max output tokens.</summary>
-    public int? MaxOutputTokens { get; }
+    /// <summary>The default settings.</summary>
+    public LanguageModelCallOptions Settings { get; }
 
     /// <inheritdoc />
-    public override Task<LanguageModelGenerateResult> WrapGenerateAsync(
+    public override Task<LanguageModelCallOptions> TransformParamsAsync(
         LanguageModelCallOptions options,
-        Func<LanguageModelCallOptions, CancellationToken, Task<LanguageModelGenerateResult>> next,
+        LanguageModelCallType type,
+        ILanguageModel model,
         CancellationToken cancellationToken
     )
     {
-        Apply(options);
-        return next(options, cancellationToken);
+        var merged = options.Copy();
+        merged.MaxOutputTokens ??= Settings.MaxOutputTokens;
+        merged.Temperature ??= Settings.Temperature;
+        merged.StopSequences ??= Settings.StopSequences;
+        merged.TopP ??= Settings.TopP;
+        merged.TopK ??= Settings.TopK;
+        merged.PresencePenalty ??= Settings.PresencePenalty;
+        merged.FrequencyPenalty ??= Settings.FrequencyPenalty;
+        merged.Seed ??= Settings.Seed;
+        merged.Reasoning ??= Settings.Reasoning;
+        merged.Tools ??= Settings.Tools;
+        merged.ToolChoice ??= Settings.ToolChoice;
+        if (!merged.JsonResponse && merged.JsonSchema is null)
+        {
+            merged.JsonResponse = Settings.JsonResponse;
+            merged.JsonSchema = Settings.JsonSchema;
+            merged.JsonSchemaName = Settings.JsonSchemaName;
+            merged.JsonSchemaDescription = Settings.JsonSchemaDescription;
+        }
+
+        merged.Headers = MergeMaps(Settings.Headers, options.Headers);
+        merged.ProviderOptions = MergeProviderOptions(
+            Settings.ProviderOptions,
+            options.ProviderOptions
+        );
+        return Task.FromResult(merged);
     }
 
-    /// <inheritdoc />
-    public override Task<LanguageModelStreamResult> WrapStreamAsync(
-        LanguageModelCallOptions options,
-        Func<LanguageModelCallOptions, CancellationToken, Task<LanguageModelStreamResult>> next,
-        CancellationToken cancellationToken
+    internal static IReadOnlyDictionary<string, T>? MergeMaps<T>(
+        IReadOnlyDictionary<string, T>? defaults,
+        IReadOnlyDictionary<string, T>? overrides
     )
     {
-        Apply(options);
-        return next(options, cancellationToken);
+        if (defaults is null)
+        {
+            return overrides;
+        }
+
+        if (overrides is null)
+        {
+            return defaults;
+        }
+
+        var merged = new Dictionary<string, T>();
+        foreach (var pair in defaults)
+        {
+            merged[pair.Key] = pair.Value;
+        }
+
+        foreach (var pair in overrides)
+        {
+            merged[pair.Key] = pair.Value;
+        }
+
+        return merged;
     }
 
-    private void Apply(LanguageModelCallOptions options)
+    internal static IReadOnlyDictionary<string, JsonElement>? MergeProviderOptions(
+        IReadOnlyDictionary<string, JsonElement>? defaults,
+        IReadOnlyDictionary<string, JsonElement>? overrides
+    )
     {
-        options.Temperature ??= Temperature;
-        options.MaxOutputTokens ??= MaxOutputTokens;
+        if (defaults is null)
+        {
+            return overrides;
+        }
+
+        if (overrides is null)
+        {
+            return defaults;
+        }
+
+        var merged = new Dictionary<string, JsonElement>();
+        foreach (var pair in defaults)
+        {
+            merged[pair.Key] = pair.Value;
+        }
+
+        foreach (var pair in overrides)
+        {
+            merged[pair.Key] = merged.TryGetValue(pair.Key, out var existing)
+                ? MergeObjects(existing, pair.Value)
+                : pair.Value;
+        }
+
+        return merged;
+    }
+
+    // Maps to mergeObjects: objects merge recursively, any other value from the override wins.
+    internal static JsonElement MergeObjects(JsonElement defaults, JsonElement overrides)
+    {
+        if (
+            defaults.ValueKind != JsonValueKind.Object
+            || overrides.ValueKind != JsonValueKind.Object
+        )
+        {
+            return overrides;
+        }
+
+        var node = new System.Text.Json.Nodes.JsonObject();
+        foreach (var property in defaults.EnumerateObject())
+        {
+            node[property.Name] = System.Text.Json.Nodes.JsonNode.Parse(
+                property.Value.GetRawText()
+            );
+        }
+
+        foreach (var property in overrides.EnumerateObject())
+        {
+            node[property.Name] = defaults.TryGetProperty(property.Name, out var existing)
+                ? System.Text.Json.Nodes.JsonNode.Parse(
+                    MergeObjects(existing, property.Value).GetRawText()
+                )
+                : System.Text.Json.Nodes.JsonNode.Parse(property.Value.GetRawText());
+        }
+
+        using var document = JsonDocument.Parse(node.ToJsonString());
+        return document.RootElement.Clone();
     }
 }
 
-/// <summary>Prepends system instructions when the prompt has none. Maps to <c>defaultInstructionsMiddleware</c>.</summary>
+/// <summary>Prepends default instructions when the prompt has no system message. Maps to <c>defaultInstructionsMiddleware</c>.</summary>
 public sealed class DefaultInstructionsMiddleware : LanguageModelMiddleware
 {
-    /// <summary>Creates middleware.</summary>
+    private readonly IReadOnlyList<SystemModelMessage> _defaults;
+
+    /// <summary>Creates middleware with one system message.</summary>
     public DefaultInstructionsMiddleware(string instructions)
+        : this(new[] { new SystemModelMessage(instructions ?? string.Empty) }) { }
+
+    /// <summary>Creates middleware with several system messages, kept in order.</summary>
+    public DefaultInstructionsMiddleware(IEnumerable<SystemModelMessage> instructions)
     {
-        Instructions = instructions ?? string.Empty;
+        _defaults = (
+            instructions ?? throw new ArgumentNullException(nameof(instructions))
+        ).ToList();
     }
 
     /// <summary>Instructions to prepend.</summary>
-    public string Instructions { get; }
+    public IReadOnlyList<SystemModelMessage> Instructions => _defaults;
 
     /// <inheritdoc />
-    public override Task<LanguageModelGenerateResult> WrapGenerateAsync(
+    public override Task<LanguageModelCallOptions> TransformParamsAsync(
         LanguageModelCallOptions options,
-        Func<LanguageModelCallOptions, CancellationToken, Task<LanguageModelGenerateResult>> next,
+        LanguageModelCallType type,
+        ILanguageModel model,
         CancellationToken cancellationToken
     )
     {
-        Apply(options);
-        return next(options, cancellationToken);
-    }
-
-    private static bool HasSystem(IReadOnlyList<ModelMessage> prompt)
-    {
-        foreach (var message in prompt)
+        if (_defaults.Count == 0 || options.Prompt.Any(message => message is SystemModelMessage))
         {
-            if (message is SystemModelMessage)
-            {
-                return true;
-            }
+            return Task.FromResult(options);
         }
 
-        return false;
-    }
-
-    private void Apply(LanguageModelCallOptions options)
-    {
-        if (HasSystem(options.Prompt) || string.IsNullOrEmpty(Instructions))
-        {
-            return;
-        }
-
-        var messages = new List<ModelMessage> { new SystemModelMessage(Instructions) };
+        var copy = options.Copy();
+        var messages = new List<ModelMessage>(_defaults);
         messages.AddRange(options.Prompt);
-        options.Prompt = messages;
+        copy.Prompt = messages;
+        return Task.FromResult(copy);
     }
 }
 
@@ -819,39 +1060,68 @@ internal sealed class MiddlewareLanguageModel : ILanguageModel
 {
     private readonly ILanguageModel _inner;
     private readonly ILanguageModelMiddleware _middleware;
+    private readonly string? _modelId;
+    private readonly string? _providerId;
 
-    public MiddlewareLanguageModel(ILanguageModel inner, ILanguageModelMiddleware middleware)
+    public MiddlewareLanguageModel(
+        ILanguageModel inner,
+        ILanguageModelMiddleware middleware,
+        string? modelId = null,
+        string? providerId = null
+    )
     {
         _inner = inner;
         _middleware = middleware;
+        _modelId = modelId;
+        _providerId = providerId;
     }
 
     public string SpecificationVersion => _inner.SpecificationVersion;
 
-    public IReadOnlyDictionary<string, string> SupportedUrls => _inner.SupportedUrls;
+    public IReadOnlyDictionary<string, string> SupportedUrls =>
+        _middleware.OverrideSupportedUrls(_inner) ?? _inner.SupportedUrls;
 
-    public string Provider => _inner.Provider;
+    public string Provider =>
+        _providerId ?? _middleware.OverrideProvider(_inner) ?? _inner.Provider;
 
-    public string ModelId => _inner.ModelId;
+    public string ModelId => _modelId ?? _middleware.OverrideModelId(_inner) ?? _inner.ModelId;
 
-    public Task<LanguageModelGenerateResult> DoGenerateAsync(
+    public async Task<LanguageModelGenerateResult> DoGenerateAsync(
         LanguageModelCallOptions options,
         CancellationToken cancellationToken
     )
     {
-        return _middleware.WrapGenerateAsync(options, _inner.DoGenerateAsync, cancellationToken);
+        var transformed = await _middleware
+            .TransformParamsAsync(
+                options,
+                LanguageModelCallType.Generate,
+                _inner,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
+        return await _middleware
+            .WrapGenerateAsync(Context(transformed), cancellationToken)
+            .ConfigureAwait(false);
     }
 
-    public Task<LanguageModelStreamResult> DoStreamAsync(
+    public async Task<LanguageModelStreamResult> DoStreamAsync(
         LanguageModelCallOptions options,
         CancellationToken cancellationToken
     )
     {
-        if (_middleware is SimulateStreamingMiddleware simulate)
-        {
-            return simulate.Simulate(_inner, options, cancellationToken);
-        }
-
-        return _middleware.WrapStreamAsync(options, _inner.DoStreamAsync, cancellationToken);
+        var transformed = await _middleware
+            .TransformParamsAsync(options, LanguageModelCallType.Stream, _inner, cancellationToken)
+            .ConfigureAwait(false);
+        return await _middleware
+            .WrapStreamAsync(Context(transformed), cancellationToken)
+            .ConfigureAwait(false);
     }
+
+    private LanguageModelWrapContext Context(LanguageModelCallOptions options) =>
+        new(
+            options,
+            _inner,
+            token => _inner.DoGenerateAsync(options, token),
+            token => _inner.DoStreamAsync(options, token)
+        );
 }

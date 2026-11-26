@@ -749,6 +749,9 @@ public sealed class LanguageModelTool
     /// <summary>Responses strict mode. Null means unset, which Responses sends as false.</summary>
     public bool? Strict { get; }
 
+    /// <summary>Example inputs of a function tool. Maps to <c>inputExamples</c>.</summary>
+    public IReadOnlyList<ToolInputExample>? InputExamples { get; init; }
+
     /// <summary>
     /// JSON Schema for the tool result. OpenAI Responses parses the result as JSON, so text results of this tool are sent as JSON string literals.
     /// </summary>

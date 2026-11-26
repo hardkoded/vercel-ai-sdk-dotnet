@@ -11,6 +11,19 @@ using Vercel.AI.Util;
 
 namespace Vercel.AI;
 
+/// <summary>One example input of a tool. Maps to <c>{ input: JSONObject }</c> in <c>inputExamples</c>.</summary>
+public sealed class ToolInputExample
+{
+    /// <summary>Creates an example.</summary>
+    public ToolInputExample(JsonElement input)
+    {
+        Input = input;
+    }
+
+    /// <summary>The example input, a JSON object.</summary>
+    public JsonElement Input { get; }
+}
+
 /// <summary>A tool the model can call. Maps to <c>tool()</c>.</summary>
 public sealed class Tool
 {
@@ -35,6 +48,12 @@ public sealed class Tool
 
     /// <summary>Tool description.</summary>
     public string? Description { get; }
+
+    /// <summary>
+    /// Example inputs of the tool. Providers that support them send them natively. <see cref="AddToolInputExamplesMiddleware"/> appends them
+    /// to the description for providers that do not. Maps to <c>inputExamples</c>.
+    /// </summary>
+    public IReadOnlyList<ToolInputExample>? InputExamples { get; set; }
 
     /// <summary>
     /// Resolves the description per call from the context of the tool and the sandbox, instead of the fixed <see cref="Description"/>.

@@ -361,6 +361,18 @@ var result = client.StreamTextAsync(new StreamTextOptions
 });
 ```
 
+## Middleware
+
+`model.WrapLanguageModel(middleware...)` (maps to `wrapLanguageModel`) wraps a model so the first middleware transforms the input first and the last one sits directly around the model. Pass an `IEnumerable<ILanguageModelMiddleware>` with `modelId` and `providerId` to override the ids of the wrapped model. A middleware derives from `LanguageModelMiddleware` and overrides what it changes:
+
+- `TransformParamsAsync(options, type, model, ct)` (maps to `transformParams`) returns the options for a `Generate` or `Stream` call. Return a copy, not the caller's object.
+- `WrapGenerateAsync(context, ct)` and `WrapStreamAsync(context, ct)` (map to `wrapGenerate` and `wrapStream`) receive a `LanguageModelWrapContext` with `Options`, `Model`, `DoGenerateAsync(ct)`, and `DoStreamAsync(ct)`.
+- `OverrideProvider`, `OverrideModelId`, and `OverrideSupportedUrls` replace those model properties.
+
+Built-in middleware: `DefaultSettingsMiddleware(settings)` fills settings the call left unset (headers and provider options merge, the call wins), `DefaultInstructionsMiddleware(instructions)` prepends system messages when the prompt has none, `ExtractReasoningMiddleware`, `ExtractJsonMiddleware`, `SimulateStreamingMiddleware` (turns a generate call into a stream), and `AddToolInputExamplesMiddleware(prefix, format, remove)`. The last one appends `Tool.InputExamples` to the tool description for providers without native input examples, and removes the examples unless `remove` is `false`. Anthropic sends `Tool.InputExamples` natively as `input_examples`.
+
+For embedding and image models, `IEmbeddingCaller.WrapEmbeddingModel(...)` and `IImageCaller.WrapImageModel(...)` (map to `wrapEmbeddingModel` and `wrapImageModel`) take `EmbeddingModelMiddleware` and `ImageModelMiddleware` with `TransformParamsAsync`, `WrapEmbedAsync` or `WrapGenerateAsync`, and `Override*` members. `DefaultEmbeddingSettingsMiddleware` merges default headers and provider options. `WrapProvider.Wrap(provider, languageModelMiddleware, imageModelMiddleware)` (maps to `wrapProvider`) wraps every language model, and every image model when image middleware is given. The wrapped image model does not expose `supportsFileInputs` and `supportsMaskInputs`.
+
 ## Extracting JSON from streamed text
 
 `ExtractJsonMiddleware` also wraps streams. Without a custom transform it strips a leading markdown code fence (` ```json `) and a trailing fence from each streamed text block while still streaming the content, holding back only text that could become the closing fence or trailing whitespace. With a custom `transform` passed to the constructor, each text block is buffered and transformed once at `TextEndStreamPart`.
