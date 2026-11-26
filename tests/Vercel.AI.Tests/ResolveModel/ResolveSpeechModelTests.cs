@@ -17,7 +17,8 @@ public sealed class ResolveSpeechModelTests
     [Fact]
     [UpstreamTest(
         Id + "resolveSpeechModel > when a speech model v4 is provided::should return it as-is",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Partial,
+        Note = "ISpeechModel has no SpecificationVersion, so the v4 assertion is not ported."
     )]
     public void ShouldReturnItAsIs()
     {

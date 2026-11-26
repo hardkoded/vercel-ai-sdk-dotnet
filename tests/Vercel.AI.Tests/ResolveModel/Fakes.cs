@@ -91,6 +91,13 @@ internal sealed class FakeRerankingModel(string provider, string modelId) : IRer
     ) => throw new NotSupportedException();
 }
 
+/// <summary>A provider that only implements language models, like upstream's provider without <c>rerankingModel</c> or <c>videoModel</c>.</summary>
+internal sealed class ProviderWithoutOptionalModels() : ProviderBase("no-optional-models")
+{
+    public override ILanguageModel LanguageModel(string modelId) =>
+        throw new NotSupportedException();
+}
+
 /// <summary>Sets <see cref="DecisionModels.DefaultProvider"/> (<c>AI_SDK_DEFAULT_PROVIDER</c>) and restores it.</summary>
 internal sealed class GlobalProviderScope : IDisposable
 {

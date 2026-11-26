@@ -18,7 +18,8 @@ public sealed class ResolveTranscriptionModelTests
     [UpstreamTest(
         Id
             + "resolveTranscriptionModel > when a transcription model v4 is provided::should return it as-is",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Partial,
+        Note = "ITranscriptionModel has no SpecificationVersion, so the v4 assertion is not ported."
     )]
     public void ShouldReturnItAsIs()
     {

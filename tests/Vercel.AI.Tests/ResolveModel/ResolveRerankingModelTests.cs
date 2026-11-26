@@ -18,7 +18,8 @@ public sealed class ResolveRerankingModelTests
     [UpstreamTest(
         Id
             + "resolveRerankingModel > when a reranking model v4 is provided::should return it as-is",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Partial,
+        Note = "IRerankingModel has no SpecificationVersion, so the v4 assertion is not ported."
     )]
     public void ShouldReturnItAsIs()
     {
@@ -58,8 +59,8 @@ public sealed class ResolveRerankingModelTests
     )]
     public void ShouldThrowAnError()
     {
-        using var scope = new GlobalProviderScope(new CustomProvider());
+        using var scope = new GlobalProviderScope(new ProviderWithoutOptionalModels());
 
-        Assert.Throws<NoSuchModelError>(() => Resolve.ResolveRerankingModel(null, "test-model-id"));
+        Assert.Throws<AiSdkException>(() => Resolve.ResolveRerankingModel(null, "test-model-id"));
     }
 }

@@ -59,9 +59,9 @@ public sealed class ResolveVideoModelTests
     )]
     public void ShouldThrowAnError()
     {
-        using var scope = new GlobalProviderScope(new CustomProvider());
+        using var scope = new GlobalProviderScope(new ProviderWithoutOptionalModels());
 
-        Assert.Throws<NoSuchModelError>(() => Resolve.ResolveVideoModel(null, "test-model-id"));
+        Assert.Throws<AiSdkException>(() => Resolve.ResolveVideoModel(null, "test-model-id"));
     }
 
     [Fact]
