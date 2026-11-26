@@ -23,7 +23,7 @@ The options of [OnInputDelta](/api/Vercel.AI/Tool/#Vercel_AI_Tool_OnInputDelta).
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [ToolExecutionOptions](/api/Vercel.AI/ToolExecutionOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L263)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L280)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ The options of [OnInputDelta](/api/Vercel.AI/Tool/#Vercel_AI_Tool_OnInputDelta).
 | `abortSignal` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
 | `inputTextDelta` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L263)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L280)
 
 ## Properties
 
@@ -68,4 +68,4 @@ The fragment of the tool input text. Maps to `inputTextDelta`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L271)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L288)

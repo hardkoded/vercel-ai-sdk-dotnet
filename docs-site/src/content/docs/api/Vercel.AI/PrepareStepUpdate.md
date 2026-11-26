@@ -23,7 +23,7 @@ Optional changes applied before a step.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1372)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1392)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Overrides the active tools for this step. See [ActiveTools](/api/Vercel.AI/Gener
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1387)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1407)
 
 <a id="Vercel_AI_PrepareStepUpdate_ExperimentalSandbox_"></a>
 <a id="Vercel_AI_PrepareStepUpdate_ExperimentalSandbox"></a>
@@ -59,7 +59,7 @@ The sandbox environment that the step is operating in. Changing it affects tool 
 
 **Value:** [ISandboxSession](/api/Vercel.AI.ProviderUtils/ISandboxSession/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1427)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1447)
 
 <a id="Vercel_AI_PrepareStepUpdate_FrequencyPenalty_"></a>
 <a id="Vercel_AI_PrepareStepUpdate_FrequencyPenalty"></a>
@@ -76,7 +76,7 @@ Overrides the frequency penalty for this step. Maps to `frequencyPenalty`.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1405)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1425)
 
 <a id="Vercel_AI_PrepareStepUpdate_Instructions_"></a>
 <a id="Vercel_AI_PrepareStepUpdate_Instructions"></a>
@@ -93,7 +93,7 @@ Replacement instructions. The override carries forward to later steps.
 
 **Value:** [Instructions](/api/Vercel.AI.Prompt/Instructions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1375)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1395)
 
 <a id="Vercel_AI_PrepareStepUpdate_MaxOutputTokens_"></a>
 <a id="Vercel_AI_PrepareStepUpdate_MaxOutputTokens"></a>
@@ -110,7 +110,7 @@ Overrides the maximum output tokens for this step. Maps to `maxOutputTokens`.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1390)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1410)
 
 <a id="Vercel_AI_PrepareStepUpdate_Messages_"></a>
 <a id="Vercel_AI_PrepareStepUpdate_Messages"></a>
@@ -127,7 +127,7 @@ Replacement prompt, without the instructions. The override carries forward to la
 
 **Value:** [IReadOnlyList&lt;ModelMessage&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1378)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1398)
 
 <a id="Vercel_AI_PrepareStepUpdate_Model_"></a>
 <a id="Vercel_AI_PrepareStepUpdate_Model"></a>
@@ -144,7 +144,7 @@ Replacement model.
 
 **Value:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1381)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1401)
 
 <a id="Vercel_AI_PrepareStepUpdate_PresencePenalty_"></a>
 <a id="Vercel_AI_PrepareStepUpdate_PresencePenalty"></a>
@@ -161,7 +161,7 @@ Overrides the presence penalty for this step. Maps to `presencePenalty`.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1402)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1422)
 
 <a id="Vercel_AI_PrepareStepUpdate_ProviderOptions_"></a>
 <a id="Vercel_AI_PrepareStepUpdate_ProviderOptions"></a>
@@ -178,7 +178,7 @@ Provider options for this step, such as an Anthropic container id. They are deep
 
 **Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1422)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1442)
 
 <a id="Vercel_AI_PrepareStepUpdate_Reasoning_"></a>
 <a id="Vercel_AI_PrepareStepUpdate_Reasoning"></a>
@@ -195,7 +195,7 @@ Overrides the reasoning effort for this step. Maps to `reasoning`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1414)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1434)
 
 <a id="Vercel_AI_PrepareStepUpdate_RuntimeContext_"></a>
 <a id="Vercel_AI_PrepareStepUpdate_RuntimeContext"></a>
@@ -212,7 +212,7 @@ Replacement runtime context. It affects this step and all later steps. Maps to `
 
 **Value:** [IReadOnlyDictionary&lt;string, object&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1437)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1457)
 
 <a id="Vercel_AI_PrepareStepUpdate_Seed_"></a>
 <a id="Vercel_AI_PrepareStepUpdate_Seed"></a>
@@ -229,7 +229,7 @@ Overrides the seed for this step. Maps to `seed`.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1411)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1431)
 
 <a id="Vercel_AI_PrepareStepUpdate_StopSequences_"></a>
 <a id="Vercel_AI_PrepareStepUpdate_StopSequences"></a>
@@ -246,7 +246,7 @@ Overrides the stop sequences for this step. An empty list clears them. Maps to `
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1408)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1428)
 
 <a id="Vercel_AI_PrepareStepUpdate_Temperature_"></a>
 <a id="Vercel_AI_PrepareStepUpdate_Temperature"></a>
@@ -263,7 +263,7 @@ Overrides the temperature for this step. Maps to `temperature`.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1393)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1413)
 
 <a id="Vercel_AI_PrepareStepUpdate_ToolChoice_"></a>
 <a id="Vercel_AI_PrepareStepUpdate_ToolChoice"></a>
@@ -280,7 +280,7 @@ Replacement tool choice for this step.
 
 **Value:** [ToolChoice](/api/Vercel.AI.Provider/ToolChoice/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1384)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1404)
 
 <a id="Vercel_AI_PrepareStepUpdate_ToolOrder_"></a>
 <a id="Vercel_AI_PrepareStepUpdate_ToolOrder"></a>
@@ -297,7 +297,7 @@ Overrides the order in which tools are sent to the provider for this step. See [
 
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1417)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1437)
 
 <a id="Vercel_AI_PrepareStepUpdate_ToolsContext_"></a>
 <a id="Vercel_AI_PrepareStepUpdate_ToolsContext"></a>
@@ -314,7 +314,7 @@ Replacement tools context. It affects this step and all later steps, and it is p
 
 **Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1432)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1452)
 
 <a id="Vercel_AI_PrepareStepUpdate_TopK_"></a>
 <a id="Vercel_AI_PrepareStepUpdate_TopK"></a>
@@ -331,7 +331,7 @@ Overrides top-k for this step. Maps to `topK`.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1399)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1419)
 
 <a id="Vercel_AI_PrepareStepUpdate_TopP_"></a>
 <a id="Vercel_AI_PrepareStepUpdate_TopP"></a>
@@ -348,4 +348,4 @@ Overrides top-p for this step. Maps to `topP`.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1396)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1416)

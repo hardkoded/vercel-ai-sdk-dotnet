@@ -16,10 +16,13 @@ internal sealed class GenerateTextRestrictedTelemetryDispatcher
     private readonly TelemetryDispatcher _dispatcher;
     private readonly TelemetryOptions? _telemetry;
 
-    private GenerateTextRestrictedTelemetryDispatcher(TelemetryOptions? telemetry)
+    private GenerateTextRestrictedTelemetryDispatcher(
+        TelemetryDispatcher dispatcher,
+        TelemetryOptions? telemetry
+    )
     {
         _telemetry = telemetry;
-        _dispatcher = TelemetryDispatcher.Create(telemetry);
+        _dispatcher = dispatcher;
     }
 
     /// <summary>Maps to <c>createRestrictedTelemetryDispatcher</c>.</summary>
@@ -27,7 +30,97 @@ internal sealed class GenerateTextRestrictedTelemetryDispatcher
         TelemetryOptions? telemetry
     )
     {
-        return new GenerateTextRestrictedTelemetryDispatcher(telemetry);
+        return new GenerateTextRestrictedTelemetryDispatcher(
+            TelemetryDispatcher.Create(telemetry),
+            telemetry
+        );
+    }
+
+    /// <summary>Maps to <c>createRestrictedTelemetryDispatcher</c> for the telemetry settings of a text generation call.</summary>
+    internal static GenerateTextRestrictedTelemetryDispatcher CreateRestrictedTelemetryDispatcher(
+        GenerateTextOptions options
+    )
+    {
+        var dispatcher = TelemetryDispatcher.Create(options);
+        return new GenerateTextRestrictedTelemetryDispatcher(dispatcher, dispatcher.Options);
+    }
+
+    /// <summary>Whether any integration is registered.</summary>
+    internal bool HasIntegrations => _dispatcher.HasIntegrations;
+
+    /// <summary>Whether the dispatcher publishes tracing channel spans.</summary>
+    internal bool IsTracingEnabled => _dispatcher.IsTracingEnabled;
+
+    /// <summary>The <c>executeTool</c> wrappers, spread from the telemetry dispatcher.</summary>
+    internal IReadOnlyList<IExecuteTool> ExecuteToolWrappers => _dispatcher.ExecuteToolWrappers;
+
+    /// <summary>Maps to <c>onStart</c>. Null when no integration has it.</summary>
+    internal Func<GenerateTextStartEvent, CancellationToken, Task>? OnStart =>
+        _dispatcher.OnStart == null ? null : OnStartAsync;
+
+    /// <summary>Maps to <c>onStepStart</c>. Null when no integration has it.</summary>
+    internal Func<GenerateTextStepStartEvent, CancellationToken, Task>? OnStepStart =>
+        _dispatcher.OnStepStart == null ? null : OnStepStartAsync;
+
+    /// <summary>Maps to <c>onStepEnd</c>. Null when no integration has it.</summary>
+    internal Func<StepResult, CancellationToken, Task>? OnStepEnd =>
+        _dispatcher.OnStepEnd == null ? null : OnStepEndAsync;
+
+    /// <summary>Maps to <c>onStepError</c>. Null when no integration has it.</summary>
+    internal Func<GenerateTextStepErrorEvent, CancellationToken, Task>? OnStepError =>
+        _dispatcher.OnStepError == null ? null : OnStepErrorAsync;
+
+    /// <summary>Maps to <c>onEnd</c>. Null when no integration has it.</summary>
+    internal Func<GenerateTextResult, CancellationToken, Task>? OnEnd =>
+        _dispatcher.OnEnd == null ? null : OnEndAsync;
+
+    /// <summary>Maps to <c>onAbort</c>. Null when no integration has it.</summary>
+    internal Func<StreamAbortContext, CancellationToken, Task>? OnAbort =>
+        _dispatcher.OnAbort == null ? null : OnAbortAsync;
+
+    /// <summary>Maps to <c>onToolExecutionStart</c>. Null when no integration has it.</summary>
+    internal Func<ToolExecutionStartEvent, CancellationToken, Task>? OnToolExecutionStart =>
+        _dispatcher.OnToolExecutionStart == null ? null : OnToolExecutionStartAsync;
+
+    /// <summary>Maps to <c>onToolExecutionEnd</c>. Null when no integration has it.</summary>
+    internal Func<ToolExecutionEndEvent, CancellationToken, Task>? OnToolExecutionEnd =>
+        _dispatcher.OnToolExecutionEnd == null ? null : OnToolExecutionEndAsync;
+
+    /// <summary>Maps to <c>onLanguageModelCallStart</c>, spread from the telemetry dispatcher.</summary>
+    internal Func<LanguageModelCallStartEvent, CancellationToken, Task>? OnLanguageModelCallStart =>
+        _dispatcher.OnLanguageModelCallStart;
+
+    /// <summary>Maps to <c>onLanguageModelCallEnd</c>, spread from the telemetry dispatcher.</summary>
+    internal Func<LanguageModelCallEndEvent, CancellationToken, Task>? OnLanguageModelCallEnd =>
+        _dispatcher.OnLanguageModelCallEnd;
+
+    /// <summary>Maps to <c>onError</c>, spread from the telemetry dispatcher.</summary>
+    internal Func<TelemetryErrorEvent, CancellationToken, Task>? OnError => _dispatcher.OnError;
+
+    /// <summary>Maps to <c>startTracingChannelContext</c>, spread from the telemetry dispatcher.</summary>
+    internal TracingChannelContext? StartTracingChannelContext(
+        string type,
+        object @event,
+        Task<object?> completion
+    )
+    {
+        return _dispatcher.StartTracingChannelContext(type, @event, completion);
+    }
+
+    /// <summary>Maps to <c>runInTracingChannelSpan</c>, spread from the telemetry dispatcher.</summary>
+    internal Task<T> RunInTracingChannelSpan<T>(string type, object @event, Func<Task<T>> execute)
+    {
+        return _dispatcher.RunInTracingChannelSpan(type, @event, execute);
+    }
+
+    /// <summary>Maps to <c>executeLanguageModelCall</c>, spread from the telemetry dispatcher.</summary>
+    internal Task<T> ExecuteLanguageModelCallAsync<T>(
+        LanguageModelCallStartEvent @event,
+        Func<Task<T>> execute,
+        CancellationToken cancellationToken
+    )
+    {
+        return _dispatcher.ExecuteLanguageModelCallAsync(@event, execute, cancellationToken);
     }
 
     /// <summary>Maps to <c>onStart</c>.</summary>

@@ -85,7 +85,7 @@ Tool description.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L727)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L741)
 
 <a id="Vercel_AI_Provider_LanguageModelTool_InputSchema_"></a>
 <a id="Vercel_AI_Provider_LanguageModelTool_InputSchema"></a>
@@ -102,7 +102,7 @@ JSON Schema for the arguments.
 
 **Value:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L730)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L744)
 
 <a id="Vercel_AI_Provider_LanguageModelTool_IsProviderDefined_"></a>
 <a id="Vercel_AI_Provider_LanguageModelTool_IsProviderDefined"></a>
@@ -153,7 +153,7 @@ JSON Schema for the tool result. OpenAI Responses parses the result as JSON, so 
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L738)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L752)
 
 <a id="Vercel_AI_Provider_LanguageModelTool_ProviderOptions_"></a>
 <a id="Vercel_AI_Provider_LanguageModelTool_ProviderOptions"></a>
@@ -171,7 +171,7 @@ Maps to the tool's `providerOptions`.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L744)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L758)
 
 <a id="Vercel_AI_Provider_LanguageModelTool_ProviderToolId_"></a>
 <a id="Vercel_AI_Provider_LanguageModelTool_ProviderToolId"></a>
@@ -205,7 +205,7 @@ Provider-owned telemetry view of [Args](#Vercel_AI_Provider_LanguageModelTool_Ar
 
 **Value:** [Func&lt;JsonElement, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L715)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L729)
 
 <a id="Vercel_AI_Provider_LanguageModelTool_Strict_"></a>
 <a id="Vercel_AI_Provider_LanguageModelTool_Strict"></a>
@@ -222,7 +222,7 @@ Responses strict mode. Null means unset, which Responses sends as false.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L733)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L747)
 
 ## Methods
 
@@ -270,4 +270,4 @@ redactor, and null when the redactor throws, so a broken redactor neither expose
 
 **Returns:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L721)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L735)

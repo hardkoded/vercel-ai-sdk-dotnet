@@ -56,6 +56,26 @@ Creates a guarded transport.
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/GuardedFetch.cs#L32)
 
+## Properties
+
+<a id="Vercel_AI_Util_GuardedFetch_Client_"></a>
+<a id="Vercel_AI_Util_GuardedFetch_Client"></a>
+
+### Client
+
+
+```csharp
+public HttpClient Client { get; }
+```
+
+
+The pinned client behind this transport. Pass it to a provider or MCP transport that takes an [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient), so its
+API calls use the same validated connections. It does not follow redirects. Disposing the transport disposes it.
+
+**Value:** [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/GuardedFetch.cs#L60)
+
 ## Methods
 
 <a id="Vercel_AI_Util_GuardedFetch_Dispose_"></a>
@@ -71,7 +91,7 @@ public void Dispose()
 
 Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/GuardedFetch.cs#L96)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/GuardedFetch.cs#L102)
 
 <a id="Vercel_AI_Util_GuardedFetch_FetchAsync_"></a>
 <a id="Vercel_AI_Util_GuardedFetch_FetchAsync_System_String_Vercel_AI_Util_DownloadRequest_"></a>
@@ -101,7 +121,7 @@ Requests &lt;code class="paramref"&gt;url&lt;/code&gt; with validated, pinned ad
 | --- | --- |
 | [DownloadError](/api/Vercel.AI.Util/DownloadError/) | The host resolves to a local, private, or reserved address. |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/GuardedFetch.cs#L58)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/GuardedFetch.cs#L64)
 
 <a id="Vercel_AI_Util_GuardedFetch_IsSafeIpAddress_"></a>
 <a id="Vercel_AI_Util_GuardedFetch_IsSafeIpAddress_System_String_"></a>
@@ -124,7 +144,7 @@ Returns whether &lt;code class="paramref"&gt;address&lt;/code&gt; is a public ad
 
 **Returns:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/GuardedFetch.cs#L104)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/GuardedFetch.cs#L110)
 
 ## Operators
 
@@ -149,4 +169,4 @@ Converts the transport to the [DownloadFetch](/api/Vercel.AI.Util/DownloadFetch/
 
 **Returns:** [DownloadFetch](/api/Vercel.AI.Util/DownloadFetch/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/GuardedFetch.cs#L85)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/GuardedFetch.cs#L91)

@@ -38,6 +38,8 @@ internal sealed class TestTelemetry : ITelemetry
 
     public Func<GenerateTextStepErrorEvent, CancellationToken, Task>? OnStepError { get; init; }
 
+    public IDurableTelemetry? ExperimentalDurable { get; init; }
+
     public Func<IOperationEndEvent, CancellationToken, Task>? OnEnd { get; init; }
 
     public Func<EmbeddingModelCallStartEvent, CancellationToken, Task>? OnEmbedStart { get; init; }

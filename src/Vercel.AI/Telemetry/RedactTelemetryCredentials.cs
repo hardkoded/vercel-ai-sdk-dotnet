@@ -31,7 +31,38 @@ internal static class RedactTelemetryCredentialsHelper
         return value.WithSteps(value.Steps.Select(RedactStep).ToList());
     }
 
-    private static StepResult RedactStep(StepResult step)
+    /// <summary>Redacts the tools of an event: each provider-defined tool keeps the telemetry view of its arguments. Maps to <c>redactTools</c>.</summary>
+    internal static IReadOnlyList<Tool>? RedactTools(IReadOnlyList<Tool>? tools)
+    {
+        if (tools == null)
+        {
+            return null;
+        }
+
+        var copy = tools.Select(tool => tool.WithRedactedTelemetryArgs()).ToList();
+        return copy.Where((tool, index) => !ReferenceEquals(tool, tools[index])).Any()
+            ? copy
+            : tools;
+    }
+
+    /// <summary>Redacts the tools of a model call event. Maps to <c>redactTools</c>.</summary>
+    internal static IReadOnlyList<LanguageModelTool>? RedactTools(
+        IReadOnlyList<LanguageModelTool>? tools
+    )
+    {
+        if (tools == null)
+        {
+            return null;
+        }
+
+        var copy = tools.Select(tool => tool.WithRedactedTelemetryArgs()).ToList();
+        return copy.Where((tool, index) => !ReferenceEquals(tool, tools[index])).Any()
+            ? copy
+            : tools;
+    }
+
+    /// <summary>Redacts the request and response bodies of a step. Maps to <c>redactTelemetryCredentials</c> of a step result.</summary>
+    internal static StepResult RedactStep(StepResult step)
     {
         if (step.Request.RedactBody == null && step.Response.RedactBody == null)
         {

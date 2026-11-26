@@ -30,7 +30,7 @@ function that performs the model call. Maps to `Partial<LanguageModelCallStartEv
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/Telemetry.cs#L171)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/Telemetry.cs#L178)
 
 ## Constructors
 
@@ -54,7 +54,7 @@ Creates the options.
 | `event` | [LanguageModelCallStartEvent](/api/Vercel.AI/LanguageModelCallStartEvent/) |  |
 | `execute` | [Func&lt;Task&lt;T&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/Telemetry.cs#L174)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/Telemetry.cs#L181)
 
 ## Properties
 
@@ -73,7 +73,7 @@ Id of the model call. Maps to `callId`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/Telemetry.cs#L187)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/Telemetry.cs#L194)
 
 <a id="Vercel_AI_ExecuteLanguageModelCallOptions_1_Event_"></a>
 <a id="Vercel_AI_ExecuteLanguageModelCallOptions_1_Event"></a>
@@ -90,7 +90,7 @@ The start event of the model call, as the integrations see it.
 
 **Value:** [LanguageModelCallStartEvent](/api/Vercel.AI/LanguageModelCallStartEvent/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/Telemetry.cs#L184)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/Telemetry.cs#L191)
 
 <a id="Vercel_AI_ExecuteLanguageModelCallOptions_1_Execute_"></a>
 <a id="Vercel_AI_ExecuteLanguageModelCallOptions_1_Execute"></a>
@@ -107,4 +107,4 @@ Performs the model call. Maps to `execute`.
 
 **Value:** [Func&lt;Task&lt;T&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/Telemetry.cs#L190)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/Telemetry.cs#L197)

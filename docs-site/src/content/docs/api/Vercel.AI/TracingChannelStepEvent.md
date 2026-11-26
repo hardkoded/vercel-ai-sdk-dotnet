@@ -23,7 +23,7 @@ The event of a `step` span. Upstream publishes the object literal `{ callId, ste
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/TracingChannel.cs#L91)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/TracingChannel.cs#L126)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates the event of a step span.
 | `callId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `stepNumber` | [int](https://learn.microsoft.com/dotnet/api/system.int32) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/TracingChannel.cs#L94)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/TracingChannel.cs#L129)
 
 ## Properties
 
@@ -66,7 +66,7 @@ The version of the SDK.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/TracingChannel.cs#L116)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/TracingChannel.cs#L151)
 
 <a id="Vercel_AI_TracingChannelStepEvent_CallId_"></a>
 <a id="Vercel_AI_TracingChannelStepEvent_CallId"></a>
@@ -83,7 +83,7 @@ The id of the call that the step belongs to.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/TracingChannel.cs#L101)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/TracingChannel.cs#L136)
 
 <a id="Vercel_AI_TracingChannelStepEvent_FunctionId_"></a>
 <a id="Vercel_AI_TracingChannelStepEvent_FunctionId"></a>
@@ -100,7 +100,7 @@ The function id of the telemetry settings.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/TracingChannel.cs#L113)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/TracingChannel.cs#L148)
 
 <a id="Vercel_AI_TracingChannelStepEvent_RecordInputs_"></a>
 <a id="Vercel_AI_TracingChannelStepEvent_RecordInputs"></a>
@@ -117,7 +117,7 @@ Whether inputs are recorded. Null when the call does not say.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/TracingChannel.cs#L107)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/TracingChannel.cs#L142)
 
 <a id="Vercel_AI_TracingChannelStepEvent_RecordOutputs_"></a>
 <a id="Vercel_AI_TracingChannelStepEvent_RecordOutputs"></a>
@@ -134,7 +134,7 @@ Whether outputs are recorded. Null when the call does not say.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/TracingChannel.cs#L110)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/TracingChannel.cs#L145)
 
 <a id="Vercel_AI_TracingChannelStepEvent_StepNumber_"></a>
 <a id="Vercel_AI_TracingChannelStepEvent_StepNumber"></a>
@@ -151,4 +151,4 @@ The number of the step, starting at zero.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/TracingChannel.cs#L104)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/TracingChannel.cs#L139)

@@ -168,7 +168,24 @@ public sealed class Tool
     public string? ProviderToolId { get; }
 
     /// <summary>Arguments of a provider-defined tool. Undefined for a function tool.</summary>
-    public JsonElement ProviderToolArgs { get; }
+    public JsonElement ProviderToolArgs { get; private set; }
+
+    // A copy of the tool whose arguments are the provider-owned telemetry view. A redactor that throws leaves no arguments.
+    // Maps to the `tools` redaction of `redactTelemetryCredentials`.
+    internal Tool WithRedactedTelemetryArgs()
+    {
+        if (!IsProviderDefined || RedactArgs == null)
+        {
+            return this;
+        }
+
+        var copy = (Tool)MemberwiseClone();
+        copy.ProviderToolArgs = ProviderUtils.TelemetryRedaction.RedactTelemetryValue(
+            ProviderToolArgs,
+            RedactArgs
+        ) ?? default;
+        return copy;
+    }
 
     /// <summary>Whether this is a provider-defined tool, which the provider executes. Maps to <c>{ type: 'provider', id, args }</c>.</summary>
     public bool IsProviderDefined => ProviderToolId != null;
@@ -439,6 +456,9 @@ public sealed class StepResult
 
     /// <summary>Text generated in this step.</summary>
     public string Text { get; }
+
+    /// <summary>Time at which the event occurred, in milliseconds since the Unix epoch. Set when events are reported after they happened, for example when a durable workflow reports a run that spanned several processes. Integrations use it instead of the current time when present. Maps to <c>timestamp</c>.</summary>
+    public long? Timestamp { get; init; }
 
     /// <summary>
     /// Experimental. The user messages that were sent with <see cref="GenerateTextOptions.ExperimentalSteering"/> and added to the input of this step.
@@ -1746,7 +1766,21 @@ public sealed class GenerateTextStartEvent : IOperationStartEvent
     public IReadOnlyList<ModelMessage> Messages { get; init; } = [];
 
     /// <summary>The tools available for this generation. Maps to <c>tools</c>.</summary>
-    public IReadOnlyList<Tool>? Tools { get; init; }
+    public IReadOnlyList<Tool>? Tools
+    {
+        get => _tools;
+        init => _tools = value;
+    }
+
+    private IReadOnlyList<Tool>? _tools;
+
+    // A copy of the event whose tools carry the telemetry view of their arguments. Maps to the `tools` redaction of `redactTelemetryCredentials`.
+    internal GenerateTextStartEvent WithRedactedTools()
+    {
+        var copy = (GenerateTextStartEvent)MemberwiseClone();
+        copy._tools = RedactTelemetryCredentialsHelper.RedactTools(_tools);
+        return copy;
+    }
 
     /// <summary>The tool choice strategy for this generation. Maps to <c>toolChoice</c>.</summary>
     public ToolChoice? ToolChoice { get; init; }
@@ -1828,6 +1862,12 @@ public sealed class GenerateTextStartEvent : IOperationStartEvent
     // The version of the SDK that emitted the event. Set only on events sent to telemetry integrations. Maps to aiVersion.
     internal string? AiVersion { get; private set; }
 
+    /// <summary>Time at which the event occurred, in milliseconds since the Unix epoch. Set when events are reported after they happened, for example when a durable workflow reports a run that spanned several processes. Integrations use it instead of the current time when present. Maps to <c>timestamp</c>.</summary>
+    public long? Timestamp { get; init; }
+
+    /// <summary>Identifies live model events and the run events reported after completion of a durable run. Maps to <c>durableContext</c>.</summary>
+    public DurableTelemetryEventContext? DurableContext { get; init; }
+
     // A copy of the event with the recording flags of the call. Telemetry hands integrations the flags and leaves the original event alone.
     internal GenerateTextStartEvent WithTelemetry(TelemetryOptions? telemetry)
     {
@@ -1867,6 +1907,8 @@ public class GenerateTextStepStartEvent
         StepNumber = source.StepNumber;
         Instructions = source.Instructions;
         Messages = source.Messages;
+        Timestamp = source.Timestamp;
+        DurableContext = source.DurableContext;
         Tools = source.Tools;
         ToolChoice = source.ToolChoice;
         ActiveTools = source.ActiveTools;
@@ -1880,6 +1922,12 @@ public class GenerateTextStepStartEvent
 
     /// <summary>Unique identifier for this generation call, used to correlate events. Maps to <c>callId</c>.</summary>
     public string CallId { get; init; } = string.Empty;
+
+    /// <summary>Time at which the event occurred, in milliseconds since the Unix epoch. Set when events are reported after they happened, for example when a durable workflow reports a run that spanned several processes. Integrations use it instead of the current time when present. Maps to <c>timestamp</c>.</summary>
+    public long? Timestamp { get; init; }
+
+    /// <summary>Identifies live model events and the run events reported after completion of a durable run. Maps to <c>durableContext</c>.</summary>
+    public DurableTelemetryEventContext? DurableContext { get; init; }
 
     /// <summary>The provider identifier. Maps to <c>provider</c>.</summary>
     public string Provider { get; init; } = string.Empty;
@@ -1897,7 +1945,13 @@ public class GenerateTextStepStartEvent
     public IReadOnlyList<ModelMessage> Messages { get; init; } = [];
 
     /// <summary>The tools available for this generation. Maps to <c>tools</c>.</summary>
-    public IReadOnlyList<Tool>? Tools { get; init; }
+    public IReadOnlyList<Tool>? Tools
+    {
+        get => _tools;
+        init => _tools = value;
+    }
+
+    private IReadOnlyList<Tool>? _tools;
 
     /// <summary>The tool choice configuration for this step. Maps to <c>toolChoice</c>.</summary>
     public ToolChoice? ToolChoice { get; init; }
@@ -1948,6 +2002,8 @@ public class GenerateTextStepStartEvent
     )
     {
         var copy = (GenerateTextStepStartEvent)MemberwiseClone();
+        // The tools carry the telemetry view of their arguments.
+        copy._tools = RedactTelemetryCredentialsHelper.RedactTools(_tools);
         copy._steps = steps;
         copy._runtimeContext = runtimeContext;
         copy._toolsContext = toolsContext;
@@ -2007,6 +2063,12 @@ public sealed class LanguageModelCallStartEvent
 
     /// <summary>The version of the SDK that emitted the event. Set only on events sent to telemetry integrations. Maps to <c>aiVersion</c>.</summary>
     public string? AiVersion { get; init; }
+
+    /// <summary>Time at which the event occurred, in milliseconds since the Unix epoch. Set when events are reported after they happened, for example when a durable workflow reports a run that spanned several processes. Integrations use it instead of the current time when present. Maps to <c>timestamp</c>.</summary>
+    public long? Timestamp { get; init; }
+
+    /// <summary>Identifies live model events and the run events reported after completion of a durable run. Maps to <c>durableContext</c>.</summary>
+    public DurableTelemetryEventContext? DurableContext { get; init; }
 }
 
 /// <summary>Passed to <see cref="GenerateTextOptions.OnLanguageModelCallEnd"/> after a provider model call returns.</summary>
@@ -2078,6 +2140,9 @@ public sealed class LanguageModelCallEndEvent
 
     /// <summary>The version of the SDK that emitted the event. Set only on events sent to telemetry integrations. Maps to <c>aiVersion</c>.</summary>
     public string? AiVersion { get; init; }
+
+    /// <summary>Time at which the event occurred, in milliseconds since the Unix epoch. Set when events are reported after they happened, for example when a durable workflow reports a run that spanned several processes. Integrations use it instead of the current time when present. Maps to <c>timestamp</c>.</summary>
+    public long? Timestamp { get; init; }
 }
 
 /// <summary>Passed to <see cref="GenerateTextOptions.OnToolExecutionStart"/> before a tool runs.</summary>
@@ -2113,6 +2178,9 @@ public class ToolExecutionStartEvent
 
     /// <summary>The version of the SDK that emitted the event. Set only on events sent to telemetry integrations. Maps to <c>aiVersion</c>.</summary>
     public string? AiVersion { get; init; }
+
+    /// <summary>Time at which the event occurred, in milliseconds since the Unix epoch. Set when events are reported after they happened, for example when a durable workflow reports a run that spanned several processes. Integrations use it instead of the current time when present. Maps to <c>timestamp</c>.</summary>
+    public long? Timestamp { get; init; }
 }
 
 /// <summary>Passed to <see cref="GenerateTextOptions.OnToolExecutionEnd"/> after a tool ran.</summary>
@@ -2265,6 +2333,9 @@ public sealed class StreamAbortContext
 
     /// <summary>The cancellation exception, or the abort reason when it is an exception.</summary>
     public Exception Exception { get; }
+
+    /// <summary>Time at which the event occurred, in milliseconds since the Unix epoch. Set when events are reported after they happened, for example when a durable workflow reports a run that spanned several processes. Integrations use it instead of the current time when present. Maps to <c>timestamp</c>.</summary>
+    public long? Timestamp { get; init; }
 }
 
 /// <summary>Result of <c>generateText</c>.</summary>
@@ -2283,6 +2354,7 @@ public class GenerateTextResult : IOperationEndEvent
             result.ProviderMetadata
         )
     {
+        Timestamp = result.Timestamp;
         ResponseMessages = result.ResponseMessages;
     }
 
@@ -2404,6 +2476,7 @@ public class GenerateTextResult : IOperationEndEvent
             RecordOutputs = RecordOutputs,
             FunctionId = FunctionId,
             AiVersion = AiVersion,
+            Timestamp = Timestamp,
         };
 
     /// <summary>Text from the last step.</summary>
@@ -2469,6 +2542,9 @@ public class GenerateTextResult : IOperationEndEvent
 
     /// <summary>The version of the SDK that emitted the event. Set only on events sent to telemetry integrations. Maps to <c>aiVersion</c>.</summary>
     public string? AiVersion { get; init; }
+
+    /// <summary>Time at which the event occurred, in milliseconds since the Unix epoch. Set when events are reported after they happened, for example when a durable workflow reports a run that spanned several processes. Integrations use it instead of the current time when present. Maps to <c>timestamp</c>.</summary>
+    public long? Timestamp { get; init; }
 }
 
 /// <summary>

@@ -25,7 +25,7 @@ The options a tool receives when it runs. Maps to the second argument of `execut
 
 **Derived:** [ToolInputAvailableOptions](/api/Vercel.AI/ToolInputAvailableOptions/), [ToolInputDeltaOptions](/api/Vercel.AI/ToolInputDeltaOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L229)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L246)
 
 ## Constructors
 
@@ -50,7 +50,7 @@ Creates the options.
 | `messages` | [IReadOnlyList&lt;ModelMessage&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 | `abortSignal` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L232)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L249)
 
 ## Properties
 
@@ -69,7 +69,7 @@ Cancellation signal of the call.
 
 **Value:** [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L250)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L267)
 
 <a id="Vercel_AI_ToolExecutionOptions_Context_"></a>
 <a id="Vercel_AI_ToolExecutionOptions_Context"></a>
@@ -87,7 +87,7 @@ Maps to `context`.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L259)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L276)
 
 <a id="Vercel_AI_ToolExecutionOptions_ExperimentalSandbox_"></a>
 <a id="Vercel_AI_ToolExecutionOptions_ExperimentalSandbox"></a>
@@ -104,7 +104,7 @@ The sandbox environment that the tool is operating in. Maps to `experimental_san
 
 **Value:** [ISandboxSession](/api/Vercel.AI.ProviderUtils/ISandboxSession/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L253)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L270)
 
 <a id="Vercel_AI_ToolExecutionOptions_Messages_"></a>
 <a id="Vercel_AI_ToolExecutionOptions_Messages"></a>
@@ -121,7 +121,7 @@ Messages sent to the model in the step that made the call.
 
 **Value:** [IReadOnlyList&lt;ModelMessage&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L247)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L264)
 
 <a id="Vercel_AI_ToolExecutionOptions_ToolCallId_"></a>
 <a id="Vercel_AI_ToolExecutionOptions_ToolCallId"></a>
@@ -138,4 +138,4 @@ Id of the tool call.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L244)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L261)

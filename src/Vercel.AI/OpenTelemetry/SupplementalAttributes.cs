@@ -100,6 +100,12 @@ public sealed class OpenTelemetryOptions
     /// </summary>
     public ActivitySource? Tracer { get; set; }
 
+    /// <summary>
+    /// The bridge that lets spans of a durable run share the run's trace. Pass the same instance as the durable option of the integration.
+    /// Maps to <c>durable</c>.
+    /// </summary>
+    public OpenTelemetryIdGenerator? Durable { get; set; }
+
     /// <summary>Controls the root agent span names for text generation. Null is <see cref="AgentSpanName.ModelId"/>.</summary>
     public AgentSpanName? AgentSpanName { get; set; }
 

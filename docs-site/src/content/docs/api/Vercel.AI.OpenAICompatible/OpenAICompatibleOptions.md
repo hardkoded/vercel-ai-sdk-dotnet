@@ -216,6 +216,24 @@ Converts the raw chat usage object. Null uses `JsonElement%7d)`.
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L225)
 
+<a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_DownloadFetch_"></a>
+<a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_DownloadFetch"></a>
+
+### DownloadFetch
+
+
+```csharp
+public DownloadFetch? DownloadFetch { get; set; }
+```
+
+
+Fetch used to download URLs from a response body (Fal). Maps to the provider setting `fetch` that upstream also uses for downloads.
+Pass a [GuardedFetch](/api/Vercel.AI.Util/GuardedFetch/) for connect-time DNS validation. It takes precedence over [DownloadHttpClient](#Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_DownloadHttpClient).
+
+**Value:** [DownloadFetch](/api/Vercel.AI.Util/DownloadFetch/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L252)
+
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_DownloadHttpClient_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_DownloadHttpClient"></a>
 
@@ -266,7 +284,7 @@ Generates ids for sources and for streamed tool calls that have none. Maps to th
 
 **Value:** [Func&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.func-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L249)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L255)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_Headers_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_Headers"></a>
@@ -542,7 +560,7 @@ When it is null, no URL is supported and prompt file URLs are downloaded.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L255)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L261)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_SupportsEmbeddings_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_SupportsEmbeddings"></a>
@@ -663,4 +681,4 @@ Returns a copy. Providers change the copy, so the options the caller passed in a
 
 **Returns:** [OpenAICompatibleOptions](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L260)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L266)

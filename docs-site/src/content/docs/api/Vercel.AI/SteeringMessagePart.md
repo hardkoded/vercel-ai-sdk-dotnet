@@ -24,7 +24,7 @@ Maps to the `steering-message` stream part. `StreamText` emits it when it delive
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [TextStreamPart](/api/Vercel.AI/TextStreamPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2942)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L3018)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates a steering-message part.
 | `message` | [UserModelMessage](/api/Vercel.AI.Provider/UserModelMessage/) |  |
 | `stepNumber` | [int](https://learn.microsoft.com/dotnet/api/system.int32) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2945)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L3021)
 
 ## Properties
 
@@ -68,7 +68,7 @@ The id of the steering message.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2954)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L3030)
 
 <a id="Vercel_AI_SteeringMessagePart_Message_"></a>
 <a id="Vercel_AI_SteeringMessagePart_Message"></a>
@@ -85,7 +85,7 @@ The user message that was added to the run.
 
 **Value:** [UserModelMessage](/api/Vercel.AI.Provider/UserModelMessage/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2957)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L3033)
 
 <a id="Vercel_AI_SteeringMessagePart_StepNumber_"></a>
 <a id="Vercel_AI_SteeringMessagePart_StepNumber"></a>
@@ -102,4 +102,4 @@ The number of the step whose model call received the message.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2960)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L3036)

@@ -26,6 +26,9 @@ public sealed class TelemetryErrorEvent
     /// <summary>The version of the AI SDK that emitted this event.</summary>
     public string? AiVersion { get; init; }
 
+    /// <summary>Time at which the event occurred, in milliseconds since the Unix epoch. Maps to <c>timestamp</c>.</summary>
+    public long? Timestamp { get; init; }
+
     /// <summary>Copied from <see cref="TelemetryOptions.RecordInputs"/>.</summary>
     public bool? RecordInputs { get; init; }
 

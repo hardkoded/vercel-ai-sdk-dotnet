@@ -24,7 +24,7 @@ The value a tracing channel subscriber receives. Maps to `TelemetryTracingChanne
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/TracingChannel.cs#L66)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/TracingChannel.cs#L94)
 
 ## Constructors
 
@@ -48,7 +48,7 @@ Creates a message.
 | `type` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `event` | [object](https://learn.microsoft.com/dotnet/api/system.object) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/TracingChannel.cs#L69)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/TracingChannel.cs#L97)
 
 ## Properties
 
@@ -67,7 +67,7 @@ The error of the operation. Set on `error`.
 
 **Value:** [Exception](https://learn.microsoft.com/dotnet/api/system.exception)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/TracingChannel.cs#L85)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/TracingChannel.cs#L120)
 
 <a id="Vercel_AI_TelemetryTracingChannelMessage_Event_"></a>
 <a id="Vercel_AI_TelemetryTracingChannelMessage_Event"></a>
@@ -84,7 +84,7 @@ The telemetry event of the span, already filtered and redacted.
 
 **Value:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/TracingChannel.cs#L79)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/TracingChannel.cs#L114)
 
 <a id="Vercel_AI_TelemetryTracingChannelMessage_Result_"></a>
 <a id="Vercel_AI_TelemetryTracingChannelMessage_Result"></a>
@@ -101,7 +101,7 @@ The result of the operation. Set on `asyncEnd`, and only when inputs and outputs
 
 **Value:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/TracingChannel.cs#L82)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/TracingChannel.cs#L117)
 
 <a id="Vercel_AI_TelemetryTracingChannelMessage_Type_"></a>
 <a id="Vercel_AI_TelemetryTracingChannelMessage_Type"></a>
@@ -118,4 +118,4 @@ The kind of span. One of the [TelemetryTracingEventType](/api/Vercel.AI/Telemetr
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/TracingChannel.cs#L76)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/TracingChannel.cs#L111)
