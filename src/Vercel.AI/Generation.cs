@@ -1579,7 +1579,6 @@ internal static class Generation
                 var receivedTerminal = false;
                 var usage = LanguageModelUsage.Null;
                 ModelCallPerformance? modelCallPerformance = null;
-                ToolChoiceViolationException? toolChoiceViolation = null;
 
                 var streamOptions = StreamLanguageModelCallOptions.From(options);
                 streamOptions.Model = current;
@@ -2107,8 +2106,10 @@ internal static class Generation
                                 providerMetadata = modelCallEnd.ProviderMetadata;
                                 modelCallPerformance = modelCallEnd.Performance;
                                 break;
-                            case ErrorPart { Error: ToolChoiceViolationException violation }:
-                                toolChoiceViolation = violation;
+                            case ErrorPart { Error: ToolChoiceViolationException } violationPart:
+                                // Like upstream, the violation is an error part of the stream. The step finishes with the error finish reason and its usage.
+                                receivedTerminal = true;
+                                buffer.Add(violationPart);
                                 break;
                             case ErrorPart error:
                                 receivedTerminal = true;
@@ -2138,7 +2139,6 @@ internal static class Generation
                                 receivedTerminal = false;
                                 usage = LanguageModelUsage.Null;
                                 modelCallPerformance = null;
-                                toolChoiceViolation = null;
                                 stepResponseId = NewStepResponseId(options);
                                 stepResponseTimestamp = (
                                     options.CurrentDate ?? DefaultCurrentDate
@@ -2279,11 +2279,6 @@ internal static class Generation
                     warnings,
                     providerMetadata: providerMetadata
                 );
-                if (toolChoiceViolation != null)
-                {
-                    throw toolChoiceViolation;
-                }
-
                 var stepResponse = new LanguageModelResponseMetadata(
                     stepResponseId,
                     stepResponseTimestamp,
