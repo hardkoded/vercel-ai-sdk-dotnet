@@ -25,7 +25,7 @@ Settings for an OpenAI Chat Completions compatible provider.
 
 **Derived:** [AssemblyAIOptions](/api/Vercel.AI.AssemblyAI/AssemblyAIOptions/), [BasetenOptions](/api/Vercel.AI.Baseten/BasetenOptions/), [CartesiaOptions](/api/Vercel.AI.Cartesia/CartesiaOptions/), [DeepgramOptions](/api/Vercel.AI.Deepgram/DeepgramOptions/), [ElevenLabsOptions](/api/Vercel.AI.ElevenLabs/ElevenLabsOptions/), [GladiaOptions](/api/Vercel.AI.Gladia/GladiaOptions/), [HumeOptions](/api/Vercel.AI.Hume/HumeOptions/), [KlingAIOptions](/api/Vercel.AI.KlingAI/KlingAIOptions/), [MistralOptions](/api/Vercel.AI.Mistral/MistralOptions/), [OpenAIOptions](/api/Vercel.AI.OpenAI/OpenAIOptions/), [RevAIOptions](/api/Vercel.AI.RevAI/RevAIOptions/), [TencentOptions](/api/Vercel.AI.Tencent/TencentOptions/), [XaiOptions](/api/Vercel.AI.Xai/XaiOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L35)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L36)
 
 ## Properties
 
@@ -44,7 +44,7 @@ Extra environment variables accepted as a fallback.
 
 **Value:** [string\[\]](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L50)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L51)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_ApiKey_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_ApiKey"></a>
@@ -61,7 +61,7 @@ Explicit API key. Wins over the environment variable.
 
 **Value:** `Resolvable&lt;string&gt;`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L44)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L45)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_ApiKeyEnvironmentVariable_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_ApiKeyEnvironmentVariable"></a>
@@ -78,7 +78,7 @@ Environment variable read when [ApiKey](#Vercel_AI_OpenAICompatible_OpenAICompat
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L47)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L48)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_ApiKeyHeaderName_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_ApiKeyHeaderName"></a>
@@ -95,7 +95,7 @@ Header name for [ApiKeyHeader](/api/Vercel.AI.OpenAICompatible/ApiKeyStyle/#Verc
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L56)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L57)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_ApiKeyStyle_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_ApiKeyStyle"></a>
@@ -112,7 +112,7 @@ How to send the key.
 
 **Value:** [ApiKeyStyle](/api/Vercel.AI.OpenAICompatible/ApiKeyStyle/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L53)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L54)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_AzureApiVersion_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_AzureApiVersion"></a>
@@ -129,7 +129,7 @@ When set, chat, completion, embedding, and Responses URLs use the Azure routes a
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L74)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L75)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_AzureUseDeploymentBasedUrls_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_AzureUseDeploymentBasedUrls"></a>
@@ -146,7 +146,7 @@ With [AzureApiVersion](#Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_Azure
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L77)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L78)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_BaseUrl_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_BaseUrl"></a>
@@ -163,7 +163,7 @@ API origin, without a trailing slash. Chat calls append [ChatCompletionsPath](#V
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L41)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L42)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_ChatCompletionsPath_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_ChatCompletionsPath"></a>
@@ -180,7 +180,7 @@ Relative chat path.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L59)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L60)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_CompletionsPath_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_CompletionsPath"></a>
@@ -197,7 +197,7 @@ Relative completions path.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L195)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L231)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_ConvertUsage_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_ConvertUsage"></a>
@@ -214,7 +214,25 @@ Converts the raw chat usage object. Null uses `JsonElement%7d)`.
 
 **Value:** [Func&lt;JsonElement, LanguageModelUsage&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L189)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L225)
+
+<a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_DownloadFetch_"></a>
+<a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_DownloadFetch"></a>
+
+### DownloadFetch
+
+
+```csharp
+public DownloadFetch? DownloadFetch { get; set; }
+```
+
+
+Fetch used to download URLs from a response body (Fal). Maps to the provider setting `fetch` that upstream also uses for downloads.
+Pass a [GuardedFetch](/api/Vercel.AI.Util/GuardedFetch/) for connect-time DNS validation. It takes precedence over [DownloadHttpClient](#Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_DownloadHttpClient).
+
+**Value:** [DownloadFetch](/api/Vercel.AI.Util/DownloadFetch/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L252)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_DownloadHttpClient_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_DownloadHttpClient"></a>
@@ -232,7 +250,7 @@ It must not follow redirects: each hop is validated before it is requested. Null
 
 **Value:** [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L210)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L246)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_EmbeddingsPath_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_EmbeddingsPath"></a>
@@ -249,7 +267,7 @@ Relative embeddings path.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L62)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L63)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_GenerateId_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_GenerateId"></a>
@@ -266,7 +284,7 @@ Generates ids for sources and for streamed tool calls that have none. Maps to th
 
 **Value:** [Func&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.func-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L213)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L255)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_Headers_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_Headers"></a>
@@ -283,7 +301,7 @@ Extra headers sent on every call. These override the API key header.
 
 **Value:** [Dictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L80)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L81)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_ImageBaseUrl_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_ImageBaseUrl"></a>
@@ -300,7 +318,7 @@ Origin for image calls when it differs from [BaseUrl](#Vercel_AI_OpenAICompatibl
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L204)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L240)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_ImagesPath_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_ImagesPath"></a>
@@ -317,7 +335,7 @@ Relative images path.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L65)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L66)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_IncludeUsage_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_IncludeUsage"></a>
@@ -334,7 +352,7 @@ When true, streaming requests send `stream_options.include_usage`.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L86)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L87)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_JsonTextOverridesToolCalls_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_JsonTextOverridesToolCalls"></a>
@@ -351,7 +369,7 @@ When true, a JSON-mode response that has text drops its tool calls, and a `tool_
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L95)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L96)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_MapFinishReason_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_MapFinishReason"></a>
@@ -368,7 +386,7 @@ Maps a raw finish reason before the shared mapping. Null falls through.
 
 **Value:** [Func&lt;string, FinishReason?&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L192)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L228)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_MapReasoning_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_MapReasoning"></a>
@@ -387,7 +405,7 @@ options, which is always sent unchanged. Null sends the reasoning value directly
 
 **Value:** [Func&lt;string, string, IList&lt;CallWarning&gt;, string&gt;](https://learn.microsoft.com/dotnet/api/system.func-4)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L186)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L222)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_MaxEmbeddingsPerCall_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_MaxEmbeddingsPerCall"></a>
@@ -404,7 +422,7 @@ Maximum embedding inputs in one request.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L201)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L237)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_MetadataExtractor_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_MetadataExtractor"></a>
@@ -421,7 +439,7 @@ Extracts provider-specific metadata from the response body and stream chunks. Ma
 
 **Value:** [OpenAICompatibleMetadataExtractor](/api/Vercel.AI.OpenAICompatible/OpenAICompatibleMetadataExtractor/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L128)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L129)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_ProviderName_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_ProviderName"></a>
@@ -438,7 +456,7 @@ Provider id recorded on models.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L38)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L39)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_QueryParameters_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_QueryParameters"></a>
@@ -455,7 +473,7 @@ Query parameters appended to every request URL.
 
 **Value:** [Dictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.dictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L83)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L84)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_RequireApiKey_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_RequireApiKey"></a>
@@ -472,7 +490,7 @@ When true, a missing API key fails the call. The generic provider leaves this un
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L122)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L123)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_RerankPath_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_RerankPath"></a>
@@ -489,7 +507,7 @@ Relative rerank path.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L198)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L234)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_ResolveReasoningEffort_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_ResolveReasoningEffort"></a>
@@ -507,7 +525,7 @@ the provider option effort, and the call warnings. Null removes the field. Null 
 
 **Value:** [Func&lt;string, string, string, IList&lt;CallWarning&gt;, string&gt;](https://learn.microsoft.com/dotnet/api/system.func-5)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L173)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L209)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_SelectErrorMessage_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_SelectErrorMessage"></a>
@@ -524,7 +542,7 @@ Rewrites a provider error body into the exception message.
 
 **Value:** [Func&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L140)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L141)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_SupportedUrls_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_SupportedUrls"></a>
@@ -542,7 +560,7 @@ When it is null, no URL is supported and prompt file URLs are downloaded.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L219)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L261)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_SupportsEmbeddings_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_SupportsEmbeddings"></a>
@@ -559,7 +577,7 @@ Whether embedding calls are supported.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L68)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L69)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_SupportsImages_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_SupportsImages"></a>
@@ -576,7 +594,7 @@ Whether [ImageModel(string)](/api/Vercel.AI.OpenAICompatible/OpenAICompatiblePro
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L71)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L72)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_SupportsMultiPartToolContent_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_SupportsMultiPartToolContent"></a>
@@ -593,7 +611,7 @@ When true, a tool result with [OutputContent](/api/Vercel.AI.Provider/ToolModelM
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L92)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L93)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_SupportsStructuredOutputs_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_SupportsStructuredOutputs"></a>
@@ -610,7 +628,7 @@ When true, a JSON schema is sent as `json_schema` instead of `json_object`.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L89)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L90)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_TransformRequestBody_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_TransformRequestBody"></a>
@@ -627,7 +645,7 @@ Rewrites the JSON body before it is sent. Warnings raised here are returned with
 
 **Value:** [Func&lt;JsonObject, IList&lt;CallWarning&gt;, JsonObject&gt;](https://learn.microsoft.com/dotnet/api/system.func-3)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L143)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L144)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_UserAgent_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleOptions_UserAgent"></a>
@@ -644,7 +662,7 @@ User-agent suffix. Empty uses [UserAgent(string)](/api/Vercel.AI.OpenAICompatibl
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L125)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L126)
 
 ## Methods
 
@@ -663,4 +681,4 @@ Returns a copy. Providers change the copy, so the options the caller passed in a
 
 **Returns:** [OpenAICompatibleOptions](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L224)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleOptions.cs#L266)

@@ -25,7 +25,7 @@ MCP over Streamable HTTP. Posts JSON-RPC and accepts a JSON body or an SSE `data
 
 **Implements:** [IMcpProtocolVersionDiscoveryTransport](/api/Vercel.AI.Mcp/IMcpProtocolVersionDiscoveryTransport/), [IMcpNotificationTransport](/api/Vercel.AI.Mcp/IMcpNotificationTransport/), [IMcpTransport](/api/Vercel.AI.Mcp/IMcpTransport/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L1165)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L1141)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates a transport that posts to &lt;code class="paramref"&gt;endpoint&lt;/code
 | `httpClient` | [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient) |  |
 | `endpoint` | [Uri](https://learn.microsoft.com/dotnet/api/system.uri) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L1174)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L1150)
 
 ## Properties
 
@@ -65,11 +65,11 @@ public string? ProtocolVersion { get; set; }
 
 
 The protocol version the transport announces, for example in the `mcp-protocol-version` header.
-The client sets it when discovery or initialization negotiates a version. Maps to `MCPTransport.protocolVersion`.
+Maps to `MCPTransport.protocolVersion`. It is get-only so a transport can keep it in its own state.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L1187)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L1163)
 
 <a id="Vercel_AI_Mcp_HttpMcpTransport_SupportsProtocolVersionDiscovery_"></a>
 <a id="Vercel_AI_Mcp_HttpMcpTransport_SupportsProtocolVersionDiscovery"></a>
@@ -86,7 +86,7 @@ True when the client may probe with `server/discover`.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L1181)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L1157)
 
 <a id="Vercel_AI_Mcp_HttpMcpTransport_WaitsForProtocolVersionDiscovery_"></a>
 <a id="Vercel_AI_Mcp_HttpMcpTransport_WaitsForProtocolVersionDiscovery"></a>
@@ -103,7 +103,7 @@ True when the client waits for the discovery response, with no timeout and no fa
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L1184)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L1160)
 
 ## Methods
 
@@ -130,7 +130,7 @@ Calls &lt;code class="paramref"&gt;method&lt;/code&gt; and returns the JSON-RPC 
 
 **Returns:** [Task&lt;JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L1190)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L1169)
 
 <a id="Vercel_AI_Mcp_HttpMcpTransport_NotifyAsync_"></a>
 <a id="Vercel_AI_Mcp_HttpMcpTransport_NotifyAsync_System_String_System_Text_Json_JsonElement_System_Threading_CancellationToken_"></a>
@@ -155,4 +155,26 @@ Sends the notification &lt;code class="paramref"&gt;method&lt;/code&gt;.
 
 **Returns:** [Task](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L1283)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L1262)
+
+<a id="Vercel_AI_Mcp_HttpMcpTransport_SetProtocolVersion_"></a>
+<a id="Vercel_AI_Mcp_HttpMcpTransport_SetProtocolVersion_System_String_"></a>
+
+### SetProtocolVersion(string)
+
+
+```csharp
+public void SetProtocolVersion(string version)
+```
+
+
+Sets the protocol version negotiated during discovery or initialization.
+The client calls it instead of writing [ProtocolVersion](/api/Vercel.AI.Mcp/IMcpProtocolVersionDiscoveryTransport/#Vercel_AI_Mcp_IMcpProtocolVersionDiscoveryTransport_ProtocolVersion). Maps to `MCPTransport.setProtocolVersion`.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `version` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L1166)

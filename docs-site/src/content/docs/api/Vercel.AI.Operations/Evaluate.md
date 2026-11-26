@@ -28,7 +28,7 @@ Deprecated alias of [Decide](/api/Vercel.AI.Operations/Decide/).
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/EvaluateAliases.cs#L388)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/EvaluateAliases.cs#L400)
 
 ## Methods
 
@@ -54,7 +54,7 @@ Deprecated alias of `CancellationToken)`. Both run the same operation.
 
 **Returns:** [Task&lt;EvaluateResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/EvaluateAliases.cs#L392)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/EvaluateAliases.cs#L404)
 
 <a id="Vercel_AI_Operations_Evaluate_ValidateAnswers_"></a>
 <a id="Vercel_AI_Operations_Evaluate_ValidateAnswers_System_Collections_Generic_IReadOnlyDictionary_System_String_Vercel_AI_Operations_EvaluationQuestion__System_Collections_Generic_IReadOnlyDictionary_System_String_Vercel_AI_Operations_EvaluationAnswer__Vercel_AI_Operations_EvaluationRounding_"></a>
@@ -77,7 +77,7 @@ Deprecated alias of `DecisionRounding)`.
 | `answers` | [IReadOnlyDictionary&lt;string, EvaluationAnswer&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2) |  |
 | `rounding` | [EvaluationRounding](/api/Vercel.AI.Operations/EvaluationRounding/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/EvaluateAliases.cs#L445)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/EvaluateAliases.cs#L457)
 
 <a id="Vercel_AI_Operations_Evaluate_ValidateInput_"></a>
 <a id="Vercel_AI_Operations_Evaluate_ValidateInput_Vercel_AI_Operations_DecisionState_System_Collections_Generic_IReadOnlyDictionary_System_String_Vercel_AI_Operations_EvaluationQuestion__"></a>
@@ -99,4 +99,4 @@ Deprecated alias of `DecisionQuestion%7d)`.
 | `state` | [DecisionState](/api/Vercel.AI.Operations/DecisionState/) |  |
 | `questions` | [IReadOnlyDictionary&lt;string, EvaluationQuestion&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/EvaluateAliases.cs#L433)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/EvaluateAliases.cs#L445)

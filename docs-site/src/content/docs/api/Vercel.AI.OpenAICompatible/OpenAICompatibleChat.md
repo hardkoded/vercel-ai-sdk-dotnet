@@ -215,15 +215,15 @@ Builds provider metadata for accepted and rejected prediction tokens.
 
 **Returns:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleChat.cs#L432)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleChat.cs#L441)
 
-<a id="Vercel_AI_OpenAICompatible_OpenAICompatibleChat_ProviderMetadata_System_String_System_Text_Json_Nodes_JsonObject_System_Nullable_System_Int32__System_Nullable_System_Int32__"></a>
+<a id="Vercel_AI_OpenAICompatible_OpenAICompatibleChat_ProviderMetadata_System_String_System_Text_Json_Nodes_JsonObject_System_Nullable_System_Int32__System_Nullable_System_Int32__System_Text_Json_Nodes_JsonObject_"></a>
 
-### ProviderMetadata(string, JsonObject?, int?, int?)
+### ProviderMetadata(string, JsonObject?, int?, int?, JsonObject?)
 
 
 ```csharp
-public static JsonElement ProviderMetadata(string metadataKey, JsonObject? extracted, int? acceptedPredictionTokens, int? rejectedPredictionTokens)
+public static JsonElement ProviderMetadata(string metadataKey, JsonObject? extracted, int? acceptedPredictionTokens, int? rejectedPredictionTokens, JsonObject? responseHeaderMetadata = null)
 ```
 
 
@@ -238,6 +238,7 @@ An extractor entry replaces the default entry of the same key.
 | `extracted` | [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject) |  |
 | `acceptedPredictionTokens` | [int?](https://learn.microsoft.com/dotnet/api/system.int32) |  |
 | `rejectedPredictionTokens` | [int?](https://learn.microsoft.com/dotnet/api/system.int32) |  |
+| `responseHeaderMetadata` | [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject) |  |
 
 **Returns:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
@@ -336,7 +337,7 @@ Builds tool-call metadata that carries a Google thought signature.
 
 **Returns:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleChat.cs#L447)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleChat.cs#L456)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleChat_ToCamelCase_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleChat_ToCamelCase_System_String_"></a>
@@ -382,7 +383,7 @@ Throws when a file part cannot be represented on this API.
 
 **Returns:** [AiSdkException](/api/Vercel.AI.Provider/AiSdkException/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleChat.cs#L454)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenAICompatible/OpenAICompatibleChat.cs#L463)
 
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleChat_WarnIfDeprecated_"></a>
 <a id="Vercel_AI_OpenAICompatible_OpenAICompatibleChat_WarnIfDeprecated_System_String_System_Collections_Generic_IReadOnlyDictionary_System_String_System_Text_Json_JsonElement__System_Collections_Generic_IList_Vercel_AI_Provider_CallWarning__"></a>

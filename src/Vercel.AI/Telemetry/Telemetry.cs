@@ -16,6 +16,13 @@ namespace Vercel.AI;
 public interface ITelemetry
 {
     /// <summary>
+    /// Captures a serializable tracing identity before the model calls of a durable run. Return <c>null</c> to preserve live per-model
+    /// operations when the integration cannot reconstruct a run span across processes. Integrations without this hook receive the recorded
+    /// lifecycle after completion. Maps to <c>experimental_durable</c>.
+    /// </summary>
+    IDurableTelemetry? ExperimentalDurable { get; }
+
+    /// <summary>
     /// Called when an operation begins, before any model call. Maps to <c>onStart</c>. Receives a <see cref="GenerateTextStartEvent"/>, a <see cref="GenerateObjectStartEvent"/>, an <see cref="EmbedStartEvent"/>, a <see cref="RerankStartEvent"/>, a <see cref="GenerateSpeechStartEvent"/> or a <see cref="TranscriptionStartEvent"/>.
     /// </summary>
     Func<IOperationStartEvent, CancellationToken, Task>? OnStart { get; }

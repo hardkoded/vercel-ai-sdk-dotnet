@@ -146,7 +146,8 @@ public sealed class FalProvider : OpenAICompatibleProvider
                 ProviderExchange.DownloadClient(Options),
                 ProviderExchange.UserAgentOnly(
                     await CreateHeadersAsync(cancellationToken).ConfigureAwait(false)
-                )
+                ),
+                Options.DownloadFetch
             )
             .ConfigureAwait(false);
         return response.Bytes;

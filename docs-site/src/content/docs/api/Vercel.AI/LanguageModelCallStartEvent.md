@@ -23,7 +23,7 @@ Passed to [OnLanguageModelCallStart](/api/Vercel.AI/GenerateTextOptions/#Vercel_
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1976)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2032)
 
 ## Properties
 
@@ -42,7 +42,7 @@ The version of the SDK that emitted the event. Set only on events sent to teleme
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2009)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2065)
 
 <a id="Vercel_AI_LanguageModelCallStartEvent_CallId_"></a>
 <a id="Vercel_AI_LanguageModelCallStartEvent_CallId"></a>
@@ -59,7 +59,7 @@ Id of the model call.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1979)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2035)
 
 <a id="Vercel_AI_LanguageModelCallStartEvent_CallOptions_"></a>
 <a id="Vercel_AI_LanguageModelCallStartEvent_CallOptions"></a>
@@ -76,7 +76,24 @@ Call settings.
 
 **Value:** [LanguageModelCallOptions](/api/Vercel.AI.Provider/LanguageModelCallOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1997)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2053)
+
+<a id="Vercel_AI_LanguageModelCallStartEvent_DurableContext_"></a>
+<a id="Vercel_AI_LanguageModelCallStartEvent_DurableContext"></a>
+
+### DurableContext
+
+
+```csharp
+public DurableTelemetryEventContext? DurableContext { get; init; }
+```
+
+
+Identifies live model events and the run events reported after completion of a durable run. Maps to `durableContext`.
+
+**Value:** [DurableTelemetryEventContext](/api/Vercel.AI/DurableTelemetryEventContext/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2071)
 
 <a id="Vercel_AI_LanguageModelCallStartEvent_FunctionId_"></a>
 <a id="Vercel_AI_LanguageModelCallStartEvent_FunctionId"></a>
@@ -93,7 +110,7 @@ The [FunctionId](/api/Vercel.AI/TelemetryOptions/#Vercel_AI_TelemetryOptions_Fun
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2006)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2062)
 
 <a id="Vercel_AI_LanguageModelCallStartEvent_Instructions_"></a>
 <a id="Vercel_AI_LanguageModelCallStartEvent_Instructions"></a>
@@ -110,7 +127,7 @@ Instructions of the call.
 
 **Value:** [Instructions](/api/Vercel.AI.Prompt/Instructions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1988)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2044)
 
 <a id="Vercel_AI_LanguageModelCallStartEvent_Messages_"></a>
 <a id="Vercel_AI_LanguageModelCallStartEvent_Messages"></a>
@@ -127,7 +144,7 @@ Messages of the call, without the instructions.
 
 **Value:** [IReadOnlyList&lt;ModelMessage&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1991)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2047)
 
 <a id="Vercel_AI_LanguageModelCallStartEvent_ModelId_"></a>
 <a id="Vercel_AI_LanguageModelCallStartEvent_ModelId"></a>
@@ -144,7 +161,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1985)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2041)
 
 <a id="Vercel_AI_LanguageModelCallStartEvent_Provider_"></a>
 <a id="Vercel_AI_LanguageModelCallStartEvent_Provider"></a>
@@ -161,7 +178,7 @@ Provider id of the model.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1982)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2038)
 
 <a id="Vercel_AI_LanguageModelCallStartEvent_RecordInputs_"></a>
 <a id="Vercel_AI_LanguageModelCallStartEvent_RecordInputs"></a>
@@ -178,7 +195,7 @@ Whether input recording was enabled for the call, as [RecordInputs](/api/Vercel.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2000)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2056)
 
 <a id="Vercel_AI_LanguageModelCallStartEvent_RecordOutputs_"></a>
 <a id="Vercel_AI_LanguageModelCallStartEvent_RecordOutputs"></a>
@@ -195,7 +212,24 @@ Whether output recording was enabled for the call, as [RecordOutputs](/api/Verce
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2003)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2059)
+
+<a id="Vercel_AI_LanguageModelCallStartEvent_Timestamp_"></a>
+<a id="Vercel_AI_LanguageModelCallStartEvent_Timestamp"></a>
+
+### Timestamp
+
+
+```csharp
+public long? Timestamp { get; init; }
+```
+
+
+Time at which the event occurred, in milliseconds since the Unix epoch. Set when events are reported after they happened, for example when a durable workflow reports a run that spanned several processes. Integrations use it instead of the current time when present. Maps to `timestamp`.
+
+**Value:** [long?](https://learn.microsoft.com/dotnet/api/system.int64)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2068)
 
 <a id="Vercel_AI_LanguageModelCallStartEvent_Tools_"></a>
 <a id="Vercel_AI_LanguageModelCallStartEvent_Tools"></a>
@@ -212,4 +246,4 @@ Tools offered to the model.
 
 **Value:** [IReadOnlyList&lt;LanguageModelTool&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L1994)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2050)

@@ -23,7 +23,7 @@ A prepared Gemini speech request.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L834)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L835)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates a preparation.
 | `outputFormat` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `usesStructuredSpeech` | [bool](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L837)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L838)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Request JSON.
 
 **Value:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L851)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L852)
 
 <a id="Vercel_AI_Google_GoogleSpeechPreparation_OutputFormat_"></a>
 <a id="Vercel_AI_Google_GoogleSpeechPreparation_OutputFormat"></a>
@@ -85,7 +85,7 @@ Resolved Gemini audio format, such as `AUDIO_WAV`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L857)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L858)
 
 <a id="Vercel_AI_Google_GoogleSpeechPreparation_UsesStructuredSpeech_"></a>
 <a id="Vercel_AI_Google_GoogleSpeechPreparation_UsesStructuredSpeech"></a>
@@ -102,7 +102,7 @@ True for Gemini 3.8 style models, which take structured speech metadata.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L860)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L861)
 
 <a id="Vercel_AI_Google_GoogleSpeechPreparation_Warnings_"></a>
 <a id="Vercel_AI_Google_GoogleSpeechPreparation_Warnings"></a>
@@ -119,4 +119,4 @@ Warnings.
 
 **Value:** [IReadOnlyList&lt;GoogleWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L854)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L855)

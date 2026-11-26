@@ -20,8 +20,8 @@ namespace Vercel.AI.OpenTelemetry;
 /// </summary>
 /// <remarks>
 /// Only the callbacks <see cref="ITelemetry"/> has are ported: text generation (root, step, model call, and tool spans), embed,
-/// rerank, speech, transcription, decide, and extract. The object and durable parts of upstream need events
-/// the port does not emit yet.
+/// rerank, speech, transcription, decide, extract, and object generation. Durable telemetry is not ported: it
+/// comes from upstream's <c>workflow</c> package.
 /// </remarks>
 public class OpenTelemetry : ITelemetry
 {
@@ -69,6 +69,7 @@ public class OpenTelemetry : ITelemetry
     private readonly AgentSpanName? _agentSpanName;
     private readonly SupplementalAttributeOptions _supplementalAttributes;
     private readonly EnrichSpan? _enrichSpan;
+    private readonly OpenTelemetryIdGenerator? _durable;
 
     /// <summary>Creates the integration.</summary>
     /// <param name="options">Options. Null uses the defaults.</param>
@@ -79,7 +80,11 @@ public class OpenTelemetry : ITelemetry
         _agentSpanName = options.AgentSpanName;
         _supplementalAttributes = SupplementalAttributeOptions.Normalize(options);
         _enrichSpan = options.EnrichSpan;
+        _durable = options.Durable;
     }
+
+    /// <inheritdoc />
+    public IDurableTelemetry? ExperimentalDurable => new DurableHook(this);
 
     /// <inheritdoc />
     public Func<IOperationStartEvent, CancellationToken, Task>? OnStart =>
@@ -470,11 +475,20 @@ public class OpenTelemetry : ITelemetry
     private static object? Setting(CallState state, string key) =>
         state.Settings.TryGetValue(key, out var value) ? value : null;
 
-    private static void End(Activity? span)
+    private static DateTime? EventTime(long? timestamp) =>
+        timestamp is { } ms ? DateTimeOffset.FromUnixTimeMilliseconds(ms).UtcDateTime : null;
+
+    /// <summary>Maps to <c>getEventTimestamp</c>.</summary>
+    private static void End(Activity? span, long? timestamp = null)
     {
         if (span is null)
         {
             return;
+        }
+
+        if (EventTime(timestamp) is { } endTime)
+        {
+            span.SetEndTime(endTime);
         }
 
         var current = Activity.Current;
@@ -513,7 +527,8 @@ public class OpenTelemetry : ITelemetry
         double? responseTimeMs = null,
         string? provider = null,
         string? responseModelId = null,
-        string? errorType = null
+        string? errorType = null,
+        long? endTimestamp = null
     )
     {
         var inference = state.InferenceMetrics;
@@ -524,7 +539,13 @@ public class OpenTelemetry : ITelemetry
 
         state.InferenceMetrics = null;
         var durationMs = responseTimeMs
-            ?? (Stopwatch.GetTimestamp() - inference.StartTimestamp) * 1000.0 / Stopwatch.Frequency;
+            ?? (
+                inference.StartEpochMs is { } startEpochMs && endTimestamp is { } endEpochMs
+                    ? Math.Max(0, endEpochMs - startEpochMs)
+                    : (Stopwatch.GetTimestamp() - inference.StartTimestamp)
+                        * 1000.0
+                        / Stopwatch.Frequency
+            );
 
         var attributes = TelemetryAttributes.SelectAttributes(
             state.Telemetry,
@@ -570,17 +591,20 @@ public class OpenTelemetry : ITelemetry
         string name,
         ActivityKind kind,
         IReadOnlyDictionary<string, object?> attributes,
-        ActivityContext parent
+        ActivityContext parent,
+        long? timestamp = null
     )
     {
         var previous = Activity.Current;
         var span = _tracer.StartActivity(
             name,
             kind,
-            parent,
+            _durable?.ApplyRequested(parent, name, kind, attributes) ?? parent,
             attributes,
             links: null,
-            startTime: default
+            startTime: EventTime(timestamp) is { } startTime
+                ? new DateTimeOffset(startTime, TimeSpan.Zero)
+                : default
         );
         Activity.Current = previous;
         return span;
@@ -646,7 +670,17 @@ public class OpenTelemetry : ITelemetry
         return defaultName;
     }
 
-    private void OnGenerateStart(GenerateTextStartEvent e)
+    private sealed record GenerateStartPlan(
+        string SpanName,
+        Dictionary<string, object?> RootAttributes,
+        TelemetrySelection Telemetry,
+        Dictionary<string, object?> Settings,
+        IReadOnlyDictionary<string, object?>? RuntimeContext,
+        IReadOnlyDictionary<string, object?> BaseSupplemental
+    );
+
+    /// <summary>Maps to <c>prepareGenerateStart</c>.</summary>
+    private GenerateStartPlan PrepareGenerateStart(GenerateTextStartEvent e)
     {
         var telemetry = SelectionOf(e.RecordInputs, e.RecordOutputs);
         var settings = new Dictionary<string, object?>(StringComparer.Ordinal)
@@ -706,34 +740,98 @@ public class OpenTelemetry : ITelemetry
             baseSupplemental
         );
 
-        var spanName = GetAgentSpanName(operationName, e.ModelId, e.FunctionId);
-        var parent = Activity.Current?.Context ?? default;
-        var rootSpan = StartSpan(
-            spanName,
-            ActivityKind.Internal,
-            GetSpanAttributes(
+        var spanName = e.DurableContext?.Run.RootSpanName
+            ?? GetAgentSpanName(operationName, e.ModelId, e.FunctionId);
+        var rootAttributes = e.DurableContext?.Run.RootAttributes is { } durableAttributes
+            ? durableAttributes.ToDictionary(
+                pair => pair.Key,
+                pair => pair.Value,
+                StringComparer.Ordinal
+            )
+            : GetSpanAttributes(
                 attributes,
                 OpenTelemetrySpanType.Operation,
                 e.OperationId,
                 e.CallId,
                 runtimeContext
-            ),
-            parent
+            );
+        return new GenerateStartPlan(
+            spanName,
+            rootAttributes,
+            telemetry,
+            settings,
+            runtimeContext,
+            baseSupplemental
         );
+    }
+
+    private void OnGenerateStart(GenerateTextStartEvent e)
+    {
+        var plan = PrepareGenerateStart(e);
+        var run = e.DurableContext?.Run;
+        var parent = Activity.Current?.Context ?? default;
+        Activity? rootSpan;
+        if (run is not null && _durable is not null)
+        {
+            // A durable run starts a new trace, or continues the one it was started under.
+            parent = default;
+            if (run.ParentSpanContext is { } parentSpan)
+            {
+                parent = new ActivityContext(
+                    ActivityTraceId.CreateFromString(parentSpan.TraceId.AsSpan()),
+                    ActivitySpanId.CreateFromString(parentSpan.SpanId.AsSpan()),
+                    (ActivityTraceFlags)parentSpan.TraceFlags,
+                    parentSpan.TraceState,
+                    isRemote: true
+                );
+            }
+
+            rootSpan = _durable.WithIds(
+                new DurableRequestedIds
+                {
+                    TraceId = run.TraceId,
+                    SpanId = run.RootSpanId,
+                    SamplingDecision = run.SamplingDecision,
+                    TraceState = run.TraceState,
+                },
+                () =>
+                    StartSpan(
+                        plan.SpanName,
+                        ActivityKind.Internal,
+                        plan.RootAttributes,
+                        parent,
+                        e.Timestamp
+                    )
+            );
+        }
+        else
+        {
+            rootSpan = StartSpan(
+                plan.SpanName,
+                ActivityKind.Internal,
+                plan.RootAttributes,
+                parent,
+                e.Timestamp
+            );
+        }
 
         if (rootSpan is null)
         {
             return;
         }
 
-        _callStates[e.CallId] = new CallState(e.OperationId, telemetry)
+        // .NET assigns the span id, so the trace id is what shows the span joined the run.
+        var durableContext =
+            run is not null && rootSpan.TraceId.ToHexString() == run.TraceId ? run : null;
+        _callStates[e.CallId] = new CallState(e.OperationId, plan.Telemetry)
         {
             RootSpan = rootSpan,
-            Settings = settings,
+            Settings = plan.Settings,
             Provider = e.Provider,
             ModelId = e.ModelId,
-            RuntimeContext = runtimeContext,
-            BaseSupplementalAttributes = baseSupplemental,
+            RuntimeContext = plan.RuntimeContext,
+            BaseSupplementalAttributes = plan.BaseSupplemental,
+            DurableContext = durableContext,
         };
     }
 
@@ -763,23 +861,55 @@ public class OpenTelemetry : ITelemetry
             )
         );
 
-        state.StepSpan = StartSpan(
-            "step " + (e.StepNumber + 1),
-            ActivityKind.Internal,
-            GetSpanAttributes(
-                stepAttributes,
-                OpenTelemetrySpanType.Step,
-                state.OperationId,
-                e.CallId,
-                state.RuntimeContext
-            ),
-            state.RootSpan.Context
+        var stepSpanAttributes = GetSpanAttributes(
+            stepAttributes,
+            OpenTelemetrySpanType.Step,
+            state.OperationId,
+            e.CallId,
+            state.RuntimeContext
         );
+        Activity? StartStepSpan() =>
+            StartSpan(
+                "step " + (e.StepNumber + 1),
+                ActivityKind.Internal,
+                stepSpanAttributes,
+                state.RootSpan.Context,
+                e.Timestamp
+            );
+        state.StepSpan =
+            state.DurableContext is { } stepRun && _durable is not null
+                ? _durable.WithIds(
+                    new DurableRequestedIds
+                    {
+                        SpanId = OpenTelemetryIdGenerator.DeriveSpanId(
+                            e.CallId,
+                            "step",
+                            e.StepNumber
+                        ),
+                        SamplingDecision = stepRun.SamplingDecision,
+                        TraceState = stepRun.TraceState,
+                    },
+                    StartStepSpan
+                )
+                : StartStepSpan();
     }
 
     private void OnLanguageModelCallStartCore(LanguageModelCallStartEvent e)
     {
-        if (!TryGetCallState(e.CallId, out var state) || state.StepSpan is null)
+        var found = TryGetCallState(e.CallId, out var state);
+
+        // The durable steps already reported the run's model calls live.
+        if (found && state.DurableContext is not null)
+        {
+            return;
+        }
+
+        if (!found)
+        {
+            state = StartDurableModelCall(e)!;
+        }
+
+        if (state is null || (state.StepSpan is null && state.StepContext is null))
         {
             return;
         }
@@ -788,18 +918,19 @@ public class OpenTelemetry : ITelemetry
         if (state.InferenceSpan is not null)
         {
             state.InferenceSpan.SetStatus(ActivityStatusCode.Error);
-            End(state.InferenceSpan);
+            End(state.InferenceSpan, e.Timestamp);
             state.InferenceSpan = null;
             state.InferenceContext = null;
         }
 
-        RecordInferenceDuration(state, errorType: "_OTHER");
+        RecordInferenceDuration(state, errorType: "_OTHER", endTimestamp: e.Timestamp);
         var toolDefinitions = e.Tools?.Select(RedactToolDefinition.Redact).ToList();
         state.InferenceToolDefinitions = toolDefinitions;
         state.InferenceMetrics = new InferenceMetrics(
             Stopwatch.GetTimestamp(),
             e.Provider,
-            e.ModelId
+            e.ModelId,
+            e.Timestamp
         );
 
         var attributes = TelemetryAttributes.SelectAttributes(
@@ -835,24 +966,149 @@ public class OpenTelemetry : ITelemetry
             }
         );
 
-        state.InferenceSpan = StartSpan(
-            "chat " + e.ModelId,
-            ActivityKind.Client,
-            GetSpanAttributes(
-                attributes,
-                OpenTelemetrySpanType.LanguageModel,
-                state.OperationId,
-                e.CallId,
-                state.RuntimeContext
-            ),
-            state.StepSpan.Context
+        if (state.LiveDurableContext is not null)
+        {
+            attributes = Merge(
+                new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["gen_ai.operation.name"] = "chat",
+                },
+                state.BaseSupplementalAttributes,
+                attributes
+            );
+        }
+
+        var inferenceAttributes = GetSpanAttributes(
+            attributes,
+            OpenTelemetrySpanType.LanguageModel,
+            state.OperationId,
+            e.CallId,
+            state.RuntimeContext
+        );
+        state.InferenceSpan = WithDurableSampling(state, () =>
+            StartSpan(
+                "chat " + e.ModelId,
+                ActivityKind.Client,
+                inferenceAttributes,
+                state.StepSpan?.Context ?? state.StepContext!.Value,
+                e.Timestamp
+            )
         );
         state.InferenceContext = state.InferenceSpan?.Context;
     }
 
+    /// <summary>Maps to <c>withDurableSampling</c>.</summary>
+    private T WithDurableSampling<T>(CallState state, Func<T> startSpan)
+    {
+        var run = state.DurableContext ?? state.LiveDurableContext;
+        return run is not null && _durable is not null
+            ? _durable.WithIds(
+                new DurableRequestedIds
+                {
+                    SamplingDecision = run.SamplingDecision,
+                    TraceState = run.TraceState,
+                },
+                startSpan
+            )
+            : startSpan();
+    }
+
+    /// <summary>
+    /// Starts a model call reported live from a durable step. The run's root and step spans are reported when the run ends, so the model
+    /// call is parented to the step span's derived ID. Maps to <c>startDurableModelCall</c>.
+    /// </summary>
+    private CallState? StartDurableModelCall(LanguageModelCallStartEvent e)
+    {
+        var durable = e.DurableContext;
+        if (
+            durable is not { Phase: DurableTelemetryPhase.Live, StepNumber: { } stepNumber }
+            || _durable is null
+            || e.CallId is null
+        )
+        {
+            return null;
+        }
+
+        var run = durable.Run;
+        var stepContext = new ActivityContext(
+            ActivityTraceId.CreateFromString(run.TraceId.AsSpan()),
+            ActivitySpanId.CreateFromString(
+                OpenTelemetryIdGenerator.DeriveSpanId(e.CallId, "step", stepNumber).AsSpan()
+            ),
+            (ActivityTraceFlags)run.TraceFlags,
+            run.TraceState,
+            isRemote: true
+        );
+        var telemetry = SelectionOf(e.RecordInputs, e.RecordOutputs);
+        var state = new CallState("ai.workflowAgent.stream", telemetry)
+        {
+            StepContext = stepContext,
+            Settings = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["maxOutputTokens"] = e.CallOptions.MaxOutputTokens,
+                ["temperature"] = e.CallOptions.Temperature,
+                ["topP"] = e.CallOptions.TopP,
+                ["topK"] = e.CallOptions.TopK,
+                ["presencePenalty"] = e.CallOptions.PresencePenalty,
+                ["frequencyPenalty"] = e.CallOptions.FrequencyPenalty,
+                ["stopSequences"] = e.CallOptions.StopSequences,
+                ["seed"] = e.CallOptions.Seed,
+            },
+            Provider = e.Provider,
+            ModelId = e.ModelId,
+            RuntimeContext = durable.RuntimeContext,
+            BaseSupplementalAttributes = Merge(
+                _supplementalAttributes.Select(
+                    telemetry,
+                    SupplementalGroup.RuntimeContext,
+                    SupplementalAttributeHelpers.GetRuntimeContextAttributes(durable.RuntimeContext)
+                ),
+                _supplementalAttributes.Select(
+                    telemetry,
+                    SupplementalGroup.Headers,
+                    SupplementalAttributeHelpers.GetHeaderAttributes(durable.Headers)
+                )
+            ),
+            LiveDurableContext = run,
+        };
+        _callStates[e.CallId] = state;
+        return state;
+    }
+
+    /// <summary>Ends a model call reported live from a durable step that failed or was aborted before its end event. Maps to <c>endDurableModelCall</c>.</summary>
+    private void EndDurableModelCall(
+        string callId,
+        Exception? error,
+        string errorType,
+        long? endTimestamp
+    )
+    {
+        if (!TryGetCallState(callId, out var state) || state.LiveDurableContext is null)
+        {
+            return;
+        }
+
+        RecordInferenceDuration(state, errorType: errorType, endTimestamp: endTimestamp);
+        if (state.InferenceSpan is not null)
+        {
+            if (error is not null)
+            {
+                TelemetrySpan.RecordError(state.InferenceSpan, error);
+            }
+
+            End(state.InferenceSpan, endTimestamp);
+        }
+
+        _callStates.TryRemove(callId, out _);
+    }
+
     private void OnLanguageModelCallEndCore(LanguageModelCallEndEvent e)
     {
-        if (!TryGetCallState(e.CallId, out var state) || state.InferenceSpan is null)
+        if (
+            !TryGetCallState(e.CallId, out var state)
+            || state.DurableContext is not null
+            || state.InferenceSpan is null
+        )
         {
             return;
         }
@@ -891,7 +1147,8 @@ public class OpenTelemetry : ITelemetry
             e.Performance?.ResponseTimeMs ?? e.ResponseTime.TotalMilliseconds,
             e.Provider,
             e.ModelId,
-            e.FinishReason == FinishReason.Error ? "_OTHER" : null
+            e.FinishReason == FinishReason.Error ? "_OTHER" : null,
+            e.Timestamp
         );
         if (e.FinishReason == FinishReason.Error)
         {
@@ -946,9 +1203,15 @@ public class OpenTelemetry : ITelemetry
 
         RecordProviderExecutedToolSpans(state, e);
 
-        End(span);
+        End(span, e.Timestamp);
         state.InferenceSpan = null;
         state.InferenceContext = null;
+        state.InferenceToolDefinitions = null;
+
+        if (state.LiveDurableContext is not null)
+        {
+            _callStates.TryRemove(e.CallId!, out _);
+        }
     }
 
     /// <summary>Records the <c>execute_tool</c> spans of the provider-executed tools of a model call, which the model call reports itself.</summary>
@@ -962,8 +1225,8 @@ public class OpenTelemetry : ITelemetry
         var finalToolOutputs = new Dictionary<string, GeneratedToolResult>(StringComparer.Ordinal);
         foreach (var part in e.Content)
         {
-            // The port has no tool-error part, and no preliminary result: a failed result is a result with IsError.
-            if (part is GeneratedToolResult result)
+            // The port has no tool-error part: a failed result is a result with IsError.
+            if (part is GeneratedToolResult { Preliminary: not true } result)
             {
                 finalToolOutputs[result.ToolCallId] = result;
             }
@@ -980,28 +1243,29 @@ public class OpenTelemetry : ITelemetry
                 continue;
             }
 
-            var toolSpan = StartSpan(
-                "execute_tool " + toolCall.ToolName,
-                ActivityKind.Internal,
-                GetSpanAttributes(
-                    TelemetryAttributes.SelectAttributes(
-                        state.Telemetry,
-                        new Dictionary<string, object?>
-                        {
-                            ["gen_ai.operation.name"] = "execute_tool",
-                            ["gen_ai.tool.name"] = toolCall.ToolName,
-                            ["gen_ai.tool.call.id"] = toolCall.ToolCallId,
-                            ["gen_ai.tool.type"] = "extension",
-                            ["gen_ai.tool.call.arguments"] = In(() => toolCall.ArgumentsJson),
-                        }
+            var toolSpan = WithDurableSampling(state, () => StartSpan(
+                    "execute_tool " + toolCall.ToolName,
+                    ActivityKind.Internal,
+                    GetSpanAttributes(
+                        TelemetryAttributes.SelectAttributes(
+                            state.Telemetry,
+                            new Dictionary<string, object?>
+                            {
+                                ["gen_ai.operation.name"] = "execute_tool",
+                                ["gen_ai.tool.name"] = toolCall.ToolName,
+                                ["gen_ai.tool.call.id"] = toolCall.ToolCallId,
+                                ["gen_ai.tool.type"] = "extension",
+                                ["gen_ai.tool.call.arguments"] = In(() => toolCall.ArgumentsJson),
+                            }
+                        ),
+                        OpenTelemetrySpanType.Tool,
+                        state.OperationId,
+                        e.CallId!,
+                        state.RuntimeContext
                     ),
-                    OpenTelemetrySpanType.Tool,
-                    state.OperationId,
-                    e.CallId!,
-                    state.RuntimeContext
-                ),
-                inferenceContext
-            );
+                    inferenceContext,
+                    e.Timestamp
+                ));
             if (toolSpan is null)
             {
                 continue;
@@ -1028,7 +1292,7 @@ public class OpenTelemetry : ITelemetry
                 }
             }
 
-            End(toolSpan);
+            End(toolSpan, e.Timestamp);
         }
     }
 
@@ -1058,17 +1322,21 @@ public class OpenTelemetry : ITelemetry
             }
         );
 
-        var span = StartSpan(
-            "execute_tool " + toolCall.ToolName,
-            ActivityKind.Internal,
-            GetSpanAttributes(
-                attributes,
-                OpenTelemetrySpanType.Tool,
-                state.OperationId,
-                e.CallId!,
-                state.RuntimeContext
-            ),
-            parent.Context
+        var toolSpanAttributes = GetSpanAttributes(
+            attributes,
+            OpenTelemetrySpanType.Tool,
+            state.OperationId,
+            e.CallId!,
+            state.RuntimeContext
+        );
+        var span = WithDurableSampling(state, () =>
+            StartSpan(
+                "execute_tool " + toolCall.ToolName,
+                ActivityKind.Internal,
+                toolSpanAttributes,
+                parent.Context,
+                e.Timestamp
+            )
         );
         if (span is not null)
         {
@@ -1115,7 +1383,7 @@ public class OpenTelemetry : ITelemetry
             TelemetrySpan.RecordError(span, (object?)e.ToolOutput.Error ?? "error");
         }
 
-        End(span);
+        End(span, e.Timestamp);
         state.ToolSpans.Remove(e.ToolCall.ToolCallId);
     }
 
@@ -1129,7 +1397,8 @@ public class OpenTelemetry : ITelemetry
         // Streams can close after an error chunk without a model-call end event.
         RecordInferenceDuration(
             state,
-            errorType: e.FinishReason == FinishReason.Error ? "_OTHER" : null
+            errorType: e.FinishReason == FinishReason.Error ? "_OTHER" : null,
+            endTimestamp: e.Timestamp
         );
 
         if (e.FinishReason == FinishReason.Error)
@@ -1153,7 +1422,7 @@ public class OpenTelemetry : ITelemetry
             )
         );
 
-        End(state.StepSpan);
+        End(state.StepSpan, e.Timestamp);
         state.StepSpan = null;
     }
 
@@ -1222,7 +1491,7 @@ public class OpenTelemetry : ITelemetry
             )
         );
 
-        End(state.RootSpan);
+        End(state.RootSpan, e.Timestamp);
         _callStates.TryRemove(e.CallId, out _);
     }
 
@@ -2365,41 +2634,51 @@ public class OpenTelemetry : ITelemetry
 
     private void OnAbortCore(StreamAbortContext e)
     {
+        if (TryGetCallState(e.CallId, out var live) && live.LiveDurableContext is not null)
+        {
+            EndDurableModelCall(e.CallId, null, "AbortError", e.Timestamp);
+            return;
+        }
+
         if (!TryGetCallState(e.CallId, out var state) || state.RootSpan is null)
         {
             return;
         }
 
-        RecordInferenceDuration(state, errorType: "AbortError");
-        EndOpenSpans(state, null);
-        End(state.RootSpan);
+        RecordInferenceDuration(state, errorType: "AbortError", endTimestamp: e.Timestamp);
+        EndOpenSpans(state, null, e.Timestamp);
+        End(state.RootSpan, e.Timestamp);
         _callStates.TryRemove(e.CallId, out _);
     }
 
     private void OnErrorCore(TelemetryErrorEvent e)
     {
+        var errorType = e.Error switch
+        {
+            OperationCanceledException => "AbortError",
+            Exception error => error.GetType().Name,
+            _ => "_OTHER",
+        };
+        if (TryGetCallState(e.CallId, out var live) && live.LiveDurableContext is not null)
+        {
+            EndDurableModelCall(e.CallId!, e.Error, errorType, e.Timestamp);
+            return;
+        }
+
         if (!TryGetCallState(e.CallId, out var state) || state.RootSpan is null)
         {
             return;
         }
 
-        RecordInferenceDuration(
-            state,
-            errorType: e.Error switch
-            {
-                OperationCanceledException => "AbortError",
-                Exception error => error.GetType().Name,
-                _ => "_OTHER",
-            }
-        );
-        EndOpenSpans(state, e.Error);
+        RecordInferenceDuration(state, errorType: errorType, endTimestamp: e.Timestamp);
+        EndOpenSpans(state, e.Error, e.Timestamp);
         TelemetrySpan.RecordError(state.RootSpan, e.Error);
-        End(state.RootSpan);
+        End(state.RootSpan, e.Timestamp);
         _callStates.TryRemove(e.CallId!, out _);
     }
 
     /// <summary>Ends every span below the root, recording <paramref name="error"/> on each when it is set.</summary>
-    private static void EndOpenSpans(CallState state, Exception? error)
+    private static void EndOpenSpans(CallState state, Exception? error, long? timestamp = null)
     {
         void Finish(Activity? span)
         {
@@ -2413,7 +2692,7 @@ public class OpenTelemetry : ITelemetry
                 TelemetrySpan.RecordError(span, error);
             }
 
-            End(span);
+            End(span, timestamp);
         }
 
         foreach (var toolSpan in state.ToolSpans.Values)
@@ -2492,6 +2771,41 @@ public class OpenTelemetry : ITelemetry
     }
 
     /// <summary>Maps to <c>executeLanguageModelCall</c>. Runs the provider call with the active model-call span.</summary>
+    private sealed class DurableHook(OpenTelemetry owner) : IDurableTelemetry
+    {
+        public Task<DurableTelemetryContext?> CaptureContextAsync(
+            GenerateTextStartEvent @event,
+            CancellationToken cancellationToken = default
+        )
+        {
+            if (owner._durable is not { } durable)
+            {
+                return Task.FromResult<DurableTelemetryContext?>(null);
+            }
+
+            var plan = owner.PrepareGenerateStart(@event);
+            var captured = durable.CaptureContext(
+                @event.CallId,
+                plan.SpanName,
+                ActivityKind.Internal,
+                plan.RootAttributes
+            );
+            return Task.FromResult<DurableTelemetryContext?>(
+                new DurableTelemetryContext
+                {
+                    TraceId = captured.TraceId,
+                    RootSpanId = captured.RootSpanId,
+                    RootSpanName = plan.SpanName,
+                    RootAttributes = captured.RootAttributes,
+                    TraceFlags = captured.TraceFlags,
+                    TraceState = captured.TraceState,
+                    SamplingDecision = captured.SamplingDecision,
+                    ParentSpanContext = captured.ParentSpanContext,
+                }
+            );
+        }
+    }
+
     private sealed class ModelCallContext(OpenTelemetry owner) : IExecuteLanguageModelCall
     {
         public Task<T> ExecuteAsync<T>(
@@ -2524,7 +2838,12 @@ public class OpenTelemetry : ITelemetry
         }
     }
 
-    private sealed record InferenceMetrics(long StartTimestamp, string Provider, string ModelId);
+    private sealed record InferenceMetrics(
+        long StartTimestamp,
+        string Provider,
+        string ModelId,
+        long? StartEpochMs = null
+    );
 
     private sealed class CallState(string operationId, TelemetrySelection telemetry)
     {
@@ -2533,6 +2852,14 @@ public class OpenTelemetry : ITelemetry
         public TelemetrySelection Telemetry { get; } = telemetry;
 
         public Activity? RootSpan { get; init; }
+
+        public ActivityContext? StepContext { get; set; }
+
+        /// <summary>The root and step spans of a durable run use the run's trace; its model calls were reported live from the durable steps.</summary>
+        public DurableTelemetryContext? DurableContext { get; init; }
+
+        /// <summary>A model call reported live from a durable step, without a root span.</summary>
+        public DurableTelemetryContext? LiveDurableContext { get; init; }
 
         public Activity? StepSpan { get; set; }
 

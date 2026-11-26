@@ -23,7 +23,7 @@ Performance metrics for one step. Maps to `StepResultPerformance`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L3209)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L3293)
 
 ## Properties
 
@@ -42,7 +42,7 @@ Effective output tokens per second over the full model response.
 
 **Value:** [double](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L3215)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L3299)
 
 <a id="Vercel_AI_StepPerformance_EffectiveTotalTokensPerSecond_"></a>
 <a id="Vercel_AI_StepPerformance_EffectiveTotalTokensPerSecond"></a>
@@ -59,7 +59,7 @@ Effective input and output tokens per second over the full model response.
 
 **Value:** [double](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L3224)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L3308)
 
 <a id="Vercel_AI_StepPerformance_Empty_"></a>
 <a id="Vercel_AI_StepPerformance_Empty"></a>
@@ -76,7 +76,7 @@ A step with every metric at zero.
 
 **Value:** [StepPerformance](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L3212)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L3296)
 
 <a id="Vercel_AI_StepPerformance_InputTokensPerSecond_"></a>
 <a id="Vercel_AI_StepPerformance_InputTokensPerSecond"></a>
@@ -93,7 +93,7 @@ Input tokens per second before the first output chunk. Only set for streaming st
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L3221)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L3305)
 
 <a id="Vercel_AI_StepPerformance_OutputTokensPerSecond_"></a>
 <a id="Vercel_AI_StepPerformance_OutputTokensPerSecond"></a>
@@ -110,7 +110,7 @@ Output tokens per second after the first output chunk. Only set for streaming st
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L3218)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L3302)
 
 <a id="Vercel_AI_StepPerformance_ResponseTimeMs_"></a>
 <a id="Vercel_AI_StepPerformance_ResponseTimeMs"></a>
@@ -127,7 +127,7 @@ Time spent waiting for the model response in milliseconds.
 
 **Value:** [double](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L3230)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L3314)
 
 <a id="Vercel_AI_StepPerformance_StepTimeMs_"></a>
 <a id="Vercel_AI_StepPerformance_StepTimeMs"></a>
@@ -144,7 +144,7 @@ Total time spent on the step in milliseconds.
 
 **Value:** [double](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L3227)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L3311)
 
 <a id="Vercel_AI_StepPerformance_TimeBetweenOutputChunksMs_"></a>
 <a id="Vercel_AI_StepPerformance_TimeBetweenOutputChunksMs"></a>
@@ -161,7 +161,7 @@ Gaps between output chunks. Only set for streaming steps with at least two outpu
 
 **Value:** [OutputChunkTimingStats](/api/Vercel.AI/OutputChunkTimingStats/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L3240)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L3324)
 
 <a id="Vercel_AI_StepPerformance_TimeToFirstOutputMs_"></a>
 <a id="Vercel_AI_StepPerformance_TimeToFirstOutputMs"></a>
@@ -178,7 +178,7 @@ Time until the first generated output chunk in milliseconds. Only set for stream
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L3237)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L3321)
 
 <a id="Vercel_AI_StepPerformance_ToolExecutionMs_"></a>
 <a id="Vercel_AI_StepPerformance_ToolExecutionMs"></a>
@@ -195,4 +195,4 @@ Time spent executing each client-side tool call in milliseconds, keyed by tool c
 
 **Value:** [IReadOnlyDictionary&lt;string, double&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L3233)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L3317)

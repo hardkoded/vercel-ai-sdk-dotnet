@@ -245,6 +245,12 @@ public class OpenAICompatibleOptions
     /// </summary>
     public HttpClient? DownloadHttpClient { get; set; }
 
+    /// <summary>
+    /// Fetch used to download URLs from a response body (Fal). Maps to the provider setting <c>fetch</c> that upstream also uses for downloads.
+    /// Pass a <see cref="Vercel.AI.Util.GuardedFetch"/> for connect-time DNS validation. It takes precedence over <see cref="DownloadHttpClient"/>.
+    /// </summary>
+    public Vercel.AI.Util.DownloadFetch? DownloadFetch { get; set; }
+
     /// <summary>Generates ids for sources and for streamed tool calls that have none. Maps to the provider setting <c>generateId</c>. Used by the Mistral Conversations model.</summary>
     public Func<string>? GenerateId { get; set; }
 

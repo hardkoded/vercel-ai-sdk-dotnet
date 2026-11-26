@@ -233,7 +233,53 @@ Creates an embedding model with &lt;code class="paramref"&gt;settings&lt;/code&g
 
 **Returns:** [AmazonBedrockEmbeddingModel](/api/Vercel.AI.AmazonBedrock/AmazonBedrockEmbeddingModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L246)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L254)
+
+<a id="Vercel_AI_AmazonBedrock_AmazonBedrockProvider_Image_"></a>
+<a id="Vercel_AI_AmazonBedrock_AmazonBedrockProvider_Image_System_String_"></a>
+
+### Image(string)
+
+
+```csharp
+public AmazonBedrockImageModel Image(string modelId)
+```
+
+
+Creates an image model. Same as [ImageModel(string)](#Vercel_AI_AmazonBedrock_AmazonBedrockProvider_ImageModel_System_String_).
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+
+**Returns:** [AmazonBedrockImageModel](/api/Vercel.AI.AmazonBedrock/AmazonBedrockImageModel/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L244)
+
+<a id="Vercel_AI_AmazonBedrock_AmazonBedrockProvider_ImageModel_"></a>
+<a id="Vercel_AI_AmazonBedrock_AmazonBedrockProvider_ImageModel_System_String_"></a>
+
+### ImageModel(string)
+
+
+```csharp
+public override IImageModel ImageModel(string modelId)
+```
+
+
+Returns an image model.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+
+**Returns:** [IImageModel](/api/Vercel.AI.Provider/IImageModel/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L240)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockProvider_LanguageModel_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockProvider_LanguageModel_System_String_"></a>
@@ -279,7 +325,7 @@ Creates a language model with &lt;code class="paramref"&gt;settings&lt;/code&gt;
 
 **Returns:** [AmazonBedrockLanguageModel](/api/Vercel.AI.AmazonBedrock/AmazonBedrockLanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L240)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/AmazonBedrock/AmazonBedrockProvider.cs#L248)
 
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockProvider_RerankingModel_"></a>
 <a id="Vercel_AI_AmazonBedrock_AmazonBedrockProvider_RerankingModel_System_String_"></a>

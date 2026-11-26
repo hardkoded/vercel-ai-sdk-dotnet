@@ -73,8 +73,19 @@ public sealed class GenerateObjectOptions<T>
     /// <summary>Full prompt messages.</summary>
     public IReadOnlyList<ModelMessage>? Messages { get; set; }
 
-    /// <summary>JSON Schema for the generated object.</summary>
-    public string Schema { get; set; } = string.Empty;
+    /// <summary>
+    /// The type of the output. Default: <see cref="StreamObjectOutput.Object"/>. Maps to the <c>output</c> option.
+    /// </summary>
+    public StreamObjectOutput Output { get; set; } = StreamObjectOutput.Object;
+
+    /// <summary>
+    /// JSON Schema for the generated object. For <see cref="StreamObjectOutput.Array"/> it is the schema of one element.
+    /// Not supported for the enum and no-schema outputs.
+    /// </summary>
+    public string? Schema { get; set; }
+
+    /// <summary>The enum values the model should use. Only for <see cref="StreamObjectOutput.Enum"/>. Maps to <c>enum</c>.</summary>
+    public IReadOnlyList<string>? EnumValues { get; set; }
 
     /// <summary>Optional schema name forwarded to the provider.</summary>
     public string? SchemaName { get; set; }
@@ -430,7 +441,7 @@ public sealed class GenerateObjectStepEndEvent : GenerateObjectEvent
         : base(callId, provider, modelId)
     {
         ObjectText = step.Text;
-        Reasoning = step.ReasoningText;
+        Reasoning = ContentParts.ExtractReasoningContent(step.Content);
         FinishReason = step.FinishReason;
         Usage = step.Usage;
         Warnings = step.Warnings;
@@ -699,10 +710,13 @@ internal interface IRecordingFilterableEndEvent
 /// <summary>Result of a <c>generateObject</c> call.</summary>
 public sealed class GenerateObjectResult<T>
 {
-    internal GenerateObjectResult(T value, GenerateTextResult result)
+    private readonly JsonElement _json;
+
+    internal GenerateObjectResult(T value, GenerateTextResult result, JsonElement json = default)
     {
+        _json = json;
         Object = value;
-        Reasoning = result.ReasoningText;
+        Reasoning = ContentParts.ExtractReasoningContent(result.FinalStep.Content);
         FinishReason = result.FinishReason;
         Usage = result.Usage;
         Warnings = result.Warnings;
@@ -734,4 +748,27 @@ public sealed class GenerateObjectResult<T>
 
     /// <summary>Provider-specific response metadata.</summary>
     public JsonElement? ProviderMetadata { get; }
+
+    /// <summary>
+    /// Creates a response that contains the generated object as JSON. The <c>content-type</c> header defaults to
+    /// <c>application/json; charset=utf-8</c>. Maps to <c>toJsonResponse</c>.
+    /// </summary>
+    public TextStreamResponse ToJsonResponse(
+        int? status = null,
+        string? statusText = null,
+        HeaderCollection? headers = null
+    )
+    {
+        var prepared = PrepareHeaders.Apply(
+            headers,
+            new Dictionary<string, string> { { "content-type", "application/json; charset=utf-8" } }
+        );
+        var body = JsonSerializer.SerializeToUtf8Bytes(_json);
+        return new TextStreamResponse(
+            status ?? 200,
+            statusText,
+            prepared,
+            ReadableStream<byte[]>.FromArray(new[] { body })
+        );
+    }
 }

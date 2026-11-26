@@ -23,7 +23,7 @@ An MCP client. It connects to a server, keeps what the server announced, and ada
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L148)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L154)
 
 ## Fields
 
@@ -41,7 +41,7 @@ Latest legacy MCP protocol version. Maps to `LATEST_LEGACY_PROTOCOL_VERSION`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L154)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L160)
 
 <a id="Vercel_AI_Mcp_McpClient_LatestProtocolVersion"></a>
 
@@ -57,7 +57,7 @@ Latest MCP protocol version. Maps to `LATEST_PROTOCOL_VERSION`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L151)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L157)
 
 ## Properties
 
@@ -76,7 +76,7 @@ The result of initialization or discovery. Maps to `initializeResult`.
 
 **Value:** [McpInitializeResult](/api/Vercel.AI.Mcp/McpInitializeResult/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L188)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L194)
 
 <a id="Vercel_AI_Mcp_McpClient_Instructions_"></a>
 <a id="Vercel_AI_Mcp_McpClient_Instructions"></a>
@@ -93,7 +93,7 @@ The server instructions from initialization or discovery, if any. Maps to `instr
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L193)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L199)
 
 <a id="Vercel_AI_Mcp_McpClient_ServerInfo_"></a>
 <a id="Vercel_AI_Mcp_McpClient_ServerInfo"></a>
@@ -110,7 +110,7 @@ The server name and version from initialization or discovery. Maps to `serverInf
 
 **Value:** [McpConfiguration](/api/Vercel.AI.Mcp/McpConfiguration/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L185)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L191)
 
 ## Methods
 
@@ -136,7 +136,7 @@ Connects to the server and returns its tools: initializes, then calls `tools/lis
 
 **Returns:** [Task&lt;IReadOnlyList&lt;Tool&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L196)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L202)
 
 <a id="Vercel_AI_Mcp_McpClient_ConnectAsync_Vercel_AI_Mcp_IMcpTransport_Vercel_AI_Mcp_McpClientOptions_System_Threading_CancellationToken_"></a>
 
@@ -161,7 +161,7 @@ otherwise calls `initialize`. Then calls `tools/list`.
 
 **Returns:** [Task&lt;IReadOnlyList&lt;Tool&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L205)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L211)
 
 <a id="Vercel_AI_Mcp_McpClient_CreateAsync_"></a>
 <a id="Vercel_AI_Mcp_McpClient_CreateAsync_Vercel_AI_Mcp_IMcpTransport_Vercel_AI_Mcp_McpClientOptions_System_Threading_CancellationToken_"></a>
@@ -188,7 +188,7 @@ Creates a client and initializes it: probes with `server/discover` when
 
 **Returns:** [Task&lt;McpClient&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L222)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L228)
 
 <a id="Vercel_AI_Mcp_McpClient_ListToolsAsync_"></a>
 <a id="Vercel_AI_Mcp_McpClient_ListToolsAsync_System_Collections_Generic_IReadOnlyDictionary_System_String_Vercel_AI_Mcp_McpToolSchema__System_Threading_CancellationToken_"></a>
@@ -213,7 +213,7 @@ typed by their schemas. Maps to `client.tools({ schemas })`.
 
 **Returns:** [Task&lt;IReadOnlyList&lt;Tool&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L261)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L267)
 
 <a id="Vercel_AI_Mcp_McpClient_ListToolsAsync_System_Threading_CancellationToken_"></a>
 
@@ -235,7 +235,7 @@ Maps `tools/list` onto SDK tools. Execution calls `tools/call`.
 
 **Returns:** [Task&lt;IReadOnlyList&lt;Tool&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L253)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L259)
 
 <a id="Vercel_AI_Mcp_McpClient_ListToolsAsync_Vercel_AI_Mcp_IMcpTransport_System_Threading_CancellationToken_"></a>
 
@@ -258,4 +258,4 @@ Maps `tools/list` onto SDK tools without initializing. Execution calls `tools/ca
 
 **Returns:** [Task&lt;IReadOnlyList&lt;Tool&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L239)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L245)

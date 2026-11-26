@@ -23,7 +23,7 @@ The result of executing a tool.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L287)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L304)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates a tool result.
 | `outputJson` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `isError` | [bool](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L290)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L307)
 
 ## Properties
 
@@ -68,7 +68,7 @@ True when the tool is dynamic: a dynamic tool, a provider-executed dynamic call,
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L323)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L340)
 
 <a id="Vercel_AI_ExecutedTool_Error_"></a>
 <a id="Vercel_AI_ExecutedTool_Error"></a>
@@ -85,7 +85,7 @@ The exception the tool threw, when [IsError](#Vercel_AI_ExecutedTool_IsError) is
 
 **Value:** [Exception](https://learn.microsoft.com/dotnet/api/system.exception)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L311)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L328)
 
 <a id="Vercel_AI_ExecutedTool_InputJson_"></a>
 <a id="Vercel_AI_ExecutedTool_InputJson"></a>
@@ -102,7 +102,7 @@ The JSON input of the tool call this result answers, after any repair and refine
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L320)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L337)
 
 <a id="Vercel_AI_ExecutedTool_IsError_"></a>
 <a id="Vercel_AI_ExecutedTool_IsError"></a>
@@ -119,7 +119,7 @@ Whether execution failed or was denied.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L308)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L325)
 
 <a id="Vercel_AI_ExecutedTool_OutputJson_"></a>
 <a id="Vercel_AI_ExecutedTool_OutputJson"></a>
@@ -136,7 +136,7 @@ JSON output.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L305)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L322)
 
 <a id="Vercel_AI_ExecutedTool_Preliminary_"></a>
 <a id="Vercel_AI_ExecutedTool_Preliminary"></a>
@@ -153,7 +153,7 @@ True when the result is preliminary: a tool streamed it before its final result.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L332)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L349)
 
 <a id="Vercel_AI_ExecutedTool_ProviderExecuted_"></a>
 <a id="Vercel_AI_ExecutedTool_ProviderExecuted"></a>
@@ -170,7 +170,7 @@ True when the provider ran the tool. Maps to the result's `providerExecuted`.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L314)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L331)
 
 <a id="Vercel_AI_ExecutedTool_ProviderMetadata_"></a>
 <a id="Vercel_AI_ExecutedTool_ProviderMetadata"></a>
@@ -187,7 +187,7 @@ Provider-specific metadata of the result, keyed by provider name.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L317)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L334)
 
 <a id="Vercel_AI_ExecutedTool_Title_"></a>
 <a id="Vercel_AI_ExecutedTool_Title"></a>
@@ -204,7 +204,7 @@ Display title of the tool. Maps to the result's `title`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L326)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L343)
 
 <a id="Vercel_AI_ExecutedTool_ToolCallId_"></a>
 <a id="Vercel_AI_ExecutedTool_ToolCallId"></a>
@@ -221,7 +221,7 @@ Tool call id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L299)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L316)
 
 <a id="Vercel_AI_ExecutedTool_ToolMetadata_"></a>
 <a id="Vercel_AI_ExecutedTool_ToolMetadata"></a>
@@ -238,7 +238,7 @@ Metadata of the tool. It stays apart from [ProviderMetadata](#Vercel_AI_Executed
 
 **Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L329)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L346)
 
 <a id="Vercel_AI_ExecutedTool_ToolName_"></a>
 <a id="Vercel_AI_ExecutedTool_ToolName"></a>
@@ -255,4 +255,4 @@ Tool name.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L302)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L319)

@@ -42,7 +42,25 @@ Controls the root agent span names for text generation. Null is [ModelId](/api/V
 
 **Value:** [AgentSpanName](/api/Vercel.AI.OpenTelemetry/AgentSpanName/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L104)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L110)
+
+<a id="Vercel_AI_OpenTelemetry_OpenTelemetryOptions_Durable_"></a>
+<a id="Vercel_AI_OpenTelemetry_OpenTelemetryOptions_Durable"></a>
+
+### Durable
+
+
+```csharp
+public OpenTelemetryIdGenerator? Durable { get; set; }
+```
+
+
+The bridge that lets spans of a durable run share the run's trace. Pass the same instance as the durable option of the integration.
+Maps to `durable`.
+
+**Value:** [OpenTelemetryIdGenerator](/api/Vercel.AI.OpenTelemetry/OpenTelemetryIdGenerator/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L107)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetryOptions_Embedding_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetryOptions_Embedding"></a>
@@ -59,7 +77,7 @@ Emit embedding input and output values.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L116)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L122)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetryOptions_EnrichSpan_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetryOptions_EnrichSpan"></a>
@@ -76,7 +94,7 @@ Adds custom attributes to spans when they are created.
 
 **Value:** [EnrichSpan](/api/Vercel.AI.OpenTelemetry/EnrichSpan/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L107)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L113)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetryOptions_ExperimentalDecision_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetryOptions_ExperimentalDecision"></a>
@@ -93,7 +111,7 @@ Emit decision state, questions, and answers. Maps to `experimental_decision`.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L122)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L128)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetryOptions_ExperimentalEvaluation_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetryOptions_ExperimentalEvaluation"></a>
@@ -115,7 +133,7 @@ Deprecated alias of [ExperimentalDecision](#Vercel_AI_OpenTelemetry_OpenTelemetr
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L125)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L131)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetryOptions_ExperimentalExtraction_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetryOptions_ExperimentalExtraction"></a>
@@ -132,7 +150,7 @@ Emit extraction state, fields, reference date, and answers. Maps to `experimenta
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L129)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L135)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetryOptions_Headers_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetryOptions_Headers"></a>
@@ -149,7 +167,7 @@ Emit request headers.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L135)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L141)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetryOptions_ProviderMetadata_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetryOptions_ProviderMetadata"></a>
@@ -166,7 +184,7 @@ Emit provider metadata on response spans.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L113)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L119)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetryOptions_Reranking_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetryOptions_Reranking"></a>
@@ -183,7 +201,7 @@ Emit reranking input documents and output ranking.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L119)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L125)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetryOptions_RuntimeContext_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetryOptions_RuntimeContext"></a>
@@ -200,7 +218,24 @@ Emit runtime context values.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L132)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L138)
+
+<a id="Vercel_AI_OpenTelemetry_OpenTelemetryOptions_Schema_"></a>
+<a id="Vercel_AI_OpenTelemetry_OpenTelemetryOptions_Schema"></a>
+
+### Schema
+
+
+```csharp
+public bool? Schema { get; set; }
+```
+
+
+Emit object generation schema information. Maps to `schema`.
+
+**Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L147)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetryOptions_ToolChoice_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetryOptions_ToolChoice"></a>
@@ -217,7 +252,7 @@ Emit the tool choice of a step as `ai.prompt.toolChoice`. Maps to `toolChoice`.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L126)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L144)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetryOptions_Tracer_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetryOptions_Tracer"></a>
@@ -252,4 +287,4 @@ Emit AI SDK usage details that GenAI SemConv does not represent.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L110)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L116)

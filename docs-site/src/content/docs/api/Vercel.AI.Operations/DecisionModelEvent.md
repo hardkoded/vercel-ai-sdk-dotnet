@@ -30,13 +30,13 @@ Model-call telemetry event.
 ## Constructors
 
 <a id="Vercel_AI_Operations_DecisionModelEvent__ctor_"></a>
-<a id="Vercel_AI_Operations_DecisionModelEvent__ctor_System_String_System_String_System_String_System_String_System_Collections_Generic_IReadOnlyList_Vercel_AI_Operations_DecisionModelStatePart__System_Collections_Generic_IReadOnlyDictionary_System_String_Vercel_AI_Operations_DecisionQuestion__System_Collections_Generic_IReadOnlyDictionary_System_String_Vercel_AI_Operations_DecisionAnswer__Vercel_AI_Operations_OperationUsage_System_Nullable_System_Boolean__System_Nullable_System_Boolean__System_String_"></a>
+<a id="Vercel_AI_Operations_DecisionModelEvent__ctor_System_String_System_String_System_String_System_String_System_Collections_Generic_IReadOnlyList_Vercel_AI_Operations_DecisionModelStatePart__System_Collections_Generic_IReadOnlyDictionary_System_String_Vercel_AI_Operations_DecisionQuestion__System_Collections_Generic_IReadOnlyDictionary_System_String_Vercel_AI_Operations_DecisionAnswer__Vercel_AI_Operations_OperationUsage_System_Nullable_System_Boolean__System_Nullable_System_Boolean__System_String_System_Collections_Generic_IReadOnlyList_Vercel_AI_Operations_OperationWarning__Vercel_AI_Operations_DecisionRounding_System_Nullable_System_Text_Json_JsonElement__Vercel_AI_Operations_ProviderResponse_"></a>
 
-### `DecisionModelEvent(string, string, string, string, IReadOnlyList<DecisionModelStatePart>?, IReadOnlyDictionary<string, DecisionQuestion>, IReadOnlyDictionary<string, DecisionAnswer>?, OperationUsage?, bool?, bool?, string?)`
+### `DecisionModelEvent(string, string, string, string, IReadOnlyList<DecisionModelStatePart>?, IReadOnlyDictionary<string, DecisionQuestion>, IReadOnlyDictionary<string, DecisionAnswer>?, OperationUsage?, bool?, bool?, string?, IReadOnlyList<OperationWarning>?, DecisionRounding?, JsonElement?, ProviderResponse?)`
 
 
 ```csharp
-public DecisionModelEvent(string callId, string operationId, string provider, string modelId, IReadOnlyList<DecisionModelStatePart>? state, IReadOnlyDictionary<string, DecisionQuestion> questions, IReadOnlyDictionary<string, DecisionAnswer>? answers = null, OperationUsage? usage = null, bool? recordInputs = null, bool? recordOutputs = null, string? functionId = null)
+public DecisionModelEvent(string callId, string operationId, string provider, string modelId, IReadOnlyList<DecisionModelStatePart>? state, IReadOnlyDictionary<string, DecisionQuestion> questions, IReadOnlyDictionary<string, DecisionAnswer>? answers = null, OperationUsage? usage = null, bool? recordInputs = null, bool? recordOutputs = null, string? functionId = null, IReadOnlyList<OperationWarning>? warnings = null, DecisionRounding? rounding = null, JsonElement? providerMetadata = null, ProviderResponse? response = null)
 ```
 
 
@@ -57,6 +57,10 @@ Creates a model event.
 | `recordInputs` | [bool?](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 | `recordOutputs` | [bool?](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 | `functionId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+| `warnings` | [IReadOnlyList&lt;OperationWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
+| `rounding` | [DecisionRounding](/api/Vercel.AI.Operations/DecisionRounding/) |  |
+| `providerMetadata` | [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
+| `response` | [ProviderResponse](/api/Vercel.AI.Operations/ProviderResponse/) |  |
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L371)
 
@@ -77,7 +81,7 @@ The version of the AI SDK that emitted this event. Present only on telemetry eve
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L423)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L443)
 
 <a id="Vercel_AI_Operations_DecisionModelEvent_Answers_"></a>
 <a id="Vercel_AI_Operations_DecisionModelEvent_Answers"></a>
@@ -94,7 +98,7 @@ Answers after the model returns.
 
 **Value:** [IReadOnlyDictionary&lt;string, DecisionAnswer&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L417)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L425)
 
 <a id="Vercel_AI_Operations_DecisionModelEvent_CallId_"></a>
 <a id="Vercel_AI_Operations_DecisionModelEvent_CallId"></a>
@@ -111,7 +115,7 @@ Call id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L399)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L407)
 
 <a id="Vercel_AI_Operations_DecisionModelEvent_FunctionId_"></a>
 <a id="Vercel_AI_Operations_DecisionModelEvent_FunctionId"></a>
@@ -128,7 +132,7 @@ Telemetry function id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L432)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L452)
 
 <a id="Vercel_AI_Operations_DecisionModelEvent_ModelId_"></a>
 <a id="Vercel_AI_Operations_DecisionModelEvent_ModelId"></a>
@@ -145,7 +149,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L408)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L416)
 
 <a id="Vercel_AI_Operations_DecisionModelEvent_OperationId_"></a>
 <a id="Vercel_AI_Operations_DecisionModelEvent_OperationId"></a>
@@ -162,7 +166,7 @@ public string OperationId { get; }
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L402)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L410)
 
 <a id="Vercel_AI_Operations_DecisionModelEvent_Provider_"></a>
 <a id="Vercel_AI_Operations_DecisionModelEvent_Provider"></a>
@@ -179,7 +183,24 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L405)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L413)
+
+<a id="Vercel_AI_Operations_DecisionModelEvent_ProviderMetadata_"></a>
+<a id="Vercel_AI_Operations_DecisionModelEvent_ProviderMetadata"></a>
+
+### ProviderMetadata
+
+
+```csharp
+public JsonElement? ProviderMetadata { get; }
+```
+
+
+Provider-specific metadata. Present on the end event.
+
+**Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L437)
 
 <a id="Vercel_AI_Operations_DecisionModelEvent_Questions_"></a>
 <a id="Vercel_AI_Operations_DecisionModelEvent_Questions"></a>
@@ -196,7 +217,7 @@ Questions.
 
 **Value:** [IReadOnlyDictionary&lt;string, DecisionQuestion&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L414)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L422)
 
 <a id="Vercel_AI_Operations_DecisionModelEvent_RecordInputs_"></a>
 <a id="Vercel_AI_Operations_DecisionModelEvent_RecordInputs"></a>
@@ -213,7 +234,7 @@ Telemetry input recording flag.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L426)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L446)
 
 <a id="Vercel_AI_Operations_DecisionModelEvent_RecordOutputs_"></a>
 <a id="Vercel_AI_Operations_DecisionModelEvent_RecordOutputs"></a>
@@ -230,7 +251,41 @@ Telemetry output recording flag.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L429)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L449)
+
+<a id="Vercel_AI_Operations_DecisionModelEvent_Response_"></a>
+<a id="Vercel_AI_Operations_DecisionModelEvent_Response"></a>
+
+### Response
+
+
+```csharp
+public ProviderResponse? Response { get; }
+```
+
+
+Raw response metadata from the provider. Present on the end event.
+
+**Value:** [ProviderResponse](/api/Vercel.AI.Operations/ProviderResponse/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L440)
+
+<a id="Vercel_AI_Operations_DecisionModelEvent_Rounding_"></a>
+<a id="Vercel_AI_Operations_DecisionModelEvent_Rounding"></a>
+
+### Rounding
+
+
+```csharp
+public DecisionRounding? Rounding { get; }
+```
+
+
+Provider-declared decimal precision. Present on the end event.
+
+**Value:** [DecisionRounding](/api/Vercel.AI.Operations/DecisionRounding/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L434)
 
 <a id="Vercel_AI_Operations_DecisionModelEvent_State_"></a>
 <a id="Vercel_AI_Operations_DecisionModelEvent_State"></a>
@@ -247,7 +302,7 @@ The normalized list of state parts the model receives.
 
 **Value:** [IReadOnlyList&lt;DecisionModelStatePart&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L411)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L419)
 
 <a id="Vercel_AI_Operations_DecisionModelEvent_Usage_"></a>
 <a id="Vercel_AI_Operations_DecisionModelEvent_Usage"></a>
@@ -264,4 +319,21 @@ Provider usage before total tokens are derived.
 
 **Value:** [OperationUsage](/api/Vercel.AI.Operations/OperationUsage/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L420)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L428)
+
+<a id="Vercel_AI_Operations_DecisionModelEvent_Warnings_"></a>
+<a id="Vercel_AI_Operations_DecisionModelEvent_Warnings"></a>
+
+### Warnings
+
+
+```csharp
+public IReadOnlyList<OperationWarning>? Warnings { get; }
+```
+
+
+Warnings from the decision model. Present on the end event.
+
+**Value:** [IReadOnlyList&lt;OperationWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Decide.cs#L431)

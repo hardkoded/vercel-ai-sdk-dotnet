@@ -43,6 +43,8 @@ System messages in `Messages` are rejected with an `InvalidPromptException` ("Sy
 
 Set `AgentOptions.PrepareCall` to change the options of each `Agent.GenerateAsync` and `Agent.Stream` call. It receives the options the agent would use, including the default `StopWhen`, and returns replacement options (or null to keep them). Returning them unchanged keeps the default warning; setting `StopWhen` replaces the default limit and silences it.
 
+`AgentOptions` also takes the call settings of `GenerateTextOptions`: `TopP`, `TopK`, `PresencePenalty`, `FrequencyPenalty`, `StopSequences`, `Seed` and `ProviderOptions`, plus `ExperimentalDownload` (maps to `experimental_download`) and `Include` (maps to `include`). `Include` is an `AgentInclude`, which adds `RawChunks` to `GenerateTextInclude`: `Agent.GenerateAsync` uses the request and response settings, and `Agent.Stream` also forwards `RawChunks` to the model as `IncludeRawChunks`. `PrepareCall` can replace them.
+
 `Agent<TCallOptions>` takes per-call options, like `ToolLoopAgent<CALL_OPTIONS>`. Build it with `AgentOptions<TCallOptions>`, which adds `CallOptionsSchema` (a JSON schema, maps to `callOptionsSchema`) and a `PrepareCall` of type `Func<GenerateTextOptions, TCallOptions, GenerateTextOptions?>` that receives the validated options. `GenerateAsync` and `Stream` take the options as a required second argument, so a call without options does not compile. The options are validated against `CallOptionsSchema` before `PrepareCall` and before the model runs. A mismatch throws a `TypeValidationException` ("Type validation failed for options"). `Agent<TCallOptions>` is not an `IAgent`, so `CreateAgentUIStreamAsync` does not accept it. Use the non-generic `Agent` when you need no call options.
 
 A call to a tool that has no `Execute` ends the loop at that step. The stop condition is not evaluated. A call that waits for approval (see below) also ends the loop, and no warning is logged.
@@ -98,7 +100,7 @@ A prompt where a local tool call has no tool result before the next user or syst
 
 ## Tool choice none
 
-When `ToolChoice` is `ToolChoice.None`, the SDK prevents local tool execution even if the model returns a tool call. Such a response throws `ToolChoiceViolationException`. The tool definitions are still sent to the model. With `StreamTextAsync`, tool parts are withheld from the stream, so client-side tools are not invoked either. Tool call repair (`RepairToolCall`) and input refinement (`RefineToolInput`) are skipped for rejected tool calls. A `PrepareStep` that returns another `ToolChoice` replaces `None` for that step. The Hugging Face Responses provider sends `tool_choice: "none"`.
+When `ToolChoice` is `ToolChoice.None`, the SDK prevents local tool execution even if the model returns a tool call. Such a response throws `ToolChoiceViolationException` from `GenerateTextAsync`. With `StreamTextAsync`, the exception is an `ErrorPart` in the stream, reported to `OnError`, and `FinishReason` resolves to `FinishReason.Error` with the usage of the call. The tool definitions are still sent to the model. With `StreamTextAsync`, tool parts are withheld from the stream, so client-side tools are not invoked either. Tool call repair (`RepairToolCall`) and input refinement (`RefineToolInput`) are skipped for rejected tool calls. A `PrepareStep` that returns another `ToolChoice` replaces `None` for that step. The Hugging Face Responses provider sends `tool_choice: "none"`.
 
 ## Tool call execution concurrency
 
@@ -292,7 +294,7 @@ static async IAsyncEnumerable<string> Attractions(string city)
 
 `StreamTextAsync` emits each streamed output as a `ToolResultPart` whose `ExecutedTool.Preliminary` is true, then one final `ToolResultPart` with the last output. In the UI message stream, a preliminary result is a `tool-output-available` chunk with `preliminary: true`. Only the final result reaches `StepResult.ToolResults`, the step content, and the model. `GenerateTextAsync` runs the tool the same way and keeps only the final result. A tool that yields nothing has the output `null`.
 
-A provider-executed tool can stream preliminary results too, such as the partial images of OpenAI image generation. `ToolResultStreamPart.Preliminary` marks them, `StreamTextAsync` forwards the flag on the `ToolResultPart`, and only the final result reaches the step content.
+A provider-executed tool can stream preliminary results too, such as the partial images of OpenAI image generation. `ToolResultStreamPart.Preliminary` marks them, `StreamTextAsync` forwards the flag on the `ToolResultPart`, and only the final result reaches the step content. A `GeneratedToolResult` that a provider returns in the content of a model call can set `Preliminary` too, and the OpenTelemetry integration records only the final provider-executed result on the `execute_tool` span.
 
 The approval flow of `streamText` is not ported yet ([#847](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/847)), so an approved call does not stream its preliminary results.
 
@@ -360,7 +362,7 @@ Requests prefer markdown using the `Accept: text/markdown` header, which many do
 
 JavaScript is not executed. Pages that render their content in the browser may return little or no content, in which case the model is told that the page may require JavaScript.
 
-The port converts HTML with [AngleSharp](https://anglesharp.github.io/) and a built-in extractor instead of [defuddle](https://github.com/kepano/defuddle). The extractor sometimes selects the wrong part of a page. If you fetch pages with a known structure, set `DefuddleOptions.ContentSelector` to choose the main content element. `WebFetchDefuddleOptions` also has `RemoveImages` and `RemoveHiddenElements`; the other defuddle options are not ported ([#756](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/756)).
+The port converts HTML with [AngleSharp](https://anglesharp.github.io/) and a built-in extractor instead of [defuddle](https://github.com/kepano/defuddle). The extractor sometimes selects the wrong part of a page. If you fetch pages with a known structure, set `DefuddleOptions.ContentSelector` to choose the main content element. `WebFetchDefuddleOptions` also has `RemoveImages`, `RemoveHiddenElements`, `RemoveExactSelectors` and `RemovePartialSelectors`. The last two use defuddle's lists of ad, social and navigation clutter selectors. The other defuddle options are not ported ([#756](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/756)).
 
 ```csharp
 var webFetch = WebFetchTools.Create(new WebFetchToolOptions
@@ -373,7 +375,17 @@ Content longer than `MaxLength` is truncated. The model is told to call the tool
 
 ### Security
 
-The tool makes GET requests without cookies or credentials, and rejects URLs that contain credentials. Each request and redirect is validated against private and reserved addresses such as `localhost` and cloud metadata endpoints. The default transport does not validate resolved DNS addresses or pin connections, so pass a DNS-validating `Fetch` or restrict network egress at the platform level. A custom `Fetch` must provide equivalent validation. See [Secure URL fetching](secure-url-fetching.md).
+The tool makes GET requests without cookies or credentials, and rejects URLs that contain credentials. Each request and redirect is validated against private and reserved addresses such as `localhost` and cloud metadata endpoints. The default transport does not validate resolved DNS addresses or pin connections, so pass a DNS-validating `Fetch` such as `GuardedFetch`, or restrict network egress at the platform level. A custom `Fetch` must provide equivalent validation.
+
+`Download.FetchUntrustedUrlAsync` (`fetchUntrustedUrl` upstream) fetches a URL with the same validated redirects and first-hop credential isolation. Without a `credentialedOrigin` (or a `trustedOrigin`, when `credentialedOrigin` is omitted) that matches the URL, only allowlisted metadata headers (`accept`, `accept-language`, `range`, `user-agent`, conditional and tracing headers, and similar) go out on the first hop. Add non-credential names with `untrustedFirstHopHeaders`. Proxy, metadata, cookie, and hop-by-hop headers are removed even for a matching origin. Both origins must come from developer configuration, never from response data. A `credentialedOrigin` does not exempt the URL from validation, but a `trustedOrigin` does.
+
+```csharp
+var response = await Download.FetchUntrustedUrlAsync(
+    fileUrl,
+    headers,
+    credentialedOrigin: "https://api.example.com",
+    fetch: guardedFetch);
+```
 
 Fetched content is untrusted and can contain prompt injections. When an agent has access to private data, a model could also be instructed to send that data to another site, for example in a URL query string. Restrict fetching with `AllowedDomains`, enable `RequireUrlInUserMessage` so only URLs from user messages can be fetched, or require tool approval (`NeedsApproval`).
 
@@ -413,11 +425,13 @@ A non-2xx response to the event stream throws an `MCPClientError` with `StatusCo
 
 `HttpMcpTransport` throws an `MCPClientError` when the server answers a request with a JSON-RPC `error` body, even on a non-2xx response. The error carries `Code`, `Data`, `StatusCode`, `Url` and `ResponseBody`, and its message is the JSON-RPC `error.message`. Upstream also sets `cause` to the error object. The port's `Exception` cause cannot hold it.
 
+To keep MCP calls on validated connections, pass the pinned client of a `GuardedFetch` as the `HttpClient`: `new HttpMcpTransport(guardedFetch.Client, endpoint)`. List the MCP server origin in `new GuardedFetch(trustedOrigins)` when it is a developer-configured private endpoint. This is the `fetch` option of the `http` transport upstream.
+
 The `redirect` option and OAuth (`authProvider`) are not ported ([#585](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/585)). Redirects follow the `HttpClient` handler.
 
 ## Tool result title, metadata and dynamic flag
 
-`ExecutedTool` carries `Title`, `ToolMetadata` and `Dynamic` from the tool call it answers, and `ToolInputStartPart` carries the tool's `Title`. `Dynamic` is true for a dynamic tool and for an invalid call. The `GeneratedToolResult` of a client tool in `Content` carries `Dynamic` and `ToolMetadata` too, and `ToolInputStartPart` also carries the tool's `ToolMetadata`. That result also sets `ProviderExecuted` to false (a provider's own result keeps it true) and carries the `InputJson` of the call it answers. The response messages of a step (the assistant message and one tool message that carries the approval responses in `ToolModelMessage.ApprovalResponses` and the results in tool call order for `GenerateTextAsync` and in completion order for a streamed step; a denied call, provider-executed or not, gets an `execution-denied` result) are built from `Content` in one place, as upstream's `toResponseMessages` does. The assistant message now includes the step's files and skips empty text that has no provider metadata.
+`ExecutedTool` carries `Title`, `ToolMetadata` and `Dynamic` from the tool call it answers, and `ToolInputStartPart` carries the tool's `Title`. `Dynamic` is true for a dynamic tool and for an invalid call. The `GeneratedToolResult` of a client tool in `Content` carries `Dynamic` and `ToolMetadata` too, and `ToolInputStartPart` also carries the tool's `ToolMetadata`. That result also sets `ProviderExecuted` to false (a provider's own result keeps it true) and carries the `InputJson` of the call it answers. It also has `Preliminary`, true for a result that a tool streamed before its final result. The response messages of a step (the assistant message and one tool message that carries the approval responses in `ToolModelMessage.ApprovalResponses` and the results in tool call order for `GenerateTextAsync` and in completion order for a streamed step; a denied call, provider-executed or not, gets an `execution-denied` result) are built from `Content` in one place, as upstream's `toResponseMessages` does. The assistant message now includes the step's files and skips empty text that has no provider metadata.
 
 ### Protocol version discovery
 

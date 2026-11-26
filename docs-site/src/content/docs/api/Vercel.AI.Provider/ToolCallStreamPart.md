@@ -23,7 +23,7 @@ A completed tool call.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [LanguageModelStreamPart](/api/Vercel.AI.Provider/LanguageModelStreamPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2789)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2824)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates a tool-call part.
 | `argumentsJson` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `providerMetadata` | [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2792)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2827)
 
 ## Properties
 
@@ -68,7 +68,7 @@ JSON arguments.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2813)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2848)
 
 <a id="Vercel_AI_Provider_ToolCallStreamPart_Dynamic_"></a>
 <a id="Vercel_AI_Provider_ToolCallStreamPart_Dynamic"></a>
@@ -85,7 +85,7 @@ True when the tool is not known up front, such as a provider-executed MCP tool. 
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2822)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2857)
 
 <a id="Vercel_AI_Provider_ToolCallStreamPart_ProviderExecuted_"></a>
 <a id="Vercel_AI_Provider_ToolCallStreamPart_ProviderExecuted"></a>
@@ -102,7 +102,7 @@ True when the provider executed the tool, so the caller has nothing to run.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2819)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2854)
 
 <a id="Vercel_AI_Provider_ToolCallStreamPart_ProviderMetadata_"></a>
 <a id="Vercel_AI_Provider_ToolCallStreamPart_ProviderMetadata"></a>
@@ -119,7 +119,7 @@ Provider metadata for this call.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2816)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2851)
 
 <a id="Vercel_AI_Provider_ToolCallStreamPart_ToolCallId_"></a>
 <a id="Vercel_AI_Provider_ToolCallStreamPart_ToolCallId"></a>
@@ -136,7 +136,7 @@ Tool call id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2807)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2842)
 
 <a id="Vercel_AI_Provider_ToolCallStreamPart_ToolName_"></a>
 <a id="Vercel_AI_Provider_ToolCallStreamPart_ToolName"></a>
@@ -153,4 +153,4 @@ Tool name.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2810)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L2845)

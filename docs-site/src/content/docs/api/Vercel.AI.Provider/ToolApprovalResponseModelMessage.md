@@ -24,7 +24,7 @@ The caller's answer to a [GeneratedToolApprovalRequest](/api/Vercel.AI.Provider/
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [ModelMessage](/api/Vercel.AI.Provider/ModelMessage/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1648)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1662)
 
 ## Constructors
 
@@ -50,7 +50,7 @@ Creates an approval response.
 | `reason` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `providerExecuted` | [bool](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1651)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1665)
 
 ## Properties
 
@@ -69,7 +69,7 @@ Approval id of the request this answers.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1666)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1680)
 
 <a id="Vercel_AI_Provider_ToolApprovalResponseModelMessage_Approved_"></a>
 <a id="Vercel_AI_Provider_ToolApprovalResponseModelMessage_Approved"></a>
@@ -86,7 +86,7 @@ Whether the call was approved.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1669)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1683)
 
 <a id="Vercel_AI_Provider_ToolApprovalResponseModelMessage_DeniedToolResult_"></a>
 <a id="Vercel_AI_Provider_ToolApprovalResponseModelMessage_DeniedToolResult"></a>
@@ -104,7 +104,7 @@ The generation loop sets it while it prepares the prompt.
 
 **Value:** [ToolModelMessage](/api/Vercel.AI.Provider/ToolModelMessage/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1681)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1695)
 
 <a id="Vercel_AI_Provider_ToolApprovalResponseModelMessage_ProviderExecuted_"></a>
 <a id="Vercel_AI_Provider_ToolApprovalResponseModelMessage_ProviderExecuted"></a>
@@ -121,7 +121,7 @@ True when the provider runs the tool, so the model must see the response.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1675)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1689)
 
 <a id="Vercel_AI_Provider_ToolApprovalResponseModelMessage_Reason_"></a>
 <a id="Vercel_AI_Provider_ToolApprovalResponseModelMessage_Reason"></a>
@@ -138,4 +138,4 @@ Reason for the decision, when given.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1672)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1686)

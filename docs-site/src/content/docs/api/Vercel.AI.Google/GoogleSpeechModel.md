@@ -175,7 +175,7 @@ Synthesizes speech with Gemini-specific options.
 
 **Returns:** [Task&lt;GoogleSpeechResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L261)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L262)
 
 <a id="Vercel_AI_Google_GoogleSpeechModel_Prepare_"></a>
 <a id="Vercel_AI_Google_GoogleSpeechModel_Prepare_System_String_System_String_Vercel_AI_Google_GoogleSpeechCall_"></a>
@@ -200,4 +200,4 @@ Builds the speech request body and warnings.
 
 **Returns:** [GoogleSpeechPreparation](/api/Vercel.AI.Google/GoogleSpeechPreparation/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L403)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L404)

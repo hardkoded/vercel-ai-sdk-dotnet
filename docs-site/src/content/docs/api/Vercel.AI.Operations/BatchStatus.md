@@ -26,7 +26,7 @@ start, list, and status results are all [BatchReference](/api/Vercel.AI.Operatio
 
 **Derived:** [BatchStartResult](/api/Vercel.AI.Operations/BatchStartResult/), [ListedBatch](/api/Vercel.AI.Operations/ListedBatch/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L667)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L762)
 
 ## Properties
 
@@ -45,7 +45,7 @@ Creation time.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L679)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L774)
 
 <a id="Vercel_AI_Operations_BatchStatus_ErrorCode_"></a>
 <a id="Vercel_AI_Operations_BatchStatus_ErrorCode"></a>
@@ -62,7 +62,7 @@ Code of the batch-level error.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L688)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L783)
 
 <a id="Vercel_AI_Operations_BatchStatus_ErrorMessage_"></a>
 <a id="Vercel_AI_Operations_BatchStatus_ErrorMessage"></a>
@@ -79,7 +79,7 @@ Message of the batch-level error.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L685)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L780)
 
 <a id="Vercel_AI_Operations_BatchStatus_ExpiresAt_"></a>
 <a id="Vercel_AI_Operations_BatchStatus_ExpiresAt"></a>
@@ -96,7 +96,7 @@ Expiry time.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L682)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L777)
 
 <a id="Vercel_AI_Operations_BatchStatus_ProviderMetadata_"></a>
 <a id="Vercel_AI_Operations_BatchStatus_ProviderMetadata"></a>
@@ -113,7 +113,7 @@ Provider metadata.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L691)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L786)
 
 <a id="Vercel_AI_Operations_BatchStatus_RawStatus_"></a>
 <a id="Vercel_AI_Operations_BatchStatus_RawStatus"></a>
@@ -130,7 +130,7 @@ Provider status string.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L673)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L768)
 
 <a id="Vercel_AI_Operations_BatchStatus_RequestCounts_"></a>
 <a id="Vercel_AI_Operations_BatchStatus_RequestCounts"></a>
@@ -147,7 +147,7 @@ Request counts.
 
 **Value:** [BatchRequestCounts](/api/Vercel.AI.Operations/BatchRequestCounts/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L676)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L771)
 
 <a id="Vercel_AI_Operations_BatchStatus_Status_"></a>
 <a id="Vercel_AI_Operations_BatchStatus_Status"></a>
@@ -164,4 +164,4 @@ Status name.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L670)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L765)

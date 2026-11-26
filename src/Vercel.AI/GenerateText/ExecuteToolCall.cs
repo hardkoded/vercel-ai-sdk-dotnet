@@ -288,13 +288,20 @@ internal static class ToolExecutionCallbacks
     ) =>
         Combine(
             options.OnToolExecutionStart,
-            TelemetryDispatcher.Create(options).OnToolExecutionStart
+            GenerateTextRestrictedTelemetryDispatcher
+                .CreateRestrictedTelemetryDispatcher(options)
+                .OnToolExecutionStart
         );
 
     internal static IReadOnlyList<Func<ToolExecutionEndEvent, CancellationToken, Task>>? End(
         GenerateTextOptions options
     ) =>
-        Combine(options.OnToolExecutionEnd, TelemetryDispatcher.Create(options).OnToolExecutionEnd);
+        Combine(
+            options.OnToolExecutionEnd,
+            GenerateTextRestrictedTelemetryDispatcher
+                .CreateRestrictedTelemetryDispatcher(options)
+                .OnToolExecutionEnd
+        );
 
     // Maps to `telemetryDispatcher.executeTool`. Null when no integration wraps tool execution.
     internal static Func<ExecuteToolInTelemetryContextParams, Task>? ExecuteInTelemetryContext(
@@ -302,7 +309,8 @@ internal static class ToolExecutionCallbacks
         CancellationToken cancellationToken
     )
     {
-        var dispatcher = TelemetryDispatcher.Create(options);
+        var dispatcher =
+            GenerateTextRestrictedTelemetryDispatcher.CreateRestrictedTelemetryDispatcher(options);
         if (dispatcher.ExecuteToolWrappers.Count == 0)
         {
             return null;
@@ -332,7 +340,8 @@ internal static class ToolExecutionCallbacks
         Task<(ExecutedTool Output, double ToolExecutionMs)?>
     >? RunInTracingChannelSpan(GenerateTextOptions options)
     {
-        var dispatcher = TelemetryDispatcher.Create(options);
+        var dispatcher =
+            GenerateTextRestrictedTelemetryDispatcher.CreateRestrictedTelemetryDispatcher(options);
         return dispatcher.IsTracingEnabled
             ? dispatcher.RunInTracingChannelSpan<(ExecutedTool Output, double ToolExecutionMs)?>
             : null;

@@ -42,7 +42,7 @@ public ExtractJsonMiddleware()
 
 Creates middleware that strips markdown code fences.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L391)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L404)
 
 <a id="Vercel_AI_ExtractJsonMiddleware__ctor_System_Func_System_String_System_String__"></a>
 
@@ -62,7 +62,7 @@ Creates middleware with an optional custom transform.
 | --- | --- | --- |
 | `transform` | [Func&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.func-2) | Custom transform applied to text content and structured output text. Replaces the default markdown fence stripping when set. |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L398)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L411)
 
 ## Methods
 
@@ -89,4 +89,29 @@ Wraps a generate call.
 
 **Returns:** [Task&lt;LanguageModelGenerateResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L404)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L418)
+
+<a id="Vercel_AI_ExtractJsonMiddleware_WrapStreamAsync_"></a>
+<a id="Vercel_AI_ExtractJsonMiddleware_WrapStreamAsync_Vercel_AI_Provider_LanguageModelCallOptions_System_Func_Vercel_AI_Provider_LanguageModelCallOptions_System_Threading_CancellationToken_System_Threading_Tasks_Task_Vercel_AI_Provider_LanguageModelStreamResult___System_Threading_CancellationToken_"></a>
+
+### `WrapStreamAsync(LanguageModelCallOptions, Func<LanguageModelCallOptions, CancellationToken, Task<LanguageModelStreamResult>>, CancellationToken)`
+
+
+```csharp
+public override Task<LanguageModelStreamResult> WrapStreamAsync(LanguageModelCallOptions options, Func<LanguageModelCallOptions, CancellationToken, Task<LanguageModelStreamResult>> next, CancellationToken cancellationToken)
+```
+
+
+Wraps a stream call.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `options` | [LanguageModelCallOptions](/api/Vercel.AI.Provider/LanguageModelCallOptions/) |  |
+| `next` | [Func&lt;LanguageModelCallOptions, CancellationToken, Task&lt;LanguageModelStreamResult&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-3) |  |
+| `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
+
+**Returns:** [Task&lt;LanguageModelStreamResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L444)

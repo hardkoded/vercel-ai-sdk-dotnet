@@ -526,6 +526,9 @@ public sealed class GeneratedToolResult : GeneratedContent
     /// <summary>False when the generation loop ran a client tool. A provider's own result is provider-executed. Maps to the result's <c>providerExecuted</c>.</summary>
     public bool ProviderExecuted { get; init; } = true;
 
+    /// <summary>True when the result is preliminary: the tool streamed it before its final result. Maps to the result's <c>preliminary</c>.</summary>
+    public bool? Preliminary { get; init; }
+
     /// <summary>The JSON input of the tool call this result answers. Maps to the result's <c>input</c>.</summary>
     public string? InputJson { get; init; }
 }
@@ -707,7 +710,21 @@ public sealed class LanguageModelTool
     public bool IsProviderDefined => ProviderToolId != null;
 
     /// <summary>Arguments of a provider-defined tool. Undefined for a function tool.</summary>
-    public JsonElement Args { get; }
+    public JsonElement Args { get; private set; }
+
+    // A copy of the tool whose arguments are the provider-owned telemetry view. A redactor that throws leaves no arguments.
+    // Maps to the `tools` redaction of `redactTelemetryCredentials`.
+    internal LanguageModelTool WithRedactedTelemetryArgs()
+    {
+        if (!IsProviderDefined || RedactArgs == null)
+        {
+            return this;
+        }
+
+        var copy = (LanguageModelTool)MemberwiseClone();
+        copy.Args = RedactTelemetryArgs() ?? default;
+        return copy;
+    }
 
     /// <summary>
     /// Provider-owned telemetry view of <see cref="Args"/>, which hides credentials. Maps to the <c>redactArgs</c> option of a provider tool factory.

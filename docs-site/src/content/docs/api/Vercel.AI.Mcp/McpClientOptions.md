@@ -23,7 +23,7 @@ Options of `CancellationToken)`. Maps to `MCPClientConfig`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L60)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L66)
 
 ## Properties
 
@@ -43,7 +43,7 @@ to legacy initialization. Disable it for legacy servers that require `initialize
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L66)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L72)
 
 <a id="Vercel_AI_Mcp_McpClientOptions_Schemas_"></a>
 <a id="Vercel_AI_Mcp_McpClientOptions_Schemas"></a>
@@ -61,4 +61,4 @@ Maps to the `schemas` option of `client.tools()`.
 
 **Value:** [IReadOnlyDictionary&lt;string, McpToolSchema&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L72)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L78)

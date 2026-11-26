@@ -23,7 +23,7 @@ Hume speech request.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L95)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L96)
 
 ## Constructors
 
@@ -46,7 +46,7 @@ Creates a speech request.
 | --- | --- | --- |
 | `text` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L101)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L102)
 
 ## Fields
 
@@ -64,7 +64,7 @@ Default Hume voice used when the caller does not set one.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L98)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L99)
 
 ## Properties
 
@@ -83,7 +83,7 @@ Headers merged over the provider headers.
 
 **Value:** [IDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.idictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L122)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L123)
 
 <a id="Vercel_AI_Hume_HumeSpeechRequest_Language_"></a>
 <a id="Vercel_AI_Hume_HumeSpeechRequest_Language"></a>
@@ -100,7 +100,7 @@ Ignored. Hume does not accept a language.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L119)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L120)
 
 <a id="Vercel_AI_Hume_HumeSpeechRequest_OutputFormat_"></a>
 <a id="Vercel_AI_Hume_HumeSpeechRequest_OutputFormat"></a>
@@ -117,7 +117,7 @@ Output container. `mp3`, `pcm`, and `wav` are sent as-is.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L113)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L114)
 
 <a id="Vercel_AI_Hume_HumeSpeechRequest_Speed_"></a>
 <a id="Vercel_AI_Hume_HumeSpeechRequest_Speed"></a>
@@ -134,7 +134,7 @@ Speaking rate, when set.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L116)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L117)
 
 <a id="Vercel_AI_Hume_HumeSpeechRequest_Text_"></a>
 <a id="Vercel_AI_Hume_HumeSpeechRequest_Text"></a>
@@ -151,7 +151,7 @@ Text to speak.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L107)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L108)
 
 <a id="Vercel_AI_Hume_HumeSpeechRequest_Voice_"></a>
 <a id="Vercel_AI_Hume_HumeSpeechRequest_Voice"></a>
@@ -168,4 +168,4 @@ Voice id. Null selects [DefaultVoiceId](#Vercel_AI_Hume_HumeSpeechRequest_Defaul
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L110)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L111)

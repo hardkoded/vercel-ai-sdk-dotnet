@@ -23,7 +23,7 @@ Arguments passed to a single asset download.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L1048)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L1148)
 
 ## Constructors
 
@@ -48,7 +48,7 @@ Creates the call.
 | `isUrlSupportedByModel` | [bool](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 | `abortSignal` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L1051)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L1151)
 
 ## Properties
 
@@ -67,7 +67,7 @@ Cancellation signal forwarded from the caller.
 
 **Value:** [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L1065)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L1165)
 
 <a id="Vercel_AI_Util_AssetDownloadCall_IsUrlSupportedByModel_"></a>
 <a id="Vercel_AI_Util_AssetDownloadCall_IsUrlSupportedByModel"></a>
@@ -84,7 +84,7 @@ Whether the model can read the URL itself.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L1062)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L1162)
 
 <a id="Vercel_AI_Util_AssetDownloadCall_Url_"></a>
 <a id="Vercel_AI_Util_AssetDownloadCall_Url"></a>
@@ -101,4 +101,4 @@ URL to download.
 
 **Value:** [Uri](https://learn.microsoft.com/dotnet/api/system.uri)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L1059)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L1159)

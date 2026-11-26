@@ -287,6 +287,27 @@ public static class Download
 
     private const int MaxRedirects = 10;
 
+    private static readonly string[] SafeUntrustedFirstHopHeaders =
+    [
+        "accept",
+        "accept-language",
+        "baggage",
+        "cache-control",
+        "idempotency-key",
+        "if-match",
+        "if-modified-since",
+        "if-none-match",
+        "if-range",
+        "if-unmodified-since",
+        "pragma",
+        "range",
+        "traceparent",
+        "tracestate",
+        "user-agent",
+        "x-correlation-id",
+        "x-request-id",
+    ];
+
     /// <summary>
     /// Fetch used when a call does not pass its own. Read on each download so a replacement is picked up immediately.
     /// </summary>
@@ -479,6 +500,74 @@ public static class Download
             url,
             DefaultMaxBytes,
             headers,
+            abortSignal,
+            maxRedirects,
+            fetch,
+            trustedOrigin
+        );
+    }
+
+    /// <summary>
+    /// Fetches an untrusted URL with first-hop credential isolation and validated redirects. Maps to <c>fetchUntrustedUrl</c>.
+    /// Without a matching <paramref name="credentialedOrigin"/> (or <paramref name="trustedOrigin"/> when it is omitted), only
+    /// allowlisted request metadata is sent on the first hop. Proxy, metadata, cookie, and hop-by-hop headers are sanitized even
+    /// for a matching origin. Inject <see cref="GuardedFetch"/> for connect-time DNS validation.
+    /// </summary>
+    /// <param name="url">First URL to request.</param>
+    /// <param name="headers">Request headers, or <c>null</c> to send none.</param>
+    /// <param name="credentialedOrigin">
+    /// The developer-configured origin allowed to receive arbitrary caller headers on the first hop. Defaults to
+    /// <paramref name="trustedOrigin"/>. An explicit value takes precedence and does not exempt the URL from validation.
+    /// </param>
+    /// <param name="untrustedFirstHopHeaders">
+    /// Additional header names, matched case-insensitively, that are safe to disclose to an untrusted first hop. Use only for
+    /// non-credential protocol metadata.
+    /// </param>
+    /// <param name="abortSignal">Cancellation signal passed to every hop.</param>
+    /// <param name="maxRedirects">Largest number of redirects to follow.</param>
+    /// <param name="fetch">Fetch used for every hop. Defaults to <see cref="Fetch"/>, then the built-in fetch.</param>
+    /// <param name="trustedOrigin">
+    /// A developer-configured origin whose hops skip validation. Both origin options must come from developer configuration,
+    /// never from response data.
+    /// </param>
+    /// <returns>The final response. The caller checks <see cref="DownloadResponse.Ok"/> and reads the body.</returns>
+    /// <exception cref="DownloadError">A hop is unsafe, the redirect limit is exceeded, or a redirect cannot be validated.</exception>
+    public static Task<DownloadResponse> FetchUntrustedUrlAsync(
+        string url,
+        HeaderCollection? headers = null,
+        string? credentialedOrigin = null,
+        IEnumerable<string>? untrustedFirstHopHeaders = null,
+        CancellationToken abortSignal = default,
+        int maxRedirects = MaxRedirects,
+        DownloadFetch? fetch = null,
+        string? trustedOrigin = null
+    )
+    {
+        HeaderCollection? firstHopHeaders = null;
+        if (headers != null)
+        {
+            firstHopHeaders = RequestHeaders.SanitizeRequestHeaders(headers);
+            var origin = credentialedOrigin ?? trustedOrigin;
+            if (origin == null || !ProviderValues.IsSameOrigin(url, origin))
+            {
+                var allowed = new HashSet<string>(
+                    SafeUntrustedFirstHopHeaders,
+                    StringComparer.OrdinalIgnoreCase
+                );
+                foreach (var name in untrustedFirstHopHeaders ?? [])
+                {
+                    allowed.Add(name);
+                }
+
+                firstHopHeaders = new HeaderCollection(
+                    firstHopHeaders.Entries().Where(header => allowed.Contains(header.Key))
+                );
+            }
+        }
+
+        return FetchWithValidatedRedirectsAsync(
+            url,
+            firstHopHeaders,
             abortSignal,
             maxRedirects,
             fetch,
@@ -718,9 +807,20 @@ public static class Download
     )
     {
         // The default fetch uses the runtime transport. It does not validate resolved DNS addresses or pin connections. An
-        // application that downloads untrusted URLs passes a DNS-validating fetch (the equivalent of guarded-fetch) instead.
+        // application that downloads untrusted URLs passes a DNS-validating fetch (see GuardedFetch) instead.
         using (var handler = new HttpClientHandler { AllowAutoRedirect = false })
         using (var client = new HttpClient(handler))
+        {
+            return await SendAsync(client, url, request).ConfigureAwait(false);
+        }
+    }
+
+    internal static async Task<DownloadResponse> SendAsync(
+        HttpClient client,
+        string url,
+        DownloadRequest request
+    )
+    {
         using (var message = new HttpRequestMessage(new HttpMethod(request.Method), url))
         {
             if (request.Body != null)
