@@ -192,17 +192,17 @@ public abstract class GenerateObjectEvent
     /// <summary>Requested model id.</summary>
     public string ModelId { get; }
 
-    /// <summary>Whether the call records inputs. Set by the telemetry dispatcher. Maps to <c>recordInputs</c>.</summary>
-    public bool? RecordInputs { get; private protected set; }
+    /// <summary>Whether the call records inputs. Set only on events sent to telemetry integrations. Maps to <c>recordInputs</c>.</summary>
+    internal bool? RecordInputs { get; private set; }
 
-    /// <summary>Whether the call records outputs. Set by the telemetry dispatcher. Maps to <c>recordOutputs</c>.</summary>
-    public bool? RecordOutputs { get; private protected set; }
+    /// <summary>Whether the call records outputs. Set only on events sent to telemetry integrations. Maps to <c>recordOutputs</c>.</summary>
+    internal bool? RecordOutputs { get; private set; }
 
-    /// <summary>Identifier of the telemetry function. Set by the telemetry dispatcher. Maps to <c>functionId</c>.</summary>
-    public string? FunctionId { get; private protected set; }
+    /// <summary>Identifier of the telemetry function. Set only on events sent to telemetry integrations. Maps to <c>functionId</c>.</summary>
+    internal string? FunctionId { get; private set; }
 
-    /// <summary>Version of the AI SDK. Set by the telemetry dispatcher. Maps to <c>aiVersion</c>.</summary>
-    public string? AiVersion { get; private protected set; }
+    /// <summary>Version of the AI SDK. Set only on events sent to telemetry integrations. Maps to <c>aiVersion</c>.</summary>
+    internal string? AiVersion { get; private set; }
 
     /// <summary>Whether the telemetry settings hide the inputs.</summary>
     private protected static bool HideInputs(TelemetryOptions? telemetry) =>
