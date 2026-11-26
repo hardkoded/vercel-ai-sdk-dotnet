@@ -157,25 +157,38 @@ public sealed class ElevenLabsSpeechModelDoStreamTests
     public async Task Should_send_keepalives_while_the_text_stream_is_idle_and_none_after_the_input_ends()
     {
         const int interval = 100;
-        var text = new TrackedText([new SpeechTextPart("Thinking... ")], holdOpen: true);
-        await DoStream(_harness.CreateModel(keepaliveIntervalMs: interval), text);
-        var socket = _harness.LastSocket;
-        socket.Open();
-        await Wait.UntilAsync(() => socket.Sent.Count >= 2);
-        AssertJson("""[{"text":"Thinking... "}]""", SentMessages(socket).Skip(1));
+        using var abort = new CancellationTokenSource();
+        try
+        {
+            var text = new TrackedText([new SpeechTextPart("Thinking... ")], holdOpen: true);
+            await DoStream(
+                _harness.CreateModel(keepaliveIntervalMs: interval),
+                text,
+                abortSignal: abort.Token
+            );
+            var socket = _harness.LastSocket;
+            socket.Open();
+            await Wait.UntilAsync(() => socket.Sent.Count >= 2);
+            AssertJson("""{"text":"Thinking... "}""", SentMessages(socket)[1]);
 
-        await Wait.UntilAsync(() => socket.Sent.Count >= 3);
-        AssertJson(
-            """[{"text":"Thinking... "},{"text":" "}]""",
-            SentMessages(socket).Skip(1).Take(2)
-        );
+            await Wait.UntilAsync(() => socket.Sent.Count >= 3);
+            AssertJson("""{"text":" "}""", SentMessages(socket)[2]);
 
-        text.Release();
-        await Wait.UntilAsync(() => socket.Sent.Count >= 4);
-        Assert.Equal("""{"text":""}""", SentMessages(socket).Last()!.ToJsonString());
-        var sentAtEnd = socket.Sent.Count;
-        await Task.Delay(interval * 4);
-        Assert.Equal(sentAtEnd, socket.Sent.Count);
+            text.Release();
+            await Wait.UntilAsync(() =>
+                SentMessages(socket).Any(message => message?.ToJsonString() == """{"text":""}""")
+            );
+            var endIndex = SentMessages(socket)
+                .FindIndex(message => message?.ToJsonString() == """{"text":""}""");
+            Assert.Equal(endIndex, socket.Sent.Count - 1);
+            var sentAtEnd = socket.Sent.Count;
+            await Task.Delay(interval * 4);
+            Assert.Equal(sentAtEnd, socket.Sent.Count);
+        }
+        finally
+        {
+            abort.Cancel();
+        }
     }
 
     [Fact]
@@ -188,16 +201,25 @@ public sealed class ElevenLabsSpeechModelDoStreamTests
     public async Task Should_not_send_keepalives_when_inactivityTimeout_is_set_explicitly()
     {
         const int interval = 50;
-        var text = new TrackedText([new SpeechTextPart("Thinking... ")], holdOpen: true);
-        await DoStream(
-            _harness.CreateModel(keepaliveIntervalMs: interval),
-            text,
-            providerOptions: """{"elevenlabs":{"streaming":{"inactivityTimeout":20}}}"""
-        );
-        var socket = _harness.LastSocket;
-        socket.Open();
-        await Task.Delay(interval * 12);
-        AssertJson("""[{"text":"Thinking... "}]""", SentMessages(socket).Skip(1));
+        using var abort = new CancellationTokenSource();
+        try
+        {
+            var text = new TrackedText([new SpeechTextPart("Thinking... ")], holdOpen: true);
+            await DoStream(
+                _harness.CreateModel(keepaliveIntervalMs: interval),
+                text,
+                providerOptions: """{"elevenlabs":{"streaming":{"inactivityTimeout":20}}}""",
+                abortSignal: abort.Token
+            );
+            var socket = _harness.LastSocket;
+            socket.Open();
+            await Task.Delay(interval * 12);
+            AssertJson("""[{"text":"Thinking... "}]""", SentMessages(socket).Skip(1));
+        }
+        finally
+        {
+            abort.Cancel();
+        }
     }
 
     [Fact]

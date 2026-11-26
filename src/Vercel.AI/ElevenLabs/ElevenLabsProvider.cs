@@ -1129,11 +1129,18 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
             var keepaliveIntervalMs = (_provider.Options as ElevenLabsOptions)?.KeepaliveIntervalMs
                 ?? ElevenLabsSpeechStream.KeepaliveIntervalMs;
             var requestElement = JsonSerializer.SerializeToElement(requestBody);
+            // Either token stops the session: the call's token (also fired when the consumer cancels the result) and
+            // the token passed to this method.
+            var abort = CancellationTokenSource.CreateLinkedTokenSource(
+                call.CancellationToken,
+                cancellationToken
+            );
             return new SpeechModelStreamResult(
                 ElevenLabsSpeechStream.CreateElevenLabsSpeechStream(
                     new ElevenLabsSpeechStreamOptions
                     {
-                        AbortSignal = call.CancellationToken,
+                        AbortSignal = abort.Token,
+                        OnStreamEnded = abort.Dispose,
                         ApiKey = apiKey,
                         AudioFormat = ElevenLabsSpeechStream.GetElevenLabsAudioFormat(outputFormat),
                         Headers = combined,

@@ -398,6 +398,7 @@ internal static class ElevenLabsSpeechStream
         {
             // A consumer that stops early, or a cancel, releases the socket and the text stream.
             session.Cancel();
+            session.Options.OnStreamEnded?.Invoke();
         }
     }
 
@@ -545,6 +546,9 @@ internal sealed class ElevenLabsSpeechStreamOptions
 
     /// <summary>Custom WebSocket implementation.</summary>
     public WebSocketFactory? WebSocket { get; init; }
+
+    /// <summary>Runs once the output stream ends or is disposed. Releases what the caller linked to <see cref="AbortSignal"/>.</summary>
+    public Action? OnStreamEnded { get; init; }
 }
 
 /// <summary>The state of one <see cref="ElevenLabsSpeechStream.CreateElevenLabsSpeechStream"/> call.</summary>
@@ -561,6 +565,8 @@ internal sealed class ElevenLabsSpeechStreamSession
     private bool _inputEnded;
     private bool _textStarted;
     private int _inputCharacters;
+
+    public ElevenLabsSpeechStreamOptions Options => _options;
 
     public ElevenLabsSpeechStreamSession(ElevenLabsSpeechStreamOptions options)
     {
@@ -626,11 +632,14 @@ internal sealed class ElevenLabsSpeechStreamSession
         bool finished;
         lock (_gate)
         {
-            _connection = connection;
             finished = _finished;
+            if (!finished)
+            {
+                _connection = connection;
+            }
         }
 
-        // A callback that fired before the connection was stored could not close it.
+        // An abort that finished the session first leaves no published connection, so cleanup could not close it.
         if (finished)
         {
             connection.Close(null);
@@ -646,6 +655,17 @@ internal sealed class ElevenLabsSpeechStreamSession
 
         Cleanup(null);
         Queue.Complete(null);
+    }
+
+    private bool InputEnded
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _inputEnded;
+            }
+        }
     }
 
     private bool IsFinished
@@ -763,14 +783,17 @@ internal sealed class ElevenLabsSpeechStreamSession
                 _keepaliveTimer = new Timer(
                     _ =>
                     {
-                        if (IsFinished || _inputEnded)
-                        {
-                            return;
-                        }
-
                         try
                         {
-                            Send(socket, _protocol.KeepaliveMessage);
+                            lock (_sendGate)
+                            {
+                                if (IsFinished || InputEnded)
+                                {
+                                    return;
+                                }
+
+                                Send(socket, _protocol.KeepaliveMessage);
+                            }
                         }
                         catch (Exception error)
                         {
@@ -828,6 +851,18 @@ internal sealed class ElevenLabsSpeechStreamSession
     // of the previous one. An empty text message ends the input, so never send one here.
     private async Task SendTextAsync(IWebSocketLike socket)
     {
+        try
+        {
+            await SendTextCoreAsync(socket).ConfigureAwait(false);
+        }
+        finally
+        {
+            _textCancellation.Dispose();
+        }
+    }
+
+    private async Task SendTextCoreAsync(IWebSocketLike socket)
+    {
         ElevenLabsTextSegment? held = null;
         async Task FlushHeldAsync()
         {
@@ -859,7 +894,12 @@ internal sealed class ElevenLabsSpeechStreamSession
                 next = enumerator.MoveNextAsync().AsTask();
                 if (!await AwaitReadAsync(next).ConfigureAwait(false) || IsFinished)
                 {
-                    next = null;
+                    // A read that is still pending keeps the enumerator alive until it settles.
+                    if (next.IsCompleted)
+                    {
+                        next = null;
+                    }
+
                     break;
                 }
 
@@ -908,15 +948,17 @@ internal sealed class ElevenLabsSpeechStreamSession
         if (!IsFinished)
         {
             await FlushHeldAsync().ConfigureAwait(false);
-            lock (_gate)
+            // Serialized with the keepalive timer, so no keepalive frame follows the end of input.
+            lock (_sendGate)
             {
-                _inputEnded = true;
+                lock (_gate)
+                {
+                    _inputEnded = true;
+                }
             }
 
             await SendAllAsync(socket, _protocol.EndMessages()).ConfigureAwait(false);
         }
-
-        _textCancellation.Dispose();
     }
 
     private static async Task DisposeAfterAsync(

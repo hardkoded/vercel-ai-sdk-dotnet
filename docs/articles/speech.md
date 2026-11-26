@@ -108,7 +108,8 @@ var result = StreamSpeech.Start(new StreamSpeechRequest
         new SpeechTextPart("Did you hear we can stream dialogue now? ", voice: alice),
         new SpeechTextPart("Over one socket? That is neat.", voice: bob),
     },
-    ProviderOptions = JsonDocument.Parse($$"""{"elevenlabs":{"dialogue":{"voices":["{{alice}}","{{bob}}"],"voiceSettings":{"stability":0.5}}}}""").RootElement.Clone(),
+    ProviderOptions = JsonDocument.Parse(
+        "{\"elevenlabs\":{\"dialogue\":{\"voices\":[\"" + alice + "\",\"" + bob + "\"],\"voiceSettings\":{\"stability\":0.5}}}}").RootElement.Clone(),
 });
 ```
 

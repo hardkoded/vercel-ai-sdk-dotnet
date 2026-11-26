@@ -301,17 +301,26 @@ public sealed class ElevenLabsSpeechModelDoStreamDialogueTests
     )]
     public async Task Keeps_alive_even_when_inactivityTimeout_is_set()
     {
-        await DoStream(
-            _harness.CreateModel("eleven_v4", keepaliveIntervalMs: 100),
-            new TrackedText([], holdOpen: true),
-            providerOptions: """
-            {"elevenlabs":{"dialogue":{"voices":["a"]},"streaming":{"inactivityTimeout":60}}}
-            """
-        );
-        var socket = _harness.LastSocket;
-        socket.Open();
-        await Wait.UntilAsync(() => socket.Sent.Count >= 2);
-        AssertJson("""[{"keep_alive":true}]""", SentMessages(socket).Skip(1).Take(1));
+        using var abort = new CancellationTokenSource();
+        try
+        {
+            await DoStream(
+                _harness.CreateModel("eleven_v4", keepaliveIntervalMs: 100),
+                new TrackedText([], holdOpen: true),
+                providerOptions: """
+                {"elevenlabs":{"dialogue":{"voices":["a"]},"streaming":{"inactivityTimeout":60}}}
+                """,
+                abortSignal: abort.Token
+            );
+            var socket = _harness.LastSocket;
+            socket.Open();
+            await Wait.UntilAsync(() => socket.Sent.Count >= 2);
+            AssertJson("""[{"keep_alive":true}]""", SentMessages(socket).Skip(1).Take(1));
+        }
+        finally
+        {
+            abort.Cancel();
+        }
     }
 
     [Fact]
@@ -420,25 +429,34 @@ public sealed class ElevenLabsSpeechModelDoStreamDialogueTests
     )]
     public async Task Sends_keep_alive_while_a_buffered_v3_script_waits_for_more_text()
     {
-        var text = new TrackedText([new SpeechTextPart("Hello there. ")], holdOpen: true);
-        await DoStream(
-            _harness.CreateModel("eleven_v3", keepaliveIntervalMs: 100),
-            text,
-            providerOptions: """{"elevenlabs":{"dialogue":{"voices":["a"]}}}"""
-        );
-        var socket = _harness.LastSocket;
-        socket.Open();
-        await Wait.UntilAsync(() => socket.Sent.Count >= 2);
-        AssertJson("""[{"keep_alive":true}]""", SentMessages(socket).Skip(1).Take(1));
+        using var abort = new CancellationTokenSource();
+        try
+        {
+            var text = new TrackedText([new SpeechTextPart("Hello there. ")], holdOpen: true);
+            await DoStream(
+                _harness.CreateModel("eleven_v3", keepaliveIntervalMs: 100),
+                text,
+                providerOptions: """{"elevenlabs":{"dialogue":{"voices":["a"]}}}""",
+                abortSignal: abort.Token
+            );
+            var socket = _harness.LastSocket;
+            socket.Open();
+            await Wait.UntilAsync(() => socket.Sent.Count >= 2);
+            AssertJson("""[{"keep_alive":true}]""", SentMessages(socket).Skip(1).Take(1));
 
-        text.Release();
-        await Wait.UntilAsync(() =>
-            socket.Sent.Count > 0
-            && SentMessages(socket).Last()?["close_socket"]?.GetValue<bool>() == true
-        );
-        AssertJson(
-            """{"inputs":[{"text":"Hello there. ","voice_id":"a"}],"close_socket":true}""",
-            SentMessages(socket).Last()
-        );
+            text.Release();
+            await Wait.UntilAsync(() =>
+                socket.Sent.Count > 0
+                && SentMessages(socket).Last()?["close_socket"]?.GetValue<bool>() == true
+            );
+            AssertJson(
+                """{"inputs":[{"text":"Hello there. ","voice_id":"a"}],"close_socket":true}""",
+                SentMessages(socket).Last()
+            );
+        }
+        finally
+        {
+            abort.Cancel();
+        }
     }
 }
