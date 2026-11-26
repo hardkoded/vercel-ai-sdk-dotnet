@@ -94,6 +94,30 @@ public sealed class MoonshotProvider : OpenAICompatibleProvider
         options.ConvertUsage = usage => MoonshotChatUsage.ConvertMoonshotAIChatUsage(usage);
         options.ExtractResponseHeaderMetadata = MoonshotChatUsage.ExtractCacheWriteTokensByTtl;
         options.TransformChatRequest = MoonshotChatRequest.Apply;
+        options.PreparesOwnTools = true;
+        options.ConvertChatMessages = (
+            modelId,
+            call,
+            providerOptionsName,
+            responseFormatType,
+            warnings
+        ) =>
+        {
+            var converted = MoonshotChatMessages.ConvertToMoonshotAIChatMessages(
+                call.Prompt,
+                modelId,
+                providerOptionsName,
+                responseFormatType
+            );
+            foreach (var warning in converted.Warnings)
+            {
+                warnings.Add(warning);
+            }
+
+            return converted.Messages;
+        };
+        options.ValidateChatResponse = MoonshotChatApiTypes.ValidateChatResponse;
+        options.ValidateChatChunk = MoonshotChatApiTypes.ChatChunkError;
         options.NormalizeRequestSchema = MoonshotJsonSchema.NormalizeJsonSchemaForMFJS;
         options.NormalizeResponseSchema = MoonshotJsonSchema.NormalizeResponseSchema;
         return options;
