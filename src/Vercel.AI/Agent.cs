@@ -497,6 +497,7 @@ public sealed class Agent : IAgent
                     {
                         RequestBody = include.RequestBody,
                         RequestMessages = include.RequestMessages,
+                        RawChunks = (include as AgentInclude)?.RawChunks ?? false,
                     }
                     : null,
 #pragma warning restore CS0618
@@ -513,6 +514,7 @@ public sealed class Agent : IAgent
                 RepairToolCall = prepared.RepairToolCall ?? prepared.ExperimentalRepairToolCall,
 #pragma warning restore CS0618
                 RefineToolInput = prepared.RefineToolInput,
+                ExperimentalDownload = prepared.ExperimentalDownload,
                 AbortSignal = abortSignal,
                 OnAbort = Options.OnAbort,
             },
@@ -609,6 +611,15 @@ public sealed class Agent : IAgent
             StopWhen = Options.StopWhen ?? StopWhen.CreateDefaultStopCondition(10),
             Temperature = Options.Temperature,
             MaxOutputTokens = Options.MaxOutputTokens,
+            TopP = Options.TopP,
+            TopK = Options.TopK,
+            PresencePenalty = Options.PresencePenalty,
+            FrequencyPenalty = Options.FrequencyPenalty,
+            StopSequences = Options.StopSequences,
+            Seed = Options.Seed,
+            ProviderOptions = Options.ProviderOptions,
+            Include = Options.Include,
+            ExperimentalDownload = Options.ExperimentalDownload,
             MaxRetries = Options.MaxRetries,
             Headers = Options.Headers,
             ToolOrder = Options.ToolOrder,
@@ -625,6 +636,16 @@ public sealed class Agent : IAgent
             ExperimentalSandbox = experimentalSandbox,
         };
     }
+}
+
+/// <summary>
+/// The <c>include</c> setting of <see cref="AgentOptions"/>. Upstream types it as <c>GenerateTextInclude &amp; StreamTextInclude</c>, which C# cannot express,
+/// so it extends <see cref="GenerateTextInclude"/> with the <see cref="RawChunks"/> of <see cref="StreamTextInclude"/>.
+/// </summary>
+public sealed class AgentInclude : GenerateTextInclude
+{
+    /// <summary>Whether <c>Stream</c> forwards the provider's raw chunks. See <see cref="StreamTextInclude.RawChunks"/>. Maps to <c>rawChunks</c>.</summary>
+    public bool RawChunks { get; init; }
 }
 
 /// <summary>The per-call callbacks of <c>generate</c> and <c>stream</c> of <c>ToolLoopAgent</c>, with the deprecated aliases already resolved.</summary>
@@ -809,6 +830,39 @@ public class AgentOptions
 
     /// <summary>Maximum output tokens.</summary>
     public int? MaxOutputTokens { get; set; }
+
+    /// <summary>Nucleus sampling. See <see cref="GenerateTextOptions.TopP"/>. Maps to <c>topP</c>.</summary>
+    public double? TopP { get; set; }
+
+    /// <summary>Only sample from the top K options for each token. See <see cref="GenerateTextOptions.TopK"/>. Maps to <c>topK</c>.</summary>
+    public int? TopK { get; set; }
+
+    /// <summary>Presence penalty. See <see cref="GenerateTextOptions.PresencePenalty"/>. Maps to <c>presencePenalty</c>.</summary>
+    public double? PresencePenalty { get; set; }
+
+    /// <summary>Frequency penalty. See <see cref="GenerateTextOptions.FrequencyPenalty"/>. Maps to <c>frequencyPenalty</c>.</summary>
+    public double? FrequencyPenalty { get; set; }
+
+    /// <summary>Sequences that stop the generation. See <see cref="GenerateTextOptions.StopSequences"/>. Maps to <c>stopSequences</c>.</summary>
+    public IReadOnlyList<string>? StopSequences { get; set; }
+
+    /// <summary>Seed for deterministic sampling. See <see cref="GenerateTextOptions.Seed"/>. Maps to <c>seed</c>.</summary>
+    public int? Seed { get; set; }
+
+    /// <summary>Provider-specific options. See <see cref="GenerateTextOptions.ProviderOptions"/>. Maps to <c>providerOptions</c>.</summary>
+    public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; set; }
+
+    /// <summary>
+    /// What the steps keep of the request and the response, and whether <c>Stream</c> forwards the provider's raw chunks.
+    /// <see cref="PrepareCall"/> can replace it. Maps to <c>include</c>.
+    /// </summary>
+    public AgentInclude? Include { get; set; }
+
+    /// <summary>Custom download function. See <see cref="GenerateTextOptions.ExperimentalDownload"/>. <see cref="PrepareCall"/> can replace it. Maps to <c>experimental_download</c>.</summary>
+    public Func<
+        IReadOnlyList<Vercel.AI.Util.DownloadRequestItem>,
+        Task<IReadOnlyList<Vercel.AI.Util.DownloadResult>>
+    >? ExperimentalDownload { get; set; }
 
     /// <summary>Additional HTTP headers sent with every request. The agent appends <c>ai-sdk-agent/tool-loop</c> to the <c>user-agent</c> header.</summary>
     public IReadOnlyDictionary<string, string?>? Headers { get; set; }
