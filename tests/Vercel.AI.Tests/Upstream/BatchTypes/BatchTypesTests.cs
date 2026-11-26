@@ -298,6 +298,20 @@ public sealed class BatchTypesTests
         Assert.DoesNotContain("abortSignal", textKeys);
         Assert.DoesNotContain("headers", textKeys);
         Assert.True(imageKeys.IsSubsetOf(allowedImage));
+
+        // The typed views Pick the same call options.
+        var textOptions = text.ToTextCallOptions();
+        Assert.Equal(1, textOptions.MaxOutputTokens);
+        Assert.Equal(["x"], textOptions.StopSequences);
+        Assert.Equal("low", textOptions.Reasoning);
+        var imageOptions = image.ToImageCallOptions();
+        Assert.Equal("hello", imageOptions.Prompt);
+        Assert.Equal(1, imageOptions.Count);
+        Assert.Equal("1x1", imageOptions.Size);
+        Assert.Equal("1:1", imageOptions.AspectRatio);
+        Assert.Equal(1, imageOptions.Seed);
+        Assert.Throws<InvalidOperationException>(() => text.ToImageCallOptions());
+        Assert.Throws<InvalidOperationException>(() => image.ToTextCallOptions());
     }
 
     [Fact]
@@ -341,6 +355,72 @@ public sealed class BatchTypesTests
             typeof(IBatchApi).GetMethod("DoListAsync")!.ReturnType
         );
         Assert.Equal(typeof(string), PropertyType<BatchStatus>("Status"));
+
+        // BatchV4<{ text: 'model-a' | 'model-b'; image: 'image-model' }>: the batch API declares its model ids.
+        Assert.Equal(
+            typeof(BatchModelIds),
+            typeof(IBatchApi).GetProperty("ModelIds")!.PropertyType
+        );
+        // BatchV4<TModelIds>: a typed batch API narrows ModelIds to its own type.
+        Assert.True(typeof(IBatchApi).IsAssignableFrom(typeof(IBatchApi<BatchModelIds>)));
+        Assert.Equal(
+            typeof(BatchModelIds),
+            typeof(IBatchApi<BatchModelIds>).GetProperty("ModelIds")!.PropertyType
+        );
+        Assert.Equal(
+            typeof(IReadOnlyList<string>),
+            typeof(BatchModelIds).GetProperty("Text")!.PropertyType
+        );
+        Assert.Equal(
+            typeof(IReadOnlyList<string>),
+            typeof(BatchModelIds).GetProperty("Image")!.PropertyType
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "infers per-request model IDs from the provider batch service",
+        Coverage = UpstreamCoverage.Partial,
+        Commit = Commit
+    )]
+    public async Task Infers_per_request_model_IDs_from_the_provider_batch_service()
+    {
+        // C# has no string-literal unions: the check happens when the batch starts, not at compile time.
+        var fake = new BatchTests.BatchFake
+        {
+            Items = [],
+            ModelIds = new BatchModelIds { Text = ["model-a", "model-b"], Image = ["image-model"] },
+        };
+        var provider = ApiOrProvider<IBatchApi, IBatchProvider>.FromApi(fake);
+
+        await BatchApi.StartBatchAsync(
+            new StartBatchOptions
+            {
+                Provider = provider,
+                Requests = [new TextBatchRequest("request-1", "model-b") { Prompt = "hello" }],
+            }
+        );
+        await BatchApi.StartBatchAsync(
+            new StartBatchOptions
+            {
+                Provider = provider,
+                Requests = [new ImageBatchRequest("request-1", "image-model") { Prompt = "hello" }],
+            }
+        );
+
+        // request model ID is checked against provider.ExperimentalBatch().ModelIds
+        await Assert.ThrowsAsync<InvalidArgumentException>(() =>
+            BatchApi.StartBatchAsync(
+                new StartBatchOptions
+                {
+                    Provider = provider,
+                    Requests =
+                    [
+                        new TextBatchRequest("request-1", "image-model") { Prompt = "hello" },
+                    ],
+                }
+            )
+        );
     }
 
     [Fact]

@@ -61,7 +61,7 @@ public sealed class GatewayBatchApi : BatchResultsApiBase
                 && !(exception is Operations.InvalidArgumentException)
             )
         {
-            throw GatewayProvider.MapFailure(exception);
+            throw GatewayProvider.MapFailure(exception, headers);
         }
     }
 

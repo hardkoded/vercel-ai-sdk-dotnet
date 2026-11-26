@@ -117,8 +117,11 @@ Speech, image, video, embeddings, transcription, and other operations.
 | [GenerateImageRequest](/api/Vercel.AI.Operations/GenerateImageRequest/) | Options for CancellationToken). |
 | [GenerateImageResult](/api/Vercel.AI.Operations/GenerateImageResult/) | Result of CancellationToken). |
 | [GenerateSpeech](/api/Vercel.AI.Operations/GenerateSpeech/) | Generates speech. Maps to generateSpeech. |
+| [GenerateSpeechAudioInfo](/api/Vercel.AI.Operations/GenerateSpeechAudioInfo/) | Metadata about the generated audio of a GenerateSpeechEndEvent. Raw audio is intentionally not included. |
+| [GenerateSpeechEndEvent](/api/Vercel.AI.Operations/GenerateSpeechEndEvent/) | Event passed to telemetry integrations when speech generation completes. Raw audio is intentionally not included. Integrations receive only its size, media type, and format. Maps to GenerateSpeechEndEvent. |
 | [GenerateSpeechRequest](/api/Vercel.AI.Operations/GenerateSpeechRequest/) | Options for CancellationToken). |
 | [GenerateSpeechResult](/api/Vercel.AI.Operations/GenerateSpeechResult/) | Result of CancellationToken). |
+| [GenerateSpeechStartEvent](/api/Vercel.AI.Operations/GenerateSpeechStartEvent/) | Event passed to telemetry integrations when speech generation begins. Maps to GenerateSpeechStartEvent. |
 | [GenerateVideo](/api/Vercel.AI.Operations/GenerateVideo/) | Generates videos. Maps to experimentalgenerateVideo. |
 | [GenerateVideoRequest](/api/Vercel.AI.Operations/GenerateVideoRequest/) | Options shared by generate and start. |
 | [GenerateVideoResult](/api/Vercel.AI.Operations/GenerateVideoResult/) | Result of CancellationToken). |

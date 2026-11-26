@@ -15,7 +15,7 @@ Namespace: [Vercel.AI.Mcp](/api/Vercel.AI.Mcp/)
 
 
 ```csharp
-public sealed class HttpMcpTransport : IMcpProtocolVersionDiscoveryTransport, IMcpTransport
+public sealed class HttpMcpTransport : IMcpProtocolVersionDiscoveryTransport, IMcpNotificationTransport, IMcpTransport
 ```
 
 
@@ -23,9 +23,9 @@ MCP over Streamable HTTP. Posts JSON-RPC and accepts a JSON body or an SSE `data
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-**Implements:** [IMcpProtocolVersionDiscoveryTransport](/api/Vercel.AI.Mcp/IMcpProtocolVersionDiscoveryTransport/), [IMcpTransport](/api/Vercel.AI.Mcp/IMcpTransport/)
+**Implements:** [IMcpProtocolVersionDiscoveryTransport](/api/Vercel.AI.Mcp/IMcpProtocolVersionDiscoveryTransport/), [IMcpNotificationTransport](/api/Vercel.AI.Mcp/IMcpNotificationTransport/), [IMcpTransport](/api/Vercel.AI.Mcp/IMcpTransport/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L695)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L1165)
 
 ## Constructors
 
@@ -49,9 +49,27 @@ Creates a transport that posts to &lt;code class="paramref"&gt;endpoint&lt;/code
 | `httpClient` | [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient) |  |
 | `endpoint` | [Uri](https://learn.microsoft.com/dotnet/api/system.uri) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L702)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L1174)
 
 ## Properties
+
+<a id="Vercel_AI_Mcp_HttpMcpTransport_ProtocolVersion_"></a>
+<a id="Vercel_AI_Mcp_HttpMcpTransport_ProtocolVersion"></a>
+
+### ProtocolVersion
+
+
+```csharp
+public string? ProtocolVersion { get; set; }
+```
+
+
+The protocol version the transport announces, for example in the `mcp-protocol-version` header.
+The client sets it when discovery or initialization negotiates a version. Maps to `MCPTransport.protocolVersion`.
+
+**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L1187)
 
 <a id="Vercel_AI_Mcp_HttpMcpTransport_SupportsProtocolVersionDiscovery_"></a>
 <a id="Vercel_AI_Mcp_HttpMcpTransport_SupportsProtocolVersionDiscovery"></a>
@@ -68,7 +86,7 @@ True when the client may probe with `server/discover`.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L709)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L1181)
 
 <a id="Vercel_AI_Mcp_HttpMcpTransport_WaitsForProtocolVersionDiscovery_"></a>
 <a id="Vercel_AI_Mcp_HttpMcpTransport_WaitsForProtocolVersionDiscovery"></a>
@@ -85,7 +103,7 @@ True when the client waits for the discovery response, with no timeout and no fa
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L712)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L1184)
 
 ## Methods
 
@@ -112,4 +130,29 @@ Calls &lt;code class="paramref"&gt;method&lt;/code&gt; and returns the JSON-RPC 
 
 **Returns:** [Task&lt;JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L715)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L1190)
+
+<a id="Vercel_AI_Mcp_HttpMcpTransport_NotifyAsync_"></a>
+<a id="Vercel_AI_Mcp_HttpMcpTransport_NotifyAsync_System_String_System_Text_Json_JsonElement_System_Threading_CancellationToken_"></a>
+
+### NotifyAsync(string, JsonElement, CancellationToken)
+
+
+```csharp
+public Task NotifyAsync(string method, JsonElement parameters, CancellationToken cancellationToken)
+```
+
+
+Sends the notification &lt;code class="paramref"&gt;method&lt;/code&gt;.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `method` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+| `parameters` | [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
+| `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
+
+**Returns:** [Task](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/McpClient.cs#L1283)

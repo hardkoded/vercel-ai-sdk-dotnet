@@ -15,7 +15,7 @@ namespace Vercel.AI.Mcp;
 /// MCP over the legacy HTTP+SSE transport. <see cref="StartAsync"/> opens a <c>GET</c> event stream, waits for the
 /// <c>endpoint</c> event, then <see cref="SendAsync"/> posts JSON-RPC messages to that endpoint. Responses arrive on the stream.
 /// </summary>
-public sealed class SseMcpTransport : IMcpTransport, IDisposable
+public sealed class SseMcpTransport : IMcpNotificationTransport, IDisposable
 {
     /// <summary>Protocol version sent in <c>mcp-protocol-version</c> until <see cref="ProtocolVersion"/> is set.</summary>
     public const string LatestLegacyProtocolVersion = "2024-11-05";
@@ -233,6 +233,36 @@ public sealed class SseMcpTransport : IMcpTransport, IDisposable
         {
             _pending.TryRemove(id, out _);
         }
+    }
+
+    /// <inheritdoc />
+    public async Task NotifyAsync(
+        string method,
+        JsonElement parameters,
+        CancellationToken cancellationToken
+    )
+    {
+        if (!_connected)
+        {
+            await _startGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                await StartAsync(cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                _startGate.Release();
+            }
+        }
+
+        var notification = new JsonObject
+        {
+            ["jsonrpc"] = "2.0",
+            ["method"] = method,
+            ["params"] = JsonNode.Parse(parameters.GetRawText()),
+        };
+        using var document = JsonDocument.Parse(notification.ToJsonString());
+        await SendAsync(document.RootElement, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Closes the event stream and fails pending calls.</summary>

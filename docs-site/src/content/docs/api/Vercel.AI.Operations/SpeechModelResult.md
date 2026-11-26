@@ -28,13 +28,13 @@ Speech model response.
 ## Constructors
 
 <a id="Vercel_AI_Operations_SpeechModelResult__ctor_"></a>
-<a id="Vercel_AI_Operations_SpeechModelResult__ctor_System_Byte___System_Collections_Generic_IReadOnlyList_Vercel_AI_Operations_OperationWarning__System_Nullable_System_Text_Json_JsonElement__Vercel_AI_Operations_ProviderResponse_Vercel_AI_Operations_ProviderRequest_"></a>
+<a id="Vercel_AI_Operations_SpeechModelResult__ctor_System_Byte___System_Collections_Generic_IReadOnlyList_Vercel_AI_Operations_OperationWarning__System_Nullable_System_Text_Json_JsonElement__Vercel_AI_Operations_ProviderResponse_Vercel_AI_Operations_ProviderRequest_System_Nullable_System_Text_Json_JsonElement__"></a>
 
-### `SpeechModelResult(byte[]?, IReadOnlyList<OperationWarning>?, JsonElement?, ProviderResponse?, ProviderRequest?)`
+### `SpeechModelResult(byte[]?, IReadOnlyList<OperationWarning>?, JsonElement?, ProviderResponse?, ProviderRequest?, JsonElement?)`
 
 
 ```csharp
-public SpeechModelResult(byte[]? audio, IReadOnlyList<OperationWarning>? warnings = null, JsonElement? providerMetadata = null, ProviderResponse? response = null, ProviderRequest? request = null)
+public SpeechModelResult(byte[]? audio, IReadOnlyList<OperationWarning>? warnings = null, JsonElement? providerMetadata = null, ProviderResponse? response = null, ProviderRequest? request = null, JsonElement? usage = null)
 ```
 
 
@@ -49,6 +49,7 @@ Creates a speech result.
 | `providerMetadata` | [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 | `response` | [ProviderResponse](/api/Vercel.AI.Operations/ProviderResponse/) |  |
 | `request` | [ProviderRequest](/api/Vercel.AI.Operations/ProviderRequest/) |  |
+| `usage` | [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L68)
 
@@ -69,7 +70,7 @@ Audio bytes. Empty when the provider returned none.
 
 **Value:** [byte\[\]](https://learn.microsoft.com/dotnet/api/system.byte)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L84)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L86)
 
 <a id="Vercel_AI_Operations_SpeechModelResult_ProviderMetadata_"></a>
 <a id="Vercel_AI_Operations_SpeechModelResult_ProviderMetadata"></a>
@@ -86,7 +87,7 @@ Provider metadata.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L90)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L92)
 
 <a id="Vercel_AI_Operations_SpeechModelResult_Request_"></a>
 <a id="Vercel_AI_Operations_SpeechModelResult_Request"></a>
@@ -103,7 +104,7 @@ Request metadata, such as the body sent to the provider. Maps to `request`.
 
 **Value:** [ProviderRequest](/api/Vercel.AI.Operations/ProviderRequest/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L96)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L98)
 
 <a id="Vercel_AI_Operations_SpeechModelResult_Response_"></a>
 <a id="Vercel_AI_Operations_SpeechModelResult_Response"></a>
@@ -120,7 +121,24 @@ Response metadata.
 
 **Value:** [ProviderResponse](/api/Vercel.AI.Operations/ProviderResponse/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L93)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L95)
+
+<a id="Vercel_AI_Operations_SpeechModelResult_Usage_"></a>
+<a id="Vercel_AI_Operations_SpeechModelResult_Usage"></a>
+
+### Usage
+
+
+```csharp
+public JsonElement? Usage { get; }
+```
+
+
+Usage reported by the provider, in the provider's native shape. Maps to `usage`.
+
+**Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L101)
 
 <a id="Vercel_AI_Operations_SpeechModelResult_Warnings_"></a>
 <a id="Vercel_AI_Operations_SpeechModelResult_Warnings"></a>
@@ -137,4 +155,4 @@ Warnings.
 
 **Value:** [IReadOnlyList&lt;OperationWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L87)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/GenerateSpeech.cs#L89)

@@ -157,6 +157,7 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
         IReadOnlyDictionary<string, string>? responseHeaders
     )
     {
+        _provider.Options.ValidateChatResponse?.Invoke(root);
         if (
             !root.TryGetProperty("choices", out var choices)
             || choices.ValueKind != JsonValueKind.Array
@@ -266,7 +267,8 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
             metadataKey,
             extracted,
             usage.AcceptedPredictionTokens,
-            usage.RejectedPredictionTokens
+            usage.RejectedPredictionTokens,
+            _provider.Options.ExtractResponseHeaderMetadata?.Invoke(responseHeaders)
         );
         var finishReason = MapFinish(raw);
         if (
@@ -417,6 +419,15 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
                 sawFinish = true;
                 finishRaw = null;
                 yield return new ErrorStreamPart(ErrorText(root["error"]));
+                continue;
+            }
+
+            if (_provider.Options.ValidateChatChunk?.Invoke(root) is { } chunkError)
+            {
+                failed = true;
+                sawFinish = true;
+                finishRaw = null;
+                yield return new ErrorStreamPart(chunkError);
                 continue;
             }
 
@@ -656,7 +667,8 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
                 prepared.MetadataKey,
                 metadataExtractor?.BuildMetadata(),
                 converted.AcceptedPredictionTokens,
-                converted.RejectedPredictionTokens
+                converted.RejectedPredictionTokens,
+                _provider.Options.ExtractResponseHeaderMetadata?.Invoke(sse.Headers)
             )
         );
     }
@@ -784,12 +796,21 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
             rawName,
             options.ProviderOptions
         );
-        body["messages"] = OpenAICompatibleChat.ConvertMessages(
-            options.Prompt,
-            metadataKey,
-            rawName,
-            _provider.Options.SupportsMultiPartToolContent
-        );
+        body["messages"] =
+            _provider.Options.ConvertChatMessages != null
+                ? _provider.Options.ConvertChatMessages(
+                    ModelId,
+                    options,
+                    metadataKey,
+                    (body["response_format"] as JsonObject)?["type"]?.GetValue<string>(),
+                    warnings
+                )
+                : OpenAICompatibleChat.ConvertMessages(
+                    options.Prompt,
+                    metadataKey,
+                    rawName,
+                    _provider.Options.SupportsMultiPartToolContent
+                );
         if (responseTool == null)
         {
             if (!_provider.Options.PreparesOwnTools)

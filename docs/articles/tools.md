@@ -98,7 +98,7 @@ A prompt where a local tool call has no tool result before the next user or syst
 
 ## Tool choice none
 
-When `ToolChoice` is `ToolChoice.None`, the SDK prevents local tool execution even if the model returns a tool call. Such a response throws `ToolChoiceViolationException`. The tool definitions are still sent to the model. With `StreamTextAsync`, tool parts are withheld from the stream, so client-side tools are not invoked either. Tool call repair (`RepairToolCall`) and input refinement (`RefineToolInput`) are skipped for rejected tool calls. A `PrepareStep` that returns another `ToolChoice` replaces `None` for that step. The Hugging Face Responses provider sends `tool_choice: "none"`.
+When `ToolChoice` is `ToolChoice.None`, the SDK prevents local tool execution even if the model returns a tool call. Such a response throws `ToolChoiceViolationException` from `GenerateTextAsync`. With `StreamTextAsync`, the exception is an `ErrorPart` in the stream, reported to `OnError`, and `FinishReason` resolves to `FinishReason.Error` with the usage of the call. The tool definitions are still sent to the model. With `StreamTextAsync`, tool parts are withheld from the stream, so client-side tools are not invoked either. Tool call repair (`RepairToolCall`) and input refinement (`RefineToolInput`) are skipped for rejected tool calls. A `PrepareStep` that returns another `ToolChoice` replaces `None` for that step. The Hugging Face Responses provider sends `tool_choice: "none"`.
 
 ## Tool call execution concurrency
 
@@ -373,11 +373,30 @@ Content longer than `MaxLength` is truncated. The model is told to call the tool
 
 ### Security
 
-The tool makes GET requests without cookies or credentials, and rejects URLs that contain credentials. Each request and redirect is validated against private and reserved addresses such as `localhost` and cloud metadata endpoints. The default transport does not validate resolved DNS addresses or pin connections, so pass a DNS-validating `Fetch` or restrict network egress at the platform level. A custom `Fetch` must provide equivalent validation.
+The tool makes GET requests without cookies or credentials, and rejects URLs that contain credentials. Each request and redirect is validated against private and reserved addresses such as `localhost` and cloud metadata endpoints. The default transport does not validate resolved DNS addresses or pin connections, so pass a DNS-validating `Fetch` such as `GuardedFetch`, or restrict network egress at the platform level. A custom `Fetch` must provide equivalent validation.
 
 Fetched content is untrusted and can contain prompt injections. When an agent has access to private data, a model could also be instructed to send that data to another site, for example in a URL query string. Restrict fetching with `AllowedDomains`, enable `RequireUrlInUserMessage` so only URLs from user messages can be fetched, or require tool approval (`NeedsApproval`).
 
 `RequireUrlInUserMessage` ignores URLs in tool results because the model can place arbitrary text there, for example through tool inputs that are reflected in outputs. As a result, the model cannot follow links from search results or fetched pages in this mode.
+
+## MCP tool schemas and typed output
+
+`McpClient.ConnectAsync` discovers every tool by default, and a tool returns the call-tool result as JSON text. Pass `McpClientOptions.Schemas` (or `McpClient.ListToolsAsync(transport, schemas)`) to list only the named tools with your own schemas, like `client.tools({ schemas })` upstream. An entry is an `McpToolSchema` with the `InputSchema` JSON Schema and an optional `OutputSchema`.
+
+```csharp
+var tools = await McpClient.ConnectAsync(
+    transport,
+    new McpClientOptions
+    {
+        Schemas = new Dictionary<string, McpToolSchema>
+        {
+            ["get-weather"] = new McpToolSchema(inputSchemaJson) { OutputSchema = outputSchemaJson },
+        },
+    }
+);
+```
+
+With an `OutputSchema`, the tool returns the `structuredContent` of the result, validated against the schema. Without `structuredContent`, it parses the first text content as JSON and validates that. A mismatch, invalid JSON, or a result with neither throws an `MCPClientError`. A result with `isError` set is returned as is, with no validation. The schema is also set as `Tool.OutputSchema`.
 
 ## MCP transports
 
@@ -406,7 +425,15 @@ The `redirect` option and OAuth (`authProvider`) are not ported ([#585](https://
 
 A server that answers with `-32022` and lists only legacy versions in `data.supported` makes `ConnectAsync` throw an `MCPClientError` that explains the mismatch. It does not fall back to `initialize`. The error keeps `Code`, `Data`, `StatusCode` and `Url`, and its `InnerException` is the original error. A network error during discovery is rethrown too, with no fallback.
 
-The port does not yet send the `mcp-protocol-version` header or apply the discover result to the client state ([#1694](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/1694)).
+`IMcpProtocolVersionDiscoveryTransport.ProtocolVersion` (upstream's `protocolVersion`) is get-only, and the client writes the negotiated version through `SetProtocolVersion` (upstream's `setProtocolVersion`), so a transport can keep it in its own state. `HttpMcpTransport.ProtocolVersion` is sent as the `mcp-protocol-version` header. It starts as `McpClient.LatestLegacyProtocolVersion`. The client sets it to `McpClient.LatestProtocolVersion` before `server/discover` and back to the legacy version before `initialize`. A transport whose `WaitsForProtocolVersionDiscovery` is `false` gets a 1000ms limit for discovery. When it expires, `ConnectAsync` falls back to `initialize`. A slow response from a transport that waits is awaited with no limit.
+
+## MCP client instance
+
+`McpClient.CreateAsync(transport, options)` maps `createMCPClient`. It initializes the connection and returns a client that keeps what the server announced: `ServerInfo` (`serverInfo`), `InitializeResult` (`initializeResult`) and `Instructions` (`instructions`). `ListToolsAsync()` on the instance lists the tools, and `McpClient.ConnectAsync(transport)` stays as a shortcut for `CreateAsync` followed by `ListToolsAsync`.
+
+After `server/discover` the client treats the server as modern. It adds `io.modelcontextprotocol/protocolVersion`, `io.modelcontextprotocol/clientCapabilities` and `io.modelcontextprotocol/clientInfo` to the `_meta` of every request, and throws an `MCPClientError` (`Modern MCP result is missing resultType`) when a result has no `resultType`. After `initialize` the client sets the negotiated protocol version on the transport and sends `notifications/initialized` through `IMcpNotificationTransport.NotifyAsync`. `StdioMcpTransport`, `HttpMcpTransport` and `SseMcpTransport` implement it. A transport that does not implement it gets no notification. `initialize` sends the client info `ai-sdk-mcp-client` `1.0.0`, like upstream's defaults.
+
+An `initialize` result must carry `protocolVersion`, `capabilities` and `serverInfo`, and the version must be one the client supports. Otherwise `CreateAsync` throws an `MCPClientError`.
 
 ## MCP tool output
 
@@ -416,9 +443,7 @@ Tools from `McpClient` set `ToModelOutput`, which maps upstream's `mcpToModelOut
 - A number, boolean, `null`, an empty or missing output, or an object without a `content` array becomes a `JsonToolModelOutput`. A missing output becomes JSON `null`.
 - An object with a `content` array becomes a `ContentToolModelOutput`. A `text` part keeps its text. An MCP `image` part becomes a `FileToolModelContentPart` with the same media type and tagged inline base64 data (`FilePartInput.TaggedData(...)`). Any other part is sent as text holding its JSON.
 
-Behavior change: `Tool.Execute` of an MCP tool used to return the joined text of the content parts (or the raw result when there was no text). It now returns the normalized call-tool result as JSON, for example `{"content":[{"type":"text","text":"sunny"}],"isError":false}`, as upstream's `execute` returns the `CallToolResult`. Code that read the plain text from `Execute` must read `content[].text` instead. A result with `isError` still throws an `AiSdkException`.
-
-Not ported: `outputSchema` support ([#777](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/777)).
+Behavior change: `Tool.Execute` of an MCP tool used to return the joined text of the content parts (or the raw result when there was no text). Without an `OutputSchema` it now returns the normalized call-tool result as JSON, for example `{"content":[{"type":"text","text":"sunny"}],"isError":false}`, as upstream's `execute` returns the `CallToolResult`. Code that read the plain text from `Execute` must read `content[].text` instead. A result with `isError` is returned as that JSON in every schema mode, automatic or `schemas`, and does not throw, as upstream's `execute` returns the result.
 
 ## Sandbox
 

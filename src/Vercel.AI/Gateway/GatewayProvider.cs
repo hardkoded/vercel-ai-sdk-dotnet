@@ -342,19 +342,20 @@ public sealed class GatewayProvider
             headers[pair.Key] = pair.Value;
         }
 
-        headers[specificationHeader] = specificationValue;
-        headers[modelHeader] = modelId;
-        if (streaming is { } value)
-        {
-            headers["ai-language-model-streaming"] = value ? "true" : "false";
-        }
-
+        // Upstream applies the model headers after the caller headers, so a caller cannot override them.
         if (extra != null)
         {
             foreach (var pair in extra)
             {
                 headers[pair.Key] = pair.Value;
             }
+        }
+
+        headers[specificationHeader] = specificationValue;
+        headers[modelHeader] = modelId;
+        if (streaming is { } value)
+        {
+            headers["ai-language-model-streaming"] = value ? "true" : "false";
         }
 
         foreach (var pair in O11yHeaders())
@@ -757,9 +758,12 @@ public sealed class GatewayProvider
         return metadata;
     }
 
-    internal static Exception MapFailure(Exception exception)
+    internal static Exception MapFailure(
+        Exception exception,
+        IReadOnlyDictionary<string, string?>? headers
+    )
     {
-        return GatewayErrors.AsGatewayError(exception, "api-key");
+        return GatewayErrors.AsGatewayError(exception, GatewayErrors.ParseAuthMethod(headers));
     }
 
     internal Uri Route(string path)
@@ -911,23 +915,41 @@ public sealed class GatewayLanguageModel : ILanguageModel
             options.Headers,
             cancellationToken
         );
+        var json = V4Json.CallOptions(options);
         try
         {
             using var document = await _provider
                 .Http.SendJsonAsync(
                     HttpMethod.Post,
                     _provider.Route("language-model"),
-                    V4Json.CallOptions(options),
+                    json,
                     headers,
                     cancellationToken
                 )
                 .ConfigureAwait(false);
-            return V4Json.ParseGenerate(document.RootElement);
+            return V4Json.ParseGenerate(document.RootElement).WithRequest(Request(json));
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            throw GatewayProvider.MapFailure(exception);
+            throw GatewayProvider.MapFailure(exception, headers);
         }
+    }
+
+    // The request body metadata keeps the body unchanged and carries the telemetry view that hides BYOK credentials.
+    private static LanguageModelStreamRequest Request(string json)
+    {
+        // The body was serialized by V4Json.CallOptions, so it is read back with a depth limit that cannot reject it.
+        using var document = JsonDocument.Parse(
+            json,
+            new JsonDocumentOptions { MaxDepth = int.MaxValue }
+        );
+        var body = document.RootElement.Clone();
+        return new LanguageModelStreamRequest(body)
+        {
+            RedactBody = RedactGatewayRequestCredentials
+                .WithGatewayRequestTelemetryRedaction(body)
+                .Redact,
+        };
     }
 
     /// <inheritdoc />
@@ -961,18 +983,31 @@ public sealed class GatewayLanguageModel : ILanguageModel
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            throw GatewayProvider.MapFailure(exception);
+            throw GatewayProvider.MapFailure(exception, headers);
+        }
+
+        Func<JsonElement, JsonElement>? redactBody;
+        try
+        {
+            redactBody = Request(json).RedactBody;
+        }
+        catch
+        {
+            sse.Resource.Dispose();
+            throw;
         }
 
         return sse.ToStreamResult(
-            StreamAsync(sse.Events, options.IncludeRawChunks, cancellationToken),
-            json
+            StreamAsync(sse.Events, options.IncludeRawChunks, headers, cancellationToken),
+            json,
+            redactBody
         );
     }
 
     private static async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(
         IAsyncEnumerable<string> events,
         bool includeRawChunks,
+        IReadOnlyDictionary<string, string?> headers,
         [EnumeratorCancellation] CancellationToken cancellationToken
     )
     {
@@ -988,11 +1023,15 @@ public sealed class GatewayLanguageModel : ILanguageModel
                 }
                 catch (ApiException exception)
                 {
-                    throw GatewayProvider.MapFailure(exception);
+                    throw GatewayProvider.MapFailure(exception, headers);
                 }
                 catch (ApiTimeoutException exception)
                 {
-                    throw GatewayProvider.MapFailure(exception);
+                    throw GatewayProvider.MapFailure(exception, headers);
+                }
+                catch (ApiConnectionException exception)
+                {
+                    throw GatewayProvider.MapFailure(exception, headers);
                 }
 
                 if (!hasEvent)
@@ -1104,6 +1143,17 @@ public sealed class GatewayEmbeddingModel : IEmbeddingModel
         }
 
         JsonDocument document;
+        var requestHeaders = await _provider
+            .HeadersAsync(
+                "ai-embedding-model-specification-version",
+                "4",
+                "ai-model-id",
+                ModelId,
+                null,
+                headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         try
         {
             document = await _provider
@@ -1111,26 +1161,22 @@ public sealed class GatewayEmbeddingModel : IEmbeddingModel
                     HttpMethod.Post,
                     _provider.Route("embedding-model"),
                     body.ToJsonString(),
-                    await _provider.HeadersAsync(
-                        "ai-embedding-model-specification-version",
-                        "4",
-                        "ai-model-id",
-                        ModelId,
-                        null,
-                        headers,
-                        cancellationToken
-                    ),
+                    requestHeaders,
                     cancellationToken
                 )
                 .ConfigureAwait(false);
         }
         catch (ApiException exception)
         {
-            throw GatewayProvider.MapFailure(exception);
+            throw GatewayProvider.MapFailure(exception, requestHeaders);
         }
         catch (ApiTimeoutException exception)
         {
-            throw GatewayProvider.MapFailure(exception);
+            throw GatewayProvider.MapFailure(exception, requestHeaders);
+        }
+        catch (ApiConnectionException exception)
+        {
+            throw GatewayProvider.MapFailure(exception, requestHeaders);
         }
 
         using (document)
@@ -1336,9 +1382,8 @@ public sealed class GatewayImageModel : IImageModel, IImageCaller
         JsonElement root;
         IReadOnlyDictionary<string, byte[]> binaries = new Dictionary<string, byte[]>();
         JsonDocument? document = null;
-        try
-        {
-            var requestHeaders = await _provider.HeadersAsync(
+        var requestHeaders = await _provider
+            .HeadersAsync(
                 "ai-image-model-specification-version",
                 "4",
                 "ai-model-id",
@@ -1346,7 +1391,10 @@ public sealed class GatewayImageModel : IImageModel, IImageCaller
                 null,
                 headers,
                 cancellationToken
-            );
+            )
+            .ConfigureAwait(false);
+        try
+        {
             if (streamingImageDecoding)
             {
                 var json = await _provider
@@ -1383,11 +1431,15 @@ public sealed class GatewayImageModel : IImageModel, IImageCaller
         }
         catch (ApiException exception)
         {
-            throw GatewayProvider.MapFailure(exception);
+            throw GatewayProvider.MapFailure(exception, requestHeaders);
         }
         catch (ApiTimeoutException exception)
         {
-            throw GatewayProvider.MapFailure(exception);
+            throw GatewayProvider.MapFailure(exception, requestHeaders);
+        }
+        catch (ApiConnectionException exception)
+        {
+            throw GatewayProvider.MapFailure(exception, requestHeaders);
         }
         catch (Exception exception)
             when (streamingImageDecoding

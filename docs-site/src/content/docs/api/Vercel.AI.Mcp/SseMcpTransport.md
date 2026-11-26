@@ -15,7 +15,7 @@ Namespace: [Vercel.AI.Mcp](/api/Vercel.AI.Mcp/)
 
 
 ```csharp
-public sealed class SseMcpTransport : IMcpTransport, IDisposable
+public sealed class SseMcpTransport : IMcpNotificationTransport, IMcpTransport, IDisposable
 ```
 
 
@@ -24,7 +24,7 @@ MCP over the legacy HTTP+SSE transport. [StartAsync(CancellationToken)](#Vercel_
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-**Implements:** [IMcpTransport](/api/Vercel.AI.Mcp/IMcpTransport/), [IDisposable](https://learn.microsoft.com/dotnet/api/system.idisposable)
+**Implements:** [IMcpNotificationTransport](/api/Vercel.AI.Mcp/IMcpNotificationTransport/), [IMcpTransport](/api/Vercel.AI.Mcp/IMcpTransport/), [IDisposable](https://learn.microsoft.com/dotnet/api/system.idisposable)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/SseMcpTransport.cs#L18)
 
@@ -183,7 +183,7 @@ Closes the event stream and fails pending calls.
 
 **Returns:** [Task](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/SseMcpTransport.cs#L239)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/SseMcpTransport.cs#L269)
 
 <a id="Vercel_AI_Mcp_SseMcpTransport_DeserializeMessage_"></a>
 <a id="Vercel_AI_Mcp_SseMcpTransport_DeserializeMessage_System_String_"></a>
@@ -206,7 +206,7 @@ Parses one JSON-RPC message. Prototype-pollution keys are rejected.
 
 **Returns:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/SseMcpTransport.cs#L273)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/SseMcpTransport.cs#L303)
 
 <a id="Vercel_AI_Mcp_SseMcpTransport_Dispose_"></a>
 <a id="Vercel_AI_Mcp_SseMcpTransport_Dispose"></a>
@@ -221,7 +221,32 @@ public void Dispose()
 
 Closes the transport.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/SseMcpTransport.cs#L263)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/SseMcpTransport.cs#L293)
+
+<a id="Vercel_AI_Mcp_SseMcpTransport_NotifyAsync_"></a>
+<a id="Vercel_AI_Mcp_SseMcpTransport_NotifyAsync_System_String_System_Text_Json_JsonElement_System_Threading_CancellationToken_"></a>
+
+### NotifyAsync(string, JsonElement, CancellationToken)
+
+
+```csharp
+public Task NotifyAsync(string method, JsonElement parameters, CancellationToken cancellationToken)
+```
+
+
+Sends the notification &lt;code class="paramref"&gt;method&lt;/code&gt;.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `method` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+| `parameters` | [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
+| `cancellationToken` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
+
+**Returns:** [Task](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Mcp/SseMcpTransport.cs#L239)
 
 <a id="Vercel_AI_Mcp_SseMcpTransport_SendAsync_"></a>
 <a id="Vercel_AI_Mcp_SseMcpTransport_SendAsync_System_Text_Json_JsonElement_System_Threading_CancellationToken_"></a>

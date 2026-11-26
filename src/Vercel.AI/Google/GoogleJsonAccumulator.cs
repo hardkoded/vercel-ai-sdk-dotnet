@@ -115,13 +115,22 @@ public sealed class GoogleJsonAccumulator
 
     private string Apply(GooglePartialArgument arg)
     {
-        var rawPath = arg.JsonPath ?? string.Empty;
+        // Vertex terminates an array with a value-less `$.path[]` entry. For an empty array, that
+        // terminator is the only entry sent for the path.
+        var jsonPath = arg.JsonPath ?? string.Empty;
+        var isArrayTerminator = jsonPath.EndsWith("[]", StringComparison.Ordinal);
+        if (isArrayTerminator)
+        {
+            jsonPath = jsonPath.Substring(0, jsonPath.Length - 2);
+        }
+
+        var rawPath = jsonPath;
         if (rawPath.StartsWith("$.", StringComparison.Ordinal))
         {
             rawPath = rawPath.Substring(2);
         }
 
-        if (rawPath.Length == 0)
+        if (rawPath.Length == 0 || rawPath == "$")
         {
             return string.Empty;
         }
@@ -147,7 +156,16 @@ public sealed class GoogleJsonAccumulator
 
         if (!TryResolve(arg, out var value, out var valueJson))
         {
-            return string.Empty;
+            // A value-less entry for a path without a value is an empty container (an empty
+            // container has no leaves to stream). Value-less entries for existing paths are string
+            // or array terminators and are ignored.
+            if (existing != null || arg.WillContinue == true)
+            {
+                return string.Empty;
+            }
+
+            Set(_root, segments, isArrayTerminator ? Bag.Array() : Bag.Object());
+            return EmitContainer(segments, isArrayTerminator);
         }
 
         Set(_root, segments, value);
@@ -172,11 +190,7 @@ public sealed class GoogleJsonAccumulator
     )
     {
         var fragment = CloseOpenString();
-        if (_stack.Count == 0)
-        {
-            _stack.Add(new StackEntry(string.Empty, false));
-            fragment += "{";
-        }
+        fragment += EnsureRoot();
 
         var containers = new List<Segment>();
         for (var i = 0; i < segments.Count - 1; i++)
@@ -188,6 +202,30 @@ public sealed class GoogleJsonAccumulator
         fragment += CloseDownTo(CommonDepth(containers));
         fragment += OpenDownTo(containers, leaf);
         fragment += EmitLeaf(leaf, arg, valueJson);
+        return fragment;
+    }
+
+    private string EnsureRoot()
+    {
+        if (_stack.Count != 0)
+        {
+            return string.Empty;
+        }
+
+        _stack.Add(new StackEntry(string.Empty, false));
+        return "{";
+    }
+
+    // Navigates to the segments and opens a container there. The container stays open so later
+    // entries for its children continue inside it; it is closed by later navigation or Finalize.
+    private string EmitContainer(IReadOnlyList<Segment> segments, bool isArray)
+    {
+        var fragment = CloseOpenString();
+        fragment += EnsureRoot();
+        fragment += CloseDownTo(CommonDepth(segments));
+
+        // OpenDownTo infers the innermost container type from the leaf segment type.
+        fragment += OpenDownTo(segments, isArray ? Segment.At(0) : Segment.Property(string.Empty));
         return fragment;
     }
 

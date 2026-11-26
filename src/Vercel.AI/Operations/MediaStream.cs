@@ -137,6 +137,7 @@ public sealed class AudioChunkStream
     private readonly object _gate = new object();
     private bool _cancelled;
     private bool _completed;
+    private Action<int>? _onBytes;
 
     /// <summary>Creates an audio stream. <paramref name="onCancel"/> runs once when the stream or its reader is cancelled.</summary>
     public AudioChunkStream(Action<Exception?>? onCancel = null)
@@ -149,6 +150,16 @@ public sealed class AudioChunkStream
 
     /// <summary>Reason from a failed setup cancel.</summary>
     public Exception? CancelError { get; private set; }
+
+    /// <summary>
+    /// Makes reads of this stream report their byte counts to <paramref name="onBytes"/> and returns it. Maps to <c>createByteCountingStream</c>.
+    /// Upstream returns a wrapping stream. The port counts on the same instance, so a model still receives the caller's stream.
+    /// </summary>
+    internal AudioChunkStream CreateByteCountingStream(Action<int> onBytes)
+    {
+        _onBytes = onBytes;
+        return this;
+    }
 
     /// <summary>Marks the stream as owned by the model.</summary>
     public void Lock()
@@ -226,6 +237,11 @@ public sealed class AudioChunkStream
         _onCancel?.Invoke(error);
     }
 
+    internal void CountBytes(int byteLength)
+    {
+        _onBytes?.Invoke(byteLength);
+    }
+
     internal PartQueue<object> Chunks
     {
         get { return _chunks; }
@@ -284,7 +300,9 @@ public sealed class AudioChunkReader
         }
 
         var chunk = _stream.Chunks.Dequeue();
-        return chunk is string base64 ? Convert.FromBase64String(base64) : (byte[])chunk;
+        var bytes = chunk is string base64 ? Convert.FromBase64String(base64) : (byte[])chunk;
+        _stream.CountBytes(bytes.Length);
+        return bytes;
     }
 
     /// <summary>Cancels the underlying stream and any pending read.</summary>
@@ -471,8 +489,83 @@ public sealed class PartQueue<T>
     private readonly Queue<T> _items = new Queue<T>();
     private readonly Queue<TaskCompletionSource<bool>> _waiters =
         new Queue<TaskCompletionSource<bool>>();
+    private readonly List<TaskCompletionSource<bool>> _spaceWaiters =
+        new List<TaskCompletionSource<bool>>();
+    private readonly int _capacity;
     private Exception? _error;
     private bool _completed;
+
+    /// <summary>Creates an unbounded queue.</summary>
+    public PartQueue()
+        : this(0) { }
+
+    /// <summary>Creates a queue. A <paramref name="capacity"/> above zero bounds <see cref="EnqueueAsync"/>; zero is unbounded.</summary>
+    public PartQueue(int capacity)
+    {
+        _capacity = capacity;
+    }
+
+    /// <summary>
+    /// Adds a part, waiting while a bounded queue is full so a slow consumer applies backpressure to the producer.
+    /// Returns when the part was added, or when the queue completed.
+    /// </summary>
+    public async Task EnqueueAsync(T item, CancellationToken cancellationToken)
+    {
+        while (true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            TaskCompletionSource<bool>? reader = null;
+            TaskCompletionSource<bool> source;
+            lock (_items)
+            {
+                if (_completed)
+                {
+                    return;
+                }
+
+                if (_capacity <= 0 || _items.Count < _capacity)
+                {
+                    _items.Enqueue(item);
+                    if (_waiters.Count > 0)
+                    {
+                        reader = _waiters.Dequeue();
+                    }
+
+                    source = null!;
+                }
+                else
+                {
+                    source = new TaskCompletionSource<bool>(
+                        TaskCreationOptions.RunContinuationsAsynchronously
+                    );
+                    _spaceWaiters.Add(source);
+                }
+            }
+
+            if (source == null)
+            {
+                reader?.TrySetResult(true);
+                return;
+            }
+
+            using (cancellationToken.Register(() => source.TrySetCanceled(cancellationToken)))
+            {
+                try
+                {
+                    await source.Task.ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    lock (_items)
+                    {
+                        _spaceWaiters.Remove(source);
+                    }
+
+                    throw;
+                }
+            }
+        }
+    }
 
     /// <summary>Adds a part.</summary>
     public void Enqueue(T item)
@@ -510,6 +603,8 @@ public sealed class PartQueue<T>
             _error = error;
             waiters = new List<TaskCompletionSource<bool>>(_waiters);
             _waiters.Clear();
+            waiters.AddRange(_spaceWaiters);
+            _spaceWaiters.Clear();
         }
 
         foreach (var waiter in waiters)
@@ -568,9 +663,21 @@ public sealed class PartQueue<T>
     /// <summary>Removes the next part. Call after <see cref="WaitAsync"/> returns true.</summary>
     public T Dequeue()
     {
+        TaskCompletionSource<bool>[] space;
+        T item;
         lock (_items)
         {
-            return _items.Dequeue();
+            item = _items.Dequeue();
+            // Wake every blocked producer: one may have been cancelled but not yet removed, and each re-checks capacity.
+            space = _spaceWaiters.ToArray();
+            _spaceWaiters.Clear();
         }
+
+        foreach (var waiter in space)
+        {
+            waiter.TrySetResult(true);
+        }
+
+        return item;
     }
 }

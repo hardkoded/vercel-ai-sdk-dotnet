@@ -78,6 +78,9 @@ public sealed class AmazonBedrockProvider : ProviderBase
     /// <summary>Provider id.</summary>
     public const string ProviderName = "amazon-bedrock";
 
+    /// <summary>The Anthropic provider tool factories, usable on Anthropic models. Maps to <c>provider.tools</c>.</summary>
+    public IReadOnlyDictionary<string, Func<Tool>> Tools => Anthropic.AnthropicTools.Factories;
+
     /// <summary>Creates a provider.</summary>
     public AmazonBedrockProvider(HttpClient httpClient, AmazonBedrockOptions? options = null)
         : base(ProviderName)
@@ -233,6 +236,14 @@ public sealed class AmazonBedrockProvider : ProviderBase
     public override IEmbeddingModel EmbeddingModel(string modelId) =>
         new AmazonBedrockEmbeddingModel(this, modelId);
 
+    /// <inheritdoc />
+    public override IImageModel ImageModel(string modelId) =>
+        new AmazonBedrockImageModel(this, modelId);
+
+    /// <summary>Creates an image model. Same as <see cref="ImageModel(string)"/>.</summary>
+    public AmazonBedrockImageModel Image(string modelId) =>
+        new AmazonBedrockImageModel(this, modelId);
+
     /// <summary>Creates a language model with <paramref name="settings"/>.</summary>
     public AmazonBedrockLanguageModel LanguageModel(
         string modelId,
@@ -276,6 +287,9 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
         ModelId = modelId;
         _modelFamily = settings?.ModelFamily;
     }
+
+    /// <summary>The model family passed in the settings, if any.</summary>
+    internal AmazonBedrockChatModelFamily? ModelFamily => _modelFamily;
 
     /// <inheritdoc />
     public string SpecificationVersion => "V4";

@@ -180,9 +180,11 @@ public sealed class DeepgramSpeechResult
         IReadOnlyList<ModelWarning> warnings,
         string requestBody,
         DeepgramResponse response,
-        JsonElement providerMetadata
+        JsonElement providerMetadata,
+        AudioUsage? usage = null
     )
     {
+        Usage = usage;
         Audio = audio ?? Array.Empty<byte>();
         MediaType = mediaType ?? "audio/mpeg";
         Warnings = warnings ?? Array.Empty<ModelWarning>();
@@ -208,6 +210,9 @@ public sealed class DeepgramSpeechResult
 
     /// <summary><c>{ "deepgram": { ... } }</c> with model and usage details from the <c>dg-*</c> response headers.</summary>
     public JsonElement ProviderMetadata { get; }
+
+    /// <summary>Characters billed, from the <c>dg-char-count</c> header. Null when the header is absent.</summary>
+    public AudioUsage? Usage { get; }
 }
 
 /// <summary>Provider options and headers for one Deepgram transcription.</summary>
@@ -281,7 +286,19 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
     /// <inheritdoc />
     public override ILanguageModel LanguageModel(string modelId)
     {
-        throw new AiSdkException("Deepgram does not provide language models.");
+        throw new NoSuchModelError(modelId, "languageModel");
+    }
+
+    /// <inheritdoc />
+    public override IEmbeddingModel EmbeddingModel(string modelId)
+    {
+        throw new NoSuchModelError(modelId, "embeddingModel");
+    }
+
+    /// <inheritdoc />
+    public override IImageModel ImageModel(string modelId)
+    {
+        throw new NoSuchModelError(modelId, "imageModel");
     }
 
     /// <summary>Creates a provider.</summary>
@@ -452,7 +469,7 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
                     cancellationToken
                 )
                 .ConfigureAwait(false);
-            return new SpeechResult(result.Audio, result.MediaType);
+            return new SpeechResult(result.Audio, result.MediaType, result.Usage);
         }
 
         /// <summary>Synthesizes speech with <c>/v1/speak</c>.</summary>
@@ -614,7 +631,17 @@ public sealed class DeepgramProvider : OpenAICompatibleProvider
                 warnings,
                 json,
                 new DeepgramResponse(timestamp, ModelId, response.Headers, null),
-                Metadata(response.Headers)
+                Metadata(response.Headers),
+                response.Headers.TryGetValue("dg-char-count", out var charCount)
+                && double.TryParse(
+                    charCount,
+                    NumberStyles.Float,
+                    CultureInfo.InvariantCulture,
+                    out var characters
+                )
+                && !double.IsNaN(characters)
+                    ? new AudioUsage(characters: (int)Math.Min(characters, int.MaxValue))
+                    : null
             );
         }
 

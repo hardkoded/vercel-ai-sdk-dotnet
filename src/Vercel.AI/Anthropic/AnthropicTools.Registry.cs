@@ -7,11 +7,7 @@ using System.Text.Json.Nodes;
 
 namespace Vercel.AI.Anthropic;
 
-/// <summary>
-/// The input schema of each Anthropic provider tool. Upstream reads it from the tool factory
-/// (<c>anthropicTools[...]({}).inputSchema</c>). The port has no factory registry, so Bedrock reads it here.
-/// </summary>
-internal static class AnthropicProviderToolSchemas
+public static partial class AnthropicTools
 {
     private const string Bash =
         "{\"type\":\"object\",\"properties\":{\"command\":{\"type\":\"string\"},\"restart\":{\"type\":\"boolean\"}},\"required\":[\"command\"],\"additionalProperties\":false}";
@@ -59,8 +55,21 @@ internal static class AnthropicProviderToolSchemas
 
     private const string Int = "{\"type\":\"integer\"}";
 
-    /// <summary>Finds the input schema of the Anthropic provider tool <paramref name="id"/>, or null for an unknown tool.</summary>
-    internal static JsonObject? Get(string id, JsonElement args)
+    /// <summary>
+    /// Factory of each Anthropic provider tool, keyed by tool id. Calling a factory returns the tool with its default
+    /// arguments, and its <see cref="Tool.InputSchema"/>. Maps to <c>anthropicTools</c>.
+    /// </summary>
+    public static IReadOnlyDictionary<string, Func<Tool>> Factories { get; } =
+        AnthropicProvider.Tools.ToDictionary(
+            id => id,
+            id =>
+                id == "anthropic.computer_toolset_20260801"
+                    ? (Func<Tool>)(() => ComputerToolset20260801())
+                    : () => Factory(id),
+            StringComparer.Ordinal
+        );
+
+    private static Tool Factory(string id)
     {
         var json = id switch
         {
@@ -128,12 +137,6 @@ internal static class AnthropicProviderToolSchemas
                 true,
                 true
             ),
-            "anthropic.computer_toolset_20260801" => Computer(
-                AnthropicToolset.Members.Where(member => !IsDisabled(args, member)).ToArray(),
-                true,
-                true,
-                true
-            ),
             "anthropic.memory_20250818" => Memory,
             "anthropic.text_editor_20241022" or "anthropic.text_editor_20250124" =>
                 TextEditor.Replace(
@@ -150,20 +153,15 @@ internal static class AnthropicProviderToolSchemas
             "anthropic.web_search_20250305"
             or "anthropic.web_search_20260209"
             or "anthropic.web_search_20260318" => Query,
-            _ => null,
+            _ => throw new ArgumentException("Unknown Anthropic tool: " + id, nameof(id)),
         };
-        return json == null ? null : JsonNode.Parse(json) as JsonObject;
-    }
-
-    private static bool IsDisabled(JsonElement args, string member)
-    {
-        return args.ValueKind == JsonValueKind.Object
-            && args.TryGetProperty("configs", out var configs)
-            && configs.ValueKind == JsonValueKind.Object
-            && configs.TryGetProperty(member, out var config)
-            && config.ValueKind == JsonValueKind.Object
-            && config.TryGetProperty("enabled", out var enabled)
-            && enabled.ValueKind == JsonValueKind.False;
+        using var schema = JsonDocument.Parse(json);
+        return Tool.ProviderDefined(
+            id,
+            id.Substring("anthropic.".Length),
+            JsonSerializer.SerializeToElement(new JsonObject()),
+            schema.RootElement
+        );
     }
 
     // The computer tools share one object shape. Newer versions add a tuple coordinate, duration,

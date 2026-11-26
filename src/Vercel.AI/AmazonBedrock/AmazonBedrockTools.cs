@@ -228,9 +228,9 @@ public static class AmazonBedrockTools
             // Create a standard Bedrock tool representation for validation purposes.
             foreach (var tool in providerToolsForRequest)
             {
-                var schema = AnthropicProviderToolSchemas.Get(tool.ProviderToolId!, tool.Args);
-                if (schema != null)
+                if (AnthropicTools.Factories.TryGetValue(tool.ProviderToolId!, out var toolFactory))
                 {
+                    var schema = JsonNode.Parse(toolFactory().InputSchema.GetRawText());
                     bedrockTools.Add(
                         new JsonObject
                         {

@@ -75,6 +75,167 @@ public sealed class HttpMcpTransportTests
         Assert.Equal(["server/discover"], methods);
     }
 
+    [Fact]
+    [UpstreamTest(
+        Prefix
+            + "should wait for a slow protocol discovery response instead of falling back to initialize",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "fac1d6a5882903594278edef0d58859d25c80ae8"
+    )]
+    public async Task Should_wait_for_a_slow_protocol_discovery_response_instead_of_falling_back_to_initialize()
+    {
+        var methods = new List<string>();
+        var handler = new DelegateHandler(
+            async (message, _) =>
+            {
+                var method = message.RootElement.GetProperty("method").GetString()!;
+                methods.Add(method);
+                var id = message.RootElement.GetProperty("id").GetRawText();
+                if (method != "server/discover")
+                {
+                    return Json(
+                        "{\"jsonrpc\":\"2.0\",\"id\":"
+                            + id
+                            + ",\"error\":{\"code\":-32022,\"message\":\"Unsupported protocol version: "
+                            + McpClient.LatestLegacyProtocolVersion
+                            + "\"}}"
+                    );
+                }
+
+                await Task.Delay(2000).ConfigureAwait(false);
+                return Json(
+                    "{\"jsonrpc\":\"2.0\",\"id\":"
+                        + id
+                        + ",\"result\":{\"resultType\":\"complete\",\"supportedVersions\":[\""
+                        + McpClient.LatestProtocolVersion
+                        + "\"],\"capabilities\":{\"tools\":{}}}}"
+                );
+            }
+        );
+
+        await McpClient.CreateAsync(
+            new HttpMcpTransport(new HttpClient(handler), new Uri("http://localhost:4000/mcp"))
+        );
+
+        Assert.Equal(["server/discover"], methods);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix
+            + "should reject with a network error from protocol discovery without falling back to initialize",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "fac1d6a5882903594278edef0d58859d25c80ae8"
+    )]
+    public async Task Should_reject_with_a_network_error_from_protocol_discovery_without_falling_back_to_initialize()
+    {
+        var methods = new List<string>();
+        var networkError = new HttpRequestException("fetch failed");
+        var handler = new DelegateHandler(
+            async (message, _) =>
+            {
+                methods.Add(message.RootElement.GetProperty("method").GetString()!);
+                await Task.Yield();
+                throw networkError;
+            }
+        );
+
+        var error = await Assert.ThrowsAsync<HttpRequestException>(() =>
+            McpClient.ConnectAsync(
+                new HttpMcpTransport(new HttpClient(handler), new Uri("http://localhost:4000/mcp"))
+            )
+        );
+
+        Assert.Same(networkError, error);
+        Assert.Equal(["server/discover"], methods);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "protocol version downgrade::should use LATEST_LEGACY_PROTOCOL_VERSION by default",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "fac1d6a5882903594278edef0d58859d25c80ae8"
+    )]
+    public async Task Should_use_LATEST_LEGACY_PROTOCOL_VERSION_by_default()
+    {
+        var headers = new List<string?>();
+        var handler = new RecordingHeaderHandler(headers);
+        var transport = new HttpMcpTransport(
+            new HttpClient(handler),
+            new Uri("http://localhost:4000/mcp")
+        );
+        using var parameters = JsonDocument.Parse("{}");
+
+        await transport.CallAsync("initialize", parameters.RootElement, CancellationToken.None);
+
+        Assert.Equal([McpClient.LatestLegacyProtocolVersion], headers);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix
+            + "protocol version downgrade::should use negotiated protocolVersion in headers after it is set",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "fac1d6a5882903594278edef0d58859d25c80ae8"
+    )]
+    public async Task Should_use_negotiated_protocolVersion_in_headers_after_it_is_set()
+    {
+        var headers = new List<string?>();
+        var transport = new HttpMcpTransport(
+            new HttpClient(new RecordingHeaderHandler(headers)),
+            new Uri("http://localhost:4000/mcp")
+        )
+        {
+            ProtocolVersion = "2025-06-18",
+        };
+        using var parameters = JsonDocument.Parse("{}");
+
+        await transport.CallAsync("tools/list", parameters.RootElement, CancellationToken.None);
+
+        Assert.Equal(["2025-06-18"], headers);
+    }
+
+    private static HttpResponseMessage Json(string body) =>
+        new(HttpStatusCode.OK)
+        {
+            Content = new StringContent(body, Encoding.UTF8, "application/json"),
+        };
+
+    private sealed class DelegateHandler(
+        Func<JsonDocument, CancellationToken, Task<HttpResponseMessage>> respond
+    ) : HttpMessageHandler
+    {
+        public DelegateHandler(Func<JsonDocument, CancellationToken, HttpResponseMessage> respond)
+            : this((m, c) => Task.FromResult(respond(m, c))) { }
+
+        protected override async Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken
+        )
+        {
+            using var message = JsonDocument.Parse(
+                await request.Content!.ReadAsStringAsync().ConfigureAwait(false)
+            );
+            return await respond(message, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    private sealed class RecordingHeaderHandler(List<string?> headers) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken
+        )
+        {
+            headers.Add(
+                request.Headers.TryGetValues("mcp-protocol-version", out var values)
+                    ? values.Single()
+                    : null
+            );
+            return Task.FromResult(Json("{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"ok\":true}}"));
+        }
+    }
+
     private sealed class RecordingHandler(List<string> methods, HttpStatusCode status, string data)
         : HttpMessageHandler
     {

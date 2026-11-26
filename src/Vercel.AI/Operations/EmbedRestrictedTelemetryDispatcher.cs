@@ -29,6 +29,12 @@ internal sealed class EmbedRestrictedTelemetryDispatcher
         return new EmbedRestrictedTelemetryDispatcher(telemetry);
     }
 
+    /// <summary>Maps to <c>runInTracingChannelSpan</c>, which the restricted dispatcher spreads from the telemetry dispatcher.</summary>
+    internal Task<T> RunInTracingChannelSpan<T>(string type, object @event, Func<Task<T>> execute)
+    {
+        return _dispatcher.RunInTracingChannelSpan(type, @event, execute);
+    }
+
     /// <summary>Maps to <c>onStart</c>.</summary>
     internal Task OnStartAsync(EmbedStartEvent source, CancellationToken cancellationToken)
     {

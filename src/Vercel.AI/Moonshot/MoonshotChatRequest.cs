@@ -34,6 +34,11 @@ internal static class MoonshotChatRequest
         IList<CallWarning> warnings
     )
     {
+        ApplySamplingOptions(modelId, options, body, warnings);
+        ApplyMaxOutputTokens(body);
+        ApplyTools(modelId, options, body, warnings);
+        ApplyPromptCacheOptions(body);
+
         var moonshot = ReadOptions(options.ProviderOptions);
         var requestedThinking = moonshot.TryGetPropertyValue("thinking", out var thinkingNode)
             ? thinkingNode as JsonObject
@@ -216,6 +221,42 @@ internal static class MoonshotChatRequest
         return body;
     }
 
+    /// <summary>Omits the sampling options that Kimi models fix and warns. Maps to the <c>supportsSamplingOptions</c> checks in <c>getArgs</c>.</summary>
+    private static void ApplySamplingOptions(
+        string modelId,
+        LanguageModelCallOptions options,
+        JsonObject body,
+        IList<CallWarning> warnings
+    )
+    {
+        if (!MoonshotModelCatalog.IsMoonshotKimiModel(modelId))
+        {
+            return;
+        }
+
+        void Omit(string feature, bool present, string key)
+        {
+            if (!present)
+            {
+                return;
+            }
+
+            body.Remove(key);
+            warnings.Add(
+                new CallWarning(
+                    "unsupported",
+                    feature,
+                    $"{feature} is fixed by model \"{modelId}\" and has been omitted."
+                )
+            );
+        }
+
+        Omit("temperature", options.Temperature != null, "temperature");
+        Omit("topP", options.TopP != null, "top_p");
+        Omit("frequencyPenalty", options.FrequencyPenalty != null, "frequency_penalty");
+        Omit("presencePenalty", options.PresencePenalty != null, "presence_penalty");
+    }
+
     private static string? ThinkingTypeOf(string? reasoning)
     {
         return ReasoningMap.IsCustomReasoning(reasoning)
@@ -247,6 +288,67 @@ internal static class MoonshotChatRequest
         }
 
         return effort;
+    }
+
+    /// <summary>
+    /// Sends <c>providerOptions.moonshotai.promptCacheOptions</c> as <c>prompt_cache_options</c>. The mode defaults to
+    /// <c>implicit</c>. Maps to the <c>prompt_cache_options</c> field in <c>getArgs</c>.
+    /// </summary>
+    private static void ApplyPromptCacheOptions(JsonObject body)
+    {
+        var node = body["promptCacheOptions"];
+        body.Remove("promptCacheOptions");
+        if (node is not JsonObject cache)
+        {
+            return;
+        }
+
+        var options = new JsonObject { ["mode"] = StringOf(cache, "mode") ?? "implicit" };
+        if (StringOf(cache, "ttl") is { } ttl)
+        {
+            options["ttl"] = ttl;
+        }
+
+        body["prompt_cache_options"] = options;
+    }
+
+    /// <summary>Sends <c>maxOutputTokens</c> as <c>max_completion_tokens</c>, never <c>max_tokens</c>.</summary>
+    private static void ApplyMaxOutputTokens(JsonObject body)
+    {
+        if (body["max_tokens"] is { } maxTokens)
+        {
+            body.Remove("max_tokens");
+            body["max_completion_tokens"] = maxTokens;
+        }
+    }
+
+    /// <summary>Sends <c>tools</c> and <c>tool_choice</c> from <see cref="MoonshotPrepareTools.PrepareTools"/>. Maps to the <c>prepareTools</c> call in <c>getArgs</c>.</summary>
+    private static void ApplyTools(
+        string modelId,
+        LanguageModelCallOptions options,
+        JsonObject body,
+        IList<CallWarning> warnings
+    )
+    {
+        var prepared = MoonshotPrepareTools.PrepareTools(
+            modelId,
+            options.Tools,
+            options.ToolChoice
+        );
+        foreach (var warning in prepared.ToolWarnings)
+        {
+            warnings.Add(warning);
+        }
+
+        if (prepared.Tools != null)
+        {
+            body["tools"] = prepared.Tools;
+        }
+
+        if (prepared.ToolChoice != null)
+        {
+            body["tool_choice"] = prepared.ToolChoice;
+        }
     }
 
     private static JsonObject ReadOptions(IReadOnlyDictionary<string, JsonElement>? providerOptions)

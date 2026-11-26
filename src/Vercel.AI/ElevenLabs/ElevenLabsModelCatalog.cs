@@ -44,9 +44,201 @@ internal sealed class ElevenLabsSpeechRequestConfig
     public bool IncrementalDialogue { get; }
 }
 
+/// <summary>Known options accepted under <c>providerOptions.elevenlabs</c>. Maps to <c>elevenLabsProviderOptions</c>.</summary>
+internal static class ElevenLabsProviderOptions
+{
+    /// <summary>Maps to <c>elevenLabsProviderOptions.speech</c>, keyed by option name.</summary>
+    public static readonly IReadOnlyDictionary<string, ProviderOptionDefinition> Speech =
+        new Dictionary<string, ProviderOptionDefinition>(StringComparer.Ordinal)
+        {
+            ["withTimestamps"] = new(
+                "Return character alignment for speech or lyric word timestamps for music."
+            ),
+            ["languageCode"] = new("Language code."),
+            ["voiceSettings"] = new("Voice settings."),
+            ["pronunciationDictionaryLocators"] = new("Pronunciation dictionary locators."),
+            ["seed"] = new("Seed."),
+            ["previousText"] = new("Previous text."),
+            ["nextText"] = new("Next text."),
+            ["previousRequestIds"] = new("Previous request ids."),
+            ["nextRequestIds"] = new("Next request ids."),
+            ["applyTextNormalization"] = new("Apply text normalization."),
+            ["applyLanguageTextNormalization"] = new("Apply language text normalization."),
+            ["enableLogging"] = new("Enable logging."),
+            ["streaming"] = new("WebSocket speech settings; not used by non-streaming generation."),
+            ["dialogue"] = new("Voice settings for streaming text-to-dialogue."),
+            ["inputs"] = new("Text and voice pairs for non-streaming text-to-dialogue."),
+            ["musicLengthMs"] = new("Music length ms."),
+            ["forceInstrumental"] = new("Force instrumental."),
+            ["compositionPlan"] = new("Native music composition plan; replaces the text prompt."),
+            ["durationSeconds"] = new("Duration seconds."),
+            ["promptInfluence"] = new("Prompt influence."),
+            ["loop"] = new("Loop."),
+        };
+
+    /// <summary>Maps to <c>elevenLabsProviderOptions.transcription</c>, keyed by option name.</summary>
+    public static readonly IReadOnlyDictionary<string, ProviderOptionDefinition> Transcription =
+        new Dictionary<string, ProviderOptionDefinition>(StringComparer.Ordinal)
+        {
+            ["languageCode"] = new("Language hint for transcription."),
+            ["tagAudioEvents"] = new("Include audio event tags in batch transcripts."),
+            ["numSpeakers"] = new("Expected speaker count for batch transcription."),
+            ["timestampsGranularity"] = new("Timestamp precision for batch transcription."),
+            ["diarize"] = new("Identify speakers in batch transcripts."),
+            ["fileFormat"] = new("Input audio format for batch transcription."),
+            ["sourceUrl"] = new("Transcribe a remote audio source in batch mode."),
+            ["streaming"] = new("Scribe realtime transcription settings."),
+        };
+}
+
+/// <summary>Maps to the <c>speech</c> capabilities of <c>getElevenLabsSpeechModelEntry</c>.</summary>
+internal sealed class ElevenLabsSpeechCapabilities
+{
+    /// <summary>Maps to <c>instructions</c>.</summary>
+    public ModelCapability Instructions { get; init; } = ModelCapability.Unknown;
+
+    /// <summary>Maps to <c>speech</c>.</summary>
+    public bool Speech { get; init; }
+
+    /// <summary>Maps to <c>streaming</c>.</summary>
+    public ModelCapability Streaming { get; init; } = ModelCapability.Unknown;
+}
+
+/// <summary>The catalog entry of an ElevenLabs speech model. Maps to the result of <c>getElevenLabsSpeechModelEntry</c>.</summary>
+internal sealed class ElevenLabsSpeechModelEntry
+{
+    internal ElevenLabsSpeechModelEntry(
+        ElevenLabsSpeechCapabilities capabilities,
+        IReadOnlyDictionary<string, ModelCapability> providerOptions,
+        ElevenLabsSpeechRequestConfig requestConfig
+    )
+    {
+        Capabilities = capabilities;
+        ProviderOptions = providerOptions;
+        RequestConfig = requestConfig;
+    }
+
+    /// <summary>Maps to <c>capabilities.speech</c>.</summary>
+    public ElevenLabsSpeechCapabilities Capabilities { get; }
+
+    /// <summary>Maps to <c>providerOptions.speech</c>.</summary>
+    public IReadOnlyDictionary<string, ModelCapability> ProviderOptions { get; }
+
+    /// <summary>Maps to <c>requestConfig.speech</c>.</summary>
+    public ElevenLabsSpeechRequestConfig RequestConfig { get; }
+}
+
+/// <summary>Maps to the <c>transcription</c> capabilities of <c>getElevenLabsTranscriptionModelEntry</c>.</summary>
+internal sealed class ElevenLabsTranscriptionCapabilities
+{
+    /// <summary>Maps to <c>transcription</c>.</summary>
+    public ModelCapability Transcription { get; init; } = ModelCapability.Unknown;
+
+    /// <summary>Maps to <c>streaming</c>.</summary>
+    public ModelCapability Streaming { get; init; } = ModelCapability.Unknown;
+
+    /// <summary>Maps to <c>duration</c>.</summary>
+    public ModelCapability Duration { get; init; } = ModelCapability.Unknown;
+
+    /// <summary>Maps to <c>segments</c>.</summary>
+    public ModelCapability Segments { get; init; } = ModelCapability.Unknown;
+
+    /// <summary>Maps to <c>language</c>.</summary>
+    public ModelCapability Language { get; init; } = ModelCapability.Unknown;
+
+    /// <summary>Maps to <c>timestamps</c>.</summary>
+    public ModelCapability Timestamps { get; init; } = ModelCapability.Unknown;
+
+    /// <summary>Maps to <c>languageDetection</c>.</summary>
+    public ModelCapability LanguageDetection { get; init; } = ModelCapability.Unknown;
+}
+
+/// <summary>The catalog entry of an ElevenLabs transcription model. Maps to the result of <c>getElevenLabsTranscriptionModelEntry</c>.</summary>
+internal sealed class ElevenLabsTranscriptionModelEntry
+{
+    internal ElevenLabsTranscriptionModelEntry(
+        ElevenLabsTranscriptionCapabilities capabilities,
+        IReadOnlyDictionary<string, ModelCapability> providerOptions
+    )
+    {
+        Capabilities = capabilities;
+        ProviderOptions = providerOptions;
+    }
+
+    /// <summary>Maps to <c>capabilities.transcription</c>.</summary>
+    public ElevenLabsTranscriptionCapabilities Capabilities { get; }
+
+    /// <summary>Maps to <c>providerOptions.transcription</c>.</summary>
+    public IReadOnlyDictionary<string, ModelCapability> ProviderOptions { get; }
+}
+
+/// <summary>Maps to the <c>requestConfig</c> of an <c>elevenLabsModelCatalog</c> record.</summary>
+internal sealed class ElevenLabsRequestConfig
+{
+    /// <summary>Maps to <c>speech</c>.</summary>
+    public ElevenLabsSpeechRequestConfig? Speech { get; init; }
+}
+
+/// <summary>One <c>elevenLabsModelCatalog</c> record: it can declare speech and transcription together.</summary>
+internal sealed class ElevenLabsModelEntry
+{
+    /// <summary>Maps to <c>capabilities.speech</c>.</summary>
+    public ElevenLabsSpeechCapabilities? Speech { get; init; }
+
+    /// <summary>Maps to <c>capabilities.transcription</c>.</summary>
+    public ElevenLabsTranscriptionCapabilities? Transcription { get; init; }
+
+    /// <summary>Maps to <c>providerOptions</c>.</summary>
+    public ModelProviderOptions? ProviderOptions { get; init; }
+
+    /// <summary>Maps to <c>requestConfig</c>.</summary>
+    public ElevenLabsRequestConfig? RequestConfig { get; init; }
+}
+
+/// <summary>Known model IDs, derived from the declarations used to build the catalog. Maps to <c>ElevenLabsModelIds</c>.</summary>
+internal static class ElevenLabsModelIds
+{
+    /// <summary>Maps to <c>ElevenLabsModelIds['speech']</c>.</summary>
+    public static IReadOnlyList<string> Speech => ElevenLabsModelCatalog.ElevenLabsSpeechModelIds;
+
+    /// <summary>Maps to <c>ElevenLabsModelIds['transcription']</c>.</summary>
+    public static IReadOnlyList<string> Transcription =>
+        ElevenLabsModelCatalog.ElevenLabsTranscriptionModelIds;
+}
+
 /// <summary>ElevenLabs model catalog. Maps to <c>elevenlabs-model-catalog.ts</c>.</summary>
 internal static class ElevenLabsModelCatalog
 {
+    /// <summary>Maps to <c>elevenLabsSpeechModelIds</c>.</summary>
+    internal static readonly IReadOnlyList<string> ElevenLabsSpeechModelIds =
+    [
+        "eleven_v4",
+        "eleven_v4_turbo",
+        "eleven_v3",
+        "eleven_v3_conversational",
+        "eleven_multilingual_v2",
+        "eleven_flash_v2_5",
+        "eleven_flash_v2",
+        "eleven_turbo_v2_5",
+        "eleven_turbo_v2",
+        "eleven_monolingual_v1",
+        "eleven_multilingual_v1",
+        "music_v2_5",
+        "music_v2",
+        "music_v1",
+        "eleven_text_to_sound_v2",
+        "eleven_text_to_sound_v3",
+    ];
+
+    /// <summary>Maps to <c>elevenLabsTranscriptionModelIds</c>.</summary>
+    internal static readonly IReadOnlyList<string> ElevenLabsTranscriptionModelIds =
+    [
+        "scribe_v1",
+        "scribe_v1_experimental",
+        "scribe_v2",
+        "scribe_v2_realtime",
+    ];
+
     /// <summary>Provider options that only apply to text-to-speech. Maps to <c>elevenLabsTextToSpeechOnlyOptions</c>.</summary>
     internal static readonly IReadOnlyList<string> ElevenLabsTextToSpeechOnlyOptions =
     [
@@ -80,17 +272,158 @@ internal static class ElevenLabsModelCatalog
         "promptInfluence",
     ];
 
-    /// <summary>Returns only <c>requestConfig.speech</c> of upstream <c>getElevenLabsSpeechModelEntry</c>. The full entry (capabilities, providerOptions) is not ported (#1681); internal until it is.</summary>
-    internal static ElevenLabsSpeechRequestConfig GetElevenLabsSpeechModelEntry(string modelId)
+    /// <summary>The merged catalog, keyed by model id. Maps to <c>elevenLabsModelCatalog</c>.</summary>
+    internal static IReadOnlyDictionary<
+        string,
+        ElevenLabsModelEntry
+    > ElevenLabsModelCatalogEntries { get; } = CreateEntries();
+
+    /// <summary>Returns the entry of a speech model. Maps to <c>getElevenLabsSpeechModelEntry</c>.</summary>
+    internal static ElevenLabsSpeechModelEntry GetElevenLabsSpeechModelEntry(string modelId)
     {
-        return new ElevenLabsSpeechRequestConfig(
-            music: modelId.StartsWith("music_", StringComparison.Ordinal),
-            soundEffects: modelId.StartsWith("eleven_text_to_sound", StringComparison.Ordinal),
-            dialogue: modelId.StartsWith("eleven_v3", StringComparison.Ordinal)
-                || modelId.StartsWith("eleven_v4", StringComparison.Ordinal),
-            defaultDialogue: modelId == "eleven_v4",
-            singleVoiceDialogue: modelId == "eleven_v3_conversational",
-            incrementalDialogue: modelId.StartsWith("eleven_v4", StringComparison.Ordinal)
+        var music = modelId.StartsWith("music_", StringComparison.Ordinal);
+        var soundEffects = modelId.StartsWith("eleven_text_to_sound", StringComparison.Ordinal);
+        var dialogue =
+            modelId.StartsWith("eleven_v3", StringComparison.Ordinal)
+            || modelId.StartsWith("eleven_v4", StringComparison.Ordinal);
+        var tts = !music && !soundEffects;
+        var known = ElevenLabsSpeechModelIds.Contains(modelId);
+        var defaultDialogue = modelId == "eleven_v4";
+        var singleVoiceDialogue = modelId == "eleven_v3_conversational";
+        var streamingDisabled = modelId is "eleven_monolingual_v1" or "eleven_multilingual_v1";
+        var support = known ? ModelCapability.Supported : ModelCapability.Unknown;
+
+        var streaming =
+            music || soundEffects || streamingDisabled ? ModelCapability.Unsupported
+            : dialogue ? ModelCapability.When("Requires providerOptions.elevenlabs.dialogue.")
+            : ModelCapability.Supported;
+
+        var providerOptions = new Dictionary<string, ModelCapability>(StringComparer.Ordinal);
+        foreach (var key in ElevenLabsProviderOptions.Speech.Keys)
+        {
+            providerOptions[key] = support;
+        }
+
+        foreach (var key in ElevenLabsTextToSpeechOnlyOptions)
+        {
+            providerOptions[key] = tts ? support : ModelCapability.Unsupported;
+        }
+
+        foreach (var key in ElevenLabsMusicOnlyOptions)
+        {
+            providerOptions[key] = ModelCapability.From(music);
+        }
+
+        foreach (var key in ElevenLabsSoundEffectsOnlyOptions)
+        {
+            providerOptions[key] = ModelCapability.From(soundEffects);
+        }
+
+        providerOptions["seed"] = ModelCapability.From(!soundEffects);
+        providerOptions["withTimestamps"] = ModelCapability.From(!soundEffects);
+        providerOptions["dialogue"] = dialogue
+            ? ModelCapability.When(
+                "Streaming dialogue only; eleven_v3_conversational accepts one voice."
+            )
+            : ModelCapability.Unsupported;
+        providerOptions["streaming"] = tts
+            ? ModelCapability.When("Streaming speech only.")
+            : ModelCapability.Unsupported;
+        providerOptions["inputs"] = tts
+            ? ModelCapability.When("Non-streaming text-to-dialogue only.")
+            : ModelCapability.Unsupported;
+        providerOptions["compositionPlan"] = music
+            ? ModelCapability.When(
+                "Music only; cannot be combined with musicLengthMs or forceInstrumental."
+            )
+            : ModelCapability.Unsupported;
+
+        return new ElevenLabsSpeechModelEntry(
+            new ElevenLabsSpeechCapabilities
+            {
+                Instructions = ModelCapability.Unsupported,
+                Speech = true,
+                Streaming = streaming,
+            },
+            providerOptions,
+            new ElevenLabsSpeechRequestConfig(
+                music: music,
+                soundEffects: soundEffects,
+                dialogue: dialogue,
+                defaultDialogue: defaultDialogue,
+                singleVoiceDialogue: singleVoiceDialogue,
+                incrementalDialogue: modelId.StartsWith("eleven_v4", StringComparison.Ordinal)
+            )
         );
+    }
+
+    /// <summary>Returns the entry of a transcription model. Maps to <c>getElevenLabsTranscriptionModelEntry</c>.</summary>
+    internal static ElevenLabsTranscriptionModelEntry GetElevenLabsTranscriptionModelEntry(
+        string modelId
+    )
+    {
+        var streaming = modelId == "scribe_v2_realtime";
+        var known = ElevenLabsTranscriptionModelIds.Contains(modelId);
+
+        var providerOptions = new Dictionary<string, ModelCapability>(StringComparer.Ordinal);
+        foreach (var key in ElevenLabsProviderOptions.Transcription.Keys)
+        {
+            providerOptions[key] = known
+                ? ModelCapability.From(!streaming)
+                : ModelCapability.Unknown;
+        }
+
+        providerOptions["languageCode"] = known
+            ? ModelCapability.Supported
+            : ModelCapability.Unknown;
+        providerOptions["streaming"] = ModelCapability.From(streaming);
+
+        return new ElevenLabsTranscriptionModelEntry(
+            new ElevenLabsTranscriptionCapabilities
+            {
+                Transcription = ModelCapability.From(!streaming),
+                Streaming = ModelCapability.From(streaming),
+                Duration = ModelCapability.Supported,
+                Segments = ModelCapability.Supported,
+                Language = ModelCapability.Supported,
+                Timestamps = ModelCapability.From(streaming),
+                LanguageDetection = ModelCapability.From(streaming),
+            },
+            providerOptions
+        );
+    }
+
+    private static Dictionary<string, ElevenLabsModelEntry> CreateEntries()
+    {
+        var entries = new Dictionary<string, ElevenLabsModelEntry>(StringComparer.Ordinal);
+        foreach (var id in ElevenLabsSpeechModelIds)
+        {
+            var entry = GetElevenLabsSpeechModelEntry(id);
+            entries[id] = new ElevenLabsModelEntry
+            {
+                Speech = entry.Capabilities,
+                ProviderOptions = new ModelProviderOptions { Speech = entry.ProviderOptions },
+                RequestConfig = new ElevenLabsRequestConfig { Speech = entry.RequestConfig },
+            };
+        }
+
+        foreach (var id in ElevenLabsTranscriptionModelIds)
+        {
+            var entry = GetElevenLabsTranscriptionModelEntry(id);
+            entries.TryGetValue(id, out var previous);
+            entries[id] = new ElevenLabsModelEntry
+            {
+                Speech = previous?.Speech,
+                Transcription = entry.Capabilities,
+                ProviderOptions = new ModelProviderOptions
+                {
+                    Speech = previous?.ProviderOptions?.Speech,
+                    Transcription = entry.ProviderOptions,
+                },
+                RequestConfig = previous?.RequestConfig,
+            };
+        }
+
+        return entries;
     }
 }

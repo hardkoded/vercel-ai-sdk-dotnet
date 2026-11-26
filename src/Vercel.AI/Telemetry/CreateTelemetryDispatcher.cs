@@ -115,25 +115,100 @@ internal sealed class TelemetryDispatcher
         CancellationToken cancellationToken
     )
     {
-        if (ExecuteLanguageModelCallWrappers.Count == 0)
-        {
-            return execute();
-        }
-
-        var augmented = AugmentEvent(@event, Options);
         var wrapped = execute;
-        foreach (var wrapper in ExecuteLanguageModelCallWrappers)
+        if (ExecuteLanguageModelCallWrappers.Count > 0)
         {
-            var inner = wrapped;
-            var current = wrapper;
-            wrapped = () =>
-                current.ExecuteAsync(
-                    new ExecuteLanguageModelCallOptions<T>(augmented, inner),
-                    cancellationToken
-                );
+            var augmented = AugmentEvent(@event, Options);
+            foreach (var wrapper in ExecuteLanguageModelCallWrappers)
+            {
+                var inner = wrapped;
+                var current = wrapper;
+                wrapped = () => RunRedactedAsync(current, augmented, inner, cancellationToken);
+            }
         }
 
-        return wrapped();
+        return RunInTracingChannelSpan(
+            TelemetryTracingEventType.LanguageModelCall,
+            @event,
+            wrapped
+        );
+    }
+
+    // Each integration sees the result and the error through their provider-owned telemetry views. The caller gets the originals back.
+    private static async Task<T> RunRedactedAsync<T>(
+        IExecuteLanguageModelCall wrapper,
+        LanguageModelCallStartEvent augmented,
+        Func<Task<T>> inner,
+        CancellationToken cancellationToken
+    )
+    {
+        var originals = new List<(object Redacted, object Original)>();
+        T Redact(T original)
+        {
+            var redacted = RedactTelemetryCredentialsHelper.RedactTelemetryCredentials(original);
+            if (!ReferenceEquals(redacted, original))
+            {
+                originals.Add((redacted!, original!));
+            }
+
+            return redacted;
+        }
+
+        T Restore(T value)
+        {
+            foreach (var (redacted, original) in originals)
+            {
+                if (ReferenceEquals(redacted, value))
+                {
+                    return (T)original;
+                }
+            }
+
+            return value;
+        }
+
+        try
+        {
+            return Restore(
+                await wrapper
+                    .ExecuteAsync(new ExecuteLanguageModelCallOptions<T>(augmented, async () =>
+                        {
+                            try
+                            {
+                                return Redact(await inner().ConfigureAwait(false));
+                            }
+                            catch (Exception error) when (error is not OperationCanceledException)
+                            {
+                                var redacted =
+                                    RedactTelemetryCredentialsHelper.RedactTelemetryCredentials(
+                                        error
+                                    );
+                                if (!ReferenceEquals(redacted, error))
+                                {
+                                    originals.Add((redacted, error));
+                                    throw redacted;
+                                }
+
+                                throw;
+                            }
+                        }), cancellationToken)
+                    .ConfigureAwait(false)
+            );
+        }
+        catch (Exception error)
+        {
+            foreach (var (redacted, original) in originals)
+            {
+                if (ReferenceEquals(redacted, error) && original is Exception originalError)
+                {
+                    System
+                        .Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(originalError)
+                        .Throw();
+                }
+            }
+
+            throw;
+        }
     }
 
     /// <summary>
@@ -244,6 +319,30 @@ internal sealed class TelemetryDispatcher
             .ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Opens a tracing channel span whose completion is observed separately. Streamed operations use it, so that the span lives as long
+    /// as the stream. Maps to <c>startTracingChannelContext</c>. Null when tracing is off or nothing subscribes.
+    /// </summary>
+    internal TracingChannelContext? StartTracingChannelContext(
+        string type,
+        object @event,
+        Task<object?> completion
+    )
+    {
+        if (!IsTracingEnabled)
+        {
+            return null;
+        }
+
+        var recordResult =
+            TracingTelemetry?.RecordInputs != false && TracingTelemetry?.RecordOutputs != false;
+        return TracingChannelPublisher.OpenTelemetryChannelSpanContext(
+            new TelemetryTracingChannelMessage(type, AugmentTracingEvent(@event)),
+            completion,
+            recordResult
+        );
+    }
+
     /// <summary>The integrations a call resolves: the per-call ones, or the global ones. Maps to the lookup in <c>createTelemetryDispatcher</c>.</summary>
     internal static IReadOnlyList<ITelemetry> ResolveIntegrations(TelemetryOptions? telemetry)
     {
@@ -300,11 +399,18 @@ internal sealed class TelemetryDispatcher
                 .ToList(),
             IsTracingEnabled = true,
             TracingTelemetry = telemetry,
-            OnObjectStepStart = Merge(integrations.Select(i => i.OnObjectStepStart)),
-            OnObjectStepEnd = Merge(integrations.Select(i => i.OnObjectStepEnd)),
+            OnObjectStepStart = Filter<GenerateObjectStepStartEvent>(
+                Merge(integrations.Select(i => i.OnObjectStepStart)),
+                e => e.AugmentEvent(telemetry)
+            ),
+            OnObjectStepEnd = Filter<GenerateObjectStepEndEvent>(
+                Merge(integrations.Select(i => i.OnObjectStepEnd)),
+                e => e.AugmentEvent(telemetry)
+            ),
             OnEnd = Filter<IOperationEndEvent>(Merge(integrations.Select(i => i.OnEnd)), e =>
                 e switch
                 {
+                    IAugmentableEndEvent augmentable => augmentable.AugmentEvent(telemetry),
                     GenerateTextResult result => AugmentResult(result, telemetry),
                     EmbedEndEvent embed => FilterTelemetryEventHelper.FilterTelemetryEvent(
                         embed,
@@ -316,6 +422,8 @@ internal sealed class TelemetryDispatcher
                     ),
                     TranscriptionEndEvent transcription =>
                         FilterTelemetryEventHelper.FilterTelemetryEvent(transcription, telemetry),
+                    GenerateSpeechEndEvent speech =>
+                        FilterTelemetryEventHelper.FilterTelemetryEvent(speech, telemetry),
                     IRecordingFilterableEndEvent filterable
                         when telemetry?.RecordInputs == false
                             || telemetry?.RecordOutputs == false => filterable.FilterTelemetryEvent(
@@ -349,6 +457,7 @@ internal sealed class TelemetryDispatcher
                         .WithTelemetry(telemetry)
                     : e switch
                     {
+                        GenerateObjectStartEvent objectStart => objectStart.AugmentEvent(telemetry),
                         EmbedStartEvent embed => FilterTelemetryEventHelper.FilterTelemetryEvent(
                             embed,
                             telemetry
@@ -362,6 +471,8 @@ internal sealed class TelemetryDispatcher
                                 transcription,
                                 telemetry
                             ),
+                        GenerateSpeechStartEvent speech =>
+                            FilterTelemetryEventHelper.FilterTelemetryEvent(speech, telemetry),
                         _ => e,
                     }
             ),
@@ -422,7 +533,8 @@ internal sealed class TelemetryDispatcher
                 Merge(integrations.Select(i => i.OnAbort)),
                 context => new StreamAbortContext(
                     context.Steps.Select(step => FilterStep(step, telemetry)).ToList(),
-                    context.Exception
+                    context.Exception,
+                    context.CallId
                 )
             ),
             OnError = Filter(Merge(integrations.Select(i => i.OnError)), (TelemetryErrorEvent e) =>
@@ -556,6 +668,45 @@ internal sealed class TelemetryDispatcher
                     ),
                     telemetry
                 );
+            case EmbedStartEvent embed:
+                return FilterTelemetryEventHelper.FilterTelemetryEvent(
+                    new EmbedStartEvent(
+                        embed.CallId,
+                        embed.OperationId,
+                        FilterIncludedContextHelper.FilterIncludedContext(
+                            embed.RuntimeContext,
+                            telemetry?.IncludeRuntimeContext
+                        ),
+                        embed.Provider,
+                        embed.ModelId,
+                        embed.Value,
+                        embed.MaxRetries,
+                        embed.Headers,
+                        embed.ProviderOptions,
+                        embed.Dimensions
+                    ),
+                    telemetry
+                );
+            case RerankStartEvent rerank:
+                return FilterTelemetryEventHelper.FilterTelemetryEvent(
+                    new RerankStartEvent(
+                        rerank.CallId,
+                        rerank.OperationId,
+                        FilterIncludedContextHelper.FilterIncludedContext(
+                            rerank.RuntimeContext,
+                            telemetry?.IncludeRuntimeContext
+                        ),
+                        rerank.Provider,
+                        rerank.ModelId,
+                        rerank.Documents,
+                        rerank.Query,
+                        rerank.TopN,
+                        rerank.MaxRetries,
+                        rerank.Headers,
+                        rerank.ProviderOptions
+                    ),
+                    telemetry
+                );
             case DecideEvent decide:
                 return FilterTelemetryEventHelper.FilterTelemetryEvent(
                     new DecideEvent(
@@ -580,6 +731,42 @@ internal sealed class TelemetryDispatcher
                     ),
                     telemetry
                 );
+            case GenerateTextStartEvent textStart:
+                return textStart
+                    .WithContexts(
+                        FilterIncludedContextHelper.FilterIncludedContext(
+                            textStart.RuntimeContext,
+                            telemetry?.IncludeRuntimeContext
+                        ),
+                        FilterIncludedContextHelper.FilterToolsContext(
+                            textStart.ToolsContext,
+                            telemetry?.IncludeToolsContext
+                        )
+                    )
+                    .WithTelemetry(telemetry);
+            case LanguageModelCallStartEvent modelCall:
+                return AugmentEvent(modelCall, telemetry);
+            case ToolExecutionStartEvent toolExecution:
+                return FilterTelemetryEventHelper.FilterToolEvent(
+                    new ToolExecutionStartEvent(toolExecution.ToolCall, toolExecution.Messages)
+                    {
+                        CallId = toolExecution.CallId,
+                        ToolContext = FilterToolContext(toolExecution, telemetry),
+                        RecordInputs = telemetry?.RecordInputs,
+                        RecordOutputs = telemetry?.RecordOutputs,
+                        FunctionId = telemetry?.FunctionId,
+                        AiVersion = Operations.AiSdkVersion.Version,
+                    },
+                    telemetry
+                );
+            case TracingChannelStepEvent step:
+                return new TracingChannelStepEvent(step.CallId, step.StepNumber)
+                {
+                    RecordInputs = telemetry?.RecordInputs,
+                    RecordOutputs = telemetry?.RecordOutputs,
+                    FunctionId = telemetry?.FunctionId,
+                    AiVersion = Operations.AiSdkVersion.Version,
+                };
             default:
                 return value;
         }

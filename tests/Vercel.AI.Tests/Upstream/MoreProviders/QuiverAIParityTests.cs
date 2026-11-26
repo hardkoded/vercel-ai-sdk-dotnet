@@ -12,6 +12,7 @@ using Vercel.AI.Provider;
 using Vercel.AI.QuiverAI;
 using Vercel.AI.Tests.MoreProviders;
 using Vercel.AI.Tests.Upstream;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.Tests;
 
@@ -247,7 +248,7 @@ public sealed class QuiverAIParityTests
             .ConfigureAwait(false);
         Assert.Contains("Slow down.", error.Message, StringComparison.Ordinal);
         Assert.Equal(429, error.StatusCode);
-        Assert.True(ProviderUtils.ProviderHttp.IsRetryable(error.StatusCode));
+        Assert.True(error.IsRetryable);
         var data = JsonNode.Parse(error.ResponseBody!)!;
         Assert.Equal("rate_limit", data["code"]!.GetValue<string>());
         Assert.Equal("req_1", data["request_id"]!.GetValue<string>());
@@ -271,7 +272,7 @@ public sealed class QuiverAIParityTests
                 Model(handler, "arrow-1").DoGenerateAsync(Call(), CancellationToken.None)
             )
             .ConfigureAwait(false);
-        Assert.False(ProviderUtils.ProviderHttp.IsRetryable(error.StatusCode));
+        Assert.False(error.IsRetryable);
         Assert.Equal(400, error.StatusCode);
         Assert.Contains("Prompt is invalid.", error.Message, StringComparison.Ordinal);
     }
@@ -405,14 +406,14 @@ public sealed class QuiverAIParityTests
     [UpstreamTest(
         Provider + "creates language models and throws for unsupported embedding models",
         Coverage = UpstreamCoverage.Partial,
-        Note = "The factory throws AiSdkException. The port has no NoSuchModelError or textEmbeddingModel alias."
+        Note = "The port has no textEmbeddingModel alias."
     )]
     public void CreatesLanguageModelsAndThrowsForUnsupportedEmbeddingModels()
     {
         var provider = CreateProvider(Handler());
         Assert.Equal("arrow-2", provider.LanguageModel("arrow-2").ModelId);
         Assert.Equal("quiverai.responses", provider.LanguageModel("arrow-2-telos").Provider);
-        Assert.Throws<AiSdkException>(() => provider.EmbeddingModel("embed-model"));
+        Assert.Throws<NoSuchModelError>(() => provider.EmbeddingModel("embed-model"));
     }
 
     [Fact]

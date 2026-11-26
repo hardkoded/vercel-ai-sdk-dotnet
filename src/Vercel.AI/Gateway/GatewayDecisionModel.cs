@@ -106,6 +106,17 @@ public sealed class GatewayDecisionModel : IEvaluationDecisionCaller
         }
 
         ProviderTextResponse response;
+        var requestHeaders = await _provider
+            .HeadersAsync(
+                "ai-decision-model-specification-version",
+                "4",
+                "ai-model-id",
+                ModelId,
+                null,
+                headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         try
         {
             response = await _provider
@@ -113,26 +124,22 @@ public sealed class GatewayDecisionModel : IEvaluationDecisionCaller
                     HttpMethod.Post,
                     _provider.Route("decision-model"),
                     body.ToJsonString(),
-                    await _provider.HeadersAsync(
-                        "ai-decision-model-specification-version",
-                        "4",
-                        "ai-model-id",
-                        ModelId,
-                        null,
-                        headers,
-                        cancellationToken
-                    ),
+                    requestHeaders,
                     cancellationToken
                 )
                 .ConfigureAwait(false);
         }
         catch (ApiException exception)
         {
-            throw GatewayProvider.MapFailure(exception);
+            throw GatewayProvider.MapFailure(exception, requestHeaders);
         }
         catch (ApiTimeoutException exception)
         {
-            throw GatewayProvider.MapFailure(exception);
+            throw GatewayProvider.MapFailure(exception, requestHeaders);
+        }
+        catch (ApiConnectionException exception)
+        {
+            throw GatewayProvider.MapFailure(exception, requestHeaders);
         }
 
         using var document = JsonDocument.Parse(

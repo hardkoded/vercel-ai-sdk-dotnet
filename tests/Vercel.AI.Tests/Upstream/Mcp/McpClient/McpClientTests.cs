@@ -223,11 +223,37 @@ public sealed class McpClientTests
         Assert.Equal(original, Assert.IsType<TextToolModelOutput>(result).Value);
     }
 
+    [Fact]
+    [UpstreamTest(
+        "packages/mcp/src/tool/mcp-client.test.ts::MCPClient::should not retry successful MCP tool results with isError",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "Covers the isError result and the single attempt. The port has no maxRetries option, so the retry-enabled client is not covered. Tool.Execute returns the result as JSON text."
+    )]
+    public async Task ShouldNotRetrySuccessfulMcpToolResultsWithIsError()
+    {
+        var transport = new MockMcpTransport(
+            toolCallResult: "{\"content\":[{\"type\":\"text\",\"text\":\"tool-level error\"}],\"isError\":true}"
+        );
+        var tools = await Client.ListToolsAsync(transport);
+        var tool = Assert.Single(tools);
+        using var input = JsonDocument.Parse("{}");
+
+        var result = await tool.Execute!(input.RootElement, CancellationToken.None);
+
+        Assert.Equal(
+            "{\"content\":[{\"type\":\"text\",\"text\":\"tool-level error\"}],\"isError\":true}",
+            result
+        );
+        Assert.Equal(1, transport.ToolCallAttempts);
+    }
+
     private sealed class MockMcpTransport : IMcpTransport
     {
         private readonly string _toolName;
         private readonly string _description;
         private readonly string _toolCallResult;
+
+        public int ToolCallAttempts { get; private set; }
 
         public MockMcpTransport(
             string toolName = "mock-tool",
@@ -247,6 +273,11 @@ public sealed class McpClientTests
             CancellationToken cancellationToken
         )
         {
+            if (method == "tools/call")
+            {
+                ToolCallAttempts++;
+            }
+
             var json = method switch
             {
                 "tools/call" => _toolCallResult,

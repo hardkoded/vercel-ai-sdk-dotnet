@@ -186,23 +186,21 @@ internal sealed class StreamTextEventProcessor
                     .ConfigureAwait(false);
             }
 
-            if (HasOnError(_options))
+            try
             {
-                try
-                {
-                    await StreamTextErrorHandling
-                        .InvokeOnErrorAsync(
-                            _options,
-                            exception,
-                            CancellationToken.None,
-                            swallow: false
-                        )
-                        .ConfigureAwait(false);
-                }
-                catch (Exception callback)
-                {
-                    streamError = callback;
-                }
+                await StreamTextErrorHandling
+                    .InvokeOnErrorAsync(
+                        _options,
+                        exception,
+                        CancellationToken.None,
+                        swallow: false,
+                        callId: CallId
+                    )
+                    .ConfigureAwait(false);
+            }
+            catch (Exception callback)
+            {
+                streamError = callback;
             }
 
             target.Fail(streamError);
@@ -379,18 +377,8 @@ internal sealed class StreamTextEventProcessor
         }
     }
 
-    private static bool HasOnError(StreamTextOptions options) =>
-        options.OnError != null
-        || options.OnErrorRetry != null
-        || TelemetryDispatcher.Create(options).OnError != null;
-
     private async Task NotifyErrorAsync(ErrorPart error)
     {
-        if (!HasOnError(_options))
-        {
-            return;
-        }
-
         await StreamTextErrorHandling
             .InvokeOnErrorAsync(
                 _options,
@@ -681,7 +669,10 @@ internal sealed class StreamTextEventProcessor
                     .NotifyAsync(
                         () =>
                             telemetryOnError(
-                                new TelemetryErrorEvent(null, _recordedNoOutputError ?? stepError),
+                                new TelemetryErrorEvent(
+                                    CallId,
+                                    _recordedNoOutputError ?? stepError
+                                ),
                                 Token
                             ),
                         Token

@@ -446,7 +446,19 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
     /// <inheritdoc />
     public override ILanguageModel LanguageModel(string modelId)
     {
-        throw new AiSdkException("AssemblyAI does not provide language models.");
+        throw new NoSuchModelError(modelId, "languageModel");
+    }
+
+    /// <inheritdoc />
+    public override IEmbeddingModel EmbeddingModel(string modelId)
+    {
+        throw new NoSuchModelError(modelId, "embeddingModel");
+    }
+
+    /// <inheritdoc />
+    public override IImageModel ImageModel(string modelId)
+    {
+        throw new NoSuchModelError(modelId, "imageModel");
     }
 
     /// <summary>Creates a provider.</summary>
@@ -480,18 +492,6 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
     /// <inheritdoc />
     public override ITranscriptionModel TranscriptionModel(string modelId) =>
         Transcription(modelId);
-
-    private static JsonElement? AssemblyAIObject(
-        IReadOnlyDictionary<string, JsonElement>? providerOptions
-    )
-    {
-        return
-            providerOptions != null
-            && providerOptions.TryGetValue(ProviderId, out var value)
-            && value.ValueKind == JsonValueKind.Object
-            ? value
-            : null;
-    }
 
     /// <inheritdoc />
     public override ISpeechModel SpeechModel(string modelId) => Speech(modelId);
@@ -850,71 +850,6 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
         private const string SpeechModelDocs =
             "https://www.assemblyai.com/docs/pre-recorded-audio/select-the-speech-model";
 
-        // Provider options copied to the request with snake_case names. Nested objects list their own keys.
-        private static readonly string[] FlatOptions =
-        {
-            "audioEndAt",
-            "audioStartFrom",
-            "autoChapters",
-            "autoHighlights",
-            "boostParam",
-            "contentSafety",
-            "contentSafetyConfidence",
-            "customSpelling",
-            "disfluencies",
-            "entityDetection",
-            "filterProfanity",
-            "formatText",
-            "iabCategories",
-            "languageCode",
-            "languageConfidenceThreshold",
-            "languageDetection",
-            "multichannel",
-            "punctuate",
-            "redactPii",
-            "redactPiiAudio",
-            "redactPiiAudioQuality",
-            "redactPiiPolicies",
-            "redactPiiSub",
-            "sentimentAnalysis",
-            "speakerLabels",
-            "speakersExpected",
-            "speechThreshold",
-            "summarization",
-            "summaryModel",
-            "summaryType",
-            "webhookAuthHeaderName",
-            "webhookAuthHeaderValue",
-            "webhookUrl",
-            "wordBoost",
-            "keytermsPrompt",
-            "prompt",
-            "temperature",
-            "removeAudioTags",
-            "domain",
-            "redactPiiReturnUnredacted",
-            "redactStaticEntities",
-        };
-
-        private static readonly KeyValuePair<string, string[]>[] NestedOptions =
-        {
-            new("speakerOptions", new[] { "minSpeakersExpected", "maxSpeakersExpected" }),
-            new(
-                "languageDetectionOptions",
-                new[]
-                {
-                    "expectedLanguages",
-                    "fallbackLanguage",
-                    "codeSwitching",
-                    "codeSwitchingConfidenceThreshold",
-                }
-            ),
-            new(
-                "redactPiiAudioOptions",
-                new[] { "returnRedactedNoSpeechAudio", "overrideAudioRedactionMethod" }
-            ),
-        };
-
         // Transcript fields that the segment shape cannot carry, surfaced as provider metadata.
         private static readonly KeyValuePair<string, string>[] MetadataFields =
         {
@@ -964,6 +899,12 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
                 throw new ArgumentNullException(nameof(audio));
             }
 
+            var warnings = new List<ModelWarning>();
+            var body = Body(
+                AssemblyAITranscriptionModelOptions.Parse(request?.ProviderOptions),
+                warnings
+            );
+
             var options = _provider.Options as AssemblyAIOptions;
             var started = options?.Clock != null ? options.Clock() : DateTimeOffset.UtcNow;
             var headers = ProviderExchange.Merge(
@@ -989,8 +930,6 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
                 uploadUrl = RequiredString(uploadDocument.RootElement, "upload_url");
             }
 
-            var warnings = new List<ModelWarning>();
-            var body = Body(AssemblyAIObject(request?.ProviderOptions), warnings);
             body["audio_url"] = uploadUrl;
             var submitted = await SendAsync(
                     HttpMethod.Post,
@@ -1150,7 +1089,10 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
             }
         }
 
-        private JsonObject Body(JsonElement? assemblyai, List<ModelWarning> warnings)
+        private JsonObject Body(
+            AssemblyAITranscriptionModelOptions? assemblyai,
+            List<ModelWarning> warnings
+        )
         {
             var body = new JsonObject();
 
@@ -1184,41 +1126,134 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
                 return body;
             }
 
-            var source = assemblyai.Value;
-            foreach (var name in FlatOptions)
+            Set(body, "audio_end_at", assemblyai.AudioEndAt);
+            Set(body, "audio_start_from", assemblyai.AudioStartFrom);
+            Set(body, "auto_chapters", assemblyai.AutoChapters);
+            Set(body, "auto_highlights", assemblyai.AutoHighlights);
+            Set(body, "boost_param", assemblyai.BoostParam);
+            Set(body, "content_safety", assemblyai.ContentSafety);
+            Set(body, "content_safety_confidence", assemblyai.ContentSafetyConfidence);
+            if (assemblyai.CustomSpelling != null)
             {
-                if (Present(source, name, out var value))
+                var spellings = new JsonArray();
+                foreach (var spelling in assemblyai.CustomSpelling)
                 {
-                    body[SnakeCase(name)] = JsonNode.Parse(value.GetRawText());
+                    spellings.Add(
+                        new JsonObject
+                        {
+                            ["from"] = StringArray(spelling.From),
+                            ["to"] = spelling.To,
+                        }
+                    );
                 }
+
+                body["custom_spelling"] = spellings;
             }
 
-            foreach (var nested in NestedOptions)
+            Set(body, "disfluencies", assemblyai.Disfluencies);
+            Set(body, "entity_detection", assemblyai.EntityDetection);
+            Set(body, "filter_profanity", assemblyai.FilterProfanity);
+            Set(body, "format_text", assemblyai.FormatText);
+            Set(body, "iab_categories", assemblyai.IabCategories);
+            Set(body, "language_code", assemblyai.LanguageCode);
+            Set(body, "language_confidence_threshold", assemblyai.LanguageConfidenceThreshold);
+            Set(body, "language_detection", assemblyai.LanguageDetection);
+            Set(body, "multichannel", assemblyai.Multichannel);
+            Set(body, "punctuate", assemblyai.Punctuate);
+            Set(body, "redact_pii", assemblyai.RedactPii);
+            Set(body, "redact_pii_audio", assemblyai.RedactPiiAudio);
+            Set(body, "redact_pii_audio_quality", assemblyai.RedactPiiAudioQuality);
+            if (assemblyai.RedactPiiPolicies != null)
             {
-                if (!Present(source, nested.Key, out var value))
+                body["redact_pii_policies"] = StringArray(assemblyai.RedactPiiPolicies);
+            }
+
+            Set(body, "redact_pii_sub", assemblyai.RedactPiiSub);
+            Set(body, "sentiment_analysis", assemblyai.SentimentAnalysis);
+            Set(body, "speaker_labels", assemblyai.SpeakerLabels);
+            Set(body, "speakers_expected", assemblyai.SpeakersExpected);
+            Set(body, "speech_threshold", assemblyai.SpeechThreshold);
+            Set(body, "summarization", assemblyai.Summarization);
+            Set(body, "summary_model", assemblyai.SummaryModel);
+            Set(body, "summary_type", assemblyai.SummaryType);
+            Set(body, "webhook_auth_header_name", assemblyai.WebhookAuthHeaderName);
+            Set(body, "webhook_auth_header_value", assemblyai.WebhookAuthHeaderValue);
+            Set(body, "webhook_url", assemblyai.WebhookUrl);
+            if (assemblyai.WordBoost != null)
+            {
+                body["word_boost"] = StringArray(assemblyai.WordBoost);
+            }
+
+            if (assemblyai.KeytermsPrompt != null)
+            {
+                body["keyterms_prompt"] = StringArray(assemblyai.KeytermsPrompt);
+            }
+
+            Set(body, "prompt", assemblyai.Prompt);
+            Set(body, "temperature", assemblyai.Temperature);
+            Set(body, "remove_audio_tags", assemblyai.RemoveAudioTags);
+            Set(body, "domain", assemblyai.Domain);
+            Set(body, "redact_pii_return_unredacted", assemblyai.RedactPiiReturnUnredacted);
+            if (assemblyai.RedactStaticEntities != null)
+            {
+                var entities = new JsonObject();
+                foreach (var entity in assemblyai.RedactStaticEntities)
                 {
-                    continue;
+                    entities[entity.Key] = StringArray(entity.Value);
                 }
 
+                body["redact_static_entities"] = entities;
+            }
+
+            if (assemblyai.SpeakerOptions is { } speakerOptions)
+            {
                 var target = new JsonObject();
-                foreach (var name in nested.Value)
+                Set(target, "min_speakers_expected", speakerOptions.MinSpeakersExpected);
+                Set(target, "max_speakers_expected", speakerOptions.MaxSpeakersExpected);
+                body["speaker_options"] = target;
+            }
+
+            if (assemblyai.LanguageDetectionOptions is { } detection)
+            {
+                var target = new JsonObject();
+                if (detection.ExpectedLanguages != null)
                 {
-                    if (Present(value, name, out var inner))
-                    {
-                        target[SnakeCase(name)] = JsonNode.Parse(inner.GetRawText());
-                    }
+                    target["expected_languages"] = StringArray(detection.ExpectedLanguages);
                 }
 
-                body[SnakeCase(nested.Key)] = target;
+                Set(target, "fallback_language", detection.FallbackLanguage);
+                Set(target, "code_switching", detection.CodeSwitching);
+                Set(
+                    target,
+                    "code_switching_confidence_threshold",
+                    detection.CodeSwitchingConfidenceThreshold
+                );
+                body["language_detection_options"] = target;
+            }
+
+            if (assemblyai.RedactPiiAudioOptions is { } audioOptions)
+            {
+                var target = new JsonObject();
+                Set(
+                    target,
+                    "return_redacted_no_speech_audio",
+                    audioOptions.ReturnRedactedNoSpeechAudio
+                );
+                Set(
+                    target,
+                    "override_audio_redaction_method",
+                    audioOptions.OverrideAudioRedactionMethod
+                );
+                body["redact_pii_audio_options"] = target;
             }
 
             var deprecatedBoost = new List<string>();
-            if (Present(source, "wordBoost", out _))
+            if (assemblyai.WordBoost != null)
             {
                 deprecatedBoost.Add("wordBoost");
             }
 
-            if (Present(source, "boostParam", out _))
+            if (assemblyai.BoostParam != null)
             {
                 deprecatedBoost.Add("boostParam");
             }
@@ -1236,9 +1271,10 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
             // These options only work alongside a prerequisite option. Warn rather than change the request.
             if (
                 (
-                    Present(source, "redactPiiReturnUnredacted", out _)
-                    || Present(source, "redactStaticEntities", out _)
-                ) && !IsTrue(source, "redactPii")
+                    assemblyai.RedactPiiReturnUnredacted != null
+                    || assemblyai.RedactStaticEntities != null
+                )
+                && assemblyai.RedactPii != true
             )
             {
                 warnings.Add(
@@ -1248,9 +1284,7 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
                 );
             }
 
-            if (
-                Present(source, "redactPiiAudioOptions", out _) && !IsTrue(source, "redactPiiAudio")
-            )
+            if (assemblyai.RedactPiiAudioOptions != null && assemblyai.RedactPiiAudio != true)
             {
                 warnings.Add(
                     new OtherWarning(
@@ -1259,7 +1293,7 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
                 );
             }
 
-            if (Present(source, "languageCode", out _) && IsTrue(source, "languageDetection"))
+            if (assemblyai.LanguageCode != null && assemblyai.LanguageDetection == true)
             {
                 warnings.Add(
                     new OtherWarning(
@@ -1269,6 +1303,34 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
             }
 
             return body;
+        }
+
+        private static void Set<T>(JsonObject target, string name, T? value)
+            where T : struct
+        {
+            if (value.HasValue)
+            {
+                target[name] = JsonValue.Create(value.Value);
+            }
+        }
+
+        private static void Set(JsonObject target, string name, string? value)
+        {
+            if (value != null)
+            {
+                target[name] = value;
+            }
+        }
+
+        private static JsonArray StringArray(IEnumerable<string> values)
+        {
+            var array = new JsonArray();
+            foreach (var value in values)
+            {
+                array.Add(value);
+            }
+
+            return array;
         }
 
         private static JsonElement? Metadata(JsonElement root)
@@ -1300,30 +1362,6 @@ public sealed class AssemblyAIProvider : OpenAICompatibleProvider
         private static bool Present(JsonElement element, string name, out JsonElement value)
         {
             return element.TryGetProperty(name, out value) && value.ValueKind != JsonValueKind.Null;
-        }
-
-        private static bool IsTrue(JsonElement element, string name)
-        {
-            return element.TryGetProperty(name, out var value)
-                && value.ValueKind == JsonValueKind.True;
-        }
-
-        private static string SnakeCase(string name)
-        {
-            var builder = new StringBuilder(name.Length + 8);
-            foreach (var character in name)
-            {
-                if (char.IsUpper(character))
-                {
-                    builder.Append('_').Append(char.ToLowerInvariant(character));
-                }
-                else
-                {
-                    builder.Append(character);
-                }
-            }
-
-            return builder.ToString();
         }
 
         private static string RequiredString(JsonElement element, string name)

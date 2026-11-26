@@ -23,7 +23,7 @@ Factories of the Anthropic provider-defined tools. Maps to `anthropic.tools`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicTools.ComputerToolset.cs#L21)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicTools.Registry.cs#L10)
 
 ## Properties
 
@@ -44,6 +44,24 @@ the AI SDK exposes it as the `action` of a single computer tool call. Maps to `c
 **Value:** [IReadOnlyList&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicTools.ComputerToolset.cs#L27)
+
+<a id="Vercel_AI_Anthropic_AnthropicTools_Factories_"></a>
+<a id="Vercel_AI_Anthropic_AnthropicTools_Factories"></a>
+
+### Factories
+
+
+```csharp
+public static IReadOnlyDictionary<string, Func<Tool>> Factories { get; }
+```
+
+
+Factory of each Anthropic provider tool, keyed by tool id. Calling a factory returns the tool with its default
+arguments, and its [InputSchema](/api/Vercel.AI/Tool/#Vercel_AI_Tool_InputSchema). Maps to `anthropicTools`.
+
+**Value:** [IReadOnlyDictionary&lt;string, Func&lt;Tool&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Anthropic/AnthropicTools.Registry.cs#L62)
 
 ## Methods
 

@@ -12,6 +12,7 @@ internal sealed class MockTracer : IDisposable
     private readonly ActivityListener _listener;
     private readonly object _gate = new();
     private readonly List<MockSpan> _spans = [];
+    private readonly List<MockSpan> _finished = [];
 
     public MockTracer()
     {
@@ -28,6 +29,13 @@ internal sealed class MockTracer : IDisposable
                     _spans.Add(new MockSpan(activity));
                 }
             },
+            ActivityStopped = activity =>
+            {
+                lock (_gate)
+                {
+                    _finished.Add(_spans.First(span => ReferenceEquals(span.Activity, activity)));
+                }
+            },
         };
         ActivitySource.AddActivityListener(_listener);
     }
@@ -41,6 +49,18 @@ internal sealed class MockTracer : IDisposable
             lock (_gate)
             {
                 return [.. _spans];
+            }
+        }
+    }
+
+    /// <summary>The spans in the order they ended, like <c>exporter.getFinishedSpans()</c>.</summary>
+    public IReadOnlyList<MockSpan> FinishedSpans
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return [.. _finished];
             }
         }
     }

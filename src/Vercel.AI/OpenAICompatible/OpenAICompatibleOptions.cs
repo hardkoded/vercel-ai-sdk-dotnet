@@ -4,6 +4,7 @@
 
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 
@@ -153,6 +154,41 @@ public class OpenAICompatibleOptions
         IList<CallWarning>,
         JsonObject
     >? TransformChatRequest { get; set; }
+
+    /// <summary>
+    /// .NET-only hook. Converts the prompt to the chat <c>messages</c> in place of the shared conversion. Arguments are the model id,
+    /// the call options, the provider options key, the <c>response_format</c> type (or null), and the call warnings.
+    /// Moonshot uses it for <c>convertToMoonshotAIChatMessages</c>, which upstream calls from its own chat model.
+    /// </summary>
+    internal Func<
+        string,
+        LanguageModelCallOptions,
+        string,
+        string?,
+        IList<CallWarning>,
+        JsonArray
+    >? ConvertChatMessages { get; set; }
+
+    /// <summary>
+    /// .NET-only hook. Validates a chat response body before it is converted and throws <see cref="InvalidResponseDataException"/>
+    /// when it does not match. Moonshot uses it for <c>moonshotAIChatResponseSchema</c>.
+    /// </summary>
+    internal Action<JsonElement>? ValidateChatResponse { get; set; }
+
+    /// <summary>
+    /// .NET-only hook. Validates a streamed chat chunk and returns the error message when it does not match, or null.
+    /// Moonshot uses it for <c>moonshotAIChatChunkSchema</c>.
+    /// </summary>
+    internal Func<JsonObject, string?>? ValidateChatChunk { get; set; }
+
+    /// <summary>
+    /// Reads provider metadata from the response headers. The entries are added to the provider metadata of the
+    /// result and of the stream finish part. Maps to <c>extractCacheWriteTokensByTtl(responseHeaders)</c> in the Moonshot AI chat model.
+    /// </summary>
+    internal Func<
+        IReadOnlyDictionary<string, string>?,
+        JsonObject?
+    >? ExtractResponseHeaderMetadata { get; set; }
 
     /// <summary>Streams <c>tool-input-start</c>, <c>tool-input-delta</c> and <c>tool-input-end</c> parts for every tool call, not only for the JSON response tool.</summary>
     internal bool StreamToolInput { get; set; }

@@ -201,6 +201,80 @@ public sealed class ResultRequestAndResponseTests
         AssertUserMessage("prepared prompt", Assert.Single(result.Steps[0].Request.Messages!));
     }
 
+    [Fact]
+    [UpstreamTest(
+        RequestPrefix + "should carry messages from prepareStep forward to the next step",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_carry_messages_from_prepareStep_forward_to_the_next_step()
+    {
+        ModelMessage[] preparedMessages = [new UserModelMessage("prepared prompt")];
+        var prepareStepMessages = new List<IReadOnlyList<ModelMessage>>();
+        var calls = 0;
+        var model = new TestLanguageModel
+        {
+            OnGenerate = _ =>
+                calls++ == 0
+                    ? new LanguageModelGenerateResult(
+                        new GeneratedContent[]
+                        {
+                            new GeneratedToolCall("call-1", "tool1", "{ \"value\": \"test\" }"),
+                        },
+                        FinishReason.ToolCalls,
+                        new LanguageModelUsage(3, 10, 13),
+                        "tool-calls"
+                    )
+                    : TestLanguageModel.Text("Done."),
+        };
+
+        var result = await Client()
+            .GenerateTextAsync(
+                new GenerateTextOptions
+                {
+                    Model = model,
+                    Prompt = "prompt",
+                    Tools = new[]
+                    {
+                        Tool.Function(
+                            "tool1",
+                            null,
+                            "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\"}}}",
+                            (_, _) => Task.FromResult("test-result")
+                        ),
+                    },
+                    StopWhen = StopWhen.IsStepCount(3),
+                    PrepareStep = context =>
+                    {
+                        prepareStepMessages.Add([.. context.Messages]);
+                        return context.StepNumber == 0
+                            ? new PrepareStepUpdate { Messages = preparedMessages }
+                            : null;
+                    },
+                    Include = new GenerateTextInclude { RequestMessages = true },
+                }
+            );
+
+        var expected = preparedMessages.Concat(result.Steps[0].Response.Messages).ToArray();
+        AssertSameMessages(expected, prepareStepMessages[1]);
+        AssertSameMessages(expected, result.Steps[1].Request.Messages!);
+    }
+
+    private static void AssertSameMessages(
+        IReadOnlyList<ModelMessage> expected,
+        IReadOnlyList<ModelMessage> actual
+    )
+    {
+        Assert.Equal(new[] { "user", "assistant", "tool" }, expected.Select(m => m.Role));
+        Assert.Equal(expected.Select(m => m.Role), actual.Select(m => m.Role));
+        AssertUserMessage("prepared prompt", actual[0]);
+        Assert.IsType<AssistantModelMessage>(actual[1]);
+        var tool = Assert.IsType<ToolModelMessage>(actual[2]);
+        Assert.Equal(
+            Assert.IsType<ToolModelMessage>(expected[2]).Results.Select(r => r.ToolCallId),
+            tool.Results.Select(r => r.ToolCallId)
+        );
+    }
+
     private static void AssertUserMessage(string text, ModelMessage message)
     {
         var user = Assert.IsType<UserModelMessage>(message);

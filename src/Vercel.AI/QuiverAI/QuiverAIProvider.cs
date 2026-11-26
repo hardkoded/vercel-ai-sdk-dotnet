@@ -8,6 +8,7 @@ using Vercel.AI.OpenResponses;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.QuiverAI;
 
@@ -61,6 +62,12 @@ public sealed class QuiverAIProvider : OpenAICompatibleProvider
     }
 
     /// <inheritdoc />
+    public override IEmbeddingModel EmbeddingModel(string modelId)
+    {
+        throw new NoSuchModelError(modelId, "embeddingModel");
+    }
+
+    /// <inheritdoc />
     public override IImageModel ImageModel(string modelId) => new QuiverAIImageModel(this, modelId);
 
     /// <summary>Throws when neither the option nor <c>QUIVERAI_API_KEY</c> holds a key.</summary>
@@ -103,6 +110,7 @@ public sealed class QuiverAIProvider : OpenAICompatibleProvider
     internal static void ApplyErrorHandling(OpenResponsesProvider provider)
     {
         provider.Http.ErrorToMessage = QuiverAIError.ErrorToMessage;
+        provider.Http.IsRetryableStatus = QuiverAIError.IsRetryable;
     }
 
     private static OpenAICompatibleOptions Prepare(OpenAICompatibleOptions? options)

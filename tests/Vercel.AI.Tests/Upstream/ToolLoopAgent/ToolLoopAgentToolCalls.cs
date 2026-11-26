@@ -20,12 +20,11 @@ internal static class ToolLoopAgentToolCalls
 
     private static readonly LanguageModelUsage s_usage = new(3, 10, 13);
 
-    public static LanguageModelGenerateResult GenerateToolCall() =>
+    public static LanguageModelGenerateResult GenerateToolCall(
+        string input = "{ \"value\": \"test\" }"
+    ) =>
         new(
-            new GeneratedContent[]
-            {
-                new GeneratedToolCall("call-1", "testTool", "{ \"value\": \"test\" }"),
-            },
+            new GeneratedContent[] { new GeneratedToolCall("call-1", "testTool", input) },
             FinishReason.ToolCalls,
             s_usage,
             null
@@ -34,18 +33,23 @@ internal static class ToolLoopAgentToolCalls
     public static LanguageModelGenerateResult GenerateDone() =>
         SteeringTestSupport.TextResponse("done");
 
-    public static IReadOnlyList<LanguageModelStreamPart> StreamToolCall() =>
+    public static IReadOnlyList<LanguageModelStreamPart> StreamToolCall(
+        string input = "{ \"value\": \"test\" }"
+    ) =>
         new LanguageModelStreamPart[]
         {
             new StreamStartStreamPart(Array.Empty<CallWarning>()),
-            new ToolCallStreamPart("call-1", "testTool", "{ \"value\": \"test\" }"),
+            new ToolCallStreamPart("call-1", "testTool", input),
             new FinishStreamPart(FinishReason.ToolCalls, s_usage, null),
         };
 
     public static IReadOnlyList<LanguageModelStreamPart> StreamDone() =>
         SteeringTestSupport.TextStream("done");
 
-    public static SteeringTestModel GenerateModel(out Func<int> callCount)
+    public static SteeringTestModel GenerateModel(
+        out Func<int> callCount,
+        string input = "{ \"value\": \"test\" }"
+    )
     {
         var calls = 0;
         callCount = () => calls;
@@ -53,7 +57,7 @@ internal static class ToolLoopAgentToolCalls
             _ =>
             {
                 calls++;
-                return GenerateToolCall();
+                return GenerateToolCall(input);
             },
             _ =>
             {
@@ -63,7 +67,10 @@ internal static class ToolLoopAgentToolCalls
         );
     }
 
-    public static SteeringTestModel StreamModel(out Func<int> callCount)
+    public static SteeringTestModel StreamModel(
+        out Func<int> callCount,
+        string input = "{ \"value\": \"test\" }"
+    )
     {
         var calls = 0;
         callCount = () => calls;
@@ -71,7 +78,7 @@ internal static class ToolLoopAgentToolCalls
             () =>
             {
                 calls++;
-                return StreamToolCall();
+                return StreamToolCall(input);
             },
             () =>
             {
@@ -89,6 +96,46 @@ internal static class ToolLoopAgentToolCalls
                 JsonSerializer.Serialize(execute(input.GetProperty("value").GetString()!, options))
             );
         return tool;
+    }
+
+    /// <summary>
+    /// Maps to the <c>toMatchInlineSnapshot</c> of the tool execution event tests: the call id, the messages of the step, the tool call
+    /// and the tool context. The tool call is <c>{ "value": value }</c>.
+    /// </summary>
+    public static void AssertToolExecutionEvent(
+        ToolExecutionStartEvent e,
+        string callId,
+        string value
+    )
+    {
+        Assert.Equal(callId, e.CallId);
+        var message = Assert.IsType<UserModelMessage>(Assert.Single(e.Messages));
+        Assert.Equal("test", Assert.IsType<TextContentPart>(Assert.Single(message.Content)).Text);
+        Assert.Equal("call-1", e.ToolCall.ToolCallId);
+        Assert.Equal("testTool", e.ToolCall.ToolName);
+        Assert.Equal(
+            JsonSerializer.Serialize(new { value }),
+            JsonSerializer.Serialize(
+                JsonSerializer.Deserialize<JsonElement>(e.ToolCall.ArgumentsJson)
+            )
+        );
+        Assert.False(e.ToolCall.ProviderExecuted);
+        Assert.Null(e.ToolCall.ProviderMetadata);
+        Assert.Null(e.ToolContext);
+    }
+
+    /// <summary>Maps to the <c>toolOutput</c> of the <c>onToolExecutionEnd</c> snapshots, with the output <c>"{value}-result"</c>.</summary>
+    public static void AssertToolOutput(ExecutedTool output, string value)
+    {
+        Assert.Equal("call-1", output.ToolCallId);
+        Assert.Equal("testTool", output.ToolName);
+        Assert.False(output.Dynamic);
+        Assert.False(output.IsError);
+        Assert.Equal(
+            JsonSerializer.Serialize(new { value }),
+            JsonSerializer.Serialize(JsonSerializer.Deserialize<JsonElement>(output.InputJson!))
+        );
+        Assert.Equal(JsonSerializer.Serialize(value + "-result"), output.OutputJson);
     }
 
     public static void AssertApprovalRequestOnly(IReadOnlyList<ModelMessage> messages)

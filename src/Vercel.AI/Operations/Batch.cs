@@ -162,8 +162,103 @@ public sealed class NormalizedBatchRequest
     /// <summary>Model id.</summary>
     public string ModelId { get; }
 
-    /// <summary>Normalized options.</summary>
+    /// <summary>Normalized options as JSON. <see cref="ToTextCallOptions"/> and <see cref="ToImageCallOptions"/> give the typed view.</summary>
     public JsonElement Options { get; }
+
+    /// <summary>
+    /// Typed view of <see cref="Options"/> for a text request. Upstream types <c>options</c> as a <c>Pick</c> of
+    /// <c>LanguageModelV4CallOptions</c>: prompt, maxOutputTokens, temperature, stopSequences, topP, topK,
+    /// presencePenalty, frequencyPenalty, seed, reasoning, responseFormat, toolChoice, tools, and providerOptions.
+    /// Never carries headers, an abort signal, or raw chunks.
+    /// </summary>
+    /// <param name="providerName">Provider named in the error for an unsupported tool or prompt part.</param>
+    public LanguageModelCallOptions ToTextCallOptions(string providerName = "OpenAI")
+    {
+        if (Type != "text")
+        {
+            throw new InvalidOperationException(
+                "Request \"" + Id + "\" is a " + Type + " request, not a text request."
+            );
+        }
+
+        return OpenAI.OpenAIBatchApi.ToCallOptions(Options, providerName);
+    }
+
+    /// <summary>
+    /// Typed view of <see cref="Options"/> for an image request. Upstream types <c>options</c> as a <c>Pick</c> of
+    /// <c>ImageModelV4CallOptions</c>: prompt, n, size, aspectRatio, seed, files, mask, and providerOptions.
+    /// </summary>
+    public ImageCallOptions ToImageCallOptions()
+    {
+        if (Type != "image")
+        {
+            throw new InvalidOperationException(
+                "Request \"" + Id + "\" is a " + Type + " request, not an image request."
+            );
+        }
+
+        var result = new ImageCallOptions(StringOf(Options, "prompt") ?? string.Empty);
+        if (Options.TryGetProperty("n", out var n) && n.ValueKind == JsonValueKind.Number)
+        {
+            result.Count = n.GetInt32();
+        }
+
+        result.Size = StringOf(Options, "size");
+        result.AspectRatio = StringOf(Options, "aspectRatio");
+        if (Options.TryGetProperty("seed", out var seed) && seed.ValueKind == JsonValueKind.Number)
+        {
+            result.Seed = seed.GetInt32();
+        }
+
+        if (
+            Options.TryGetProperty("files", out var files)
+            && files.ValueKind == JsonValueKind.Array
+        )
+        {
+            result.Files = files.EnumerateArray().Select(ToImageFile).ToList();
+        }
+
+        if (Options.TryGetProperty("mask", out var mask) && mask.ValueKind == JsonValueKind.Object)
+        {
+            result.Mask = ToImageFile(mask);
+        }
+
+        if (
+            Options.TryGetProperty("providerOptions", out var providerOptions)
+            && providerOptions.ValueKind == JsonValueKind.Object
+        )
+        {
+            result.ProviderOptions = providerOptions
+                .EnumerateObject()
+                .ToDictionary(property => property.Name, property => property.Value.Clone());
+        }
+
+        return result;
+    }
+
+    private static string? StringOf(JsonElement element, string name)
+    {
+        return
+            element.ValueKind == JsonValueKind.Object
+            && element.TryGetProperty(name, out var value)
+            && value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : null;
+    }
+
+    private static ImageModelFile ToImageFile(JsonElement file)
+    {
+        if (StringOf(file, "type") == "url")
+        {
+            return ImageModelFile.FromUrl(StringOf(file, "url") ?? string.Empty);
+        }
+
+        return ImageModelFile.FromBase64(
+            StringOf(file, "base64") ?? StringOf(file, "data") ?? string.Empty,
+            StringOf(file, "mediaType") ?? "application/octet-stream",
+            StringOf(file, "fileName")
+        );
+    }
 }
 
 /// <summary>Provider token usage before it is reshaped.</summary>
@@ -799,6 +894,12 @@ public interface IBatchApi
     /// <summary>Supported URL patterns (regular expression text) by media type for requests in this batch API.</summary>
     IReadOnlyDictionary<string, string> SupportedUrls { get; }
 
+    /// <summary>
+    /// Model IDs this batch API accepts for each modality. Maps to the <c>ModelIds</c> type argument of <c>BatchV4</c>.
+    /// Null leaves every modality open.
+    /// </summary>
+    BatchModelIds? ModelIds { get; }
+
     /// <summary>True when cancellation is implemented.</summary>
     bool CanCancel { get; }
 
@@ -834,6 +935,33 @@ public interface IBatchApi
 
     /// <summary>Lists batches. The implementation is invoked on this instance.</summary>
     Task<BatchListResult> DoListAsync(BatchOperationCall call, CancellationToken cancellationToken);
+}
+
+/// <summary>
+/// Batch API whose accepted model IDs have a declared type. Maps to <c>BatchV4&lt;TModelIds&gt;</c>. Derive a type from
+/// <see cref="BatchModelIds"/> to expose the closed model-id sets of a provider, and implement this interface to hand
+/// callers that type. The runtime check of <see cref="Batch.StartBatchAsync"/> still applies to every request.
+/// </summary>
+/// <typeparam name="TModelIds">Model IDs accepted for each modality.</typeparam>
+public interface IBatchApi<out TModelIds> : IBatchApi
+    where TModelIds : BatchModelIds
+{
+    /// <summary>Typed model IDs this batch API accepts. The same instance as the untyped <see cref="IBatchApi.ModelIds"/>.</summary>
+    new TModelIds? ModelIds { get; }
+}
+
+/// <summary>
+/// Model IDs accepted by each batch modality. Maps to <c>BatchV4ModelIds</c>. C# has no string-literal union types, so a
+/// batch API declares the closed set at runtime and <see cref="Batch.StartBatchAsync"/> checks every request against it.
+/// A null list leaves that modality open.
+/// </summary>
+public class BatchModelIds
+{
+    /// <summary>Model IDs accepted by text requests. Null accepts any id.</summary>
+    public IReadOnlyList<string>? Text { get; set; }
+
+    /// <summary>Model IDs accepted by image requests. Null accepts any id.</summary>
+    public IReadOnlyList<string>? Image { get; set; }
 }
 
 /// <summary>Provider that exposes <c>experimental_batch()</c>.</summary>
@@ -1024,6 +1152,7 @@ public static class Batch
         var requests = request.Requests ?? Array.Empty<BatchRequest>();
         ValidateRequests(requests);
         var api = Resolve(request);
+        ValidateModelIds(api, requests);
         using var scope = Token(request, cancellationToken);
         var token = scope.Token;
         var normalized = new List<NormalizedBatchRequest>();
@@ -1105,6 +1234,38 @@ public static class Batch
         started.Version = 2;
         started.Provider = api.Provider;
         return started;
+    }
+
+    private static void ValidateModelIds(IBatchApi api, IReadOnlyList<BatchRequest> requests)
+    {
+        var ids = api.ModelIds;
+        if (ids == null)
+        {
+            return;
+        }
+
+        foreach (var item in requests)
+        {
+            var allowed = item.Type switch
+            {
+                "text" => ids.Text,
+                "image" => ids.Image,
+                _ => null,
+            };
+            if (allowed != null && !allowed.Contains(item.Model, StringComparer.Ordinal))
+            {
+                throw new InvalidArgumentException(
+                    "requests",
+                    item.Id,
+                    "model \""
+                        + item.Model
+                        + "\" is not a "
+                        + item.Type
+                        + " model of the batch API. Expected one of: "
+                        + string.Join(", ", allowed)
+                );
+            }
+        }
     }
 
     /// <summary>Reads the latest status.</summary>

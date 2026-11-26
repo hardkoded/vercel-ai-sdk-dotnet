@@ -253,7 +253,8 @@ public sealed class GoogleSpeechModel : ISpeechModel, ISpeechCaller
                 result.ResponseBody,
                 timestamp: result.Timestamp.UtcDateTime,
                 modelId: ModelId
-            )
+            ),
+            usage: result.Usage is null ? null : JsonSerializer.SerializeToElement(result.Usage)
         );
     }
 

@@ -253,6 +253,27 @@ public sealed class DoGenerateTests
             result.Usage,
             "{\"promptTokenCount\":6,\"cachedContentTokenCount\":5,\"candidatesTokenCount\":67,\"totalTokenCount\":73,\"candidatesTokensDetails\":[{\"modality\":\"AUDIO\",\"tokenCount\":67}]}"
         );
+
+        var modelResult = await ((ISpeechCaller)model)
+            .DoGenerateAsync(
+                new SpeechModelCall(
+                    "Hello.",
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    default,
+                    new Dictionary<string, string>(),
+                    CancellationToken.None
+                ),
+                CancellationToken.None
+            )
+            .ConfigureAwait(false);
+        GoogleUpstream.JsonEqual(
+            modelResult.Usage!.Value,
+            "{\"promptTokenCount\":6,\"cachedContentTokenCount\":5,\"candidatesTokenCount\":67,\"totalTokenCount\":73,\"candidatesTokensDetails\":[{\"modality\":\"AUDIO\",\"tokenCount\":67}]}"
+        );
     }
 
     [Theory]

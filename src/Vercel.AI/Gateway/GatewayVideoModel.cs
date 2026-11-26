@@ -149,7 +149,7 @@ public sealed class GatewayVideoModel : IVideoModel, IVideoCaller
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            throw GatewayProvider.MapFailure(exception);
+            throw GatewayProvider.MapFailure(exception, headers);
         }
     }
 
@@ -206,7 +206,7 @@ public sealed class GatewayVideoModel : IVideoModel, IVideoCaller
         }
         catch (JsonException exception)
         {
-            throw GatewayProvider.MapFailure(exception);
+            throw GatewayProvider.MapFailure(exception, headers);
         }
     }
 
@@ -279,14 +279,15 @@ public sealed class GatewayVideoModel : IVideoModel, IVideoCaller
                                 200,
                                 root.Headers,
                                 element.GetRawText()
-                            )
+                            ),
+                            headers
                         );
                 }
             }
         }
         catch (JsonException exception)
         {
-            throw GatewayProvider.MapFailure(exception);
+            throw GatewayProvider.MapFailure(exception, headers);
         }
     }
 
@@ -653,7 +654,7 @@ public sealed class GatewayVideoModel : IVideoModel, IVideoCaller
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            throw GatewayProvider.MapFailure(exception);
+            throw GatewayProvider.MapFailure(exception, headers);
         }
     }
 }

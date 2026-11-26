@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using Vercel.AI.OpenAICompatible;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 using Vercel.AI.Util;
@@ -706,7 +707,19 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
     /// <inheritdoc />
     public override ILanguageModel LanguageModel(string modelId)
     {
-        throw new AiSdkException("ElevenLabs does not provide language models.");
+        throw new NoSuchModelError(modelId, "languageModel");
+    }
+
+    /// <inheritdoc />
+    public override IEmbeddingModel EmbeddingModel(string modelId)
+    {
+        throw new NoSuchModelError(modelId, "embeddingModel");
+    }
+
+    /// <inheritdoc />
+    public override IImageModel ImageModel(string modelId)
+    {
+        throw new NoSuchModelError(modelId, "imageModel");
     }
 
     /// <summary>Creates a provider.</summary>
@@ -799,7 +812,7 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
     }
 
     /// <summary>ElevenLabs text-to-speech model.</summary>
-    public sealed class ElevenLabsSpeechModel : ISpeechModel
+    public sealed class ElevenLabsSpeechModel : ISpeechModel, ISpeechCaller
     {
         private static readonly Dictionary<string, string> OutputFormats = new Dictionary<
             string,
@@ -866,6 +879,72 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
             return new SpeechResult(result.Audio, result.MediaType);
         }
 
+        /// <inheritdoc />
+        public async Task<SpeechModelResult> DoGenerateAsync(
+            SpeechModelCall call,
+            CancellationToken cancellationToken
+        )
+        {
+            call = call ?? throw new ArgumentNullException(nameof(call));
+            var result = await GenerateAsync(
+                    new ElevenLabsSpeechRequest(call.Text)
+                    {
+                        Voice = call.Voice,
+                        OutputFormat = call.OutputFormat ?? "mp3_44100_128",
+                        Instructions = call.Instructions,
+                        Language = call.Language,
+                        Speed = call.Speed,
+                        ProviderOptions =
+                            call.ProviderOptions.ValueKind == JsonValueKind.Object
+                                ? call.ProviderOptions
+                                : null,
+                        Headers = call.Headers.ToDictionary(pair => pair.Key, pair => pair.Value),
+                    },
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
+            var headers = result.Response.Headers.ToDictionary(
+                pair => pair.Key,
+                pair => pair.Value,
+                StringComparer.OrdinalIgnoreCase
+            );
+            headers["Content-Type"] = result.MediaType;
+            return new SpeechModelResult(
+                result.Audio,
+                result.Warnings.Select(ToOperationWarning).ToList(),
+                result.ProviderMetadata,
+                new ProviderResponse(
+                    headers,
+                    result.Response.Body,
+                    timestamp: result.Response.Timestamp.UtcDateTime,
+                    modelId: result.Response.ModelId
+                ),
+                new ProviderRequest(result.RequestBody)
+            );
+        }
+
+        private static OperationWarning ToOperationWarning(ModelWarning warning) =>
+            warning switch
+            {
+                UnsupportedWarning unsupported => new OperationWarning(
+                    unsupported.Type,
+                    feature: unsupported.Feature,
+                    details: unsupported.Details
+                ),
+                OtherWarning other => new OperationWarning(other.Type, other.Message),
+                CompatibilityWarning compatibility => new OperationWarning(
+                    compatibility.Type,
+                    feature: compatibility.Feature,
+                    details: compatibility.Details
+                ),
+                DeprecatedWarning deprecated => new OperationWarning(
+                    deprecated.Type,
+                    deprecated.Message,
+                    setting: deprecated.Setting
+                ),
+                _ => new OperationWarning(warning.Type),
+            };
+
         /// <summary>Synthesizes speech and returns the audio with warnings and response metadata.</summary>
         public async Task<ElevenLabsSpeechResult> GenerateAsync(
             ElevenLabsSpeechRequest request,
@@ -874,7 +953,9 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
         {
             request = request ?? throw new ArgumentNullException(nameof(request));
             var timestamp = _provider.Now();
-            var config = ElevenLabsModelCatalog.GetElevenLabsSpeechModelEntry(ModelId);
+            var config = ElevenLabsModelCatalog
+                .GetElevenLabsSpeechModelEntry(ModelId)
+                .RequestConfig;
             var args =
                 config.Music || config.SoundEffects
                     ? GetAudioGenerationArgs(request, config)
@@ -1174,6 +1255,7 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
             var warnings = new List<ModelWarning>();
             var isMusic = config.Music;
             var label = isMusic ? "music" : "sound effects";
+            ElevenLabsSpeechModelOptions.Validate(request.ProviderOptions);
             var elevenlabs = ElevenLabsObject(request.ProviderOptions);
 
             var ignoredCallOptions = new List<string>();
@@ -1459,6 +1541,7 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
         )
         {
             var warnings = new List<ModelWarning>();
+            ElevenLabsSpeechModelOptions.Validate(request.ProviderOptions);
             var elevenlabs = ElevenLabsObject(request.ProviderOptions);
             foreach (var option in new[] { "streaming", "dialogue" })
             {
@@ -1859,6 +1942,11 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
         /// <inheritdoc />
         public string ModelId { get; }
 
+        private static bool IsRealtimeTranscriptionModelId(string modelId) =>
+            ElevenLabsModelCatalog
+                .GetElevenLabsTranscriptionModelEntry(modelId)
+                .Capabilities.Streaming.IsSupported;
+
         /// <inheritdoc />
         public async Task<TranscriptionResult> DoTranscribeAsync(
             AudioInput audio,
@@ -1878,7 +1966,7 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
         )
         {
             audio = audio ?? throw new ArgumentNullException(nameof(audio));
-            if (ModelId == "scribe_v2_realtime")
+            if (IsRealtimeTranscriptionModelId(ModelId))
             {
                 throw new Operations.UnsupportedFunctionalityException(
                     "non-streaming transcription with " + ModelId,

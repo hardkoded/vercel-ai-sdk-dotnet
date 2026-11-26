@@ -2246,11 +2246,19 @@ public sealed class StreamTextChunkEvent
 public sealed class StreamAbortContext
 {
     /// <summary>Creates a context.</summary>
-    public StreamAbortContext(IReadOnlyList<StepResult> steps, Exception exception)
+    public StreamAbortContext(
+        IReadOnlyList<StepResult> steps,
+        Exception exception,
+        string callId = ""
+    )
     {
         Steps = steps;
         Exception = exception;
+        CallId = callId;
     }
+
+    /// <summary>Unique identifier for this generation call, used to correlate events.</summary>
+    public string CallId { get; }
 
     /// <summary>Steps that finished before the abort.</summary>
     public IReadOnlyList<StepResult> Steps { get; }

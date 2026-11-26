@@ -23,7 +23,7 @@ One ElevenLabs text-to-speech call.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L528)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L529)
 
 ## Constructors
 
@@ -46,7 +46,7 @@ Creates a speech request.
 | --- | --- | --- |
 | `text` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L534)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L535)
 
 ## Fields
 
@@ -64,7 +64,7 @@ Default voice used when the caller does not set one.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L531)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L532)
 
 ## Properties
 
@@ -83,7 +83,7 @@ Headers merged over the provider headers.
 
 **Value:** [IDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.idictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L561)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L562)
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsSpeechRequest_Instructions_"></a>
 <a id="Vercel_AI_ElevenLabs_ElevenLabsSpeechRequest_Instructions"></a>
@@ -100,7 +100,7 @@ Ignored. ElevenLabs does not accept instructions; a warning is returned.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L549)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L550)
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsSpeechRequest_Language_"></a>
 <a id="Vercel_AI_ElevenLabs_ElevenLabsSpeechRequest_Language"></a>
@@ -117,7 +117,7 @@ Language code, sent as `language_code`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L552)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L553)
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsSpeechRequest_OutputFormat_"></a>
 <a id="Vercel_AI_ElevenLabs_ElevenLabsSpeechRequest_OutputFormat"></a>
@@ -134,7 +134,7 @@ Output format, such as `mp3` or `pcm_44100`. Sent as the `output_format` query p
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L546)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L547)
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsSpeechRequest_ProviderOptions_"></a>
 <a id="Vercel_AI_ElevenLabs_ElevenLabsSpeechRequest_ProviderOptions"></a>
@@ -151,7 +151,7 @@ Provider options. The `elevenlabs` object is read.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L558)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L559)
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsSpeechRequest_Speed_"></a>
 <a id="Vercel_AI_ElevenLabs_ElevenLabsSpeechRequest_Speed"></a>
@@ -168,7 +168,7 @@ Speaking rate, sent in `voice_settings`.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L555)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L556)
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsSpeechRequest_Text_"></a>
 <a id="Vercel_AI_ElevenLabs_ElevenLabsSpeechRequest_Text"></a>
@@ -185,7 +185,7 @@ Text to speak.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L540)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L541)
 
 <a id="Vercel_AI_ElevenLabs_ElevenLabsSpeechRequest_Voice_"></a>
 <a id="Vercel_AI_ElevenLabs_ElevenLabsSpeechRequest_Voice"></a>
@@ -202,4 +202,4 @@ Voice id. Null selects [DefaultVoiceId](#Vercel_AI_ElevenLabs_ElevenLabsSpeechRe
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L543)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ElevenLabs/ElevenLabsProvider.cs#L544)

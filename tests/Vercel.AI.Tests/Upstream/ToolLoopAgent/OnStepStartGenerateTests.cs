@@ -40,8 +40,7 @@ public sealed class OnStepStartGenerateTests
     [Fact]
     [UpstreamTest(
         Prefix + "should call onStepStart from generate method",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The call-level callback is set through PrepareCall, because the agent methods take no per-call callbacks."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task ShouldCallOnStepStartFromGenerateMethod()
     {
@@ -50,27 +49,21 @@ public sealed class OnStepStartGenerateTests
             new AgentOptions
             {
                 Model = SteeringTestModel.Generate(_ => SteeringTestSupport.TextResponse("reply")),
-                PrepareCall = call =>
-                {
-                    call.OnStepStart = (_, _) =>
-                    {
-                        calls.Add("method");
-                        return Task.CompletedTask;
-                    };
-                    return call;
-                },
             },
             ToolLoopAgentInstructions.Client()
         );
-        await agent.GenerateAsync("Hello, world!");
+        await agent.GenerateAsync("Hello, world!", onStepStart: (_, _) =>
+        {
+            calls.Add("method");
+            return Task.CompletedTask;
+        });
         Assert.Equal(["method"], calls);
     }
 
     [Fact]
     [UpstreamTest(
         Prefix + "should call both constructor and method onStepStart in correct order",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The call-level callback is set through PrepareCall, because the agent methods take no per-call callbacks."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task ShouldCallBothConstructorAndMethodOnStepStartInCorrectOrder()
     {
@@ -84,19 +77,14 @@ public sealed class OnStepStartGenerateTests
                     calls.Add("constructor");
                     return Task.CompletedTask;
                 },
-                PrepareCall = call =>
-                {
-                    call.OnStepStart = (_, _) =>
-                    {
-                        calls.Add("method");
-                        return Task.CompletedTask;
-                    };
-                    return call;
-                },
             },
             ToolLoopAgentInstructions.Client()
         );
-        await agent.GenerateAsync("Hello, world!");
+        await agent.GenerateAsync("Hello, world!", onStepStart: (_, _) =>
+        {
+            calls.Add("method");
+            return Task.CompletedTask;
+        });
         Assert.Equal(["constructor", "method"], calls);
     }
 

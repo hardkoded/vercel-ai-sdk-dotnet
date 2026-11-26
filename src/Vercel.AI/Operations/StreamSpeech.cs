@@ -380,6 +380,9 @@ public sealed class StreamSpeechRequest : OperationRequest
 /// <summary>Result of <see cref="StreamSpeech.Start"/>. Maps to <c>StreamSpeechResult</c>.</summary>
 public sealed class StreamSpeechResult
 {
+    // Upstream pipes into a default TransformStream, which buffers one part (writable high water mark 1, readable 0).
+    private const int OutputCapacity = 1;
+
     private readonly PendingPromise<SpeechStreamUsage> _usage =
         new PendingPromise<SpeechStreamUsage>();
     private readonly PendingPromise<IReadOnlyList<OperationWarning>> _warnings =
@@ -388,7 +391,9 @@ public sealed class StreamSpeechResult
         new PendingPromise<IReadOnlyList<ProviderResponse>>();
     private readonly PendingPromise<JsonElement> _providerMetadata =
         new PendingPromise<JsonElement>();
-    private readonly PartQueue<SpeechStreamPart> _queue = new PartQueue<SpeechStreamPart>();
+    private readonly PartQueue<SpeechStreamPart> _queue = new PartQueue<SpeechStreamPart>(
+        OutputCapacity
+    );
     private readonly CancellationTokenSource _pipe = new CancellationTokenSource();
     private readonly object _gate = new object();
     private readonly IStreamingSpeechCaller _model;
@@ -599,7 +604,7 @@ public sealed class StreamSpeechResult
             );
             await foreach (var part in result.Stream.WithCancellation(token).ConfigureAwait(false))
             {
-                Accept(part);
+                await AcceptAsync(part, token).ConfigureAwait(false);
             }
 
             if (!_finished)
@@ -671,7 +676,7 @@ public sealed class StreamSpeechResult
         CancelPipe();
     }
 
-    private void Accept(SpeechModelStreamPart part)
+    private async Task AcceptAsync(SpeechModelStreamPart part, CancellationToken token)
     {
         switch (part.Type)
         {
@@ -702,7 +707,7 @@ public sealed class StreamSpeechResult
                 }
 
                 _hasAudio |= audio.Length > 0;
-                _queue.Enqueue(
+                await _queue.EnqueueAsync(
                     new SpeechStreamPart
                     {
                         Type = "audio",
@@ -710,16 +715,23 @@ public sealed class StreamSpeechResult
                         Audio = audio,
                         AudioFormat = part.AudioFormat,
                         ProviderMetadata = part.ProviderMetadata,
-                    }
+                    },
+                    token
                 );
                 break;
             case "raw":
-                _queue.Enqueue(new SpeechStreamPart { Type = "raw", RawValue = part.RawValue });
+                await _queue.EnqueueAsync(
+                    new SpeechStreamPart { Type = "raw", RawValue = part.RawValue },
+                    token
+                );
                 break;
             case "error":
                 _lastError = part.Error;
                 ReportError(part.Error);
-                _queue.Enqueue(new SpeechStreamPart { Type = "error", Error = part.Error });
+                await _queue.EnqueueAsync(
+                    new SpeechStreamPart { Type = "error", Error = part.Error },
+                    token
+                );
                 break;
             case "finish":
                 if (_warnings.IsPending)
@@ -828,11 +840,8 @@ public sealed class StreamSpeechResult
 
         public ValueTask DisposeAsync()
         {
-            if (_owner._usage.IsPending)
-            {
-                _owner.CancelFromConsumer();
-            }
-
+            // After finish nothing reads the rest, so release a pump blocked on a full queue too.
+            _owner.CancelFromConsumer();
             return default;
         }
 
