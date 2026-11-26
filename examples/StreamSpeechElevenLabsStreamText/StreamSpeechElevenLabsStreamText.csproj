@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <Description>Voices a language model's answer with ElevenLabs while it is still being generated.</Description>
+    </PropertyGroup>
+</Project>

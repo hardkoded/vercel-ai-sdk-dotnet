@@ -21,6 +21,12 @@ public class ElevenLabsOptions : OpenAICompatibleOptions
 {
     /// <summary>Clock used for response timestamps. Defaults to UTC now.</summary>
     public Func<DateTimeOffset>? Clock { get; set; }
+
+    /// <summary>Custom WebSocket implementation for streaming speech. Defaults to <c>ClientWebSocket</c>. Maps to <c>webSocket</c>.</summary>
+    public WebSocketFactory? WebSocket { get; set; }
+
+    /// <summary>Milliseconds of send inactivity before a streaming speech keepalive. Test seam for <c>KEEPALIVE_INTERVAL_MS</c>.</summary>
+    internal int KeepaliveIntervalMs { get; set; } = ElevenLabsSpeechStream.KeepaliveIntervalMs;
 }
 
 /// <summary>One string or number in a FastAPI validation issue location.</summary>
@@ -812,7 +818,7 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
     }
 
     /// <summary>ElevenLabs text-to-speech model.</summary>
-    public sealed class ElevenLabsSpeechModel : ISpeechModel, ISpeechCaller
+    public sealed class ElevenLabsSpeechModel : ISpeechModel, ISpeechCaller, IStreamingSpeechCaller
     {
         private static readonly Dictionary<string, string> OutputFormats = new Dictionary<
             string,
@@ -921,6 +927,522 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
                 ),
                 new ProviderRequest(result.RequestBody)
             );
+        }
+
+        /// <inheritdoc />
+        public async Task<SpeechModelStreamResult> DoStreamAsync(
+            SpeechModelStreamCall call,
+            CancellationToken cancellationToken
+        )
+        {
+            call = call ?? throw new ArgumentNullException(nameof(call));
+            try
+            {
+                return await StartStreamAsync(call, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+                // The provider owns the text stream once doStream is called.
+                try
+                {
+                    await call.Text.CancelAsync().ConfigureAwait(false);
+                }
+                catch (Exception)
+                {
+                    // The original failure is the one to report.
+                }
+
+                throw;
+            }
+        }
+
+        /// <summary>Maps to <c>startStream</c>.</summary>
+        private async Task<SpeechModelStreamResult> StartStreamAsync(
+            SpeechModelStreamCall call,
+            CancellationToken cancellationToken
+        )
+        {
+            var config = ElevenLabsModelCatalog
+                .GetElevenLabsSpeechModelEntry(ModelId)
+                .RequestConfig;
+            if (config.Music || config.SoundEffects)
+            {
+                throw new Operations.UnsupportedFunctionalityException(
+                    "streaming speech with " + ModelId,
+                    "ElevenLabs "
+                        + ModelId
+                        + " does not support streaming; use generateSpeech instead."
+                );
+            }
+
+            var currentDate = _provider.Now();
+            ElevenLabsSpeechModelOptions.Validate(call.ProviderOptions);
+            var elevenlabs = ElevenLabsObject(call.ProviderOptions);
+            var dialogue = Child(elevenlabs, "dialogue");
+            var streaming = Child(elevenlabs, "streaming");
+            var dialogueVoices = Child(dialogue, "voices")
+                is { ValueKind: JsonValueKind.Array } voiceList
+                ? voiceList.EnumerateArray().Select(voice => voice.GetString()!).ToList()
+                : new List<string>();
+
+            if (dialogue != null && !config.Dialogue)
+            {
+                throw new Operations.UnsupportedFunctionalityException(
+                    "streaming dialogue with " + ModelId,
+                    "ElevenLabs streaming dialogue requires an eleven_v3 or eleven_v4 model; "
+                        + ModelId
+                        + " is not one."
+                );
+            }
+
+            if (dialogue == null && config.Dialogue)
+            {
+                throw new Operations.UnsupportedFunctionalityException(
+                    "streaming speech with " + ModelId,
+                    "The ElevenLabs text-to-speech WebSocket does not serve "
+                        + ModelId
+                        + ". Set providerOptions.elevenlabs.dialogue to stream it as dialogue."
+                );
+            }
+
+            if (dialogue != null && config.SingleVoiceDialogue && dialogueVoices.Count != 1)
+            {
+                throw new InvalidArgumentError(
+                    "providerOptions.elevenlabs.dialogue.voices",
+                    dialogueVoices.Count,
+                    "eleven_v3_conversational supports exactly one dialogue voice; received "
+                        + dialogueVoices.Count.ToString(CultureInfo.InvariantCulture)
+                        + "."
+                );
+            }
+
+            // The WebSocket API rejects locators without a version, unlike HTTP.
+            var locators = Child(elevenlabs, "pronunciationDictionaryLocators")
+                is { ValueKind: JsonValueKind.Array } locatorList
+                ? locatorList.EnumerateArray().ToList()
+                : null;
+            var unversionedLocator = locators?.FirstOrDefault(locator =>
+                Child(locator, "versionId") is not { } versionId
+                || versionId.ValueKind != JsonValueKind.String
+                || string.IsNullOrEmpty(versionId.GetString())
+            );
+            if (unversionedLocator is { ValueKind: JsonValueKind.Object } unversioned)
+            {
+                throw new InvalidArgumentError(
+                    "providerOptions.elevenlabs.pronunciationDictionaryLocators",
+                    unversioned.ToString(),
+                    "Streaming speech requires a versionId for pronunciation dictionary \""
+                        + Child(unversioned, "pronunciationDictionaryId")?.GetString()
+                        + "\"."
+                );
+            }
+
+            var warnings = GetStreamWarnings(call, elevenlabs);
+            var outputFormat = Child(streaming, "outputFormat")?.GetString()
+                ?? ToElevenLabsStreamOutputFormat(call.OutputFormat);
+            var voiceId = call.Voice ?? ElevenLabsSpeechRequest.DefaultVoiceId;
+            var path =
+                dialogue != null
+                    ? "/v1/text-to-dialogue/stream-input"
+                    : "/v1/text-to-speech/" + Uri.EscapeDataString(voiceId) + "/stream-input";
+
+            var queryParams = new List<KeyValuePair<string, string?>>
+            {
+                new("model_id", ModelId),
+                new("output_format", outputFormat),
+                new(
+                    "language_code",
+                    call.Language ?? Child(elevenlabs, "languageCode")?.GetString()
+                ),
+                new("enable_logging", Scalar(Child(elevenlabs, "enableLogging"))),
+                // Text-to-Dialogue has a fixed inactivity timeout and no auto/SSML mode.
+                new(
+                    "inactivity_timeout",
+                    dialogue == null ? Scalar(Child(streaming, "inactivityTimeout")) : null
+                ),
+                new("sync_alignment", Scalar(Child(streaming, "syncAlignment"))),
+                new("auto_mode", dialogue == null ? Scalar(Child(streaming, "autoMode")) : null),
+                new(
+                    "apply_text_normalization",
+                    Scalar(Child(elevenlabs, "applyTextNormalization"))
+                ),
+                new("seed", Scalar(Child(elevenlabs, "seed"))),
+                new(
+                    "enable_ssml_parsing",
+                    dialogue == null ? Scalar(Child(streaming, "enableSsmlParsing")) : null
+                ),
+            };
+            var query = string.Join(
+                "&",
+                queryParams
+                    .Where(pair => pair.Value != null)
+                    .Select(pair => pair.Key + "=" + Uri.EscapeDataString(pair.Value!))
+            );
+            var url = WebSocketUtils.ToWebSocketUrl(
+                ApiKeys.Combine(_provider.Options.BaseUrl, path + "?" + query)
+            );
+
+            ElevenLabsStreamProtocol protocol;
+            if (dialogue != null)
+            {
+                if (call.Voice != null && !dialogueVoices.Contains(call.Voice))
+                {
+                    throw new InvalidArgumentError(
+                        "voice",
+                        call.Voice,
+                        "ElevenLabs streaming dialogue voice \""
+                            + call.Voice
+                            + "\" is not listed in providerOptions.elevenlabs.dialogue.voices."
+                    );
+                }
+
+                protocol = ElevenLabsSpeechStream.CreateDialogueProtocol(
+                    GetDialogueInitMessage(dialogue, elevenlabs),
+                    dialogueVoices,
+                    call.Voice ?? dialogueVoices[0],
+                    // The v3 family accepts a single message per session.
+                    config.IncrementalDialogue
+                );
+            }
+            else
+            {
+                protocol = ElevenLabsSpeechStream.CreateSingleContextProtocol(
+                    GetStreamInitMessage(call, elevenlabs),
+                    voiceId
+                );
+            }
+
+            // The API key goes in the init message (not a header) so native WebSockets work; it is kept out of the
+            // reported request body.
+            var combined = ProviderExchange.Merge(
+                await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false),
+                call.Headers
+            );
+            var apiKey = combined.TryGetValue("xi-api-key", out var key) ? key : null;
+            combined.Remove("xi-api-key");
+
+            var requestBody = new JsonObject
+            {
+                ["url"] = url.AbsoluteUri,
+                ["initMessage"] = protocol.InitMessage.DeepClone(),
+            };
+            var keepaliveIntervalMs = (_provider.Options as ElevenLabsOptions)?.KeepaliveIntervalMs
+                ?? ElevenLabsSpeechStream.KeepaliveIntervalMs;
+            var requestElement = JsonSerializer.SerializeToElement(requestBody);
+            return new SpeechModelStreamResult(
+                ElevenLabsSpeechStream.CreateElevenLabsSpeechStream(
+                    new ElevenLabsSpeechStreamOptions
+                    {
+                        AbortSignal = call.CancellationToken,
+                        ApiKey = apiKey,
+                        AudioFormat = ElevenLabsSpeechStream.GetElevenLabsAudioFormat(outputFormat),
+                        Headers = combined,
+                        IncludeRawChunks = call.IncludeRawChunks,
+                        // Text-to-Dialogue has a fixed 20 s inactivity timeout, so it always keeps alive; TTS honors an
+                        // explicit inactivityTimeout instead.
+                        Keepalive =
+                            dialogue != null || Child(streaming, "inactivityTimeout") == null,
+                        KeepaliveIntervalMs = keepaliveIntervalMs,
+                        Protocol = protocol,
+                        Text = call.Text,
+                        Url = url,
+                        Warnings = warnings,
+                        WebSocket = (_provider.Options as ElevenLabsOptions)?.WebSocket,
+                    }
+                ),
+                new SpeechModelStreamResponse
+                {
+                    Timestamp = currentDate.UtcDateTime,
+                    ModelId = ModelId,
+                },
+                requestElement
+            );
+        }
+
+        /// <summary>Maps to <c>getDialogueInitMessage</c>.</summary>
+        private static JsonObject GetDialogueInitMessage(
+            JsonElement? dialogue,
+            JsonElement? elevenlabs
+        )
+        {
+            var message = new JsonObject();
+            if (Child(Child(dialogue, "voiceSettings"), "stability") is { } stability)
+            {
+                message["voice_settings"] = new JsonObject
+                {
+                    ["stability"] = JsonNode.Parse(stability.GetRawText()),
+                };
+            }
+
+            if (
+                Child(elevenlabs, "pronunciationDictionaryLocators") is
+                { ValueKind: JsonValueKind.Array } locators
+            )
+            {
+                message["pronunciation_dictionary_locators"] = ToStreamLocators(locators);
+            }
+
+            return message;
+        }
+
+        /// <summary>Maps to <c>getStreamInitMessage</c>.</summary>
+        private static JsonObject GetStreamInitMessage(
+            SpeechModelStreamCall call,
+            JsonElement? elevenlabs
+        )
+        {
+            var voiceSettings = Child(elevenlabs, "voiceSettings");
+            var voiceSettingsMessage = new JsonObject();
+            CopyNumber(voiceSettings, "stability", voiceSettingsMessage, "stability");
+            CopyNumber(voiceSettings, "similarityBoost", voiceSettingsMessage, "similarity_boost");
+            CopyNumber(voiceSettings, "style", voiceSettingsMessage, "style");
+            CopyRaw(voiceSettings, "useSpeakerBoost", voiceSettingsMessage, "use_speaker_boost");
+            if (call.Speed != null)
+            {
+                voiceSettingsMessage["speed"] = call.Speed;
+            }
+
+            // The protocol requires a single space as the first message text.
+            var message = new JsonObject { ["text"] = " " };
+            if (voiceSettingsMessage.Count > 0)
+            {
+                message["voice_settings"] = voiceSettingsMessage;
+            }
+
+            if (
+                Child(Child(elevenlabs, "streaming"), "chunkLengthSchedule") is
+                { ValueKind: JsonValueKind.Array } schedule
+            )
+            {
+                message["generation_config"] = new JsonObject
+                {
+                    ["chunk_length_schedule"] = JsonNode.Parse(schedule.GetRawText()),
+                };
+            }
+
+            if (
+                Child(elevenlabs, "pronunciationDictionaryLocators") is
+                { ValueKind: JsonValueKind.Array } locators
+            )
+            {
+                message["pronunciation_dictionary_locators"] = ToStreamLocators(locators);
+            }
+
+            return message;
+        }
+
+        private static JsonArray ToStreamLocators(JsonElement locators)
+        {
+            return new JsonArray(
+                locators
+                    .EnumerateArray()
+                    .Select(locator =>
+                        (JsonNode?)
+                            new JsonObject
+                            {
+                                ["pronunciation_dictionary_id"] = Child(
+                                    locator,
+                                    "pronunciationDictionaryId"
+                                )
+                                    ?.GetString(),
+                                ["version_id"] = Child(locator, "versionId")?.GetString(),
+                            }
+                    )
+                    .ToArray()
+            );
+        }
+
+        /// <summary>Maps to <c>getStreamWarnings</c>.</summary>
+        private static List<OperationWarning> GetStreamWarnings(
+            SpeechModelStreamCall call,
+            JsonElement? elevenlabs
+        )
+        {
+            var warnings = new List<OperationWarning>();
+            if (!string.IsNullOrEmpty(call.Instructions))
+            {
+                warnings.Add(
+                    OperationWarning.Unsupported(
+                        "instructions",
+                        "ElevenLabs speech models do not support instructions. Instructions parameter was ignored."
+                    )
+                );
+            }
+
+            // HTTP-only options: neither WebSocket protocol carries them.
+            var httpOnly = new[]
+            {
+                "applyLanguageTextNormalization",
+                "withTimestamps",
+                "inputs",
+                "nextRequestIds",
+                "nextText",
+                "previousRequestIds",
+                "previousText",
+            }
+                .Concat(ElevenLabsModelCatalog.ElevenLabsMusicOnlyOptions)
+                .Concat(ElevenLabsModelCatalog.ElevenLabsSoundEffectsOnlyOptions);
+            foreach (var option in httpOnly)
+            {
+                if (Child(elevenlabs, option) != null)
+                {
+                    warnings.Add(
+                        OperationWarning.Unsupported(
+                            "providerOptions.elevenlabs." + option,
+                            "ElevenLabs streaming speech does not support " + option + "."
+                        )
+                    );
+                }
+            }
+
+            if (Child(elevenlabs, "dialogue") != null)
+            {
+                // Text-to-Dialogue takes only dialogue.voiceSettings.stability, and has a fixed inactivity timeout and
+                // no chunking, auto, or SSML modes.
+                var ignored = new List<string>();
+                if (call.Speed != null)
+                {
+                    ignored.Add("speed");
+                }
+
+                if (Child(elevenlabs, "voiceSettings") != null)
+                {
+                    ignored.Add("providerOptions.elevenlabs.voiceSettings");
+                }
+
+                foreach (
+                    var option in new[]
+                    {
+                        "autoMode",
+                        "chunkLengthSchedule",
+                        "enableSsmlParsing",
+                        "inactivityTimeout",
+                    }
+                )
+                {
+                    if (Child(Child(elevenlabs, "streaming"), option) != null)
+                    {
+                        ignored.Add("providerOptions.elevenlabs.streaming." + option);
+                    }
+                }
+
+                foreach (var feature in ignored)
+                {
+                    warnings.Add(
+                        OperationWarning.Unsupported(
+                            feature,
+                            "ElevenLabs streaming dialogue does not support "
+                                + feature
+                                + "; it was ignored."
+                        )
+                    );
+                }
+            }
+
+            return warnings;
+        }
+
+        /// <summary>
+        /// Maps a portable output format to an ElevenLabs <c>output_format</c>. Exact native formats (e.g. other MP3
+        /// bitrates) use <c>providerOptions.elevenlabs.streaming.outputFormat</c>. Maps to <c>toElevenLabsStreamOutputFormat</c>.
+        /// </summary>
+        internal static string ToElevenLabsStreamOutputFormat(SpeechAudioFormat? format)
+        {
+            if (format == null)
+            {
+                return "mp3_44100_128";
+            }
+
+            var rate = format.Rate;
+            // MIME types are case-insensitive and may carry parameters.
+            var type = format.Type.Split(';')[0].Trim().ToLowerInvariant();
+            switch (type)
+            {
+                case "audio/mpeg":
+                case "audio/mp3":
+                    if (rate == null || rate == 44100)
+                    {
+                        return "mp3_44100_128";
+                    }
+
+                    if (rate == 22050)
+                    {
+                        return "mp3_22050_32";
+                    }
+
+                    break;
+                case "audio/pcm":
+                case "audio/l16":
+                    var pcmRate = rate ?? 24000;
+                    if (
+                        Array.IndexOf(new[] { 8000, 16000, 22050, 24000, 44100, 48000 }, pcmRate)
+                        >= 0
+                    )
+                    {
+                        return "pcm_" + pcmRate.ToString(CultureInfo.InvariantCulture);
+                    }
+
+                    break;
+                case "audio/pcmu":
+                case "audio/basic":
+                    if (rate == null || rate == 8000)
+                    {
+                        return "ulaw_8000";
+                    }
+
+                    break;
+                case "audio/pcma":
+                    if (rate == null || rate == 8000)
+                    {
+                        return "alaw_8000";
+                    }
+
+                    break;
+                case "audio/opus":
+                case "audio/ogg":
+                    if (rate == null || rate == 48000)
+                    {
+                        return "opus_48000_64";
+                    }
+
+                    break;
+            }
+
+            throw new InvalidArgumentError(
+                "outputFormat",
+                format.Type,
+                "ElevenLabs streaming speech does not support the output format "
+                    + JsonSerializer.Serialize(
+                        new { type = format.Type, rate = format.Rate },
+                        new JsonSerializerOptions
+                        {
+                            DefaultIgnoreCondition = System
+                                .Text
+                                .Json
+                                .Serialization
+                                .JsonIgnoreCondition
+                                .WhenWritingNull,
+                        }
+                    )
+                    + ". Use providerOptions.elevenlabs.streaming.outputFormat for a native ElevenLabs format."
+            );
+        }
+
+        // Maps `String(value)` for a query value: undefined and null are omitted.
+        private static string? Scalar(JsonElement? value)
+        {
+            return value is not { } element
+                ? null
+                : element.ValueKind switch
+                {
+                    JsonValueKind.True => "true",
+                    JsonValueKind.False => "false",
+                    JsonValueKind.Number => element
+                        .GetDouble()
+                        .ToString("R", CultureInfo.InvariantCulture),
+                    JsonValueKind.String => element.GetString(),
+                    _ => element.GetRawText(),
+                };
         }
 
         private static OperationWarning ToOperationWarning(ModelWarning warning) =>

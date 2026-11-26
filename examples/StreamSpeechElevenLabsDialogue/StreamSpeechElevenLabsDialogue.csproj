@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <Description>Streams a two-voice dialogue to ElevenLabs Text-to-Dialogue over a WebSocket.</Description>
+    </PropertyGroup>
+</Project>

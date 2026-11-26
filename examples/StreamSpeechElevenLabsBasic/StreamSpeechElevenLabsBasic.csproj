@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <Description>Streams text deltas to ElevenLabs over a WebSocket and writes the audio as it arrives.</Description>
+    </PropertyGroup>
+</Project>

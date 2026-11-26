@@ -68,6 +68,52 @@ A stream that finishes without audio fails with a `NoSpeechGeneratedException` w
 
 Implement `IStreamingSpeechCaller.DoStreamAsync`, which receives a `SpeechModelStreamCall` and returns a `SpeechModelStreamResult` over an `IAsyncEnumerable<SpeechModelStreamPart>`. The call's `Text` is owned by the model once `DoStreamAsync` is called: enumerate it to the end or dispose its enumerator on every terminal path.
 
+### ElevenLabs streaming speech
+
+`ElevenLabsSpeechModel` implements `IStreamingSpeechCaller`, so `StreamSpeech.Start` uses the ElevenLabs text-to-speech WebSocket (`stream-input`). Text deltas are forwarded as they arrive, so you can pipe a language model's text stream straight into speech, and audio chunks stream back as they are generated. Music and sound-effects models do not stream; `DoStreamAsync` throws an `UnsupportedFunctionalityException`.
+
+```csharp
+var result = StreamSpeech.Start(new StreamSpeechRequest
+{
+    Model = (IStreamingSpeechCaller)ElevenLabsProvider.Create().SpeechModel("eleven_flash_v2_5"),
+    TextStream = textDeltas, // an IAsyncEnumerable<SpeechTextPart>
+    Voice = "21m00Tcm4TlvDq8ikWAM",
+    OutputFormat = new SpeechAudioFormat("audio/pcm", 24000),
+    ProviderOptions = JsonDocument.Parse("""{"elevenlabs":{"streaming":{"chunkLengthSchedule":[50,120,160],"syncAlignment":true}}}""").RootElement.Clone(),
+});
+```
+
+The API key is sent in the WebSocket's first message, not in a header. Run streaming speech on the server: in browser code the API key would be exposed to the client. Set `ElevenLabsOptions.WebSocket` to a `WebSocketFactory` to replace `ClientWebSocket`.
+
+`OutputFormat` maps to an ElevenLabs `output_format`: `audio/mpeg` (44.1 kHz, or 22.05 kHz), `audio/pcm` (8, 16, 22.05, 24 (default), 44.1, or 48 kHz), `audio/pcmu` and `audio/pcma` (8 kHz), and `audio/opus` or `audio/ogg` (48 kHz Opus, delivered in an Ogg container and reported as `audio/ogg`). Other formats throw an `InvalidArgumentError`. Set `providerOptions.elevenlabs.streaming.outputFormat` to a native ElevenLabs format (for example `mp3_44100_192`) to choose one directly. Without either, audio is `mp3_44100_128`.
+
+The text-to-speech WebSocket speaks one voice per stream. A text part whose `Voice` differs from the call's `Voice` fails the stream with an `InvalidArgumentError`; use dialogue (below) for several voices.
+
+Text deltas that end mid-word are held back until the next whitespace before they are sent, and the rest is flushed when the text stream ends. CJK sentence punctuation also counts as a boundary, and held text is sent after 100 characters regardless. While the text stream is idle, the provider sends keepalive messages every 15 seconds so the connection outlives the server's default inactivity timeout. Setting `streaming.inactivityTimeout` turns keepalives off, so the timeout you set applies.
+
+`Usage.InputCharacters` is the number of Unicode code points sent for synthesis. Audio parts carry ElevenLabs `alignment` and `normalizedAlignment` data in `ProviderMetadata.elevenlabs` when the server returns it.
+
+The `streaming` provider options mirror the WebSocket settings: `autoMode`, `chunkLengthSchedule`, `enableSsmlParsing`, `inactivityTimeout` (seconds, up to 180), `outputFormat`, and `syncAlignment`. `GenerateAsync` ignores them with a warning. `voiceSettings`, `pronunciationDictionaryLocators` (each needs a `versionId`), `seed`, `applyTextNormalization`, `languageCode`, and `enableLogging` apply as for `GenerateAsync`. `previousText`, `nextText`, `previousRequestIds`, `nextRequestIds`, `applyLanguageTextNormalization`, `withTimestamps`, `inputs`, and the music and sound-effects options are not supported over the WebSocket and produce warnings. The `eleven_v3` and `eleven_v4` model families are not served by the text-to-speech WebSocket; stream them as dialogue.
+
+#### Streaming dialogue
+
+Set `providerOptions.elevenlabs.dialogue` to stream multi-speaker dialogue over the Text-to-Dialogue WebSocket with an `eleven_v3` or `eleven_v4` model. List the voices in `dialogue.voices` (the socket needs them up front), then give each text part its speaker with `Voice`. Parts without a `Voice` use the call's `Voice`, or else the first dialogue voice; a voice that is not listed fails the stream. A change of voice starts a new turn. To start a new turn with the same voice, set `providerOptions` of the part to `{"elevenlabs":{"newTurn":true}}`.
+
+```csharp
+var result = StreamSpeech.Start(new StreamSpeechRequest
+{
+    Model = (IStreamingSpeechCaller)ElevenLabsProvider.Create().SpeechModel("eleven_v4"),
+    TextParts = new[]
+    {
+        new SpeechTextPart("Did you hear we can stream dialogue now? ", voice: alice),
+        new SpeechTextPart("Over one socket? That is neat.", voice: bob),
+    },
+    ProviderOptions = JsonDocument.Parse($$"""{"elevenlabs":{"dialogue":{"voices":["{{alice}}","{{bob}}"],"voiceSettings":{"stability":0.5}}}}""").RootElement.Clone(),
+});
+```
+
+Text is held back to word boundaries within each speaker's text and flushed when the speaker changes. Text-to-Dialogue ignores `Speed`, top-level `voiceSettings` (use `dialogue.voiceSettings.stability`), and the `autoMode`, `chunkLengthSchedule`, `enableSsmlParsing`, and `inactivityTimeout` streaming options; each produces a warning. `eleven_v4` models receive the text incrementally. `eleven_v3` models accept a single message per dialogue session, so the provider reads the whole text stream before sending it. `eleven_v3_conversational` supports a single voice. Text-to-Dialogue has a fixed inactivity timeout, so keepalives are always sent while the text stream is idle. Audio parts carry `alignment` (camelCase) and `isFinalAudioForTurn` in `ProviderMetadata.elevenlabs` when the server returns them; a turn boundary without audio arrives as an empty audio part carrying only `isFinalAudioForTurn`.
+
 ### Gemini speech language
 
 `GoogleSpeechCall.Language` takes a supported BCP-47 code such as `en-US` or `de-DE`. `GoogleSpeechModel` forwards an explicit code unchanged as `speechConfig.languageCode`, for single-speaker and multi-speaker (`multiSpeakerVoiceConfig`) requests, including through the Vertex Gemini adapter. Omit `Language` or set it to `"auto"` to let Gemini detect the language from the input text. Gemini TTS does not support `Speed`: passing it adds an `unsupported` warning.

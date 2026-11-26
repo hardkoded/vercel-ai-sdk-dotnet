@@ -489,6 +489,55 @@ public sealed class DoGenerateTests
 
     [Fact]
     [UpstreamTest(
+        Prefix + "should warn about and ignore streaming-only options",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "109a4fe2d1a511cd05a608a11321b7e87bb20cd6"
+    )]
+    public async Task Should_warn_about_and_ignore_streaming_only_options()
+    {
+        var (model, handler) = SpeechModelTestHelpers.CreateModel("eleven_multilingual_v2");
+
+        var result = await model.GenerateAsync(
+            new ElevenLabsSpeechRequest("Hello, world!")
+            {
+                ProviderOptions = Options("{\"elevenlabs\":{\"streaming\":{\"autoMode\":true}}}"),
+            },
+            CancellationToken.None
+        );
+
+        Assert.Contains(result.Warnings, warning =>
+            warning is UnsupportedWarning unsupported
+            && unsupported.Feature == "providerOptions.elevenlabs.streaming"
+        );
+        Assert.DoesNotContain("auto_mode", handler.Calls[0].Uri.Query);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should warn about and ignore dialogue options",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "9874c89b12bd7d546b5ecc521bdf74128e8ab0a9"
+    )]
+    public async Task Should_warn_about_and_ignore_dialogue_options()
+    {
+        var (model, _) = SpeechModelTestHelpers.CreateModel("eleven_multilingual_v2");
+
+        var result = await model.GenerateAsync(
+            new ElevenLabsSpeechRequest("Hello, world!")
+            {
+                ProviderOptions = Options("{\"elevenlabs\":{\"dialogue\":{\"voices\":[\"a\"]}}}"),
+            },
+            CancellationToken.None
+        );
+
+        Assert.Contains(result.Warnings, warning =>
+            warning is UnsupportedWarning unsupported
+            && unsupported.Feature == "providerOptions.elevenlabs.dialogue"
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
         Prefix + "returns lyric timestamps and audio from music generation",
         Coverage = UpstreamCoverage.Covered,
         Commit = TimestampsCommit
