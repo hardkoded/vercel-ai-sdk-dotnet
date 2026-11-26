@@ -455,6 +455,7 @@ internal sealed class TelemetryDispatcher
                             )
                         )
                         .WithTelemetry(telemetry)
+                        .WithRedactedTools()
                     : e switch
                     {
                         GenerateObjectStartEvent objectStart => objectStart.AugmentEvent(telemetry),
@@ -743,7 +744,8 @@ internal sealed class TelemetryDispatcher
                             telemetry?.IncludeToolsContext
                         )
                     )
-                    .WithTelemetry(telemetry);
+                    .WithTelemetry(telemetry)
+                    .WithRedactedTools();
             case LanguageModelCallStartEvent modelCall:
                 return AugmentEvent(modelCall, telemetry);
             case ToolExecutionStartEvent toolExecution:
@@ -796,14 +798,30 @@ internal sealed class TelemetryDispatcher
             ModelId = value.ModelId,
             Instructions = value.Instructions,
             Messages = value.Messages,
-            Tools = value.Tools,
-            CallOptions = value.CallOptions,
+            Tools = RedactTelemetryCredentialsHelper.RedactTools(value.Tools),
+            CallOptions = RedactCallOptionsTools(value.CallOptions),
             RecordInputs = telemetry?.RecordInputs,
             RecordOutputs = telemetry?.RecordOutputs,
             FunctionId = telemetry?.FunctionId,
             AiVersion = Operations.AiSdkVersion.Version,
         };
         return FilterTelemetryEventHelper.FilterTelemetryEvent(augmented, telemetry);
+    }
+
+    // The call options repeat the tools of the event, so their arguments go through the same redaction.
+    private static Provider.LanguageModelCallOptions RedactCallOptionsTools(
+        Provider.LanguageModelCallOptions options
+    )
+    {
+        var tools = RedactTelemetryCredentialsHelper.RedactTools(options.Tools);
+        if (ReferenceEquals(tools, options.Tools))
+        {
+            return options;
+        }
+
+        var copy = options.Copy();
+        copy.Tools = tools;
+        return copy;
     }
 
     // Maps to augmentEvent.
@@ -902,16 +920,18 @@ internal sealed class TelemetryDispatcher
 
     private static StepResult FilterStep(StepResult step, TelemetryOptions? telemetry)
     {
-        return step.WithContexts(
-            FilterIncludedContextHelper.FilterIncludedContext(
-                step.RuntimeContext,
-                telemetry?.IncludeRuntimeContext
-            ),
-            FilterIncludedContextHelper.FilterToolsContext(
-                step.ToolsContext,
-                telemetry?.IncludeToolsContext
-            )
-        );
+        return RedactTelemetryCredentialsHelper
+            .RedactStep(step)
+            .WithContexts(
+                FilterIncludedContextHelper.FilterIncludedContext(
+                    step.RuntimeContext,
+                    telemetry?.IncludeRuntimeContext
+                ),
+                FilterIncludedContextHelper.FilterToolsContext(
+                    step.ToolsContext,
+                    telemetry?.IncludeToolsContext
+                )
+            );
     }
 
     // Maps to the toolContext branch of augmentEvent: the context of the called tool is filtered by name.

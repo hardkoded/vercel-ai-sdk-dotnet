@@ -14,7 +14,11 @@ namespace Vercel.AI.Tests.Upstream.Telemetry.TracingChannel;
 internal static class TracingChannelSupport
 {
     /// <summary>One event of the tracing channel: the sub-channel name and the message.</summary>
-    internal sealed record Published(string Channel, TelemetryTracingChannelMessage Message);
+    internal sealed record Published(
+        string Channel,
+        TelemetryTracingChannelMessage Message,
+        TelemetryTracingChannelMessage? Parent
+    );
 
     /// <summary>Runs <paramref name="run"/> while subscribed and returns every event published meanwhile.</summary>
     internal static async Task<IReadOnlyList<Published>> Collect(Func<Task> run)
@@ -53,6 +57,22 @@ internal static class TracingChannelSupport
                 item.Channel is "start" or "asyncEnd" && CallIdOf(item.Message) == callId
             )
             .Select(item => $"{item.Channel} {item.Message.Type}")
+            .ToList();
+    }
+
+    /// <summary>
+    /// Maps to <c>collectTracingChannelParentage</c>: the type of each span that starts and the type of its parent. Node reads the
+    /// parent from the store bound to the <c>start</c> sub-channel. The port reads <see cref="Vercel.AI.TracingChannel.Current"/>.
+    /// </summary>
+    internal static async Task<IReadOnlyList<string>> CollectParentage(
+        string callId,
+        Func<Task> run
+    )
+    {
+        var published = await Collect(run);
+        return published
+            .Where(item => item.Channel == "start" && CallIdOf(item.Message) == callId)
+            .Select(item => $"{item.Message.Type} parent {item.Parent?.Type ?? "undefined"}")
             .ToList();
     }
 
@@ -119,7 +139,9 @@ internal static class TracingChannelSupport
             {
                 lock (published)
                 {
-                    published.Add(new Published(item.Key, message));
+                    published.Add(
+                        new Published(item.Key, message, Vercel.AI.TracingChannel.Current)
+                    );
                 }
             }
         }

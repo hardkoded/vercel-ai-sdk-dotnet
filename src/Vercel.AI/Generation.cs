@@ -669,7 +669,18 @@ internal static class Generation
                     modelResponse = await modelCallDispatcher
                         .ExecuteLanguageModelCallAsync(
                             modelCallStartEvent,
-                            () => current.DoGenerateAsync(callOptions, modelCallToken),
+                            async () =>
+                            {
+                                var result = await current
+                                    .DoGenerateAsync(callOptions, modelCallToken)
+                                    .ConfigureAwait(false);
+                                // Telemetry observes the sanitized request metadata.
+                                return result.Request == null
+                                    ? result
+                                    : result.WithRequest(
+                                        RequestOrigin.SanitizeRequestMetadata(result.Request)
+                                    );
+                            },
                             modelCallToken
                         )
                         .ConfigureAwait(false);

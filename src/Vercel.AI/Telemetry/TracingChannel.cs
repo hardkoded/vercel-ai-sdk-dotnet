@@ -14,6 +14,34 @@ public static class TracingChannel
 {
     /// <summary>The name of the tracing channel. Maps to <c>AI_SDK_TELEMETRY_TRACING_CHANNEL</c>.</summary>
     public const string AiSdkTelemetryTracingChannel = "ai:telemetry";
+
+    private static readonly AsyncLocal<TelemetryTracingChannelMessage?> s_current = new();
+
+    /// <summary>
+    /// The span that is current in the running async flow, or null outside any span. A <see cref="System.Diagnostics.DiagnosticListener"/>
+    /// has no store to bind, so this is the port's counterpart of the store that a Node subscriber binds with <c>bindStore</c> on the
+    /// <c>start</c> sub-channel. A <c>start</c> subscriber sees the parent span here, because the span becomes current after
+    /// <c>start</c> is published. Work started inside a span, including awaited and background work, sees that span here. A span whose
+    /// operation already finished is skipped, so a step that follows another step has the same parent.
+    /// </summary>
+    public static TelemetryTracingChannelMessage? Current
+    {
+        get
+        {
+            var message = s_current.Value;
+            while (message is { IsEnded: true })
+            {
+                message = message.Parent;
+            }
+
+            return message;
+        }
+    }
+
+    internal static void SetCurrent(TelemetryTracingChannelMessage? message)
+    {
+        s_current.Value = message;
+    }
 }
 
 /// <summary>The kinds of span the tracing channel publishes. Maps to <c>TelemetryTracingEventType</c>.</summary>
@@ -71,6 +99,10 @@ public sealed class TelemetryTracingChannelMessage
         Type = type;
         Event = @event;
     }
+
+    internal TelemetryTracingChannelMessage? Parent { get; set; }
+
+    internal bool IsEnded { get; set; }
 
     /// <summary>The kind of span. One of the <see cref="TelemetryTracingEventType"/> values.</summary>
     public string Type { get; }
