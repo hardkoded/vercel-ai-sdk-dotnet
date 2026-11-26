@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { redirectHtml } from "./redirect.mjs";
@@ -73,31 +73,23 @@ const pages = [
         legacy: "articles/parallel.html",
         target: "/parallel/",
     },
-    {
-        source: "docs/articles/compatibility.md",
-        output: "compatibility.md",
-        title: "Compatibility",
-        label: "Compatibility",
-        legacy: "articles/compatibility.html",
-        target: "/compatibility/",
-    },
-    {
-        source: "docs/articles/warnings.md",
-        output: "warnings.md",
-        title: "Warnings",
-        label: "Warnings",
-        legacy: "articles/warnings.html",
-        target: "/warnings/",
-    },
-    {
-        source: "docs/articles/secure-url-fetching.md",
-        output: "secure-url-fetching.md",
-        title: "Secure URL fetching",
-        label: "Secure URL fetching",
-        legacy: "articles/secure-url-fetching.html",
-        target: "/secure-url-fetching/",
-    },
 ];
+
+// docs/articles/models/*.md: one page per provider, written by build/generate-model-pages.py.
+const modelsDir = path.join(repoRoot, "docs/articles/models");
+for (const file of (await readdir(modelsDir).catch(() => [])).filter((name) => name.endsWith(".md")).sort()) {
+    const raw = await readFile(path.join(modelsDir, file), "utf8");
+    const title = raw.match(/^#\s+(.+)$/m)?.[1].trim() ?? file;
+    const isIndex = file === "index.md";
+    pages.push({
+        source: `docs/articles/models/${file}`,
+        output: `models/${file}`,
+        title,
+        label: isIndex ? "Overview" : title,
+        order: isIndex ? 0 : undefined,
+        target: isIndex ? "/models/" : `/models/${file.slice(0, -3)}/`,
+    });
+}
 
 const pageTargets = new Map(pages.map((page) => [path.posix.basename(page.source), page.target]));
 
@@ -107,7 +99,7 @@ const sectionRedirects = [
     ["articles/toc.html", "/docs/"],
 ];
 
-await mkdir(contentDir, { recursive: true });
+await mkdir(path.join(contentDir, "models"), { recursive: true });
 
 for (const page of pages) {
     const raw = await readFile(path.join(repoRoot, page.source), "utf8");
@@ -120,11 +112,12 @@ for (const page of pages) {
         `editUrl: ${JSON.stringify(`${repo}/edit/main/${page.source}`)}`,
         "sidebar:",
         `  label: ${JSON.stringify(page.label)}`,
+        ...(page.order === undefined ? [] : [`  order: ${page.order}`]),
         "---",
         "",
     ].join("\n");
     await writeFile(path.join(contentDir, page.output), `${frontmatter}${body.trim()}\n`);
-    await writeLegacy(page.legacy, page.target);
+    if (page.legacy) await writeLegacy(page.legacy, page.target);
 }
 
 for (const [legacy, target] of sectionRedirects) {

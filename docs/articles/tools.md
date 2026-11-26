@@ -373,7 +373,7 @@ Content longer than `MaxLength` is truncated. The model is told to call the tool
 
 ### Security
 
-The tool makes GET requests without cookies or credentials, and rejects URLs that contain credentials. Each request and redirect is validated against private and reserved addresses such as `localhost` and cloud metadata endpoints. The default transport does not validate resolved DNS addresses or pin connections, so pass a DNS-validating `Fetch` such as `GuardedFetch`, or restrict network egress at the platform level. A custom `Fetch` must provide equivalent validation. See [Secure URL fetching](secure-url-fetching.md).
+The tool makes GET requests without cookies or credentials, and rejects URLs that contain credentials. Each request and redirect is validated against private and reserved addresses such as `localhost` and cloud metadata endpoints. The default transport does not validate resolved DNS addresses or pin connections, so pass a DNS-validating `Fetch` such as `GuardedFetch`, or restrict network egress at the platform level. A custom `Fetch` must provide equivalent validation.
 
 Fetched content is untrusted and can contain prompt injections. When an agent has access to private data, a model could also be instructed to send that data to another site, for example in a URL query string. Restrict fetching with `AllowedDomains`, enable `RequireUrlInUserMessage` so only URLs from user messages can be fetched, or require tool approval (`NeedsApproval`).
 
