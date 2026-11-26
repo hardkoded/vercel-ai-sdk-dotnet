@@ -443,7 +443,7 @@ internal sealed class TelemetryDispatcher
             ),
             OnStart = Filter<IOperationStartEvent>(Merge(integrations.Select(i => i.OnStart)), e =>
                 e is GenerateTextStartEvent textStart
-                    ? textStart.WithTelemetry(telemetry)
+                    ? textStart.WithTelemetry(telemetry).WithRedactedTools()
                     : e switch
                     {
                         GenerateObjectStartEvent objectStart => objectStart.AugmentEvent(telemetry),
@@ -465,7 +465,10 @@ internal sealed class TelemetryDispatcher
                         _ => e,
                     }
             ),
-            OnStepStart = Merge(integrations.Select(i => i.OnStepStart)),
+            OnStepStart = Filter<GenerateTextStepStartEvent>(
+                Merge(integrations.Select(i => i.OnStepStart)),
+                e => RedactSteps(e)
+            ),
             OnToolExecutionStart = Filter<ToolExecutionStartEvent>(
                 Merge(integrations.Select(i => i.OnToolExecutionStart)),
                 e =>
@@ -496,12 +499,22 @@ internal sealed class TelemetryDispatcher
                     )
             ),
             // Fans out to the deprecated onStepFinish too, so integrations that only implement it keep working.
-            OnStepEnd = Merge(
-                integrations
-                    .Select(i => i.OnStepEnd)
-                    .Concat(integrations.Select(i => i.OnStepFinish))
+            OnStepEnd = Filter<StepResult>(
+                Merge(
+                    integrations
+                        .Select(i => i.OnStepEnd)
+                        .Concat(integrations.Select(i => i.OnStepFinish))
+                ),
+                RedactStep
             ),
-            OnAbort = Merge(integrations.Select(i => i.OnAbort)),
+            OnAbort = Filter<StreamAbortContext>(
+                Merge(integrations.Select(i => i.OnAbort)),
+                context => new StreamAbortContext(
+                    context.Steps.Select(RedactStep).ToList(),
+                    context.Exception,
+                    context.CallId
+                )
+            ),
             OnError = Filter(Merge(integrations.Select(i => i.OnError)), (TelemetryErrorEvent e) =>
                 FilterTelemetryEventHelper.FilterTelemetryEvent(e, telemetry)
             ),
@@ -708,7 +721,8 @@ internal sealed class TelemetryDispatcher
                             telemetry?.IncludeToolsContext
                         )
                     )
-                    .WithTelemetry(telemetry);
+                    .WithTelemetry(telemetry)
+                    .WithRedactedTools();
             case LanguageModelCallStartEvent modelCall:
                 return AugmentEvent(modelCall, telemetry);
             case ToolExecutionStartEvent toolExecution:
@@ -761,14 +775,30 @@ internal sealed class TelemetryDispatcher
             ModelId = value.ModelId,
             Instructions = value.Instructions,
             Messages = value.Messages,
-            Tools = value.Tools,
-            CallOptions = value.CallOptions,
+            Tools = RedactTelemetryCredentialsHelper.RedactTools(value.Tools),
+            CallOptions = RedactCallOptionsTools(value.CallOptions),
             RecordInputs = telemetry?.RecordInputs,
             RecordOutputs = telemetry?.RecordOutputs,
             FunctionId = telemetry?.FunctionId,
             AiVersion = Operations.AiSdkVersion.Version,
         };
         return FilterTelemetryEventHelper.FilterTelemetryEvent(augmented, telemetry);
+    }
+
+    // The call options repeat the tools of the event, so their arguments go through the same redaction.
+    private static Provider.LanguageModelCallOptions RedactCallOptionsTools(
+        Provider.LanguageModelCallOptions options
+    )
+    {
+        var tools = RedactTelemetryCredentialsHelper.RedactTools(options.Tools);
+        if (ReferenceEquals(tools, options.Tools))
+        {
+            return options;
+        }
+
+        var copy = options.Copy();
+        copy.Tools = tools;
+        return copy;
     }
 
     // Maps to augmentEvent.
@@ -808,7 +838,7 @@ internal sealed class TelemetryDispatcher
         var augmented = new GenerateTextResult(
             result.Text,
             result.ReasoningText,
-            result.Steps,
+            result.Steps.Select(RedactStep).ToList(),
             result.FinishReason,
             result.Usage,
             result.Output,
@@ -836,11 +866,27 @@ internal sealed class TelemetryDispatcher
     {
         var hidden = telemetry?.RecordInputs == false || telemetry?.RecordOutputs == false;
         return new GenerateTextStepErrorEvent(
-            e,
+            RedactSteps(e),
             hidden
                 ? new InvalidOperationException("AI SDK operation failed")
                 : RedactTelemetryCredentialsHelper.RedactTelemetryCredentials(e.Error)
         );
+    }
+
+    // The step start event with the credentials of its previous steps redacted.
+    private static GenerateTextStepStartEvent RedactSteps(GenerateTextStepStartEvent e)
+    {
+        return e.WithContexts(
+            e.RuntimeContext ?? new Dictionary<string, object?>(),
+            e.ToolsContext ?? new Dictionary<string, JsonElement>(),
+            e.Steps.Select(RedactStep).ToList()
+        );
+    }
+
+    // Integrations see the steps with their tool credentials redacted. The restricted dispatcher already filtered the contexts.
+    private static StepResult RedactStep(StepResult step)
+    {
+        return RedactTelemetryCredentialsHelper.RedactStep(step);
     }
 
     // Maps to the toolContext branch of augmentEvent: the context of the called tool is filtered by name.

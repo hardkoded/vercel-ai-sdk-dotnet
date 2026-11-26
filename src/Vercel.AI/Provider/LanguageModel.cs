@@ -707,7 +707,21 @@ public sealed class LanguageModelTool
     public bool IsProviderDefined => ProviderToolId != null;
 
     /// <summary>Arguments of a provider-defined tool. Undefined for a function tool.</summary>
-    public JsonElement Args { get; }
+    public JsonElement Args { get; private set; }
+
+    // A copy of the tool whose arguments are the provider-owned telemetry view. A redactor that throws leaves no arguments.
+    // Maps to the `tools` redaction of `redactTelemetryCredentials`.
+    internal LanguageModelTool WithRedactedTelemetryArgs()
+    {
+        if (!IsProviderDefined || RedactArgs == null)
+        {
+            return this;
+        }
+
+        var copy = (LanguageModelTool)MemberwiseClone();
+        copy.Args = RedactTelemetryArgs() ?? default;
+        return copy;
+    }
 
     /// <summary>
     /// Provider-owned telemetry view of <see cref="Args"/>, which hides credentials. Maps to the <c>redactArgs</c> option of a provider tool factory.

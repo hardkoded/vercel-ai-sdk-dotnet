@@ -168,7 +168,24 @@ public sealed class Tool
     public string? ProviderToolId { get; }
 
     /// <summary>Arguments of a provider-defined tool. Undefined for a function tool.</summary>
-    public JsonElement ProviderToolArgs { get; }
+    public JsonElement ProviderToolArgs { get; private set; }
+
+    // A copy of the tool whose arguments are the provider-owned telemetry view. A redactor that throws leaves no arguments.
+    // Maps to the `tools` redaction of `redactTelemetryCredentials`.
+    internal Tool WithRedactedTelemetryArgs()
+    {
+        if (!IsProviderDefined || RedactArgs == null)
+        {
+            return this;
+        }
+
+        var copy = (Tool)MemberwiseClone();
+        copy.ProviderToolArgs = ProviderUtils.TelemetryRedaction.RedactTelemetryValue(
+            ProviderToolArgs,
+            RedactArgs
+        ) ?? default;
+        return copy;
+    }
 
     /// <summary>Whether this is a provider-defined tool, which the provider executes. Maps to <c>{ type: 'provider', id, args }</c>.</summary>
     public bool IsProviderDefined => ProviderToolId != null;
@@ -1746,7 +1763,21 @@ public sealed class GenerateTextStartEvent : IOperationStartEvent
     public IReadOnlyList<ModelMessage> Messages { get; init; } = [];
 
     /// <summary>The tools available for this generation. Maps to <c>tools</c>.</summary>
-    public IReadOnlyList<Tool>? Tools { get; init; }
+    public IReadOnlyList<Tool>? Tools
+    {
+        get => _tools;
+        init => _tools = value;
+    }
+
+    private IReadOnlyList<Tool>? _tools;
+
+    // A copy of the event whose tools carry the telemetry view of their arguments. Maps to the `tools` redaction of `redactTelemetryCredentials`.
+    internal GenerateTextStartEvent WithRedactedTools()
+    {
+        var copy = (GenerateTextStartEvent)MemberwiseClone();
+        copy._tools = RedactTelemetryCredentialsHelper.RedactTools(_tools);
+        return copy;
+    }
 
     /// <summary>The tool choice strategy for this generation. Maps to <c>toolChoice</c>.</summary>
     public ToolChoice? ToolChoice { get; init; }
@@ -1897,7 +1928,13 @@ public class GenerateTextStepStartEvent
     public IReadOnlyList<ModelMessage> Messages { get; init; } = [];
 
     /// <summary>The tools available for this generation. Maps to <c>tools</c>.</summary>
-    public IReadOnlyList<Tool>? Tools { get; init; }
+    public IReadOnlyList<Tool>? Tools
+    {
+        get => _tools;
+        init => _tools = value;
+    }
+
+    private IReadOnlyList<Tool>? _tools;
 
     /// <summary>The tool choice configuration for this step. Maps to <c>toolChoice</c>.</summary>
     public ToolChoice? ToolChoice { get; init; }
@@ -1948,6 +1985,8 @@ public class GenerateTextStepStartEvent
     )
     {
         var copy = (GenerateTextStepStartEvent)MemberwiseClone();
+        // The tools carry the telemetry view of their arguments.
+        copy._tools = RedactTelemetryCredentialsHelper.RedactTools(_tools);
         copy._steps = steps;
         copy._runtimeContext = runtimeContext;
         copy._toolsContext = toolsContext;
