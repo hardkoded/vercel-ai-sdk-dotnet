@@ -128,7 +128,7 @@ public sealed class GatewayVideoModel : IVideoModel, IVideoCaller
                         throw new Util.ApiCallError(
                             "SSE stream ended without a data event",
                             url.AbsoluteUri,
-                            body,
+                            GatewayProvider.RequestBodyValues(body),
                             200
                         );
                     }
@@ -149,7 +149,7 @@ public sealed class GatewayVideoModel : IVideoModel, IVideoCaller
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            throw GatewayProvider.MapFailure(exception, headers);
+            throw GatewayProvider.MapFailure(exception, headers, body);
         }
     }
 
@@ -275,7 +275,7 @@ public sealed class GatewayVideoModel : IVideoModel, IVideoCaller
                             new Util.ApiCallError(
                                 "Invalid video status response",
                                 _provider.Route("video-model/status").AbsoluteUri,
-                                body.ToJsonString(),
+                                GatewayProvider.RequestBodyValues(body.ToJsonString()),
                                 200,
                                 root.Headers,
                                 element.GetRawText()
@@ -538,7 +538,7 @@ public sealed class GatewayVideoModel : IVideoModel, IVideoCaller
                     throw new Util.ApiCallError(
                         message,
                         url,
-                        requestBody,
+                        GatewayProvider.RequestBodyValues(requestBody),
                         root.TryGetProperty("statusCode", out var status)
                         && status.ValueKind == JsonValueKind.Number
                             ? status.GetInt32()
@@ -570,7 +570,7 @@ public sealed class GatewayVideoModel : IVideoModel, IVideoCaller
             throw new Util.ApiCallError(
                 "Failed to parse video SSE event",
                 url,
-                requestBody,
+                GatewayProvider.RequestBodyValues(requestBody),
                 200,
                 responseHeaders,
                 cause: exception
@@ -589,7 +589,7 @@ public sealed class GatewayVideoModel : IVideoModel, IVideoCaller
             throw new Util.ApiCallError(
                 "Failed to parse video SSE event",
                 url,
-                requestBody,
+                GatewayProvider.RequestBodyValues(requestBody),
                 200,
                 cause: exception
             );
@@ -654,7 +654,7 @@ public sealed class GatewayVideoModel : IVideoModel, IVideoCaller
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            throw GatewayProvider.MapFailure(exception, headers);
+            throw GatewayProvider.MapFailure(exception, headers, body);
         }
     }
 }

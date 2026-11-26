@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using Vercel.AI.Gateway;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 using Vercel.AI.Util;
@@ -143,6 +144,37 @@ internal static class RedactTelemetryCredentialsHelper
                     api.IsRetryable,
                     api.Data
                 );
+            case ApiException { RequestBodyValues: TelemetryRedactedValue body } api:
+                return ProviderHttp.MapStatusWithHeaders(
+                    api.StatusCode,
+                    api.Message,
+                    api.ResponseBody,
+                    api.ResponseHeaders,
+                    api.Url,
+                    TelemetryRedaction.RedactTelemetryValue(body) is { } redactedBody
+                        ? redactedBody
+                        : new object(),
+                    api.IsRetryable
+                );
+            // Gateway errors keep the failed API call as their cause, and the call keeps the request body.
+            case Vercel.AI.Gateway.GatewayError { Cause: { } cause } gateway:
+                return
+                    RedactTelemetryCredentials(cause) is var redactedCause
+                    && !ReferenceEquals(redactedCause, cause)
+                    ? GatewayErrors.AsGatewayError(redactedCause, gateway.AuthMethod)
+                    : error;
+            // RetryError exposes both the full attempt history and the final error.
+            case RetryError retry:
+                var errors = retry
+                    .Errors.Select(entry =>
+                        entry is Exception inner ? RedactTelemetryCredentials(inner) : entry
+                    )
+                    .ToList();
+                return errors
+                    .Where((entry, index) => !ReferenceEquals(entry, retry.Errors[index]))
+                    .Any()
+                    ? new RetryError(retry.Message, retry.Reason, errors)
+                    : error;
             default:
                 return error;
         }

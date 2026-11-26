@@ -17,6 +17,11 @@ public static class V4Json
     /// <summary>Serializes <paramref name="options"/> as a V4 call body.</summary>
     public static string CallOptions(LanguageModelCallOptions options)
     {
+        return CallOptions(options, false);
+    }
+
+    internal static string CallOptions(LanguageModelCallOptions options, bool stream)
+    {
         var prompt = new JsonArray();
         foreach (var message in ToolModelMessage.Flatten(options.Prompt))
         {
@@ -24,6 +29,12 @@ public static class V4Json
         }
 
         var body = new JsonObject { ["prompt"] = prompt };
+
+        // Core passes includeRawChunks to every streamed call, and the Gateway receives the options as they are.
+        if (stream)
+        {
+            body["includeRawChunks"] = options.IncludeRawChunks;
+        }
         if (options.MaxOutputTokens is { } max)
         {
             body["maxOutputTokens"] = max;
@@ -83,11 +94,8 @@ public static class V4Json
         {
             body["responseFormat"] = new JsonObject { ["type"] = "json" };
         }
-        else
-        {
-            body["responseFormat"] = new JsonObject { ["type"] = "text" };
-        }
 
+        // Plain text is the default, so upstream leaves responseFormat out of the body when the call sets none.
         if (options.Tools is { Count: > 0 })
         {
             var tools = new JsonArray();
