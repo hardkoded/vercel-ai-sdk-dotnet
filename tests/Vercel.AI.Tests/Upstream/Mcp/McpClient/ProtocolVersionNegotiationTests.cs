@@ -53,9 +53,8 @@ public sealed class ProtocolVersionNegotiationTests
     [UpstreamTest(
         Prefix
             + "should support transports with getter-only protocolVersion and setProtocolVersion",
-        Coverage = UpstreamCoverage.Partial,
-        Commit = Commit,
-        Note = "C# has no getter-only property plus setProtocolVersion split. IMcpProtocolVersionDiscoveryTransport.ProtocolVersion is a get/set property, so this checks that the client writes the negotiated version to a transport that stores it in its own field."
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
     )]
     public async Task ShouldSupportTransportsWithGetterOnlyProtocolVersionAndSetProtocolVersion()
     {
@@ -344,7 +343,11 @@ public sealed class ProtocolVersionNegotiationTests
 
         public bool WaitsForProtocolVersionDiscovery => false;
 
-        public string? ProtocolVersion { get; set; }
+        public string? ProtocolVersion => _protocolVersion;
+
+        private string? _protocolVersion;
+
+        public void SetProtocolVersion(string version) => _protocolVersion = version;
 
         public Task NotifyAsync(
             string method,

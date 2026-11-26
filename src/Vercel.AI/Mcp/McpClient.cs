@@ -40,9 +40,15 @@ public interface IMcpProtocolVersionDiscoveryTransport : IMcpTransport
 
     /// <summary>
     /// The protocol version the transport announces, for example in the <c>mcp-protocol-version</c> header.
-    /// The client sets it when discovery or initialization negotiates a version. Maps to <c>MCPTransport.protocolVersion</c>.
+    /// Maps to <c>MCPTransport.protocolVersion</c>. It is get-only so a transport can keep it in its own state.
     /// </summary>
-    string? ProtocolVersion { get; set; }
+    string? ProtocolVersion { get; }
+
+    /// <summary>
+    /// Sets the protocol version negotiated during discovery or initialization.
+    /// The client calls it instead of writing <see cref="ProtocolVersion"/>. Maps to <c>MCPTransport.setProtocolVersion</c>.
+    /// </summary>
+    void SetProtocolVersion(string version);
 }
 
 /// <summary>
@@ -553,7 +559,7 @@ public sealed class McpClient
     {
         if (_transport is IMcpProtocolVersionDiscoveryTransport versioned)
         {
-            versioned.ProtocolVersion = version;
+            versioned.SetProtocolVersion(version);
         }
     }
 
@@ -1155,6 +1161,9 @@ public sealed class HttpMcpTransport
 
     /// <inheritdoc />
     public string? ProtocolVersion { get; set; } = McpClient.LatestLegacyProtocolVersion;
+
+    /// <inheritdoc />
+    public void SetProtocolVersion(string version) => ProtocolVersion = version;
 
     /// <inheritdoc />
     public async Task<JsonElement> CallAsync(
