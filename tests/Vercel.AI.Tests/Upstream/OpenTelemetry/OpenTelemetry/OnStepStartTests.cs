@@ -2,6 +2,10 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Diagnostics;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using Vercel.AI.Provider;
 using static Vercel.AI.Tests.Upstream.OpenTelemetry.OpenTelemetry.OpenTelemetrySupport;
 using OtelIntegration = Vercel.AI.OpenTelemetry.OpenTelemetry;
 using OtelOptions = Vercel.AI.OpenTelemetry.OpenTelemetryOptions;
@@ -51,5 +55,86 @@ public sealed class OnStepStartTests
             chat.InitAttributes
         );
         Assert.Empty(chat.RuntimeAttributes);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/otel/src/open-telemetry.test.ts::OpenTelemetry > onStepStart::sets gen_ai.input.messages when messages are provided",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Sets_gen_ai_input_messages_when_messages_are_provided()
+    {
+        using var tracer = new MockTracer();
+        var integration = new OtelIntegration(new OtelOptions { Tracer = tracer.Source });
+
+        await integration.OnStart!(MakeOnStartEvent(), default);
+        await integration.OnStepStart!(MakeStepStartEvent(), default);
+        await integration.OnLanguageModelCallStart!(
+            MakeLanguageModelCallStartEvent(messages: [new UserModelMessage("Hello")]),
+            default
+        );
+
+        var attrs = tracer.Spans[2].InitAttributes;
+        OtelJson.Equal(
+            """
+            [{"parts":[{"content":"Hello","type":"text"}],"role":"user"}]
+            """,
+            ParseJsonAttribute(attrs, "gen_ai.input.messages")
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/otel/src/open-telemetry.test.ts::OpenTelemetry > onStepStart::sets gen_ai.system_instructions when instructions are provided",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Sets_gen_ai_system_instructions_when_instructions_are_provided()
+    {
+        using var tracer = new MockTracer();
+        var integration = new OtelIntegration(new OtelOptions { Tracer = tracer.Source });
+
+        await integration.OnStart!(MakeOnStartEvent(), default);
+        await integration.OnStepStart!(MakeStepStartEvent(), default);
+        await integration.OnLanguageModelCallStart!(
+            MakeLanguageModelCallStartEvent(
+                instructions: Vercel.AI.Prompt.Instructions.From("You are helpful")
+            ),
+            default
+        );
+
+        var attrs = tracer.Spans[2].InitAttributes;
+        OtelJson.Equal(
+            """
+            [{"content":"You are helpful","type":"text"}]
+            """,
+            ParseJsonAttribute(attrs, "gen_ai.system_instructions")
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/otel/src/open-telemetry.test.ts::OpenTelemetry > onStepStart::sets gen_ai.tool.definitions when tools provided",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Sets_gen_ai_tool_definitions_when_tools_provided()
+    {
+        using var tracer = new MockTracer();
+        var integration = new OtelIntegration(new OtelOptions { Tracer = tracer.Source });
+        LanguageModelTool[] tools = [new("get_weather", "Get weather", default)];
+
+        await integration.OnStart!(MakeOnStartEvent(), default);
+        await integration.OnStepStart!(MakeStepStartEvent(), default);
+        await integration.OnLanguageModelCallStart!(
+            MakeLanguageModelCallStartEvent(tools: tools),
+            default
+        );
+
+        var attrs = tracer.Spans[2].InitAttributes;
+        OtelJson.Equal(
+            """
+            [{"description":"Get weather","name":"get_weather","type":"function"}]
+            """,
+            ParseJsonAttribute(attrs, "gen_ai.tool.definitions")
+        );
     }
 }

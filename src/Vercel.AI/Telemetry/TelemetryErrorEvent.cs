@@ -17,7 +17,7 @@ public sealed class TelemetryErrorEvent
         Error = error;
     }
 
-    /// <summary>Unique identifier of the failed call. Null for a stream, which has no call id.</summary>
+    /// <summary>Unique identifier of the failed call.</summary>
     public string? CallId { get; }
 
     /// <summary>The error. A download error arrives without its URL.</summary>
