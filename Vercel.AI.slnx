@@ -72,6 +72,9 @@
         <Project Path="examples/OpenResponsesBareExtension/OpenResponsesBareExtension.csproj" />
         <Project Path="examples/Providers/Providers.csproj" />
         <Project Path="examples/StreamText/StreamText.csproj" />
+        <Project Path="examples/StreamSpeechElevenLabsBasic/StreamSpeechElevenLabsBasic.csproj" />
+        <Project Path="examples/StreamSpeechElevenLabsDialogue/StreamSpeechElevenLabsDialogue.csproj" />
+        <Project Path="examples/StreamSpeechElevenLabsStreamText/StreamSpeechElevenLabsStreamText.csproj" />
         <Project Path="examples/StreamTextCerebrasServiceTier/StreamTextCerebrasServiceTier.csproj" />
         <Project Path="examples/StreamTranscribeDeepgramBasic/StreamTranscribeDeepgramBasic.csproj" />
         <Project Path="examples/GenerateSpeechAssemblyAIBasic/GenerateSpeechAssemblyAIBasic.csproj" />
