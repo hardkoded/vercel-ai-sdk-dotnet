@@ -398,7 +398,6 @@ internal static class ElevenLabsSpeechStream
         {
             // A consumer that stops early, or a cancel, releases the socket and the text stream.
             session.Cancel();
-            session.Options.OnStreamEnded?.Invoke();
         }
     }
 
@@ -547,7 +546,7 @@ internal sealed class ElevenLabsSpeechStreamOptions
     /// <summary>Custom WebSocket implementation.</summary>
     public WebSocketFactory? WebSocket { get; init; }
 
-    /// <summary>Runs once the output stream ends or is disposed. Releases what the caller linked to <see cref="AbortSignal"/>.</summary>
+    /// <summary>Runs once when the session ends, whether or not the output is read. Releases what the caller linked to <see cref="AbortSignal"/>.</summary>
     public Action? OnStreamEnded { get; init; }
 }
 
@@ -657,6 +656,7 @@ internal sealed class ElevenLabsSpeechStreamSession
 
         Cleanup(null);
         Queue.Complete(null);
+        NotifyEnded();
     }
 
     private bool InputEnded
@@ -740,6 +740,7 @@ internal sealed class ElevenLabsSpeechStreamSession
 
         Cleanup(null);
         Queue.Complete(error);
+        NotifyEnded();
     }
 
     private void Finish()
@@ -758,6 +759,20 @@ internal sealed class ElevenLabsSpeechStreamSession
         );
         Queue.Complete(null);
         Cleanup(1000);
+        NotifyEnded();
+    }
+
+    // Runs once per session, from whichever terminal path wins, whether or not the output is ever read.
+    private void NotifyEnded()
+    {
+        try
+        {
+            _options.OnStreamEnded?.Invoke();
+        }
+        catch (Exception)
+        {
+            // Releasing what the caller linked must not fail the stream.
+        }
     }
 
     // Every send restarts the idle clock; a slow text producer (e.g. a reasoning model) would otherwise hit the server's
