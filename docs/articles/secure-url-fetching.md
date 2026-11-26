@@ -14,6 +14,21 @@ The default fetch does not validate resolved DNS addresses and does not pin conn
 
 Applications that download untrusted URLs must pass a DNS-validating fetch (a `DownloadFetch` that resolves the host, rejects private and reserved addresses, and connects to the validated address) wherever the SDK accepts one, such as `Download.Fetch`, the `fetch` argument of `Download.GetAsync`, or `WebFetchTools.Fetch`. Otherwise enforce equivalent outbound network restrictions. A `trustedOrigin` skips URL validation for a developer-configured origin.
 
+## GuardedFetch
+
+`GuardedFetch` (`createGuardedFetch` of the `guarded-fetch` package upstream) is an opt-in transport that implements the DNS-validating fetch described above. It converts implicitly to a `DownloadFetch`, so it fits every place that takes one. Dispose it to release pooled connections.
+
+```csharp
+using var guardedFetch = new GuardedFetch();
+
+var result = await Download.CreateDownload(fetch: guardedFetch)
+    .InvokeAsync(new DownloadRequestItem(new Uri("https://example.com/file.png"), false));
+```
+
+On net10.0 the connect callback of `SocketsHttpHandler` resolves the host, rejects the connection when any resolved address is local, private, or reserved, and connects to the validated address, so a DNS answer cannot change between the check and the connection. On netstandard2.0 the addresses are resolved and validated before the request, but the runtime resolves again when it connects, so DNS rebinding is not prevented there. Restrict network egress on that target. `GuardedFetch` never uses a proxy, so a proxy variable such as `HTTPS_PROXY` is ignored. Restrict egress at the platform level if you need one.
+
+`new GuardedFetch(trustedOrigins)` lists developer-configured origins, such as `http://localhost:11434`, whose connections skip the address check. A trusted origin only skips the address check. `Download.CreateDownload` and `Download.GetAsync` still reject `localhost` and private IP literals in the URL, so pass the same origin as `trustedOrigin` to `Download.FetchWithValidatedRedirectsAsync` or `Download.FetchWithValidatedEndpointAsync` to reach it. Never build the list from response data. `GuardedFetch.IsSafeIpAddress(address)` tells whether an address is public.
+
 The `.internal` rule is defense in depth. It does not replace network-level protection.
 
 ## Fetching with redirect validation
@@ -42,7 +57,7 @@ var response = await Download.FetchWithValidatedEndpointAsync(
     new DownloadRequest(headers, cancellationToken, "manual") { Method = "POST", Body = formBytes });
 ```
 
-Pass `requireDnsValidation: true` when the endpoint comes from untrusted data, as in MCP OAuth. Then an untrusted URL is rejected with a `DownloadError` unless you pass a custom `fetch` that validates DNS at connection time and pins the connection. The default fetch and `Download.Fetch` do not count, even when you pass `Download.Fetch` explicitly. A URL on `trustedOrigin` skips the check, and so does a runtime where `Download.IsBrowser` is true.
+Pass `requireDnsValidation: true` when the endpoint comes from untrusted data, as in MCP OAuth. Then an untrusted URL is rejected with a `DownloadError` unless you pass a custom `fetch` (such as `GuardedFetch`) that validates DNS at connection time and pins the connection. The default fetch and `Download.Fetch` do not count, even when you pass `Download.Fetch` explicitly. A URL on `trustedOrigin` skips the check, and so does a runtime where `Download.IsBrowser` is true.
 
 ## Generated file downloads
 
