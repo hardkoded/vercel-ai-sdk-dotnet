@@ -393,7 +393,10 @@ internal static class Generation
             var responseMessages = new List<ModelMessage>();
             var callId = (options.GenerateCallId ?? NewCallId)();
             failedCallId = callId;
-            var telemetryDispatcher = TelemetryDispatcher.Create(options);
+            var telemetryDispatcher =
+                GenerateTextRestrictedTelemetryDispatcher.CreateRestrictedTelemetryDispatcher(
+                    options
+                );
             generateTextSpan = new TaskCompletionSource<object?>();
             telemetryDispatcher.StartTracingChannelContext(
                 TelemetryTracingEventType.GenerateText,
@@ -644,7 +647,10 @@ internal static class Generation
                     Tools = callOptions.Tools,
                     CallOptions = callOptions,
                 };
-                var modelCallDispatcher = TelemetryDispatcher.Create(options);
+                var modelCallDispatcher =
+                    GenerateTextRestrictedTelemetryDispatcher.CreateRestrictedTelemetryDispatcher(
+                        options
+                    );
                 if (modelCallDispatcher.OnLanguageModelCallStart is { } telemetryCallStart)
                 {
                     await telemetryCallStart(modelCallStartEvent, cancellationToken)
@@ -872,7 +878,12 @@ internal static class Generation
                 }
             }
 
-            if (TelemetryDispatcher.Create(options).OnEnd is { } telemetryOnEnd)
+            if (
+                GenerateTextRestrictedTelemetryDispatcher
+                    .CreateRestrictedTelemetryDispatcher(options)
+                    .OnEnd is
+                { } telemetryOnEnd
+            )
             {
                 await telemetryOnEnd(result, cancellationToken).ConfigureAwait(false);
             }
@@ -916,7 +927,12 @@ internal static class Generation
                 await options.OnError(error, callerToken).ConfigureAwait(false);
             }
 
-            if (TelemetryDispatcher.Create(options).OnError is { } telemetryOnError)
+            if (
+                GenerateTextRestrictedTelemetryDispatcher
+                    .CreateRestrictedTelemetryDispatcher(options)
+                    .OnError is
+                { } telemetryOnError
+            )
             {
                 await telemetryOnError(new TelemetryErrorEvent(failedCallId, error), callerToken)
                     .ConfigureAwait(false);
@@ -956,7 +972,12 @@ internal static class Generation
                 .ConfigureAwait(false);
         }
 
-        if (TelemetryDispatcher.Create(options).OnStepError is { } telemetryOnStepError)
+        if (
+            GenerateTextRestrictedTelemetryDispatcher
+                .CreateRestrictedTelemetryDispatcher(options)
+                .OnStepError is
+            { } telemetryOnStepError
+        )
         {
             await NotifyAsync(
                     () => telemetryOnStepError(stepError, CancellationToken.None),
@@ -1246,7 +1267,9 @@ internal static class Generation
             || options.OnStepEnd != null
             || options.OnAbort != null
             || options.OnLanguageModelCallEnd != null
-            || TelemetryDispatcher.Create(options).HasIntegrations;
+            || GenerateTextRestrictedTelemetryDispatcher
+                .CreateRestrictedTelemetryDispatcher(options)
+                .HasIntegrations;
 #pragma warning restore CS0618
     }
 
@@ -1363,7 +1386,8 @@ internal static class Generation
     {
         // The step loop sees the steps that the event processor recorded from the transformed stream, as upstream.
         var steps = recorder.Steps;
-        var abortDispatcher = TelemetryDispatcher.Create(options);
+        var abortDispatcher =
+            GenerateTextRestrictedTelemetryDispatcher.CreateRestrictedTelemetryDispatcher(options);
         if (options.OnAbort is { } || abortDispatcher.OnAbort != null)
         {
             // An abort that follows the consumer's cancellation still reaches onAbort, like upstream's same-tick cancel-then-abort.
@@ -1404,7 +1428,10 @@ internal static class Generation
             var current = model;
             buffer.Add(new StartPart());
             var callId = (options.GenerateCallId ?? NewCallId)();
-            var telemetryDispatcher = TelemetryDispatcher.Create(options);
+            var telemetryDispatcher =
+                GenerateTextRestrictedTelemetryDispatcher.CreateRestrictedTelemetryDispatcher(
+                    options
+                );
             recorder.CallId = callId;
             streamTextSpan = new TaskCompletionSource<object?>();
             telemetryDispatcher.StartTracingChannelContext(
@@ -2484,7 +2511,9 @@ internal static class Generation
     )
     {
         Exception? callbackError = null;
-        var telemetryOnAbort = TelemetryDispatcher.Create(options).OnAbort;
+        var telemetryOnAbort = GenerateTextRestrictedTelemetryDispatcher
+            .CreateRestrictedTelemetryDispatcher(options)
+            .OnAbort;
         if (options.OnAbort != null || telemetryOnAbort != null)
         {
             try
