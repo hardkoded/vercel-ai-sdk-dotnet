@@ -380,6 +380,9 @@ public sealed class StreamSpeechRequest : OperationRequest
 /// <summary>Result of <see cref="StreamSpeech.Start"/>. Maps to <c>StreamSpeechResult</c>.</summary>
 public sealed class StreamSpeechResult
 {
+    // Parts the consumer has not read yet before the model stream pauses, like the output stream's high water mark.
+    private const int OutputCapacity = 16;
+
     private readonly PendingPromise<SpeechStreamUsage> _usage =
         new PendingPromise<SpeechStreamUsage>();
     private readonly PendingPromise<IReadOnlyList<OperationWarning>> _warnings =
@@ -388,10 +391,9 @@ public sealed class StreamSpeechResult
         new PendingPromise<IReadOnlyList<ProviderResponse>>();
     private readonly PendingPromise<JsonElement> _providerMetadata =
         new PendingPromise<JsonElement>();
-    // Parts the consumer has not read yet before the model stream pauses, like the output stream's high water mark.
-    private const int OutputCapacity = 16;
-
-    private readonly PartQueue<SpeechStreamPart> _queue = new PartQueue<SpeechStreamPart>(OutputCapacity);
+    private readonly PartQueue<SpeechStreamPart> _queue = new PartQueue<SpeechStreamPart>(
+        OutputCapacity
+    );
     private readonly CancellationTokenSource _pipe = new CancellationTokenSource();
     private readonly object _gate = new object();
     private readonly IStreamingSpeechCaller _model;
@@ -718,12 +720,18 @@ public sealed class StreamSpeechResult
                 );
                 break;
             case "raw":
-                await _queue.EnqueueAsync(new SpeechStreamPart { Type = "raw", RawValue = part.RawValue }, token);
+                await _queue.EnqueueAsync(
+                    new SpeechStreamPart { Type = "raw", RawValue = part.RawValue },
+                    token
+                );
                 break;
             case "error":
                 _lastError = part.Error;
                 ReportError(part.Error);
-                await _queue.EnqueueAsync(new SpeechStreamPart { Type = "error", Error = part.Error }, token);
+                await _queue.EnqueueAsync(
+                    new SpeechStreamPart { Type = "error", Error = part.Error },
+                    token
+                );
                 break;
             case "finish":
                 if (_warnings.IsPending)
