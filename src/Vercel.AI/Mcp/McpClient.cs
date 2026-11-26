@@ -1132,7 +1132,8 @@ public sealed class StdioMcpTransport : IMcpNotificationTransport, IDisposable
             statusCode: statusCode,
             url: url,
             responseBody: responseBody,
-            data: data
+            data: data,
+            cause: new JsonRpcErrorCause(error.Clone())
         );
     }
 

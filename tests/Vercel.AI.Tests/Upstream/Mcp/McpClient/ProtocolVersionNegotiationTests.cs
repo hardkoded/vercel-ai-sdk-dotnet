@@ -152,9 +152,8 @@ public sealed class ProtocolVersionNegotiationTests
     [UpstreamTest(
         Prefix
             + "should explain how to opt into legacy initialization for advertised versions $supported",
-        Coverage = UpstreamCoverage.Partial,
-        Commit = Commit,
-        Note = "The transport throws an MCPClientError directly, so the JSON-RPC error object that upstream keeps as error.cause.cause is not checked."
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
     )]
     public async Task ShouldExplainHowToOptIntoLegacyInitializationForAdvertisedVersions(
         string supportedVersions
@@ -168,11 +167,7 @@ public sealed class ProtocolVersionNegotiationTests
                 )
             )
             .RootElement.Clone();
-        var discoveryError = new MCPClientError(
-            "Unsupported protocol version",
-            code: -32022,
-            data: data
-        );
+        var discoveryError = DiscoveryError(-32022, "Unsupported protocol version", data);
         var transport = new ProtocolDiscoveryTransport(
             DiscoveryBehavior.Unsupported,
             discoveryError: discoveryError
@@ -190,7 +185,12 @@ public sealed class ProtocolVersionNegotiationTests
         Assert.Contains("legacy", error.Message);
         Assert.Equal(discoveryError.Code, error.Code);
         Assert.Equal(data.GetRawText(), error.Data!.Value.GetRawText());
-        Assert.Same(discoveryError, error.InnerException);
+        var cause = Assert.IsType<MCPClientError>(error.InnerException);
+        Assert.Same(discoveryError, cause);
+        Assert.Equal(discoveryError.Message, cause.Message);
+        Assert.Equal(discoveryError.Code, cause.Code);
+        Assert.Equal(data.GetRawText(), cause.Data!.Value.GetRawText());
+        Assert.IsType<JsonRpcErrorCause>(cause.InnerException);
         Assert.Equal(["server/discover"], transport.Methods);
     }
 
@@ -208,17 +208,16 @@ public sealed class ProtocolVersionNegotiationTests
     )]
     [UpstreamTest(
         Prefix + "should preserve a version error with $name",
-        Coverage = UpstreamCoverage.Partial,
-        Commit = Commit,
-        Note = "The transport throws an MCPClientError directly, so the error is checked by identity instead of by error.cause."
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
     )]
     public async Task ShouldPreserveAVersionErrorWith(string name, string? data)
     {
         Assert.NotNull(name);
-        var discoveryError = new MCPClientError(
+        var discoveryError = DiscoveryError(
+            -32022,
             "Unsupported protocol version",
-            code: -32022,
-            data: data is null ? null : JsonDocument.Parse(data).RootElement.Clone()
+            data is null ? null : JsonDocument.Parse(data).RootElement.Clone()
         );
         var transport = new ProtocolDiscoveryTransport(
             DiscoveryBehavior.Unsupported,
@@ -227,7 +226,7 @@ public sealed class ProtocolVersionNegotiationTests
 
         var error = await Assert.ThrowsAsync<MCPClientError>(() => Client.CreateAsync(transport));
 
-        Assert.Same(discoveryError, error);
+        AssertPreserved(discoveryError, error);
         Assert.Equal(["server/discover"], transport.Methods);
     }
 
@@ -237,16 +236,15 @@ public sealed class ProtocolVersionNegotiationTests
     [UpstreamTest(
         Prefix
             + "should preserve modern protocol error %s even when legacy versions are advertised",
-        Coverage = UpstreamCoverage.Partial,
-        Commit = Commit,
-        Note = "The transport throws an MCPClientError directly, so the error is checked by identity instead of by error.cause."
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
     )]
     public async Task ShouldPreserveModernProtocolErrorEvenWhenLegacyVersionsAreAdvertised(int code)
     {
-        var discoveryError = new MCPClientError(
+        var discoveryError = DiscoveryError(
+            code,
             "Modern protocol error",
-            code: code,
-            data: JsonDocument.Parse("{\"supported\":[\"2025-06-18\"]}").RootElement.Clone()
+            JsonDocument.Parse("{\"supported\":[\"2025-06-18\"]}").RootElement.Clone()
         );
         var transport = new ProtocolDiscoveryTransport(
             DiscoveryBehavior.Unsupported,
@@ -255,7 +253,7 @@ public sealed class ProtocolVersionNegotiationTests
 
         var error = await Assert.ThrowsAsync<MCPClientError>(() => Client.CreateAsync(transport));
 
-        Assert.Same(discoveryError, error);
+        AssertPreserved(discoveryError, error);
         Assert.Equal(["server/discover"], transport.Methods);
     }
 
@@ -302,6 +300,29 @@ public sealed class ProtocolVersionNegotiationTests
         Legacy,
         Silent,
         Unsupported,
+    }
+
+    /// <summary>Builds the error a transport throws for a JSON-RPC error response, with the error object as its cause.</summary>
+    private static MCPClientError DiscoveryError(int code, string message, JsonElement? data)
+    {
+        var error = new Dictionary<string, object?> { ["code"] = code, ["message"] = message };
+        if (data is { } value)
+        {
+            error["data"] = value;
+        }
+
+        using var document = JsonDocument.Parse(
+            JsonSerializer.Serialize(new Dictionary<string, object?> { ["error"] = error })
+        );
+        return StdioMcpTransport.CreateError(document.RootElement);
+    }
+
+    private static void AssertPreserved(MCPClientError expected, MCPClientError actual)
+    {
+        Assert.Same(expected, actual);
+        var cause = Assert.IsType<JsonRpcErrorCause>(actual.InnerException);
+        Assert.Equal(expected.Code, cause.Error.GetProperty("code").GetInt32());
+        Assert.Equal(expected.Message, cause.Error.GetProperty("message").GetString());
     }
 
     private sealed record SentMessage(string Method, JsonElement Parameters, bool IsNotification);
