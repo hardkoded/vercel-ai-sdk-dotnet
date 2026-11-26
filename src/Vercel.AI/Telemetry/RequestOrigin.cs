@@ -41,6 +41,11 @@ public static class RequestOrigin
             return request;
         }
 
-        return new LanguageModelStreamRequest(request.Body) { Url = GetRequestOrigin(request.Url) };
+        // The provider-owned telemetry view of the body travels with it, like the annotation of withTelemetryRedaction upstream.
+        return new LanguageModelStreamRequest(request.Body)
+        {
+            Url = GetRequestOrigin(request.Url),
+            RedactBody = request.RedactBody,
+        };
     }
 }

@@ -283,20 +283,35 @@ internal static class LanguageModelCallStreaming
                 .ConfigureAwait(false);
         }
 
-        if (TelemetryDispatcher.Create(options).OnLanguageModelCallStart is { } telemetryCallStart)
+        if (
+            GenerateTextRestrictedTelemetryDispatcher
+                .CreateRestrictedTelemetryDispatcher(options)
+                .OnLanguageModelCallStart is
+            { } telemetryCallStart
+        )
         {
             await telemetryCallStart(startEvent, cancellationToken).ConfigureAwait(false);
         }
 
         var now = options.NowMs ?? Generation.DefaultNowMs;
         var callStartTimestampMs = now();
-        Task<LanguageModelStreamResult> Execute() =>
-            model.DoStreamAsync(callOptions, cancellationToken);
+        async Task<LanguageModelStreamResult> Execute()
+        {
+            var result = await model
+                .DoStreamAsync(callOptions, cancellationToken)
+                .ConfigureAwait(false);
+            // Telemetry observes the sanitized request metadata.
+            return result.Request == null
+                ? result
+                : result.WithTelemetryRequest(
+                    RequestOrigin.SanitizeRequestMetadata(result.Request)
+                );
+        }
         var streamResult = await (
             options.ExecuteLanguageModelCallInTelemetryContext is { } wrap
                 ? wrap(new ExecuteLanguageModelCallInTelemetryContextParams(startEvent, Execute))
-                : TelemetryDispatcher
-                    .Create(options)
+                : GenerateTextRestrictedTelemetryDispatcher
+                    .CreateRestrictedTelemetryDispatcher(options)
                     .ExecuteLanguageModelCallAsync(startEvent, Execute, cancellationToken)
         ).ConfigureAwait(false);
 
@@ -856,7 +871,10 @@ internal static class LanguageModelCallStreaming
             };
 
             var content = BuildContent();
-            var telemetryDispatcher = TelemetryDispatcher.Create(options);
+            var telemetryDispatcher =
+                GenerateTextRestrictedTelemetryDispatcher.CreateRestrictedTelemetryDispatcher(
+                    options
+                );
             if (
                 options.OnLanguageModelCallEnd != null
                 || telemetryDispatcher.OnLanguageModelCallEnd != null

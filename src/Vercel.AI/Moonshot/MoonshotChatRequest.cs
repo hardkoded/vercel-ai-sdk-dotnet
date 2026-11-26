@@ -26,6 +26,25 @@ internal static class MoonshotChatRequest
             ["max"] = "max",
         };
 
+    /// <summary>Request fields the shared request owns, which an unknown provider option must not remove.</summary>
+    private static readonly HashSet<string> WireFields =
+    [
+        "model",
+        "messages",
+        "tools",
+        "tool_choice",
+        "stop",
+        "seed",
+        "response_format",
+        "stream",
+        "stream_options",
+        "temperature",
+        "top_p",
+        "frequency_penalty",
+        "presence_penalty",
+        "max_completion_tokens",
+    ];
+
     /// <summary>Sets <c>thinking</c> and <c>reasoning_effort</c> on the body from the reasoning option and the provider options.</summary>
     public static JsonObject Apply(
         string modelId,
@@ -34,25 +53,22 @@ internal static class MoonshotChatRequest
         IList<CallWarning> warnings
     )
     {
+        var moonshot = ParseOptions(options.ProviderOptions);
         ApplySamplingOptions(modelId, options, body, warnings);
-        ApplyMaxOutputTokens(body);
+        ApplyMaxOutputTokens(options, body);
+        ApplyOptionFields(moonshot, options.ProviderOptions, body);
         ApplyTools(modelId, options, body, warnings);
-        ApplyPromptCacheOptions(body);
 
-        var moonshot = ReadOptions(options.ProviderOptions);
-        var requestedThinking = moonshot.TryGetPropertyValue("thinking", out var thinkingNode)
-            ? thinkingNode as JsonObject
-            : null;
-        var requestedThinkingType = StringOf(requestedThinking, "type");
-        var requestedReasoningEffort = StringOf(moonshot, "reasoningEffort");
-        var preserveReasoning = StringOf(moonshot, "reasoningHistory") == "preserved";
+        var requestedThinking = moonshot?.Thinking;
+        var requestedThinkingType = requestedThinking?.Type;
+        var requestedReasoningEffort = moonshot?.ReasoningEffort;
+        var preserveReasoning = moonshot?.ReasoningHistory == "preserved";
         var reasoning = options.Reasoning;
 
         body.Remove("thinking");
-        body.Remove("reasoningHistory");
         body.Remove("reasoning_effort");
 
-        if (requestedThinking?["budgetTokens"] != null)
+        if (requestedThinking?.BudgetTokens != null)
         {
             warnings.Add(
                 CallWarning.Deprecated(
@@ -291,34 +307,82 @@ internal static class MoonshotChatRequest
     }
 
     /// <summary>
-    /// Sends <c>providerOptions.moonshotai.promptCacheOptions</c> as <c>prompt_cache_options</c>. The mode defaults to
-    /// <c>implicit</c>. Maps to the <c>prompt_cache_options</c> field in <c>getArgs</c>.
+    /// Sets the fields <c>getArgs</c> builds from <c>moonshotaiLanguageModelOptions</c> and drops the raw provider
+    /// options the shared request copied into the body, because the schema strips properties it does not know.
     /// </summary>
-    private static void ApplyPromptCacheOptions(JsonObject body)
+    private static void ApplyOptionFields(
+        MoonshotAILanguageModelOptions? moonshot,
+        IReadOnlyDictionary<string, JsonElement>? providerOptions,
+        JsonObject body
+    )
     {
-        var node = body["promptCacheOptions"];
-        body.Remove("promptCacheOptions");
-        if (node is not JsonObject cache)
+        var key = OpenAICompatibleChat.ResolveProviderOptionsKey(
+            MoonshotProvider.ProviderId,
+            providerOptions
+        );
+        if (
+            OpenAICompatibleChat.HasOptions(providerOptions, key)
+            && providerOptions![key].ValueKind == JsonValueKind.Object
+        )
+        {
+            foreach (var property in providerOptions[key].EnumerateObject())
+            {
+                if (!WireFields.Contains(property.Name))
+                {
+                    body.Remove(property.Name);
+                }
+            }
+        }
+
+        if (moonshot == null)
         {
             return;
         }
 
-        var options = new JsonObject { ["mode"] = StringOf(cache, "mode") ?? "implicit" };
-        if (StringOf(cache, "ttl") is { } ttl)
+        if (moonshot.Logprobs == true || moonshot.TopLogprobs != null)
         {
-            options["ttl"] = ttl;
+            body["logprobs"] = true;
         }
 
-        body["prompt_cache_options"] = options;
+        if (moonshot.TopLogprobs is { } topLogprobs)
+        {
+            body["top_logprobs"] = topLogprobs;
+        }
+
+        if (moonshot.Prediction != null)
+        {
+            body["prediction"] = moonshot.Prediction.DeepClone();
+        }
+
+        if (moonshot.PromptCacheKey != null)
+        {
+            body["prompt_cache_key"] = moonshot.PromptCacheKey;
+        }
+
+        if (moonshot.PromptCacheOptions is { } cache)
+        {
+            var promptCacheOptions = new JsonObject { ["mode"] = cache.Mode ?? "implicit" };
+            if (cache.Ttl != null)
+            {
+                promptCacheOptions["ttl"] = cache.Ttl;
+            }
+
+            body["prompt_cache_options"] = promptCacheOptions;
+        }
+
+        if (moonshot.SafetyIdentifier != null)
+        {
+            body["safety_identifier"] = moonshot.SafetyIdentifier;
+        }
     }
 
     /// <summary>Sends <c>maxOutputTokens</c> as <c>max_completion_tokens</c>, never <c>max_tokens</c>.</summary>
-    private static void ApplyMaxOutputTokens(JsonObject body)
+    private static void ApplyMaxOutputTokens(LanguageModelCallOptions options, JsonObject body)
     {
-        if (body["max_tokens"] is { } maxTokens)
+        body.Remove("max_tokens");
+        if (options.MaxOutputTokens is { } maxOutputTokens)
         {
-            body.Remove("max_tokens");
-            body["max_completion_tokens"] = maxTokens;
+            body["max_completion_tokens"] = maxOutputTokens;
         }
     }
 
@@ -351,32 +415,15 @@ internal static class MoonshotChatRequest
         }
     }
 
-    private static JsonObject ReadOptions(IReadOnlyDictionary<string, JsonElement>? providerOptions)
+    /// <summary>Validates the <c>moonshotai</c> provider options. Maps to <c>parseProviderOptions</c> in <c>getArgs</c>.</summary>
+    private static MoonshotAILanguageModelOptions? ParseOptions(
+        IReadOnlyDictionary<string, JsonElement>? providerOptions
+    )
     {
         var key = OpenAICompatibleChat.ResolveProviderOptionsKey(
             MoonshotProvider.ProviderId,
             providerOptions
         );
-        if (
-            OpenAICompatibleChat.HasOptions(providerOptions, key)
-            && providerOptions![key].ValueKind == JsonValueKind.Object
-            && JsonNode.Parse(providerOptions[key].GetRawText()) is JsonObject bag
-        )
-        {
-            return bag;
-        }
-
-        return new JsonObject();
-    }
-
-    private static string? StringOf(JsonObject? node, string name)
-    {
-        return
-            node != null
-            && node.TryGetPropertyValue(name, out var value)
-            && value is JsonValue json
-            && json.TryGetValue<string>(out var text)
-            ? text
-            : null;
+        return MoonshotChatOptions.ParseLanguageModelOptions(providerOptions, key);
     }
 }
