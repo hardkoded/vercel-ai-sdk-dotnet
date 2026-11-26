@@ -68,7 +68,7 @@ export default defineConfig({
                 {
                     label: "Models",
                     collapsed: true,
-                    autogenerate: { directory: "models" },
+                    items: [{ autogenerate: { directory: "models" } }],
                 },
                 {
                     label: "Releases",
