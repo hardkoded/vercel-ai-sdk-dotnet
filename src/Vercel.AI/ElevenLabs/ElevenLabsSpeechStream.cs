@@ -559,6 +559,8 @@ internal sealed class ElevenLabsSpeechStreamSession
     private readonly object _gate = new object();
     private readonly object _sendGate = new object();
     private readonly CancellationTokenSource _textCancellation = new CancellationTokenSource();
+    private readonly object _textGate = new object();
+    private bool _textDisposed;
     private WebSocketConnection? _connection;
     private Timer? _keepaliveTimer;
     private bool _finished;
@@ -705,17 +707,11 @@ internal sealed class ElevenLabsSpeechStreamSession
             _keepaliveTimer = null;
         }
 
-        try
-        {
-            _textCancellation.Cancel();
-        }
-        catch (Exception)
-        {
-            // A cancellation callback of the text source threw. The stream is already ending.
-        }
-
+        CancelText();
         if (!textStarted)
         {
+            // No sender will run, so nothing else uses the source.
+            DisposeText();
             // No reader took the text yet: release it, so an upstream producer piping into it does not hang.
             _ = ReleaseTextAsync();
         }
@@ -857,6 +853,41 @@ internal sealed class ElevenLabsSpeechStreamSession
         }
         finally
         {
+            DisposeText();
+        }
+    }
+
+    // Cancel and dispose share one lock, because a CancellationTokenSource does not support concurrent disposal and use.
+    private void CancelText()
+    {
+        lock (_textGate)
+        {
+            if (_textDisposed)
+            {
+                return;
+            }
+
+            try
+            {
+                _textCancellation.Cancel();
+            }
+            catch (Exception)
+            {
+                // A cancellation callback of the text source threw. The stream is already ending.
+            }
+        }
+    }
+
+    private void DisposeText()
+    {
+        lock (_textGate)
+        {
+            if (_textDisposed)
+            {
+                return;
+            }
+
+            _textDisposed = true;
             _textCancellation.Dispose();
         }
     }
