@@ -21,7 +21,7 @@ namespace Vercel.AI.Util;
 public sealed class GuardedFetch : IDisposable
 {
     private readonly HttpClient _client;
-    private readonly Func<string, CancellationToken, Task<IPAddress[]>> _resolve;
+    private readonly Func<string, CancellationToken, Task<(string Address, int Family)[]>> _resolve;
     private readonly string[] _trustedOrigins;
 
     /// <summary>Creates a guarded transport.</summary>
@@ -35,7 +35,7 @@ public sealed class GuardedFetch : IDisposable
     // The resolver is injectable so tests can answer with chosen addresses. It is the only DNS entry point.
     internal GuardedFetch(
         IEnumerable<string>? trustedOrigins,
-        Func<string, CancellationToken, Task<IPAddress[]>>? resolve
+        Func<string, CancellationToken, Task<(string Address, int Family)[]>>? resolve
     )
     {
         _resolve = resolve ?? ResolveAsync;
@@ -52,6 +52,12 @@ public sealed class GuardedFetch : IDisposable
 #endif
         _client = new HttpClient(handler);
     }
+
+    /// <summary>
+    /// The pinned client behind this transport. Pass it to a provider or MCP transport that takes an <see cref="HttpClient"/>, so its
+    /// API calls use the same validated connections. It does not follow redirects. Disposing the transport disposes it.
+    /// </summary>
+    public HttpClient Client => _client;
 
     /// <summary>Requests <paramref name="url"/> with validated, pinned addresses.</summary>
     /// <exception cref="DownloadError">The host resolves to a local, private, or reserved address.</exception>
@@ -114,16 +120,26 @@ public sealed class GuardedFetch : IDisposable
             : !Download.IsPrivateIPv6(ip.ToString());
     }
 
-    private static Task<IPAddress[]> ResolveAsync(string host, CancellationToken cancellationToken)
+    private static async Task<(string Address, int Family)[]> ResolveAsync(
+        string host,
+        CancellationToken cancellationToken
+    )
     {
 #if NET
-        return Dns.GetHostAddressesAsync(host, cancellationToken);
+        var addresses = await Dns.GetHostAddressesAsync(host, cancellationToken)
+            .ConfigureAwait(false);
 #else
-        return Dns.GetHostAddressesAsync(host);
+        var addresses = await Dns.GetHostAddressesAsync(host).ConfigureAwait(false);
 #endif
+        return
+        [
+            .. addresses.Select(address =>
+                (address.ToString(), address.AddressFamily == AddressFamily.InterNetworkV6 ? 6 : 4)
+            ),
+        ];
     }
 
-    private static void AssertPublic(string host, IPAddress[] addresses)
+    private static void AssertPublic(string host, (string Address, int Family)[] addresses)
     {
         if (addresses.Length == 0)
         {
@@ -132,7 +148,11 @@ public sealed class GuardedFetch : IDisposable
 
         foreach (var address in addresses)
         {
-            if (!IsSafeIpAddress(address.ToString()))
+            // A resolver answer whose family tag disagrees with the address text is not a usable address.
+            if (
+                !IsSafeIpAddress(address.Address)
+                || (address.Family == 6) != address.Address.Contains(':')
+            )
             {
                 throw new DownloadError(
                     host,
@@ -176,8 +196,9 @@ public sealed class GuardedFetch : IDisposable
 
         // Connect to the addresses that were just validated, so a second lookup cannot return another answer.
         Exception? last = null;
-        foreach (var address in addresses)
+        foreach (var resolved in addresses)
         {
+            var address = IPAddress.Parse(resolved.Address);
             var socket = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp)
             {
                 NoDelay = true,

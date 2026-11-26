@@ -16,6 +16,13 @@ internal sealed class LocalServer : IDisposable
     private readonly Task _loop;
 
     public LocalServer(Func<string, (int Status, string? Location, string Body)> handler)
+        : this(request =>
+        {
+            var (status, location, body) = handler(request.Path);
+            return new LocalResponse(status, location, body);
+        }) { }
+
+    public LocalServer(Func<LocalRequest, LocalResponse> handler)
     {
         _listener.Start();
         Port = ((IPEndPoint)_listener.LocalEndpoint).Port;
@@ -55,10 +62,7 @@ internal sealed class LocalServer : IDisposable
         _stop.Dispose();
     }
 
-    private async Task ServeAsync(
-        TcpClient client,
-        Func<string, (int Status, string? Location, string Body)> handler
-    )
+    private async Task ServeAsync(TcpClient client, Func<LocalRequest, LocalResponse> handler)
     {
         using (client)
         {
@@ -70,7 +74,8 @@ internal sealed class LocalServer : IDisposable
                 return;
             }
 
-            var path = requestLine.Split(' ')[1];
+            var parts = requestLine.Split(' ');
+            var path = parts[1];
             var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             string? line;
             while (!string.IsNullOrEmpty(line = await reader.ReadLineAsync()))
@@ -79,19 +84,58 @@ internal sealed class LocalServer : IDisposable
                 headers[line[..index]] = line[(index + 1)..].Trim();
             }
 
+            var body = string.Empty;
+            if (headers.TryGetValue("content-length", out var length) && int.Parse(length) > 0)
+            {
+                var buffer = new char[int.Parse(length)];
+                var read = 0;
+                while (read < buffer.Length)
+                {
+                    var count = await reader.ReadAsync(buffer, read, buffer.Length - read);
+                    if (count == 0)
+                    {
+                        break;
+                    }
+
+                    read += count;
+                }
+
+                body = new string(buffer, 0, read);
+            }
+
             lock (Received)
             {
                 Received.Add((path, headers));
             }
 
-            var (status, location, body) = handler(path);
-            var bytes = Encoding.UTF8.GetBytes(body);
+            var response = handler(new LocalRequest(parts[0], path, headers, body));
+            var bytes = response.Bytes ?? Encoding.UTF8.GetBytes(response.Body);
             var head =
-                $"HTTP/1.1 {status} X\r\nconnection: close\r\ncontent-length: {bytes.Length}\r\n"
-                + (location == null ? string.Empty : $"location: {location}\r\n")
+                $"HTTP/1.1 {response.Status} X\r\nconnection: close\r\ncontent-length: {bytes.Length}\r\n"
+                + (response.Location == null ? string.Empty : $"location: {response.Location}\r\n")
+                + (
+                    response.ContentType == null
+                        ? string.Empty
+                        : $"content-type: {response.ContentType}\r\n"
+                )
                 + "\r\n";
             await stream.WriteAsync(Encoding.ASCII.GetBytes(head));
             await stream.WriteAsync(bytes);
         }
     }
 }
+
+internal sealed record LocalRequest(
+    string Method,
+    string Path,
+    Dictionary<string, string> Headers,
+    string Body
+);
+
+internal sealed record LocalResponse(
+    int Status,
+    string? Location = null,
+    string Body = "",
+    string? ContentType = null,
+    byte[]? Bytes = null
+);

@@ -377,6 +377,16 @@ Content longer than `MaxLength` is truncated. The model is told to call the tool
 
 The tool makes GET requests without cookies or credentials, and rejects URLs that contain credentials. Each request and redirect is validated against private and reserved addresses such as `localhost` and cloud metadata endpoints. The default transport does not validate resolved DNS addresses or pin connections, so pass a DNS-validating `Fetch` such as `GuardedFetch`, or restrict network egress at the platform level. A custom `Fetch` must provide equivalent validation.
 
+`Download.FetchUntrustedUrlAsync` (`fetchUntrustedUrl` upstream) fetches a URL with the same validated redirects and first-hop credential isolation. Without a `credentialedOrigin` (or a `trustedOrigin`, when `credentialedOrigin` is omitted) that matches the URL, only allowlisted metadata headers (`accept`, `accept-language`, `range`, `user-agent`, conditional and tracing headers, and similar) go out on the first hop. Add non-credential names with `untrustedFirstHopHeaders`. Proxy, metadata, cookie, and hop-by-hop headers are removed even for a matching origin. Both origins must come from developer configuration, never from response data. A `credentialedOrigin` does not exempt the URL from validation, but a `trustedOrigin` does.
+
+```csharp
+var response = await Download.FetchUntrustedUrlAsync(
+    fileUrl,
+    headers,
+    credentialedOrigin: "https://api.example.com",
+    fetch: guardedFetch);
+```
+
 Fetched content is untrusted and can contain prompt injections. When an agent has access to private data, a model could also be instructed to send that data to another site, for example in a URL query string. Restrict fetching with `AllowedDomains`, enable `RequireUrlInUserMessage` so only URLs from user messages can be fetched, or require tool approval (`NeedsApproval`).
 
 `RequireUrlInUserMessage` ignores URLs in tool results because the model can place arbitrary text there, for example through tool inputs that are reflected in outputs. As a result, the model cannot follow links from search results or fetched pages in this mode.
@@ -414,6 +424,8 @@ var tools = await McpClient.ConnectAsync(transport);
 A non-2xx response to the event stream throws an `MCPClientError` with `StatusCode`, `Url`, and `ResponseBody`. Its message is `MCP SSE Transport Error: {status} {reason}: {body}`, plus a hint to use the `http` transport on a 405. A non-2xx response to a `SendAsync` post throws the same error, with the message `MCP SSE Transport Error: POSTing to endpoint (HTTP {status}): {body}`. The `endpoint` event must stay on the origin of the event stream.
 
 `HttpMcpTransport` throws an `MCPClientError` when the server answers a request with a JSON-RPC `error` body, even on a non-2xx response. The error carries `Code`, `Data`, `StatusCode`, `Url` and `ResponseBody`, and its message is the JSON-RPC `error.message`. Upstream also sets `cause` to the error object. The port's `Exception` cause cannot hold it.
+
+To keep MCP calls on validated connections, pass the pinned client of a `GuardedFetch` as the `HttpClient`: `new HttpMcpTransport(guardedFetch.Client, endpoint)`. List the MCP server origin in `new GuardedFetch(trustedOrigins)` when it is a developer-configured private endpoint. This is the `fetch` option of the `http` transport upstream.
 
 The `redirect` option and OAuth (`authProvider`) are not ported ([#585](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/585)). Redirects follow the `HttpClient` handler.
 
