@@ -39,6 +39,7 @@ public sealed class AiSdkWithStandaloneGuardedFetchTests
     [UpstreamTest(
         Prefix + "preserves every IP literal block in the SDK URL validation corpus",
         Coverage = UpstreamCoverage.Covered,
+        Commit = "2ebc78b65435926718879f85a1a85687b053c542",
         Note = "The corpus is the C# port of validate-download-url.test.ts in this repository."
     )]
     public void Preserves_every_IP_literal_block_in_the_SDK_URL_validation_corpus()
@@ -96,7 +97,8 @@ public sealed class AiSdkWithStandaloneGuardedFetchTests
     [Fact]
     [UpstreamTest(
         Prefix + "preserves inline data URL downloads",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "2ebc78b65435926718879f85a1a85687b053c542"
     )]
     public async Task Preserves_inline_data_URL_downloads()
     {
@@ -114,6 +116,7 @@ public sealed class AiSdkWithStandaloneGuardedFetchTests
     [UpstreamTest(
         Prefix + "blocks unsafe DNS results before core downloads connect: $addresses",
         Coverage = UpstreamCoverage.Partial,
+        Commit = "2ebc78b65435926718879f85a1a85687b053c542",
         Note = "Missing: the case [{ address: '8.8.8.8', family: 6 }] (a .NET IPAddress has no separate family tag) and the resolve4/resolve6 call assertions; the injected resolver replaces c-ares."
     )]
     public async Task Blocks_unsafe_DNS_results_before_core_downloads_connect(string[] addresses)
@@ -136,6 +139,7 @@ public sealed class AiSdkWithStandaloneGuardedFetchTests
     [UpstreamTest(
         Prefix + "uses the injected transport for core downloads independently of global fetch",
         Coverage = UpstreamCoverage.Covered,
+        Commit = "2ebc78b65435926718879f85a1a85687b053c542",
         Note = "A .NET download never uses a global fetch; it uses the injected DownloadFetch or the default fetch."
     )]
     public async Task Uses_the_injected_transport_for_core_downloads_independently_of_global_fetch()
@@ -168,7 +172,8 @@ public sealed class AiSdkWithStandaloneGuardedFetchTests
     [Fact]
     [UpstreamTest(
         Prefix + "keeps SDK redirect credential isolation across origins and on return",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "2ebc78b65435926718879f85a1a85687b053c542"
     )]
     public async Task Keeps_SDK_redirect_credential_isolation_across_origins_and_on_return()
     {
