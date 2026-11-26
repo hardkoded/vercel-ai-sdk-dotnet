@@ -14,14 +14,18 @@ internal sealed class MockTracer : IDisposable
     private readonly List<MockSpan> _spans = [];
     private readonly List<MockSpan> _finished = [];
 
-    public MockTracer()
+    public delegate ActivitySamplingResult Sampler(
+        ref ActivityCreationOptions<ActivityContext> options
+    );
+
+    public MockTracer(Sampler? sampler = null)
     {
         Source = new ActivitySource("mock-tracer-" + Guid.NewGuid().ToString("N"));
         _listener = new ActivityListener
         {
             ShouldListenTo = source => ReferenceEquals(source, Source),
-            Sample = (ref ActivityCreationOptions<ActivityContext> _) =>
-                ActivitySamplingResult.AllDataAndRecorded,
+            Sample = (ref ActivityCreationOptions<ActivityContext> options) =>
+                sampler is null ? ActivitySamplingResult.AllDataAndRecorded : sampler(ref options),
             ActivityStarted = activity =>
             {
                 lock (_gate)
