@@ -29,6 +29,16 @@ On net10.0 the connect callback of `SocketsHttpHandler` resolves the host, rejec
 
 `new GuardedFetch(trustedOrigins)` lists developer-configured origins, such as `http://localhost:11434`, whose connections skip the address check. A trusted origin only skips the address check. `Download.CreateDownload` and `Download.GetAsync` still reject `localhost` and private IP literals in the URL, so pass the same origin as `trustedOrigin` to `Download.FetchWithValidatedRedirectsAsync` or `Download.FetchWithValidatedEndpointAsync` to reach it. Never build the list from response data. `GuardedFetch.IsSafeIpAddress(address)` tells whether an address is public.
 
+`GuardedFetch.Client` is the pinned `HttpClient` behind the transport. Pass it where a provider or MCP transport takes an `HttpClient`, and pass the transport itself as the download fetch, so API calls and response URL downloads use the same validated connections. `OpenAICompatibleOptions.DownloadFetch` (the provider `fetch` upstream) sets the fetch that Fal uses for response URL downloads.
+
+```csharp
+using var guardedFetch = new GuardedFetch(["https://fal.run"]);
+var fal = new FalProvider(
+    guardedFetch.Client,
+    new OpenAICompatibleOptions { ApiKey = key, DownloadFetch = guardedFetch });
+var mcp = new HttpMcpTransport(guardedFetch.Client, new Uri("https://mcp.example.com/mcp"));
+```
+
 The `.internal` rule is defense in depth. It does not replace network-level protection.
 
 ## Fetching with redirect validation
@@ -46,6 +56,18 @@ var response = await Download.FetchWithValidatedRedirectsAsync(
 - **Headers.** Before the first request, the helper removes proxy, origin-spoofing, cloud-metadata, cookie, and hop-by-hop headers (`host`, `forwarded`, `via`, `x-forwarded-*`, `x-real-ip`, `metadata`, `metadata-flavor`, `cookie`, and similar). It keeps `authorization` and other credential headers, so the caller must make sure the first URL may receive them. Each hop receives its own copy of the headers. A redirect that crosses origin drops every header except `user-agent`, and the dropped headers do not return when a later hop comes back to the first origin.
 - **`trustedOrigin`.** A hop on this origin skips validation. Use it for an origin that you configure, such as a provider base URL that points to `localhost` or an internal host. Never build it from response data. A hop on any other origin is always validated, even when `trustedOrigin` is set.
 - **Cancelling redirect bodies.** The helper starts cancelling a redirect response's body and moves on. It does not wait for the cancel to finish.
+
+## Fetching an untrusted URL
+
+`Download.FetchUntrustedUrlAsync` (`fetchUntrustedUrl` upstream) is `FetchWithValidatedRedirectsAsync` with first-hop credential isolation. Without a `credentialedOrigin` (or a `trustedOrigin`, when `credentialedOrigin` is omitted) that matches the URL, only allowlisted request metadata (`accept`, `accept-language`, `range`, `user-agent`, conditional headers, tracing headers, and similar) goes out on the first hop. Add non-credential names with `untrustedFirstHopHeaders`. Both origins must come from developer configuration, never from response data. An explicit `credentialedOrigin` does not exempt the URL from validation.
+
+```csharp
+var response = await Download.FetchUntrustedUrlAsync(
+    fileUrl,
+    headers,
+    credentialedOrigin: "https://api.example.com",
+    fetch: guardedFetch);
+```
 
 ## Fetching one endpoint
 
