@@ -29,7 +29,7 @@ public static class TracingChannel
         get
         {
             var message = s_current.Value;
-            while (message is { IsEnded: true })
+            while (message is { IsEnded: true } or { Completion.IsCompleted: true })
             {
                 message = message.Parent;
             }
@@ -103,6 +103,9 @@ public sealed class TelemetryTracingChannelMessage
     internal TelemetryTracingChannelMessage? Parent { get; set; }
 
     internal bool IsEnded { get; set; }
+
+    // The completion of a long-lived span. A span whose completion finished has ended, even before the continuation that publishes asyncEnd runs.
+    internal Task? Completion { get; set; }
 
     /// <summary>The kind of span. One of the <see cref="TelemetryTracingEventType"/> values.</summary>
     public string Type { get; }

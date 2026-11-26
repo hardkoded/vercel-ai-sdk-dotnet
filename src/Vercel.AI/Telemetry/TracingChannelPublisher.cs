@@ -97,6 +97,7 @@ internal static class TracingChannelPublisher
 
         var asyncEndPublished = 0;
         message.Parent = TracingChannel.Current;
+        message.Completion = completion;
         SafePublish("start", message);
         SafePublish("end", message);
         // The span stays current for the rest of the caller's async flow, until its completion ends it.

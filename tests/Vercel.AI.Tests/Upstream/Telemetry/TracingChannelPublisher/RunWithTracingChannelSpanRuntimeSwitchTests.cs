@@ -2,7 +2,6 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
-using System.Diagnostics;
 using System.Text.Json;
 using Vercel.AI.Provider;
 using Vercel.AI.Tests.Upstream.Telemetry.TracingChannel;
@@ -81,8 +80,8 @@ public sealed class RunWithTracingChannelSpanRuntimeSwitchTests
             observedCredentials.Add(CredentialOf(result.Request));
             result.Stream = AppendBang(result.Stream);
         });
-        using var first = DiagnosticListener.AllListeners.Subscribe(subscriber);
-        using var second = DiagnosticListener.AllListeners.Subscribe(subscriber.Another());
+        using var first = subscriber.Subscribe();
+        using var second = subscriber.Subscribe();
 
         var result = await Publisher.RunWithTracingChannelSpan(message, () =>
             Task.FromResult(original)
@@ -123,7 +122,7 @@ public sealed class RunWithTracingChannelSpanRuntimeSwitchTests
         );
         var asyncEnd = new List<object?>();
         var subscriber = new AsyncEndSubscriber(message, value => asyncEnd.Add(value));
-        using var subscription = DiagnosticListener.AllListeners.Subscribe(subscriber);
+        using var subscription = subscriber.Subscribe();
 
         var completion = Task.FromResult<object?>(result);
         Publisher.OpenTelemetryChannelSpanContext(message, completion, recordResult);
@@ -147,21 +146,10 @@ public sealed class RunWithTracingChannelSpanRuntimeSwitchTests
     private sealed class AsyncEndSubscriber(
         TelemetryTracingChannelMessage message,
         Action<object?> onAsyncEnd
-    ) : IObserver<DiagnosticListener>
+    )
     {
-        public AsyncEndSubscriber Another() => new(message, onAsyncEnd);
-
-        public void OnNext(DiagnosticListener listener)
-        {
-            if (listener.Name == Vercel.AI.TracingChannel.AiSdkTelemetryTracingChannel)
-            {
-                listener.Subscribe(new Events(message, onAsyncEnd));
-            }
-        }
-
-        public void OnCompleted() { }
-
-        public void OnError(Exception error) { }
+        public IDisposable Subscribe() =>
+            TracingChannelSupport.SubscribeToChannel(() => new Events(message, onAsyncEnd));
 
         private sealed class Events(
             TelemetryTracingChannelMessage message,

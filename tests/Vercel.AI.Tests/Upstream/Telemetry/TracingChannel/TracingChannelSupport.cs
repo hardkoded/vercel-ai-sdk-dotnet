@@ -109,12 +109,44 @@ internal static class TracingChannelSupport
 
     private static IDisposable Subscribe(List<Published> published)
     {
-        var observer = new ChannelObserver(published);
-        return DiagnosticListener.AllListeners.Subscribe(observer);
+        return SubscribeToChannel(() => new EventObserver(published));
     }
 
-    private sealed class ChannelObserver(List<Published> published) : IObserver<DiagnosticListener>
+    /// <summary>
+    /// Subscribes to the tracing channel listener. Disposing the result removes the observer from <c>AllListeners</c> and the
+    /// subscription of the listener, which <c>AllListeners</c> does not own. Maps to <c>unsubscribe</c> of the Node tests.
+    /// </summary>
+    internal static IDisposable SubscribeToChannel(
+        Func<IObserver<KeyValuePair<string, object?>>> createObserver
+    )
     {
+        var subscription = new ChannelSubscription(createObserver);
+        subscription.Attach(DiagnosticListener.AllListeners.Subscribe(subscription));
+        return subscription;
+    }
+
+    private sealed class ChannelSubscription(
+        Func<IObserver<KeyValuePair<string, object?>>> createObserver
+    ) : IObserver<DiagnosticListener>, IDisposable
+    {
+        private readonly List<IDisposable> _children = [];
+        private IDisposable? _all;
+        private bool _disposed;
+
+        public void Attach(IDisposable all)
+        {
+            lock (_children)
+            {
+                if (_disposed)
+                {
+                    all.Dispose();
+                    return;
+                }
+
+                _all = all;
+            }
+        }
+
         public void OnNext(DiagnosticListener listener)
         {
             if (listener.Name != Vercel.AI.TracingChannel.AiSdkTelemetryTracingChannel)
@@ -122,12 +154,42 @@ internal static class TracingChannelSupport
                 return;
             }
 
-            listener.Subscribe(new EventObserver(published));
+            var child = listener.Subscribe(createObserver());
+            lock (_children)
+            {
+                if (_disposed)
+                {
+                    child.Dispose();
+                    return;
+                }
+
+                _children.Add(child);
+            }
         }
 
         public void OnCompleted() { }
 
         public void OnError(Exception error) { }
+
+        public void Dispose()
+        {
+            IDisposable[] children;
+            IDisposable? all;
+            lock (_children)
+            {
+                _disposed = true;
+                children = [.. _children];
+                _children.Clear();
+                all = _all;
+            }
+
+            foreach (var child in children)
+            {
+                child.Dispose();
+            }
+
+            all?.Dispose();
+        }
     }
 
     private sealed class EventObserver(List<Published> published)

@@ -182,6 +182,7 @@ internal static class RequestMetadataSupport
         var model = provider.ResponsesModel("gpt-4o").WrapLanguageModel();
 
         var recorded = new List<string>();
+        var channels = new List<string>();
         void Record(object? value)
         {
             var snapshot = Snapshot(value);
@@ -203,7 +204,13 @@ internal static class RequestMetadataSupport
             ExecuteLanguageModelCall = new ResultRecorder(Record),
         };
 
-        using (var subscription = SubscribeForRecording(Record, callId))
+        using (var subscription = SubscribeForRecording(Record, callId, channel =>
+            {
+                lock (channels)
+                {
+                    channels.Add(channel);
+                }
+            }))
         {
             var include = new GenerateTextInclude { RequestBody = true, ResponseBody = true };
             Task OnModelCallStart(LanguageModelCallStartEvent e, CancellationToken _)
@@ -260,6 +267,9 @@ internal static class RequestMetadataSupport
             }
         }
 
+        // Upstream asserts that both the start and the asyncEnd subscribers were called.
+        Assert.Contains("start", channels);
+        Assert.Contains("asyncEnd", channels);
         var everything = string.Join("\n", recorded);
         Assert.Contains("[redacted]", everything);
         Assert.DoesNotContain(Secret, everything);
@@ -339,6 +349,30 @@ internal static class RequestMetadataSupport
         if (error.InnerException != null)
         {
             AppendException(builder, error.InnerException);
+        }
+    }
+
+    // A stream result is written as its metadata. The parts of the stream are not read.
+    private sealed class StreamResultConverter : JsonConverter<LanguageModelStreamResult>
+    {
+        public override LanguageModelStreamResult Read(
+            ref Utf8JsonReader reader,
+            Type typeToConvert,
+            JsonSerializerOptions options
+        ) => throw new NotSupportedException();
+
+        public override void Write(
+            Utf8JsonWriter writer,
+            LanguageModelStreamResult value,
+            JsonSerializerOptions options
+        )
+        {
+            writer.WriteStartObject();
+            writer.WritePropertyName("Request");
+            JsonSerializer.Serialize(writer, value.Request, options);
+            writer.WritePropertyName("Response");
+            JsonSerializer.Serialize(writer, value.Response, options);
+            writer.WriteEndObject();
         }
     }
 
@@ -425,31 +459,20 @@ internal static class RequestMetadataSupport
     }
 
     // Subscribes to the sub-channels that upstream's test subscribes to: start, asyncEnd and error.
-    private static IDisposable SubscribeForRecording(Action<object?> record, string callId)
-    {
-        return System.Diagnostics.DiagnosticListener.AllListeners.Subscribe(
-            new RecordingObserver(record, callId)
+    private static IDisposable SubscribeForRecording(
+        Action<object?> record,
+        string callId,
+        Action<string> published
+    ) =>
+        TracingChannelSupport.SubscribeToChannel(() =>
+            new RecordingEvents(record, callId, published)
         );
-    }
 
-    private sealed class RecordingObserver(Action<object?> record, string callId)
-        : IObserver<System.Diagnostics.DiagnosticListener>
-    {
-        public void OnNext(System.Diagnostics.DiagnosticListener listener)
-        {
-            if (listener.Name == Vercel.AI.TracingChannel.AiSdkTelemetryTracingChannel)
-            {
-                listener.Subscribe(new RecordingEvents(record, callId));
-            }
-        }
-
-        public void OnCompleted() { }
-
-        public void OnError(Exception error) { }
-    }
-
-    private sealed class RecordingEvents(Action<object?> record, string callId)
-        : IObserver<KeyValuePair<string, object?>>
+    private sealed class RecordingEvents(
+        Action<object?> record,
+        string callId,
+        Action<string> published
+    ) : IObserver<KeyValuePair<string, object?>>
     {
         public void OnNext(KeyValuePair<string, object?> item)
         {
@@ -460,6 +483,7 @@ internal static class RequestMetadataSupport
                 && CallIdOf(message) == callId
             )
             {
+                published(item.Key);
                 record(item.Value);
             }
         }
