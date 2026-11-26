@@ -986,6 +986,12 @@ internal sealed class ElevenLabsSpeechStreamSession
                 held = new ElevenLabsTextSegment(hold, segment.Voice, segment.NewTurn);
             }
         }
+        catch (Exception)
+        {
+            // Cancel before the enumerator is awaited or disposed, so a source that waits on the token can finish.
+            CancelText();
+            throw;
+        }
         finally
         {
             if (next == null)
