@@ -131,15 +131,15 @@ public sealed class GatewayDecisionModel : IEvaluationDecisionCaller
         }
         catch (ApiException exception)
         {
-            throw GatewayProvider.MapFailure(exception, requestHeaders);
+            throw GatewayProvider.MapFailure(exception, requestHeaders, body.ToJsonString());
         }
         catch (ApiTimeoutException exception)
         {
-            throw GatewayProvider.MapFailure(exception, requestHeaders);
+            throw GatewayProvider.MapFailure(exception, requestHeaders, body.ToJsonString());
         }
         catch (ApiConnectionException exception)
         {
-            throw GatewayProvider.MapFailure(exception, requestHeaders);
+            throw GatewayProvider.MapFailure(exception, requestHeaders, body.ToJsonString());
         }
 
         using var document = JsonDocument.Parse(

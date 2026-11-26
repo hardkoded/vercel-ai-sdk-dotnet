@@ -123,15 +123,15 @@ public sealed class GatewayRerankingModel : IRerankingModel, IRerankCaller
         }
         catch (ApiException exception)
         {
-            throw GatewayProvider.MapFailure(exception, requestHeaders);
+            throw GatewayProvider.MapFailure(exception, requestHeaders, body.ToJsonString());
         }
         catch (ApiTimeoutException exception)
         {
-            throw GatewayProvider.MapFailure(exception, requestHeaders);
+            throw GatewayProvider.MapFailure(exception, requestHeaders, body.ToJsonString());
         }
         catch (ApiConnectionException exception)
         {
-            throw GatewayProvider.MapFailure(exception, requestHeaders);
+            throw GatewayProvider.MapFailure(exception, requestHeaders, body.ToJsonString());
         }
 
         JsonElement root;

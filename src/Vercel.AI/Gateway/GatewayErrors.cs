@@ -44,6 +44,9 @@ public abstract class GatewayError : AiSdkException
     /// <summary>Gateway generation id.</summary>
     public string? GenerationId { get; }
 
+    /// <summary>The auth method the failed request used. Lets a telemetry copy of the error be mapped again.</summary>
+    internal string? AuthMethod { get; set; }
+
     /// <summary>Whether the caller should retry this status.</summary>
     public bool IsRetryable { get; }
 
@@ -471,7 +474,9 @@ public static class GatewayErrors
 
         if (error is ApiException http)
         {
-            return FromResponseBody(http.ResponseBody, http.StatusCode, authMethod, http);
+            var mapped = FromResponseBody(http.ResponseBody, http.StatusCode, authMethod, http);
+            mapped.AuthMethod = authMethod;
+            return mapped;
         }
 
         return Create(

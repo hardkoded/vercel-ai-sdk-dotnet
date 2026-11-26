@@ -760,10 +760,51 @@ public sealed class GatewayProvider
 
     internal static Exception MapFailure(
         Exception exception,
-        IReadOnlyDictionary<string, string?>? headers
+        IReadOnlyDictionary<string, string?>? headers,
+        string? requestBody = null
     )
     {
-        return GatewayErrors.AsGatewayError(exception, GatewayErrors.ParseAuthMethod(headers));
+        return GatewayErrors.AsGatewayError(
+            WithRequestBody(exception, requestBody),
+            GatewayErrors.ParseAuthMethod(headers)
+        );
+    }
+
+    /// <summary>
+    /// Keeps the request body on a failed API call as <c>requestBodyValues</c>, annotated so telemetry copies hide
+    /// <c>providerOptions.gateway.byok</c>. Maps to the body <c>postJsonToApi</c> stores on its <c>APICallError</c>.
+    /// </summary>
+    internal static Exception WithRequestBody(Exception exception, string? requestBody)
+    {
+        if (requestBody is null || exception is not ApiException { RequestBodyValues: null } api)
+        {
+            return exception;
+        }
+
+        try
+        {
+            // The body was serialized by the Gateway models, so it is read back with a depth limit that cannot reject it.
+            using var document = JsonDocument.Parse(
+                requestBody,
+                new JsonDocumentOptions { MaxDepth = int.MaxValue }
+            );
+            return ProviderHttp.MapStatusWithHeaders(
+                api.StatusCode,
+                api.Message,
+                api.ResponseBody,
+                api.ResponseHeaders,
+                api.Url,
+                RedactGatewayRequestCredentials.WithGatewayRequestTelemetryRedaction(
+                    document.RootElement.Clone()
+                ),
+                api.IsRetryable
+            );
+        }
+        catch (JsonException)
+        {
+            // A body that cannot be read back must not hide the failure itself.
+            return exception;
+        }
     }
 
     internal Uri Route(string path)
@@ -931,7 +972,7 @@ public sealed class GatewayLanguageModel : ILanguageModel
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            throw GatewayProvider.MapFailure(exception, headers);
+            throw GatewayProvider.MapFailure(exception, headers, json);
         }
     }
 
@@ -959,7 +1000,7 @@ public sealed class GatewayLanguageModel : ILanguageModel
     )
     {
         // The request is sent here, so HTTP errors surface from this call as they do upstream.
-        var json = V4Json.CallOptions(options);
+        var json = V4Json.CallOptions(options, stream: true);
         var headers = await _provider.HeadersAsync(
             "ai-language-model-specification-version",
             "4",
@@ -983,7 +1024,7 @@ public sealed class GatewayLanguageModel : ILanguageModel
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            throw GatewayProvider.MapFailure(exception, headers);
+            throw GatewayProvider.MapFailure(exception, headers, json);
         }
 
         Func<JsonElement, JsonElement>? redactBody;
@@ -1168,15 +1209,15 @@ public sealed class GatewayEmbeddingModel : IEmbeddingModel
         }
         catch (ApiException exception)
         {
-            throw GatewayProvider.MapFailure(exception, requestHeaders);
+            throw GatewayProvider.MapFailure(exception, requestHeaders, body.ToJsonString());
         }
         catch (ApiTimeoutException exception)
         {
-            throw GatewayProvider.MapFailure(exception, requestHeaders);
+            throw GatewayProvider.MapFailure(exception, requestHeaders, body.ToJsonString());
         }
         catch (ApiConnectionException exception)
         {
-            throw GatewayProvider.MapFailure(exception, requestHeaders);
+            throw GatewayProvider.MapFailure(exception, requestHeaders, body.ToJsonString());
         }
 
         using (document)
@@ -1431,15 +1472,15 @@ public sealed class GatewayImageModel : IImageModel, IImageCaller
         }
         catch (ApiException exception)
         {
-            throw GatewayProvider.MapFailure(exception, requestHeaders);
+            throw GatewayProvider.MapFailure(exception, requestHeaders, body.ToJsonString());
         }
         catch (ApiTimeoutException exception)
         {
-            throw GatewayProvider.MapFailure(exception, requestHeaders);
+            throw GatewayProvider.MapFailure(exception, requestHeaders, body.ToJsonString());
         }
         catch (ApiConnectionException exception)
         {
-            throw GatewayProvider.MapFailure(exception, requestHeaders);
+            throw GatewayProvider.MapFailure(exception, requestHeaders, body.ToJsonString());
         }
         catch (Exception exception)
             when (streamingImageDecoding

@@ -149,7 +149,7 @@ public sealed class GatewayVideoModel : IVideoModel, IVideoCaller
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            throw GatewayProvider.MapFailure(exception, headers);
+            throw GatewayProvider.MapFailure(exception, headers, body);
         }
     }
 
@@ -654,7 +654,7 @@ public sealed class GatewayVideoModel : IVideoModel, IVideoCaller
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            throw GatewayProvider.MapFailure(exception, headers);
+            throw GatewayProvider.MapFailure(exception, headers, body);
         }
     }
 }
