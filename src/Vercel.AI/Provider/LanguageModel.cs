@@ -526,6 +526,9 @@ public sealed class GeneratedToolResult : GeneratedContent
     /// <summary>False when the generation loop ran a client tool. A provider's own result is provider-executed. Maps to the result's <c>providerExecuted</c>.</summary>
     public bool ProviderExecuted { get; init; } = true;
 
+    /// <summary>True when the result is preliminary: the tool streamed it before its final result. Maps to the result's <c>preliminary</c>.</summary>
+    public bool? Preliminary { get; init; }
+
     /// <summary>The JSON input of the tool call this result answers. Maps to the result's <c>input</c>.</summary>
     public string? InputJson { get; init; }
 }

@@ -126,9 +126,8 @@ public sealed class OnStepFinishTests
     [Fact]
     [UpstreamTest(
         Test + "records only the final provider-executed tool result",
-        Coverage = UpstreamCoverage.Partial,
-        Commit = UpstreamCommit,
-        Note = "The port's tool result has no preliminary flag, so only the final result is passed."
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit
     )]
     public async Task Records_only_the_final_provider_executed_tool_result()
     {
@@ -136,6 +135,10 @@ public sealed class OnStepFinishTests
             new GeneratedToolCall("tc1", "code_execution", "{\"code\":\"1 + 1\"}")
             {
                 ProviderExecuted = true,
+            },
+            new GeneratedToolResult("tc1", "code_execution", "{\"value\":\"running\"}")
+            {
+                Preliminary = true,
             },
             new GeneratedToolResult("tc1", "code_execution", "{\"value\":2}")
         );
