@@ -307,6 +307,7 @@ internal static class RequestMetadataSupport
                         Converters =
                         {
                             new ExceptionConverter(),
+                            new StreamResultConverter(),
                             new OpaqueConverter(),
                             new ElementConverter(),
                         },
