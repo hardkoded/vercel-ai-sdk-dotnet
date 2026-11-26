@@ -2204,6 +2204,25 @@ var model = provider.EmbeddingModel(profileArn, new AmazonBedrockEmbeddingModelS
 
 `AmazonBedrockOptions.Headers` are sent with every embedding and reranking request. `AmazonBedrockEmbeddingModel.Headers` are sent with the next call and override provider headers with the same name. Both are signed with the request.
 
+### Amazon Bedrock image models
+
+`AmazonBedrockProvider.ImageModel(modelId)` and `AmazonBedrockProvider.Image(modelId)` create an `AmazonBedrockImageModel` that calls `InvokeModel` (`/model/{id}/invoke`), for example `amazon.nova-canvas-v1:0`. `amazon.nova-canvas-v1:0` takes up to 5 images per call, input images (`SupportsFileInputs`) and a mask (`SupportsMaskInputs`). For other ids, `MaxImagesPerCall` is 1 and both support flags are `null`. The request is signed with SigV4 (or a bearer token), and `AmazonBedrockOptions.Headers` and the call headers are sent with it.
+
+Provider options come from `amazonBedrock`, then the legacy `bedrock` key:
+
+| Option | Meaning |
+| --- | --- |
+| `quality` | `standard` or `premium`. |
+| `negativeText` | Text describing what to avoid. |
+| `cfgScale` | How closely the image follows the prompt. |
+| `style` | `3D_ANIMATED_FAMILY_FILM`, `DESIGN_SKETCH`, `FLAT_VECTOR_ILLUSTRATION`, `GRAPHIC_NOVEL_ILLUSTRATION`, `MAXIMALISM`, `MIDCENTURY_RETRO`, `PHOTOREALISM`, or `SOFT_DIGITAL_PAINTING` (text-to-image only). |
+| `taskType` | `TEXT_IMAGE`, `IMAGE_VARIATION`, `INPAINTING`, `OUTPAINTING`, or `BACKGROUND_REMOVAL`. |
+| `maskPrompt` | Text describing the region to mask. |
+| `outPaintingMode` | `DEFAULT` or `PRECISE`. |
+| `similarityStrength` | Similarity to the input images for `IMAGE_VARIATION`. |
+
+An invalid option throws `InvalidArgumentException` (`invalid amazonBedrock provider options`). `size` (`1024x1024`), `seed` (0 is sent), and the image count map to `imageGenerationConfig`. `aspectRatio` adds an `unsupported` warning, so use `size`. With input images, the task type is `taskType`, or `INPAINTING` when you pass a mask or `maskPrompt`, or `IMAGE_VARIATION` otherwise. `IMAGE_VARIATION` sends every input image. The other editing tasks send the first. `BACKGROUND_REMOVAL` needs only the image. A URL image throws, so pass bytes or base64. A moderated request throws `Amazon Bedrock request was moderated: <reasons>`, and a response without images throws `Amazon Bedrock returned no images.`.
+
 `EmbeddingResult.Response` holds the raw headers and body of the call, and `EmbeddingResult.Warnings` its warnings. To send per-call headers, `dimensions`, or a `user` to an OpenAI-compatible embedding model, pass an `EmbeddingCallOptions` to `OpenAICompatibleEmbeddingModel.DoEmbedAsync`. The model keeps no per-call state, so concurrent calls do not see each other.
 
 `ImageCallOptions` carries `Seed`, `Files`, `Mask`, `ProviderOptions`, and `Headers` for each call. `ImageGenerationResult` returns `CallWarnings`, `Response` (timestamp, model id, headers), and `Usage`. Image models keep no per-call state, so concurrent calls on one model do not see each other.

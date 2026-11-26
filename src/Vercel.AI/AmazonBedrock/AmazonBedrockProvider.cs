@@ -236,6 +236,14 @@ public sealed class AmazonBedrockProvider : ProviderBase
     public override IEmbeddingModel EmbeddingModel(string modelId) =>
         new AmazonBedrockEmbeddingModel(this, modelId);
 
+    /// <inheritdoc />
+    public override IImageModel ImageModel(string modelId) =>
+        new AmazonBedrockImageModel(this, modelId);
+
+    /// <summary>Creates an image model. Same as <see cref="ImageModel(string)"/>.</summary>
+    public AmazonBedrockImageModel Image(string modelId) =>
+        new AmazonBedrockImageModel(this, modelId);
+
     /// <summary>Creates a language model with <paramref name="settings"/>.</summary>
     public AmazonBedrockLanguageModel LanguageModel(
         string modelId,
