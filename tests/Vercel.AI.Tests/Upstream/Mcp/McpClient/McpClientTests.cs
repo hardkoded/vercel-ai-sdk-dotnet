@@ -226,8 +226,8 @@ public sealed class McpClientTests
     [Fact]
     [UpstreamTest(
         "packages/mcp/src/tool/mcp-client.test.ts::MCPClient::should not retry successful MCP tool results with isError",
-        Coverage = UpstreamCoverage.Covered,
-        Note = "The port has no maxRetries option, so a single tools/call attempt is the only possible outcome. Tool.Execute returns the result as JSON text."
+        Coverage = UpstreamCoverage.Partial,
+        Note = "Covers the isError result and the single attempt. The port has no maxRetries option, so the retry-enabled client is not covered. Tool.Execute returns the result as JSON text."
     )]
     public async Task ShouldNotRetrySuccessfulMcpToolResultsWithIsError()
     {

@@ -443,7 +443,7 @@ Tools from `McpClient` set `ToModelOutput`, which maps upstream's `mcpToModelOut
 - A number, boolean, `null`, an empty or missing output, or an object without a `content` array becomes a `JsonToolModelOutput`. A missing output becomes JSON `null`.
 - An object with a `content` array becomes a `ContentToolModelOutput`. A `text` part keeps its text. An MCP `image` part becomes a `FileToolModelContentPart` with the same media type and tagged inline base64 data (`FilePartInput.TaggedData(...)`). Any other part is sent as text holding its JSON.
 
-Behavior change: `Tool.Execute` of an MCP tool used to return the joined text of the content parts (or the raw result when there was no text). It now returns the normalized call-tool result as JSON, for example `{"content":[{"type":"text","text":"sunny"}],"isError":false}`, as upstream's `execute` returns the `CallToolResult`. Code that read the plain text from `Execute` must read `content[].text` instead. A result with `isError` still throws an `AiSdkException`.
+Behavior change: `Tool.Execute` of an MCP tool used to return the joined text of the content parts (or the raw result when there was no text). It now returns the normalized call-tool result as JSON, for example `{"content":[{"type":"text","text":"sunny"}],"isError":false}`, as upstream's `execute` returns the `CallToolResult`. Code that read the plain text from `Execute` must read `content[].text` instead. A result with `isError` is returned as that JSON in every schema mode, automatic or `schemas`, and does not throw, as upstream's `execute` returns the result.
 
 Not ported: `outputSchema` support ([#777](https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/777)).
 
