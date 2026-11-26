@@ -770,17 +770,12 @@ public sealed class RegistryUpstreamTests
         public int Calls { get; private set; }
 
         public override Task<LanguageModelGenerateResult> WrapGenerateAsync(
-            LanguageModelCallOptions options,
-            Func<
-                LanguageModelCallOptions,
-                CancellationToken,
-                Task<LanguageModelGenerateResult>
-            > next,
+            LanguageModelWrapContext context,
             CancellationToken cancellationToken
         )
         {
             Calls++;
-            return next(options, cancellationToken);
+            return context.DoGenerateAsync(cancellationToken);
         }
     }
 }

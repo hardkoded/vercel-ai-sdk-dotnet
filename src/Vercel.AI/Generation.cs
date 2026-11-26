@@ -4453,6 +4453,7 @@ internal static class Generation
                     )
                     {
                         ProviderOptions = tool.ProviderOptions,
+                        InputExamples = tool.InputExamples,
                     }
             );
         }

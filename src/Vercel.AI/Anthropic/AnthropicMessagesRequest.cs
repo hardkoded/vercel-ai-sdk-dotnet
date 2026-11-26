@@ -1589,6 +1589,11 @@ public static class AnthropicMessagesRequest
                         Description = tool.Description,
                         InputSchema = tool.InputSchema,
                         Strict = tool.Strict,
+                        InputExamples = tool.InputExamples is { Count: > 0 } examples
+                            ? JsonSerializer.SerializeToElement(
+                                examples.Select(example => new { input = example.Input })
+                            )
+                            : null,
                     }
                 );
             }
