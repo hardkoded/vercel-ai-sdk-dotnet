@@ -86,7 +86,7 @@ Azure transcription (`AzureOpenAIProvider.Transcription(id)`) picks the OpenAI, 
 
 Azure-hosted DeepSeek chat models (`AzureOpenAIProvider.DeepSeek(deploymentName)`, provider id `azure.deepseek`) map top-level `Reasoning` to `reasoning_effort` and stream `reasoning_content` as reasoning parts. Provider options and metadata use the `azure` key; see `docs/articles/providers.md`.
 
-Google Vertex (`GoogleVertexProvider`) downloads HTTP(S) file URLs in tool results as inline data: `VertexOptions.ToolResultDownloads.MaxBytes` (default 7 MiB) limits each file, and `VertexOptions.DownloadFetch` is the transport, which never carries the Vertex credentials. `GoogleVertexMaasProvider.ImageModel(id)` downloads image URLs on another origin without credentials; `GoogleVertexPartnerOptions.DownloadHttpClient` sets that client. See `docs/articles/secure-url-fetching.md`.
+Google Vertex (`GoogleVertexProvider`) downloads HTTP(S) file URLs in tool results as inline data: `VertexOptions.ToolResultDownloads.MaxBytes` (default 7 MiB) limits each file, and `VertexOptions.DownloadFetch` is the transport, which never carries the Vertex credentials. `GoogleVertexMaasProvider.ImageModel(id)` downloads image URLs on another origin without credentials; `GoogleVertexPartnerOptions.DownloadHttpClient` sets that client.
 
 Register the client with `services.AddAiSdk()`. Add `services.AddAiSdkOpenTelemetry()` to record spans on the `Vercel.AI` activity source.
 

@@ -20,7 +20,9 @@ internal static class OpenTelemetrySupport
         string? functionId = null,
         Vercel.AI.Prompt.Instructions? instructions = null,
         IReadOnlyDictionary<string, object?>? runtimeContext = null,
-        IReadOnlyDictionary<string, string?>? headers = null
+        IReadOnlyDictionary<string, string?>? headers = null,
+        long? timestamp = null,
+        DurableTelemetryEventContext? durableContext = null
     ) =>
         new GenerateTextStartEvent
         {
@@ -34,13 +36,16 @@ internal static class OpenTelemetrySupport
             Temperature = 0.7,
             RuntimeContext = runtimeContext,
             Headers = headers,
+            Timestamp = timestamp,
+            DurableContext = durableContext,
         }.WithTelemetry(new TelemetryOptions { FunctionId = functionId });
 
     /// <summary>Port of <c>makeStepStartEvent</c>.</summary>
     public static GenerateTextStepStartEvent MakeStepStartEvent(
         int stepNumber = 0,
         IReadOnlyDictionary<string, object?>? runtimeContext = null,
-        ToolChoice? toolChoice = null
+        ToolChoice? toolChoice = null,
+        long? timestamp = null
     ) =>
         new()
         {
@@ -50,13 +55,16 @@ internal static class OpenTelemetrySupport
             StepNumber = stepNumber,
             RuntimeContext = runtimeContext,
             ToolChoice = toolChoice,
+            Timestamp = timestamp,
         };
 
     /// <summary>Port of <c>makeLanguageModelCallStartEvent</c>.</summary>
     public static LanguageModelCallStartEvent MakeLanguageModelCallStartEvent(
         Vercel.AI.Prompt.Instructions? instructions = null,
         IReadOnlyList<ModelMessage>? messages = null,
-        IReadOnlyList<LanguageModelTool>? tools = null
+        IReadOnlyList<LanguageModelTool>? tools = null,
+        long? timestamp = null,
+        DurableTelemetryEventContext? durableContext = null
     ) =>
         new()
         {
@@ -66,6 +74,8 @@ internal static class OpenTelemetrySupport
             Instructions = instructions,
             Messages = messages ?? [],
             Tools = tools,
+            Timestamp = timestamp,
+            DurableContext = durableContext,
         };
 
     /// <summary>Port of the <c>{ name, status, ended }</c> projection of the mock spans.</summary>
@@ -89,7 +99,8 @@ internal static class OpenTelemetrySupport
         LanguageModelUsage? usage = null,
         IReadOnlyList<GeneratedContent>? content = null,
         ModelCallPerformance? performance = null,
-        JsonElement? providerMetadata = null
+        JsonElement? providerMetadata = null,
+        long? timestamp = null
     ) =>
         new(
             provider,
@@ -103,6 +114,7 @@ internal static class OpenTelemetrySupport
         )
         {
             CallId = CallId,
+            Timestamp = timestamp,
             Performance = performance
                 ?? new ModelCallPerformance
                 {
@@ -120,7 +132,8 @@ internal static class OpenTelemetrySupport
         LanguageModelUsage? usage = null,
         int stepNumber = 0,
         JsonElement? providerMetadata = null,
-        IReadOnlyList<GeneratedContent>? content = null
+        IReadOnlyList<GeneratedContent>? content = null,
+        long? timestamp = null
     ) =>
         new(
             text ?? string.Empty,
@@ -138,12 +151,14 @@ internal static class OpenTelemetrySupport
         {
             CallId = CallId,
             StepNumber = stepNumber,
+            Timestamp = timestamp,
         };
 
     /// <summary>Port of <c>makeFinishEvent</c>.</summary>
     public static GenerateTextResult MakeFinishEvent(
         LanguageModelUsage? usage = null,
-        JsonElement? providerMetadata = null
+        JsonElement? providerMetadata = null,
+        long? timestamp = null
     )
     {
         var step = MakeStepFinishEvent(providerMetadata: providerMetadata);
@@ -156,18 +171,23 @@ internal static class OpenTelemetrySupport
             null,
             [],
             providerMetadata
-        );
+        )
+        {
+            Timestamp = timestamp,
+        };
     }
 
     /// <summary>Port of <c>makeToolCallStartEvent</c>.</summary>
     public static ToolExecutionStartEvent MakeToolCallStartEvent(
-        GeneratedToolCall? toolCall = null
-    ) => new(toolCall ?? DefaultToolCall(), []) { CallId = CallId };
+        GeneratedToolCall? toolCall = null,
+        long? timestamp = null
+    ) => new(toolCall ?? DefaultToolCall(), []) { CallId = CallId, Timestamp = timestamp };
 
     /// <summary>Port of <c>makeToolCallFinishEvent</c>.</summary>
     public static ToolExecutionEndEvent MakeToolCallFinishEvent(
         bool success,
-        int toolExecutionMs = 42
+        int toolExecutionMs = 42,
+        long? timestamp = null
     )
     {
         var toolCall = DefaultToolCall();
@@ -185,6 +205,7 @@ internal static class OpenTelemetrySupport
         )
         {
             CallId = CallId,
+            Timestamp = timestamp,
         };
     }
 
