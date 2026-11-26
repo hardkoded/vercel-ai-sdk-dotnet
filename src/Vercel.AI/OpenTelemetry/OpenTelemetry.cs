@@ -20,8 +20,8 @@ namespace Vercel.AI.OpenTelemetry;
 /// </summary>
 /// <remarks>
 /// Only the callbacks <see cref="ITelemetry"/> has are ported: text generation (root, step, model call, and tool spans), embed,
-/// rerank, speech, transcription, decide, and extract. The object and durable parts of upstream need events
-/// the port does not emit yet.
+/// rerank, speech, transcription, decide, extract, and object generation. Durable telemetry is not ported: it
+/// comes from upstream's <c>workflow</c> package.
 /// </remarks>
 public class OpenTelemetry : ITelemetry
 {
@@ -962,8 +962,8 @@ public class OpenTelemetry : ITelemetry
         var finalToolOutputs = new Dictionary<string, GeneratedToolResult>(StringComparer.Ordinal);
         foreach (var part in e.Content)
         {
-            // The port has no tool-error part, and no preliminary result: a failed result is a result with IsError.
-            if (part is GeneratedToolResult result)
+            // The port has no tool-error part: a failed result is a result with IsError.
+            if (part is GeneratedToolResult { Preliminary: not true } result)
             {
                 finalToolOutputs[result.ToolCallId] = result;
             }
