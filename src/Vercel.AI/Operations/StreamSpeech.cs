@@ -380,8 +380,8 @@ public sealed class StreamSpeechRequest : OperationRequest
 /// <summary>Result of <see cref="StreamSpeech.Start"/>. Maps to <c>StreamSpeechResult</c>.</summary>
 public sealed class StreamSpeechResult
 {
-    // Parts the consumer has not read yet before the model stream pauses, like the output stream's high water mark.
-    private const int OutputCapacity = 16;
+    // Upstream pipes into a default TransformStream, which buffers one part (writable high water mark 1, readable 0).
+    private const int OutputCapacity = 1;
 
     private readonly PendingPromise<SpeechStreamUsage> _usage =
         new PendingPromise<SpeechStreamUsage>();
