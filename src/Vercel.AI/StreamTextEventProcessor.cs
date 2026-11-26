@@ -581,7 +581,12 @@ internal sealed class StreamTextEventProcessor
             await onStepEnd(step, Token).ConfigureAwait(false);
         }
 
-        if (TelemetryDispatcher.Create(_options).OnStepEnd is { } telemetryOnStepEnd)
+        if (
+            GenerateTextRestrictedTelemetryDispatcher
+                .CreateRestrictedTelemetryDispatcher(_options)
+                .OnStepEnd is
+            { } telemetryOnStepEnd
+        )
         {
             await telemetryOnStepEnd(step, Token).ConfigureAwait(false);
         }
@@ -663,7 +668,12 @@ internal sealed class StreamTextEventProcessor
                     "No output generated. Check the stream for errors."
                 );
             // The stream itself does not report an error part to telemetry, so report here to close open spans:
-            if (TelemetryDispatcher.Create(_options).OnError is { } telemetryOnError)
+            if (
+                GenerateTextRestrictedTelemetryDispatcher
+                    .CreateRestrictedTelemetryDispatcher(_options)
+                    .OnError is
+                { } telemetryOnError
+            )
             {
                 await Generation
                     .NotifyAsync(
@@ -762,7 +772,12 @@ internal sealed class StreamTextEventProcessor
             }
         }
 
-        if (TelemetryDispatcher.Create(_options).OnEnd is { } telemetryOnEnd)
+        if (
+            GenerateTextRestrictedTelemetryDispatcher
+                .CreateRestrictedTelemetryDispatcher(_options)
+                .OnEnd is
+            { } telemetryOnEnd
+        )
         {
             await telemetryOnEnd(result, cancellationToken).ConfigureAwait(false);
         }

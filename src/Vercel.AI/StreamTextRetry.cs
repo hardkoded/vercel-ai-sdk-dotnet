@@ -339,7 +339,10 @@ internal sealed class StreamTextErrorHandling
 
             if (
                 reportToTelemetry
-                && TelemetryDispatcher.Create(options).OnError is { } telemetryOnError
+                && GenerateTextRestrictedTelemetryDispatcher
+                    .CreateRestrictedTelemetryDispatcher(options)
+                    .OnError
+                    is { } telemetryOnError
             )
             {
                 await telemetryOnError(new TelemetryErrorEvent(callId, error), cancellationToken)

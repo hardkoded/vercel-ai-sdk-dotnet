@@ -443,18 +443,7 @@ internal sealed class TelemetryDispatcher
             ),
             OnStart = Filter<IOperationStartEvent>(Merge(integrations.Select(i => i.OnStart)), e =>
                 e is GenerateTextStartEvent textStart
-                    ? textStart
-                        .WithContexts(
-                            FilterIncludedContextHelper.FilterIncludedContext(
-                                textStart.RuntimeContext,
-                                telemetry?.IncludeRuntimeContext
-                            ),
-                            FilterIncludedContextHelper.FilterToolsContext(
-                                textStart.ToolsContext,
-                                telemetry?.IncludeToolsContext
-                            )
-                        )
-                        .WithTelemetry(telemetry)
+                    ? textStart.WithTelemetry(telemetry)
                     : e switch
                     {
                         GenerateObjectStartEvent objectStart => objectStart.AugmentEvent(telemetry),
@@ -476,21 +465,7 @@ internal sealed class TelemetryDispatcher
                         _ => e,
                     }
             ),
-            OnStepStart = Filter<GenerateTextStepStartEvent>(
-                Merge(integrations.Select(i => i.OnStepStart)),
-                e =>
-                    e.WithContexts(
-                        FilterIncludedContextHelper.FilterIncludedContext(
-                            e.RuntimeContext,
-                            telemetry?.IncludeRuntimeContext
-                        ),
-                        FilterIncludedContextHelper.FilterToolsContext(
-                            e.ToolsContext,
-                            telemetry?.IncludeToolsContext
-                        ),
-                        e.Steps.Select(step => FilterStep(step, telemetry)).ToList()
-                    )
-            ),
+            OnStepStart = Merge(integrations.Select(i => i.OnStepStart)),
             OnToolExecutionStart = Filter<ToolExecutionStartEvent>(
                 Merge(integrations.Select(i => i.OnToolExecutionStart)),
                 e =>
@@ -498,7 +473,7 @@ internal sealed class TelemetryDispatcher
                         new ToolExecutionStartEvent(e.ToolCall, e.Messages)
                         {
                             CallId = e.CallId,
-                            ToolContext = FilterToolContext(e, telemetry),
+                            ToolContext = e.ToolContext,
                         },
                         telemetry
                     )
@@ -515,28 +490,18 @@ internal sealed class TelemetryDispatcher
                         )
                         {
                             CallId = e.CallId,
-                            ToolContext = FilterToolContext(e, telemetry),
+                            ToolContext = e.ToolContext,
                         },
                         telemetry
                     )
             ),
             // Fans out to the deprecated onStepFinish too, so integrations that only implement it keep working.
-            OnStepEnd = Filter<StepResult>(
-                Merge(
-                    integrations
-                        .Select(i => i.OnStepEnd)
-                        .Concat(integrations.Select(i => i.OnStepFinish))
-                ),
-                step => FilterStep(step, telemetry)
+            OnStepEnd = Merge(
+                integrations
+                    .Select(i => i.OnStepEnd)
+                    .Concat(integrations.Select(i => i.OnStepFinish))
             ),
-            OnAbort = Filter<StreamAbortContext>(
-                Merge(integrations.Select(i => i.OnAbort)),
-                context => new StreamAbortContext(
-                    context.Steps.Select(step => FilterStep(step, telemetry)).ToList(),
-                    context.Exception,
-                    context.CallId
-                )
-            ),
+            OnAbort = Merge(integrations.Select(i => i.OnAbort)),
             OnError = Filter(Merge(integrations.Select(i => i.OnError)), (TelemetryErrorEvent e) =>
                 FilterTelemetryEventHelper.FilterTelemetryEvent(e, telemetry)
             ),
@@ -840,19 +805,18 @@ internal sealed class TelemetryDispatcher
         TelemetryOptions? telemetry
     )
     {
-        var augmented = FilterResult(result, telemetry);
-        augmented = new GenerateTextResult(
-            augmented.Text,
-            augmented.ReasoningText,
-            augmented.Steps,
-            augmented.FinishReason,
-            augmented.Usage,
-            augmented.Output,
-            augmented.Sources,
-            augmented.ProviderMetadata
+        var augmented = new GenerateTextResult(
+            result.Text,
+            result.ReasoningText,
+            result.Steps,
+            result.FinishReason,
+            result.Usage,
+            result.Output,
+            result.Sources,
+            result.ProviderMetadata
         )
         {
-            ResponseMessages = augmented.ResponseMessages,
+            ResponseMessages = result.ResponseMessages,
             RecordInputs = telemetry?.RecordInputs,
             RecordOutputs = telemetry?.RecordOutputs,
             FunctionId = telemetry?.FunctionId,
@@ -864,53 +828,18 @@ internal sealed class TelemetryDispatcher
         );
     }
 
-    // Integrations see only the runtime and tool context properties the call includes. Maps to the filterContext step of augmentEvent.
-    private static GenerateTextResult FilterResult(
-        GenerateTextResult result,
-        TelemetryOptions? telemetry
-    )
-    {
-        var steps = result.Steps.Select(step => FilterStep(step, telemetry)).ToList();
-        return result.WithSteps(steps);
-    }
-
-    // Maps to augmentEvent for a step error: the step start event keeps only the included contexts and the error is redacted.
+    // Maps to augmentEvent for a step error: the error is redacted.
     private static GenerateTextStepErrorEvent FilterStepError(
         GenerateTextStepErrorEvent e,
         TelemetryOptions? telemetry
     )
     {
         var hidden = telemetry?.RecordInputs == false || telemetry?.RecordOutputs == false;
-        var step = e.WithContexts(
-            FilterIncludedContextHelper.FilterIncludedContext(
-                e.RuntimeContext,
-                telemetry?.IncludeRuntimeContext
-            ),
-            FilterIncludedContextHelper.FilterToolsContext(
-                e.ToolsContext,
-                telemetry?.IncludeToolsContext
-            ),
-            e.Steps.Select(s => FilterStep(s, telemetry)).ToList()
-        );
         return new GenerateTextStepErrorEvent(
-            step,
+            e,
             hidden
                 ? new InvalidOperationException("AI SDK operation failed")
                 : RedactTelemetryCredentialsHelper.RedactTelemetryCredentials(e.Error)
-        );
-    }
-
-    private static StepResult FilterStep(StepResult step, TelemetryOptions? telemetry)
-    {
-        return step.WithContexts(
-            FilterIncludedContextHelper.FilterIncludedContext(
-                step.RuntimeContext,
-                telemetry?.IncludeRuntimeContext
-            ),
-            FilterIncludedContextHelper.FilterToolsContext(
-                step.ToolsContext,
-                telemetry?.IncludeToolsContext
-            )
         );
     }
 
