@@ -98,7 +98,7 @@ A prompt where a local tool call has no tool result before the next user or syst
 
 ## Tool choice none
 
-When `ToolChoice` is `ToolChoice.None`, the SDK prevents local tool execution even if the model returns a tool call. Such a response throws `ToolChoiceViolationException`. The tool definitions are still sent to the model. With `StreamTextAsync`, tool parts are withheld from the stream, so client-side tools are not invoked either. Tool call repair (`RepairToolCall`) and input refinement (`RefineToolInput`) are skipped for rejected tool calls. A `PrepareStep` that returns another `ToolChoice` replaces `None` for that step. The Hugging Face Responses provider sends `tool_choice: "none"`.
+When `ToolChoice` is `ToolChoice.None`, the SDK prevents local tool execution even if the model returns a tool call. Such a response throws `ToolChoiceViolationException` from `GenerateTextAsync`. With `StreamTextAsync`, the exception is an `ErrorPart` in the stream, reported to `OnError`, and `FinishReason` resolves to `FinishReason.Error` with the usage of the call. The tool definitions are still sent to the model. With `StreamTextAsync`, tool parts are withheld from the stream, so client-side tools are not invoked either. Tool call repair (`RepairToolCall`) and input refinement (`RefineToolInput`) are skipped for rejected tool calls. A `PrepareStep` that returns another `ToolChoice` replaces `None` for that step. The Hugging Face Responses provider sends `tool_choice: "none"`.
 
 ## Tool call execution concurrency
 

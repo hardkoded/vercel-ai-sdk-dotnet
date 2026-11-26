@@ -41,8 +41,7 @@ public sealed class ToolChoiceEnforcementTests
     [MemberData(nameof(NoneToolChoiceCases))]
     [UpstreamTest(
         Prefix + "should reject tool calls with none ($toolChoice, $stepToolChoice, $finishReason)",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The port raises the error from the stream and faults finishReason and usage, where upstream emits an error part and resolves finishReason to error and usage."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Should_reject_tool_calls_with_none(
         ToolChoice toolChoice,
@@ -113,10 +112,7 @@ public sealed class ToolChoiceEnforcementTests
                 }
             );
 
-        await Assert.ThrowsAsync<ToolChoiceViolationException>(async () =>
-        {
-            await foreach (var _ in result.Stream()) { }
-        });
+        await foreach (var _ in result.Stream()) { }
 
         var violation = Assert.IsType<ToolChoiceViolationException>(Assert.Single(errors));
         Assert.Equal("AI_ToolChoiceViolationError", violation.Name);
@@ -127,8 +123,11 @@ public sealed class ToolChoiceEnforcementTests
         Assert.Equal("none", violation.ToolChoice.Type);
         Assert.Equal(finishReason, violation.FinishReason);
         Assert.IsType<GeneratedToolCall>(Assert.Single(violation.Content));
-        await Assert.ThrowsAsync<ToolChoiceViolationException>(() => result.FinishReason);
-        await Assert.ThrowsAsync<ToolChoiceViolationException>(() => result.Usage);
+        Assert.Equal(FinishReason.Error, await result.FinishReason);
+        var resolvedUsage = await result.Usage;
+        Assert.Equal(3, resolvedUsage.InputTokens);
+        Assert.Equal(10, resolvedUsage.OutputTokens);
+        Assert.Equal(13, resolvedUsage.TotalTokens);
         Assert.False(executed);
         Assert.Equal(0, inputCallbacks);
     }
@@ -136,8 +135,7 @@ public sealed class ToolChoiceEnforcementTests
     [Fact]
     [UpstreamTest(
         Prefix + "should withhold tool parts with none and not repair or refine tool calls",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "The port raises the error from the stream instead of emitting an error part, so the error part of the full and UI streams is not asserted."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Should_withhold_tool_parts_with_none_and_not_repair_or_refine_tool_calls()
     {
@@ -214,18 +212,13 @@ public sealed class ToolChoiceEnforcementTests
                 );
 
         var fullStreamTypes = new List<string>();
-        await Assert.ThrowsAsync<ToolChoiceViolationException>(async () =>
+        await foreach (var part in Start().Stream())
         {
-            await foreach (var part in Start().Stream())
-            {
-                fullStreamTypes.Add(part.Type);
-            }
-        });
+            fullStreamTypes.Add(part.Type);
+        }
 
         using var body = new MemoryStream();
-        await Assert.ThrowsAsync<ToolChoiceViolationException>(() =>
-            Vercel.AI.AspNetCore.UIMessageStreamResult.WriteAsync(Start(), body)
-        );
+        await Vercel.AI.AspNetCore.UIMessageStreamResult.WriteAsync(Start(), body);
         var uiStreamTypes = Encoding
             .UTF8.GetString(body.ToArray())
             .Split(new[] { "\n\n" }, StringSplitOptions.RemoveEmptyEntries)
@@ -234,6 +227,8 @@ public sealed class ToolChoiceEnforcementTests
             .Select(data => JsonNode.Parse(data)!["type"]!.GetValue<string>())
             .ToList();
 
+        Assert.Contains("error", fullStreamTypes);
+        Assert.Contains("error", uiStreamTypes);
         Assert.DoesNotContain(fullStreamTypes, type =>
             type.StartsWith("tool-", StringComparison.Ordinal)
         );
