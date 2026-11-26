@@ -51,6 +51,8 @@ internal static class FilterTelemetryEventHelper
             RecordOutputs = value.RecordOutputs,
             FunctionId = value.FunctionId,
             AiVersion = value.AiVersion,
+            Timestamp = value.Timestamp,
+            DurableContext = value.DurableContext,
         };
     }
 
@@ -86,6 +88,7 @@ internal static class FilterTelemetryEventHelper
             RecordOutputs = value.RecordOutputs,
             FunctionId = value.FunctionId,
             AiVersion = value.AiVersion,
+            Timestamp = value.Timestamp,
         };
     }
 
@@ -207,6 +210,7 @@ internal static class FilterTelemetryEventHelper
                         RecordOutputs = source.RecordOutputs,
                         FunctionId = source.FunctionId,
                         AiVersion = source.AiVersion,
+                        Timestamp = source.Timestamp,
                     };
         }
 
@@ -238,6 +242,7 @@ internal static class FilterTelemetryEventHelper
                     RecordOutputs = end.RecordOutputs,
                     FunctionId = end.FunctionId,
                     AiVersion = end.AiVersion,
+                    Timestamp = end.Timestamp,
                 };
     }
 

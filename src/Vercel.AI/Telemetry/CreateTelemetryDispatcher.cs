@@ -234,6 +234,7 @@ internal sealed class TelemetryDispatcher
             RecordOutputs = Options?.RecordOutputs,
             FunctionId = Options?.FunctionId,
             AiVersion = Operations.AiSdkVersion.Version,
+            Timestamp = @event.Timestamp,
         };
         var wrapped = execute;
         foreach (var wrapper in ExecuteToolWrappers)
