@@ -31,6 +31,33 @@ internal static class MoonshotModelCatalog
                 or MoonshotModelFamily.KimiK3;
     }
 
+    /// <summary>
+    /// Whether the model accepts the tool choice <c>required</c>. Maps to
+    /// <c>capabilities.language.tools.required</c> of <c>getMoonshotAILanguageModelEntry</c>.
+    /// </summary>
+    public static bool SupportsRequiredToolChoice(string modelId)
+    {
+        return ResolveModelFamily(modelId) switch
+        {
+            MoonshotModelFamily.KimiK26 or MoonshotModelFamily.KimiK27 => false,
+            _ => true,
+        };
+    }
+
+    /// <summary>
+    /// Whether the model loads tools from a system message. Null is <c>'unknown'</c>. Maps to
+    /// <c>requestConfig.language.dynamicTools</c> of <c>getMoonshotAILanguageModelEntry</c>.
+    /// </summary>
+    public static bool? DynamicTools(string modelId)
+    {
+        return ResolveModelFamily(modelId) switch
+        {
+            MoonshotModelFamily.KimiK3 => true,
+            MoonshotModelFamily.Unknown => null,
+            _ => false,
+        };
+    }
+
     /// <summary>Resolves the model family of a model id. Maps to <c>resolveModelFamily</c>.</summary>
     public static MoonshotModelFamily ResolveModelFamily(string modelId)
     {

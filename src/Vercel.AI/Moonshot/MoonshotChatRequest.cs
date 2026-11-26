@@ -36,7 +36,7 @@ internal static class MoonshotChatRequest
     {
         ApplySamplingOptions(modelId, options, body, warnings);
         ApplyMaxOutputTokens(body);
-        ApplyMessageNames(options, body, warnings);
+        ApplyTools(modelId, options, body, warnings);
         ApplyPromptCacheOptions(body);
 
         var moonshot = ReadOptions(options.ProviderOptions);
@@ -322,55 +322,32 @@ internal static class MoonshotChatRequest
         }
     }
 
-    /// <summary>
-    /// Sends <c>providerOptions.moonshotai.name</c> as the message <c>name</c>. Tool messages have no name, so the name
-    /// is omitted with a warning. Maps to the <c>moonshotMessageOptions?.name</c> handling in
-    /// <c>convert-to-moonshotai-chat-messages.ts</c>.
-    /// </summary>
-    private static void ApplyMessageNames(
+    /// <summary>Sends <c>tools</c> and <c>tool_choice</c> from <see cref="MoonshotPrepareTools.PrepareTools"/>. Maps to the <c>prepareTools</c> call in <c>getArgs</c>.</summary>
+    private static void ApplyTools(
+        string modelId,
         LanguageModelCallOptions options,
         JsonObject body,
         IList<CallWarning> warnings
     )
     {
-        if (options.Prompt == null || body["messages"] is not JsonArray messages)
+        var prepared = MoonshotPrepareTools.PrepareTools(
+            modelId,
+            options.Tools,
+            options.ToolChoice
+        );
+        foreach (var warning in prepared.ToolWarnings)
         {
-            return;
+            warnings.Add(warning);
         }
 
-        var prompt = ToolModelMessage.Flatten(options.Prompt);
-        if (prompt.Count != messages.Count)
+        if (prepared.Tools != null)
         {
-            return;
+            body["tools"] = prepared.Tools;
         }
 
-        for (var index = 0; index < prompt.Count; index++)
+        if (prepared.ToolChoice != null)
         {
-            var name = StringOf(
-                ReadOptions(
-                    prompt[index] switch
-                    {
-                        SystemModelMessage system => system.ProviderOptions,
-                        UserModelMessage user => user.ProviderOptions,
-                        AssistantModelMessage assistant => assistant.ProviderOptions,
-                        ToolModelMessage tool => tool.MessageProviderOptions,
-                        _ => null,
-                    }
-                ),
-                "name"
-            );
-            if (name == null || messages[index] is not JsonObject message)
-            {
-                continue;
-            }
-
-            if (prompt[index] is ToolModelMessage)
-            {
-                warnings.Add(new CallWarning("unsupported", "message name on tool messages", null));
-                continue;
-            }
-
-            message["name"] = name;
+            body["tool_choice"] = prepared.ToolChoice;
         }
     }
 
