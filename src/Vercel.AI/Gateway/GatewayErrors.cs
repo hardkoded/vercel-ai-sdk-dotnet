@@ -462,7 +462,7 @@ public static class GatewayErrors
                 api.IsRetryable && (api.StatusCode == null || api.StatusCode < 400)
                     ? true
                     : (bool?)null;
-            return Create(
+            var created = Create(
                 ExtractApiCallResponse(api),
                 api.StatusCode ?? 500,
                 authMethod,
@@ -470,6 +470,8 @@ public static class GatewayErrors
                 api,
                 retryable
             );
+            created.AuthMethod = authMethod;
+            return created;
         }
 
         if (error is ApiException http)

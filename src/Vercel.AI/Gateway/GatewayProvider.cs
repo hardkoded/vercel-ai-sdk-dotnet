@@ -781,6 +781,25 @@ public sealed class GatewayProvider
             return exception;
         }
 
+        return RequestBodyValues(requestBody) is TelemetryRedactedValue annotated
+            ? ProviderHttp.MapStatusWithHeaders(
+                api.StatusCode,
+                api.Message,
+                api.ResponseBody,
+                api.ResponseHeaders,
+                api.Url,
+                annotated,
+                api.IsRetryable
+            )
+            : exception;
+    }
+
+    /// <summary>
+    /// The request body as <c>requestBodyValues</c>: annotated so telemetry copies hide BYOK credentials. A body that cannot be read
+    /// back is returned as it is, so it never hides the failure itself.
+    /// </summary>
+    internal static object RequestBodyValues(string requestBody)
+    {
         try
         {
             // The body was serialized by the Gateway models, so it is read back with a depth limit that cannot reject it.
@@ -788,22 +807,13 @@ public sealed class GatewayProvider
                 requestBody,
                 new JsonDocumentOptions { MaxDepth = int.MaxValue }
             );
-            return ProviderHttp.MapStatusWithHeaders(
-                api.StatusCode,
-                api.Message,
-                api.ResponseBody,
-                api.ResponseHeaders,
-                api.Url,
-                RedactGatewayRequestCredentials.WithGatewayRequestTelemetryRedaction(
-                    document.RootElement.Clone()
-                ),
-                api.IsRetryable
+            return RedactGatewayRequestCredentials.WithGatewayRequestTelemetryRedaction(
+                document.RootElement.Clone()
             );
         }
         catch (JsonException)
         {
-            // A body that cannot be read back must not hide the failure itself.
-            return exception;
+            return requestBody;
         }
     }
 

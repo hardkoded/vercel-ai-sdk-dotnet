@@ -13,6 +13,18 @@ namespace Vercel.AI.Tests.Upstream.Gateway.GatewayByokTelemetry;
 /// <summary>Stands in for <c>JSON.stringify(error)</c>: writes every message, cause and request body the error exposes.</summary>
 internal static class GatewayTelemetryDump
 {
+    /// <summary>Stands in for <c>JSON.stringify(event)</c>: the whole event, including its error.</summary>
+    internal static string Dump(TelemetryErrorEvent telemetryEvent)
+    {
+        return string.Join(
+            "\n",
+            telemetryEvent.CallId,
+            telemetryEvent.AiVersion,
+            telemetryEvent.FunctionId,
+            Dump(telemetryEvent.Error)
+        );
+    }
+
     internal static string Dump(Exception error)
     {
         var text = new StringBuilder();

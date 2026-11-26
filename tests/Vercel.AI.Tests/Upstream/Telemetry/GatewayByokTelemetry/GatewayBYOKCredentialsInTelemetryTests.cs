@@ -71,6 +71,7 @@ public sealed class GatewayBYOKCredentialsInTelemetryTests
         );
 
         var e = Assert.Single(events);
+        Assert.DoesNotContain(ByokSecret, GatewayTelemetryDump.Dump(e));
         Assert.DoesNotContain(ByokSecret, GatewayTelemetryDump.Dump(e.Error));
     }
 
@@ -101,6 +102,7 @@ public sealed class GatewayBYOKCredentialsInTelemetryTests
         );
 
         var e = Assert.Single(events);
+        Assert.DoesNotContain(ByokSecret, GatewayTelemetryDump.Dump(e));
         Assert.DoesNotContain(ByokSecret, GatewayTelemetryDump.Dump(e.Error));
     }
 
