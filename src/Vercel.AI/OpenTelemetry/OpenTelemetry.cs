@@ -437,10 +437,10 @@ public class OpenTelemetry : ITelemetry
         };
 
     /// <inheritdoc />
-    public IExecuteLanguageModelCall? ExecuteLanguageModelCall => null;
+    public IExecuteLanguageModelCall? ExecuteLanguageModelCall => new ModelCallContext(this);
 
     /// <inheritdoc />
-    public IExecuteTool? ExecuteTool => null;
+    public IExecuteTool? ExecuteTool => new ToolContext(this);
 
     private static ResolvableTelemetryAttribute In(Func<object?> resolve) =>
         ResolvableTelemetryAttribute.Input(resolve);
@@ -695,6 +695,12 @@ public class OpenTelemetry : ITelemetry
                     ["gen_ai.request.top_p"] = e.TopP,
                     ["gen_ai.request.stop_sequences"] = e.StopSequences?.ToArray(),
                     ["gen_ai.request.seed"] = e.Seed,
+                    ["gen_ai.system_instructions"] = e.Instructions is { } instructions
+                        ? In(() => Json(GenAiFormatMessages.FormatSystemInstructions(instructions)))
+                        : null,
+                    ["gen_ai.input.messages"] = In(() =>
+                        Json(GenAiFormatMessages.FormatModelMessages((string?)null, e.Messages))
+                    ),
                 }
             ),
             baseSupplemental
@@ -738,6 +744,7 @@ public class OpenTelemetry : ITelemetry
             return;
         }
 
+        state.RuntimeContext = e.RuntimeContext;
         var stepAttributes = Merge(
             TelemetryAttributes.SelectAttributes(
                 state.Telemetry,
@@ -787,6 +794,8 @@ public class OpenTelemetry : ITelemetry
         }
 
         RecordInferenceDuration(state, errorType: "_OTHER");
+        var toolDefinitions = e.Tools?.Select(RedactToolDefinition.Redact).ToList();
+        state.InferenceToolDefinitions = toolDefinitions;
         state.InferenceMetrics = new InferenceMetrics(
             Stopwatch.GetTimestamp(),
             e.Provider,
@@ -809,6 +818,20 @@ public class OpenTelemetry : ITelemetry
                 ["gen_ai.request.temperature"] = Setting(state, "temperature"),
                 ["gen_ai.request.top_k"] = Setting(state, "topK"),
                 ["gen_ai.request.top_p"] = Setting(state, "topP"),
+                ["gen_ai.system_instructions"] = e.Instructions is { } instructions
+                    ? In(() => Json(GenAiFormatMessages.FormatSystemInstructions(instructions)))
+                    : null,
+                ["gen_ai.input.messages"] = In(() =>
+                {
+                    var formatted = GenAiFormatMessages.FormatModelMessages(
+                        (string?)null,
+                        e.Messages
+                    );
+                    return formatted.Count > 0 ? Json(formatted) : null;
+                }),
+                ["gen_ai.tool.definitions"] = In(() =>
+                    toolDefinitions is null ? null : Json(toolDefinitions)
+                ),
             }
         );
 
@@ -835,6 +858,34 @@ public class OpenTelemetry : ITelemetry
         }
 
         var span = state.InferenceSpan;
+        var toolDefinitions = new List<Dictionary<string, object?>>(
+            state.InferenceToolDefinitions ?? []
+        );
+        var definedToolNames = new HashSet<string>(
+            toolDefinitions.Select(tool => tool["name"] as string).OfType<string>(),
+            StringComparer.Ordinal
+        );
+        var hasObservedProviderTools = false;
+        foreach (var part in e.Content)
+        {
+            if (
+                part is not GeneratedToolCall { ProviderExecuted: true } call
+                || !definedToolNames.Add(call.ToolName)
+            )
+            {
+                continue;
+            }
+
+            toolDefinitions.Add(
+                new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["type"] = "extension",
+                    ["name"] = call.ToolName,
+                }
+            );
+            hasObservedProviderTools = true;
+        }
+
         RecordInferenceDuration(
             state,
             e.Performance?.ResponseTimeMs ?? e.ResponseTime.TotalMilliseconds,
@@ -872,12 +923,23 @@ public class OpenTelemetry : ITelemetry
                         ["gen_ai.usage.output_tokens"] = e.Usage.OutputTokens,
                         ["gen_ai.usage.cache_read.input_tokens"] = e.Usage.CacheReadTokens,
                         ["gen_ai.usage.cache_creation.input_tokens"] = e.Usage.CacheWriteTokens,
+                        ["gen_ai.output.messages"] = Out(() =>
+                            Json(GenAiFormatMessages.FormatOutputContent(e.Content, e.FinishReason))
+                        ),
+                        ["gen_ai.tool.definitions"] = hasObservedProviderTools
+                            ? In(() => Json(toolDefinitions))
+                            : null,
                     }
                 ),
                 _supplementalAttributes.Select(
                     state.Telemetry,
                     SupplementalGroup.ProviderMetadata,
                     ProviderMetadataAttributes(e.ProviderMetadata)
+                ),
+                _supplementalAttributes.Select(
+                    state.Telemetry,
+                    SupplementalGroup.Usage,
+                    DetailedUsageAttributes(e.Usage)
                 )
             )
         );
@@ -1142,6 +1204,9 @@ public class OpenTelemetry : ITelemetry
                         ["gen_ai.usage.cache_read.input_tokens"] = e.TotalUsage.CacheReadTokens,
                         ["gen_ai.usage.cache_creation.input_tokens"] =
                             e.TotalUsage.CacheWriteTokens,
+                        ["gen_ai.output.messages"] = Out(() =>
+                            Json(GenAiFormatMessages.FormatOutputContent(e.Content, e.FinishReason))
+                        ),
                     }
                 ),
                 _supplementalAttributes.Select(
@@ -2406,6 +2471,59 @@ public class OpenTelemetry : ITelemetry
             ["ai.usage.outputTokenDetails.reasoningTokens"] = usage.ReasoningTokens,
         };
 
+    // Runs a call with the span as the active one, like context.with, so spans a nested call starts become its children.
+    private static async Task<T> RunInSpanAsync<T>(Activity? span, Func<Task<T>> execute)
+    {
+        if (span is null)
+        {
+            return await execute().ConfigureAwait(false);
+        }
+
+        var previous = Activity.Current;
+        Activity.Current = span;
+        try
+        {
+            return await execute().ConfigureAwait(false);
+        }
+        finally
+        {
+            Activity.Current = previous;
+        }
+    }
+
+    /// <summary>Maps to <c>executeLanguageModelCall</c>. Runs the provider call with the active model-call span.</summary>
+    private sealed class ModelCallContext(OpenTelemetry owner) : IExecuteLanguageModelCall
+    {
+        public Task<T> ExecuteAsync<T>(
+            ExecuteLanguageModelCallOptions<T> options,
+            CancellationToken cancellationToken
+        )
+        {
+            var span = owner.TryGetCallState(options.CallId, out var state)
+                ? state.InferenceSpan ?? state.StepSpan
+                : null;
+            return RunInSpanAsync(span, options.Execute);
+        }
+    }
+
+    /// <summary>Maps to <c>executeTool</c>. Runs the tool with its <c>execute_tool</c> span active.</summary>
+    private sealed class ToolContext(OpenTelemetry owner) : IExecuteTool
+    {
+        public Task<T> ExecuteAsync<T>(
+            ExecuteToolOptions<T> options,
+            CancellationToken cancellationToken
+        )
+        {
+            Activity? span = null;
+            if (owner.TryGetCallState(options.CallId, out var state))
+            {
+                state.ToolSpans.TryGetValue(options.ToolCallId, out span);
+            }
+
+            return RunInSpanAsync(span, options.Execute);
+        }
+    }
+
     private sealed record InferenceMetrics(long StartTimestamp, string Provider, string ModelId);
 
     private sealed class CallState(string operationId, TelemetrySelection telemetry)
@@ -2423,6 +2541,9 @@ public class OpenTelemetry : ITelemetry
         public ActivityContext? InferenceContext { get; set; }
 
         public InferenceMetrics? InferenceMetrics { get; set; }
+
+        public List<Dictionary<string, object?>>? InferenceToolDefinitions { get; set; }
+
         public ConcurrentDictionary<string, Activity> EmbedSpans { get; } =
             new(StringComparer.Ordinal);
 
@@ -2440,7 +2561,7 @@ public class OpenTelemetry : ITelemetry
 
         public string ModelId { get; init; } = string.Empty;
 
-        public IReadOnlyDictionary<string, object?>? RuntimeContext { get; init; }
+        public IReadOnlyDictionary<string, object?>? RuntimeContext { get; set; }
 
         public Vercel.AI.Prompt.Instructions? ObjectSystemInstructions { get; init; }
 

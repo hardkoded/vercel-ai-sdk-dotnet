@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Text.Json;
+using Vercel.AI.GenerateText;
 using Vercel.AI.Prompt;
 using Vercel.AI.Provider;
 
@@ -40,24 +41,168 @@ internal static class GenAiFormatMessages
         return result;
     }
 
+    /// <summary>Maps to <c>formatModelMessages</c> when <c>prompt</c> is a message list.</summary>
+    public static List<Dictionary<string, object?>> FormatModelMessages(
+        IReadOnlyList<ModelMessage>? prompt,
+        IReadOnlyList<ModelMessage>? messages
+    ) =>
+        [
+            .. FormatModelMessages((string?)null, prompt),
+            .. FormatModelMessages((string?)null, messages),
+        ];
+
     /// <summary>Maps to <c>formatInputMessages</c> for the prompt messages of a model call.</summary>
     public static List<Dictionary<string, object?>> FormatInputMessages(
         IEnumerable<ModelMessage> prompt
     ) => [.. prompt.SelectMany(ConvertModelMessageToSemConv)];
 
+    /// <summary>Maps to <c>extractSystemFromPrompt</c>.</summary>
+    public static string? ExtractSystemFromPrompt(IEnumerable<ModelMessage> prompt) =>
+        prompt.OfType<SystemModelMessage>().FirstOrDefault()?.Content;
+
+    /// <summary>Maps to <c>formatOutputContent</c>. Parts keep the order the model produced them in.</summary>
+    public static List<Dictionary<string, object?>> FormatOutputContent(
+        IEnumerable<GeneratedContent> content,
+        FinishReason finishReason
+    )
+    {
+        var parts = new List<Dictionary<string, object?>>();
+        foreach (var part in content)
+        {
+            switch (part)
+            {
+                case GeneratedText text:
+                    // Empty text without provider metadata is skipped, like in the response messages.
+                    if (text.Text.Length > 0 || text.ProviderMetadata is not null)
+                    {
+                        parts.Add(Text(text.Text));
+                    }
+
+                    break;
+                case GeneratedReasoning reasoning:
+                    parts.Add(Reasoning(reasoning.Text));
+                    break;
+                case GeneratedFile file:
+                    parts.Add(File(file.MediaType, null, Convert.ToBase64String(file.Data)));
+                    break;
+                case GeneratedFileUrl file:
+                    parts.Add(Uri(Modality(file.MediaType), file.MediaType, file.Url.ToString()));
+                    break;
+                case GeneratedReasoningFile file:
+                    parts.Add(File(file.MediaType, null, Convert.ToBase64String(file.Data)));
+                    break;
+                case GeneratedCustom custom:
+                    parts.Add(Custom(custom.Kind));
+                    break;
+                case GeneratedToolCall call:
+                    parts.Add(ToolCall(call.ToolCallId, call.ToolName, call.ArgumentsJson));
+                    break;
+                case GeneratedToolResult result:
+                    parts.Add(
+                        new(StringComparer.Ordinal)
+                        {
+                            ["type"] = "tool_call_response",
+                            ["id"] = result.ToolCallId,
+                            ["response"] =
+                                !result.IsError ? ParseJson(result.ResultJson)
+                                : result.ProviderExecuted ? ParseJson(result.ResultJson)
+                                : ErrorMessage.GetErrorMessage(
+                                    result.Error ?? (object)result.ResultJson
+                                ),
+                        }
+                    );
+                    break;
+                case GeneratedToolApprovalRequest request:
+                    parts.Add(
+                        new(StringComparer.Ordinal)
+                        {
+                            ["type"] = "tool_approval_request",
+                            ["approval_id"] = request.ApprovalId,
+                            ["tool_call_id"] = request.ToolCall?.ToolCallId ?? request.ToolCallId,
+                            ["reason"] = request.Reason,
+                        }
+                    );
+                    break;
+                case GeneratedToolApprovalResponse response:
+                    parts.Add(
+                        new(StringComparer.Ordinal)
+                        {
+                            ["type"] = "tool_approval_response",
+                            ["approval_id"] = response.ApprovalId,
+                            ["approved"] = response.Approved,
+                            ["reason"] = response.Reason,
+                        }
+                    );
+                    break;
+                case GeneratedSource or GeneratedDocumentSource:
+                    // Sources are response metadata, not message parts.
+                    break;
+                default:
+                    parts.Add(new(StringComparer.Ordinal) { ["type"] = part.Type });
+                    break;
+            }
+        }
+
+        return [AssistantMessage(parts, finishReason)];
+    }
+
+    /// <summary>
+    /// Maps to <c>formatOutputMessages</c>. Upstream deprecates it in favor of <see cref="FormatOutputContent"/>: it groups the parts by
+    /// type and does not keep the order they were produced in.
+    /// </summary>
+    public static List<Dictionary<string, object?>> FormatOutputMessages(
+        string? text,
+        IEnumerable<string?>? reasoning,
+        IEnumerable<GeneratedToolCall>? toolCalls,
+        IEnumerable<GeneratedToolResult>? toolResults,
+        IEnumerable<(string MediaType, string Base64)>? files,
+        FinishReason finishReason
+    )
+    {
+        var parts = new List<Dictionary<string, object?>>();
+        foreach (var item in reasoning ?? [])
+        {
+            if (!string.IsNullOrEmpty(item))
+            {
+                parts.Add(Reasoning(item!));
+            }
+        }
+
+        if (!string.IsNullOrEmpty(text))
+        {
+            parts.Add(Text(text!));
+        }
+
+        foreach (var call in toolCalls ?? [])
+        {
+            parts.Add(ToolCall(call.ToolCallId, call.ToolName, call.ArgumentsJson));
+        }
+
+        foreach (var result in toolResults ?? [])
+        {
+            parts.Add(
+                new(StringComparer.Ordinal)
+                {
+                    ["type"] = "tool_call_response",
+                    ["id"] = result.ToolCallId,
+                    ["response"] = ParseJson(result.ResultJson),
+                }
+            );
+        }
+
+        foreach (var file in files ?? [])
+        {
+            parts.Add(Blob(Modality(file.MediaType), file.MediaType, file.Base64));
+        }
+
+        return [AssistantMessage(parts, finishReason)];
+    }
+
     /// <summary>Maps to <c>formatObjectOutputMessages</c>.</summary>
     public static List<Dictionary<string, object?>> FormatObjectOutputMessages(
         string objectText,
         FinishReason finishReason
-    ) =>
-        [
-            new(StringComparer.Ordinal)
-            {
-                ["role"] = "assistant",
-                ["parts"] = new List<Dictionary<string, object?>> { Text(objectText) },
-                ["finish_reason"] = MapFinishReason(finishReason),
-            },
-        ];
+    ) => [AssistantMessage([Text(objectText)], finishReason)];
 
     /// <summary>Maps to <c>mapFinishReason</c>.</summary>
     private static string MapFinishReason(FinishReason finishReason) =>
@@ -69,6 +214,36 @@ internal static class GenAiFormatMessages
             FinishReason.Error => "error",
             FinishReason.Interrupted => "interrupted",
             _ => "stop",
+        };
+
+    private static Dictionary<string, object?> AssistantMessage(
+        List<Dictionary<string, object?>> parts,
+        FinishReason finishReason
+    ) =>
+        new(StringComparer.Ordinal)
+        {
+            ["role"] = "assistant",
+            ["parts"] = parts,
+            ["finish_reason"] = MapFinishReason(finishReason),
+        };
+
+    private static Dictionary<string, object?> Reasoning(string content) =>
+        new(StringComparer.Ordinal) { ["type"] = "reasoning", ["content"] = content };
+
+    private static Dictionary<string, object?> Custom(string kind) =>
+        new(StringComparer.Ordinal) { ["type"] = "custom", ["kind"] = kind };
+
+    private static Dictionary<string, object?> ToolCall(
+        string id,
+        string name,
+        string argumentsJson
+    ) =>
+        new(StringComparer.Ordinal)
+        {
+            ["type"] = "tool_call",
+            ["id"] = id,
+            ["name"] = name,
+            ["arguments"] = ParseJson(argumentsJson),
         };
 
     private static Dictionary<string, object?> TextInstruction(string content) =>

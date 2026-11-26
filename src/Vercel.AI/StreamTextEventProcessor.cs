@@ -189,7 +189,13 @@ internal sealed class StreamTextEventProcessor
             try
             {
                 await StreamTextErrorHandling
-                    .InvokeOnErrorAsync(_options, exception, CancellationToken.None, swallow: false)
+                    .InvokeOnErrorAsync(
+                        _options,
+                        exception,
+                        CancellationToken.None,
+                        swallow: false,
+                        callId: CallId
+                    )
                     .ConfigureAwait(false);
             }
             catch (Exception callback)
@@ -663,7 +669,10 @@ internal sealed class StreamTextEventProcessor
                     .NotifyAsync(
                         () =>
                             telemetryOnError(
-                                new TelemetryErrorEvent(null, _recordedNoOutputError ?? stepError),
+                                new TelemetryErrorEvent(
+                                    CallId,
+                                    _recordedNoOutputError ?? stepError
+                                ),
                                 Token
                             ),
                         Token

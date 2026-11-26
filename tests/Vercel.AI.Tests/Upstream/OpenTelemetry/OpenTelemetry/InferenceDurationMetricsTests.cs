@@ -16,7 +16,7 @@ public sealed class InferenceDurationMetricsTests
 {
     private const string UpstreamCommit = "15bfd6b262f688cfb8281dbdb32c7dffe082337e";
     private const string Test =
-        "packages/otel/src/open-telemetry.test.ts::OpenTelemetry::inference duration metrics::";
+        "packages/otel/src/open-telemetry.test.ts::OpenTelemetry > inference duration metrics::";
 
     private static readonly LanguageModelUsage Usage = new(2, 1, 3);
 

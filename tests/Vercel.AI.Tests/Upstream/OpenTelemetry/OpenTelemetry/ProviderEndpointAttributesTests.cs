@@ -16,7 +16,7 @@ public sealed class ProviderEndpointAttributesTests
 {
     private const string UpstreamCommit = "15bfd6b262f688cfb8281dbdb32c7dffe082337e";
     private const string Test =
-        "packages/otel/src/open-telemetry.test.ts::OpenTelemetry::provider endpoint attributes::";
+        "packages/otel/src/open-telemetry.test.ts::OpenTelemetry > provider endpoint attributes::";
     private const string Url =
         "https://user:password@model.example.test:8443/private?key=secret#fragment";
 

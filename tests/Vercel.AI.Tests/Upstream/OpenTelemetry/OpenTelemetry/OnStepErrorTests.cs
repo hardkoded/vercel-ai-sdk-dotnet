@@ -16,9 +16,8 @@ public sealed class OnStepErrorTests
     [Fact]
     [UpstreamTest(
         "packages/otel/src/open-telemetry.test.ts::OpenTelemetry > onStepError::records error on step and chat spans and keeps the root span open for onEnd",
-        Coverage = UpstreamCoverage.Partial,
-        Commit = "95b78c93e7a875ea134a036490916c5d7ef87f90",
-        Note = "The gen_ai.output.messages of the root span are not asserted: the integration does not format output messages yet (#1760)."
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "95b78c93e7a875ea134a036490916c5d7ef87f90"
     )]
     public async Task Records_error_on_step_and_chat_spans_and_keeps_the_root_span_open()
     {

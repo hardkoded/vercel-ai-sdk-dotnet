@@ -376,6 +376,7 @@ internal static class Generation
         // interrupt redoes stays in one span without upstream's callback around the step.
         TaskCompletionSource<object?>? generateTextSpan = null;
         TaskCompletionSource<object?>? stepSpan = null;
+        string? failedCallId = null;
         try
         {
             var resolvedMaxRetries = Vercel.AI.Operations.OperationRetry.ResolveMaxRetries(
@@ -391,6 +392,7 @@ internal static class Generation
             var initialMessages = messages.Skip(instructionCount).ToArray();
             var responseMessages = new List<ModelMessage>();
             var callId = (options.GenerateCallId ?? NewCallId)();
+            failedCallId = callId;
             var telemetryDispatcher = TelemetryDispatcher.Create(options);
             generateTextSpan = new TaskCompletionSource<object?>();
             telemetryDispatcher.StartTracingChannelContext(
@@ -905,7 +907,7 @@ internal static class Generation
 
             if (TelemetryDispatcher.Create(options).OnError is { } telemetryOnError)
             {
-                await telemetryOnError(new TelemetryErrorEvent(null, error), callerToken)
+                await telemetryOnError(new TelemetryErrorEvent(failedCallId, error), callerToken)
                     .ConfigureAwait(false);
             }
 
