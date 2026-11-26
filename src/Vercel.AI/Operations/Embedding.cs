@@ -535,112 +535,122 @@ public static class Embed
             request.ProviderOptions,
             request.Dimensions
         );
-        await OperationCallbacks
-            .NotifyAsync(start, onStart, e => telemetryDispatcher.OnStartAsync(e, token))
+        return await telemetryDispatcher
+            .RunInTracingChannelSpan(TelemetryTracingEventType.Embed, start, async () =>
+            {
+                await OperationCallbacks
+                    .NotifyAsync(start, onStart, e => telemetryDispatcher.OnStartAsync(e, token))
+                    .ConfigureAwait(false);
+                try
+                {
+                    var outcome = await OperationRetry
+                        .ExecuteAsync(
+                            maxRetries,
+                            token,
+                            request.AbortReason,
+                            async ct =>
+                            {
+                                var embedCallId = (request.GenerateCallId ?? DefaultCallId)();
+                                var values = new[] { request.Value };
+                                await telemetryDispatcher
+                                    .OnEmbedStartAsync(
+                                        new EmbeddingModelCallStartEvent(
+                                            callId,
+                                            embedCallId,
+                                            "ai.embed.doEmbed",
+                                            model.Provider,
+                                            model.ModelId,
+                                            values,
+                                            request.Dimensions
+                                        ),
+                                        ct
+                                    )
+                                    .ConfigureAwait(false);
+                                var response = await model
+                                    .DoEmbedAsync(
+                                        new EmbeddingModelCall(
+                                            values,
+                                            headers,
+                                            request.ProviderOptions,
+                                            ct,
+                                            request.Dimensions
+                                        ),
+                                        ct
+                                    )
+                                    .ConfigureAwait(false);
+                                var usage = new OperationUsage(tokens: response.Tokens);
+                                await telemetryDispatcher
+                                    .OnEmbedEndAsync(
+                                        new EmbeddingModelCallEndEvent(
+                                            callId,
+                                            embedCallId,
+                                            "ai.embed.doEmbed",
+                                            model.Provider,
+                                            model.ModelId,
+                                            values,
+                                            response.Embeddings,
+                                            usage,
+                                            request.Dimensions
+                                        ),
+                                        ct
+                                    )
+                                    .ConfigureAwait(false);
+                                if (response.Embeddings.Count == 0)
+                                {
+                                    throw new InvalidResponseDataException(
+                                        response.Embeddings,
+                                        "No embedding generated."
+                                    );
+                                }
+
+                                return response;
+                            },
+                            null
+                        )
+                        .ConfigureAwait(false);
+                    var warnings = outcome.Warnings ?? Array.Empty<OperationWarning>();
+                    WarningLog.Write(warnings, model.Provider, model.ModelId);
+                    var resultUsage = new OperationUsage(tokens: outcome.Tokens);
+                    var end = new EmbedEndEvent(
+                        callId,
+                        "ai.embed",
+                        context,
+                        model.Provider,
+                        model.ModelId,
+                        EmbedEventValue<string, IReadOnlyList<string>>.FromOne(request.Value),
+                        EmbedEventValue<double[], IReadOnlyList<double[]>>.FromOne(
+                            outcome.Embeddings[0]
+                        ),
+                        resultUsage,
+                        warnings,
+                        outcome.ProviderMetadata,
+                        EmbedEventValue<
+                            ProviderResponse?,
+                            IReadOnlyList<ProviderResponse?>
+                        >.FromOne(outcome.Response)
+                    );
+                    await OperationCallbacks
+                        .NotifyAsync(end, onEnd, e => telemetryDispatcher.OnEndAsync(e, token))
+                        .ConfigureAwait(false);
+                    return new EmbedResult(
+                        request.Value,
+                        outcome.Embeddings[0],
+                        resultUsage,
+                        warnings,
+                        outcome.ProviderMetadata,
+                        outcome.Response
+                    );
+                }
+                catch (Exception error)
+                {
+                    await telemetryDispatcher
+                        .OnErrorAsync(callId, error, token)
+                        .ConfigureAwait(false);
+
+                    throw;
+                }
+            })
             .ConfigureAwait(false);
-        try
-        {
-            var outcome = await OperationRetry
-                .ExecuteAsync(
-                    maxRetries,
-                    token,
-                    request.AbortReason,
-                    async ct =>
-                    {
-                        var embedCallId = (request.GenerateCallId ?? DefaultCallId)();
-                        var values = new[] { request.Value };
-                        await telemetryDispatcher
-                            .OnEmbedStartAsync(
-                                new EmbeddingModelCallStartEvent(
-                                    callId,
-                                    embedCallId,
-                                    "ai.embed.doEmbed",
-                                    model.Provider,
-                                    model.ModelId,
-                                    values,
-                                    request.Dimensions
-                                ),
-                                ct
-                            )
-                            .ConfigureAwait(false);
-                        var response = await model
-                            .DoEmbedAsync(
-                                new EmbeddingModelCall(
-                                    values,
-                                    headers,
-                                    request.ProviderOptions,
-                                    ct,
-                                    request.Dimensions
-                                ),
-                                ct
-                            )
-                            .ConfigureAwait(false);
-                        var usage = new OperationUsage(tokens: response.Tokens);
-                        await telemetryDispatcher
-                            .OnEmbedEndAsync(
-                                new EmbeddingModelCallEndEvent(
-                                    callId,
-                                    embedCallId,
-                                    "ai.embed.doEmbed",
-                                    model.Provider,
-                                    model.ModelId,
-                                    values,
-                                    response.Embeddings,
-                                    usage,
-                                    request.Dimensions
-                                ),
-                                ct
-                            )
-                            .ConfigureAwait(false);
-                        if (response.Embeddings.Count == 0)
-                        {
-                            throw new InvalidResponseDataException(
-                                response.Embeddings,
-                                "No embedding generated."
-                            );
-                        }
-
-                        return response;
-                    },
-                    null
-                )
-                .ConfigureAwait(false);
-            var warnings = outcome.Warnings ?? Array.Empty<OperationWarning>();
-            WarningLog.Write(warnings, model.Provider, model.ModelId);
-            var resultUsage = new OperationUsage(tokens: outcome.Tokens);
-            var end = new EmbedEndEvent(
-                callId,
-                "ai.embed",
-                context,
-                model.Provider,
-                model.ModelId,
-                EmbedEventValue<string, IReadOnlyList<string>>.FromOne(request.Value),
-                EmbedEventValue<double[], IReadOnlyList<double[]>>.FromOne(outcome.Embeddings[0]),
-                resultUsage,
-                warnings,
-                outcome.ProviderMetadata,
-                EmbedEventValue<ProviderResponse?, IReadOnlyList<ProviderResponse?>>.FromOne(
-                    outcome.Response
-                )
-            );
-            await OperationCallbacks
-                .NotifyAsync(end, onEnd, e => telemetryDispatcher.OnEndAsync(e, token))
-                .ConfigureAwait(false);
-            return new EmbedResult(
-                request.Value,
-                outcome.Embeddings[0],
-                resultUsage,
-                warnings,
-                outcome.ProviderMetadata,
-                outcome.Response
-            );
-        }
-        catch (Exception error)
-        {
-            await telemetryDispatcher.OnErrorAsync(callId, error, token).ConfigureAwait(false);
-
-            throw;
-        }
     }
 
     /// <summary>Throws when <paramref name="dimensions"/> is set and is not a positive integer.</summary>
@@ -738,140 +748,159 @@ public static class EmbedMany
             request.ProviderOptions,
             request.Dimensions
         );
-        await OperationCallbacks
-            .NotifyAsync(start, onStart, e => telemetryDispatcher.OnStartAsync(e, token))
-            .ConfigureAwait(false);
-        try
-        {
-            var hasCountLimit = model.MaxEmbeddingsPerCall is int limit && limit != int.MaxValue;
-            var byteLimit = model.MaxInputBytesPerCall;
-            var hasByteLimit =
-                byteLimit is double bytes
-                && !double.IsPositiveInfinity(bytes)
-                && !double.IsNaN(bytes);
-            if (!hasCountLimit && !hasByteLimit)
+        return await telemetryDispatcher
+            .RunInTracingChannelSpan(TelemetryTracingEventType.EmbedMany, start, async () =>
             {
-                var single = await CallAsync(
-                        model,
-                        request,
-                        values,
-                        headers,
-                        request.ProviderOptions,
-                        token,
-                        callId,
-                        "ai.embedMany.doEmbed",
-                        telemetryDispatcher,
-                        request.Dimensions
-                    )
-                    .ConfigureAwait(false);
-                ValidateCount(single.Embeddings, values);
-                WarningLog.Write(single.Warnings, model.Provider, model.ModelId);
-                var usage = new OperationUsage(tokens: single.Tokens);
-                var singleResponses = new ProviderResponse?[] { single.Response };
-                var end = new EmbedEndEvent(
-                    callId,
-                    "ai.embedMany",
-                    context,
-                    model.Provider,
-                    model.ModelId,
-                    EmbedEventValue<string, IReadOnlyList<string>>.FromMany(values),
-                    EmbedEventValue<double[], IReadOnlyList<double[]>>.FromMany(single.Embeddings),
-                    usage,
-                    single.Warnings,
-                    single.ProviderMetadata,
-                    EmbedEventValue<ProviderResponse?, IReadOnlyList<ProviderResponse?>>.FromMany(
-                        singleResponses
-                    )
-                );
                 await OperationCallbacks
-                    .NotifyAsync(end, onEnd, e => telemetryDispatcher.OnEndAsync(e, token))
+                    .NotifyAsync(start, onStart, e => telemetryDispatcher.OnStartAsync(e, token))
                     .ConfigureAwait(false);
-                return new EmbedManyResult(
-                    values,
-                    single.Embeddings,
-                    usage,
-                    single.Warnings,
-                    single.ProviderMetadata,
-                    singleResponses
-                );
-            }
-
-            var chunks = SplitByLimits(
-                values,
-                hasCountLimit ? model.MaxEmbeddingsPerCall!.Value : int.MaxValue,
-                hasByteLimit ? byteLimit!.Value : double.PositiveInfinity
-            );
-            var parallel = model.SupportsParallelCalls
-                ? request.MaxParallelCalls ?? int.MaxValue
-                : 1;
-            var groups = SplitGroups(chunks, parallel);
-            var embeddings = new List<double[]>();
-            var warnings = new List<OperationWarning>();
-            var responses = new List<ProviderResponse?>();
-            double tokens = 0;
-            JsonElement? metadata = null;
-            var nextIndex = 0;
-            foreach (var group in groups)
-            {
-                var tasks = new List<Task<ChunkOutcome>>(group.Count);
-                foreach (var chunk in group)
+                try
                 {
-                    var startIndex = nextIndex;
-                    nextIndex += chunk.Count;
-                    tasks.Add(
-                        RunChunkAsync(
-                            model,
-                            request,
-                            values,
-                            chunk,
-                            startIndex,
-                            headers,
-                            token,
+                    var hasCountLimit =
+                        model.MaxEmbeddingsPerCall is int limit && limit != int.MaxValue;
+                    var byteLimit = model.MaxInputBytesPerCall;
+                    var hasByteLimit =
+                        byteLimit is double bytes
+                        && !double.IsPositiveInfinity(bytes)
+                        && !double.IsNaN(bytes);
+                    if (!hasCountLimit && !hasByteLimit)
+                    {
+                        var single = await CallAsync(
+                                model,
+                                request,
+                                values,
+                                headers,
+                                request.ProviderOptions,
+                                token,
+                                callId,
+                                "ai.embedMany.doEmbed",
+                                telemetryDispatcher,
+                                request.Dimensions
+                            )
+                            .ConfigureAwait(false);
+                        ValidateCount(single.Embeddings, values);
+                        WarningLog.Write(single.Warnings, model.Provider, model.ModelId);
+                        var usage = new OperationUsage(tokens: single.Tokens);
+                        var singleResponses = new ProviderResponse?[] { single.Response };
+                        var end = new EmbedEndEvent(
                             callId,
-                            telemetryDispatcher
-                        )
+                            "ai.embedMany",
+                            context,
+                            model.Provider,
+                            model.ModelId,
+                            EmbedEventValue<string, IReadOnlyList<string>>.FromMany(values),
+                            EmbedEventValue<double[], IReadOnlyList<double[]>>.FromMany(
+                                single.Embeddings
+                            ),
+                            usage,
+                            single.Warnings,
+                            single.ProviderMetadata,
+                            EmbedEventValue<
+                                ProviderResponse?,
+                                IReadOnlyList<ProviderResponse?>
+                            >.FromMany(singleResponses)
+                        );
+                        await OperationCallbacks
+                            .NotifyAsync(end, onEnd, e => telemetryDispatcher.OnEndAsync(e, token))
+                            .ConfigureAwait(false);
+                        return new EmbedManyResult(
+                            values,
+                            single.Embeddings,
+                            usage,
+                            single.Warnings,
+                            single.ProviderMetadata,
+                            singleResponses
+                        );
+                    }
+
+                    var chunks = SplitByLimits(
+                        values,
+                        hasCountLimit ? model.MaxEmbeddingsPerCall!.Value : int.MaxValue,
+                        hasByteLimit ? byteLimit!.Value : double.PositiveInfinity
+                    );
+                    var parallel = model.SupportsParallelCalls
+                        ? request.MaxParallelCalls ?? int.MaxValue
+                        : 1;
+                    var groups = SplitGroups(chunks, parallel);
+                    var embeddings = new List<double[]>();
+                    var warnings = new List<OperationWarning>();
+                    var responses = new List<ProviderResponse?>();
+                    double tokens = 0;
+                    JsonElement? metadata = null;
+                    var nextIndex = 0;
+                    foreach (var group in groups)
+                    {
+                        var tasks = new List<Task<ChunkOutcome>>(group.Count);
+                        foreach (var chunk in group)
+                        {
+                            var startIndex = nextIndex;
+                            nextIndex += chunk.Count;
+                            tasks.Add(
+                                RunChunkAsync(
+                                    model,
+                                    request,
+                                    values,
+                                    chunk,
+                                    startIndex,
+                                    headers,
+                                    token,
+                                    callId,
+                                    telemetryDispatcher
+                                )
+                            );
+                        }
+
+                        var results = await Task.WhenAll(tasks).ConfigureAwait(false);
+                        foreach (var result in results)
+                        {
+                            embeddings.AddRange(result.Response.Embeddings);
+                            warnings.AddRange(result.Response.Warnings);
+                            responses.Add(result.Response.Response);
+                            tokens += result.Response.Tokens;
+                            metadata = MergeMetadata(metadata, result.Response.ProviderMetadata);
+                        }
+                    }
+
+                    WarningLog.Write(warnings, model.Provider, model.ModelId);
+                    var total = new OperationUsage(tokens: tokens);
+                    var endEvent = new EmbedEndEvent(
+                        callId,
+                        "ai.embedMany",
+                        context,
+                        model.Provider,
+                        model.ModelId,
+                        EmbedEventValue<string, IReadOnlyList<string>>.FromMany(values),
+                        EmbedEventValue<double[], IReadOnlyList<double[]>>.FromMany(embeddings),
+                        total,
+                        warnings,
+                        metadata,
+                        EmbedEventValue<
+                            ProviderResponse?,
+                            IReadOnlyList<ProviderResponse?>
+                        >.FromMany(responses)
+                    );
+                    await OperationCallbacks
+                        .NotifyAsync(endEvent, onEnd, e => telemetryDispatcher.OnEndAsync(e, token))
+                        .ConfigureAwait(false);
+                    return new EmbedManyResult(
+                        values,
+                        embeddings,
+                        total,
+                        warnings,
+                        metadata,
+                        responses
                     );
                 }
-
-                var results = await Task.WhenAll(tasks).ConfigureAwait(false);
-                foreach (var result in results)
+                catch (Exception error)
                 {
-                    embeddings.AddRange(result.Response.Embeddings);
-                    warnings.AddRange(result.Response.Warnings);
-                    responses.Add(result.Response.Response);
-                    tokens += result.Response.Tokens;
-                    metadata = MergeMetadata(metadata, result.Response.ProviderMetadata);
+                    await telemetryDispatcher
+                        .OnErrorAsync(callId, error, token)
+                        .ConfigureAwait(false);
+
+                    throw;
                 }
-            }
-
-            WarningLog.Write(warnings, model.Provider, model.ModelId);
-            var total = new OperationUsage(tokens: tokens);
-            var endEvent = new EmbedEndEvent(
-                callId,
-                "ai.embedMany",
-                context,
-                model.Provider,
-                model.ModelId,
-                EmbedEventValue<string, IReadOnlyList<string>>.FromMany(values),
-                EmbedEventValue<double[], IReadOnlyList<double[]>>.FromMany(embeddings),
-                total,
-                warnings,
-                metadata,
-                EmbedEventValue<ProviderResponse?, IReadOnlyList<ProviderResponse?>>.FromMany(
-                    responses
-                )
-            );
-            await OperationCallbacks
-                .NotifyAsync(endEvent, onEnd, e => telemetryDispatcher.OnEndAsync(e, token))
-                .ConfigureAwait(false);
-            return new EmbedManyResult(values, embeddings, total, warnings, metadata, responses);
-        }
-        catch (Exception error)
-        {
-            await telemetryDispatcher.OnErrorAsync(callId, error, token).ConfigureAwait(false);
-
-            throw;
-        }
+            })
+            .ConfigureAwait(false);
     }
 
     /// <summary>Wraps a model so middleware can rewrite each <c>doEmbed</c> call.</summary>

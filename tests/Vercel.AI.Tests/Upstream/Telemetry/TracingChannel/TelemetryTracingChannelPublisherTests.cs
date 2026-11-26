@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
 using Vercel.AI.GenerateText;
 using Vercel.AI.Operations;
 using Vercel.AI.Prompt;
@@ -22,8 +23,8 @@ using ExtractOperation = Vercel.AI.Operations.Extract;
 namespace Vercel.AI.Tests.Upstream.Telemetry.TracingChannel;
 
 /// <summary>
-/// Port of <c>tracing-channel.test.ts</c> &gt; <c>telemetry tracing channel publisher</c>. The tests that need the embed, embedMany or
-/// rerank spans (#1666), a store bound to the channel, or the OpenAI request redaction are not ported yet.
+/// Port of <c>tracing-channel.test.ts</c> &gt; <c>telemetry tracing channel publisher</c>. The tests that need a store bound to the channel
+/// or the OpenAI request redaction are not ported yet.
 /// </summary>
 public sealed class TelemetryTracingChannelPublisherTests
 {
@@ -543,6 +544,412 @@ public sealed class TelemetryTracingChannelPublisherTests
         Assert.Equal(
             ToolSequence().Select(item => item.Replace("generateText", "streamText")),
             sequence
+        );
+    }
+
+    private static readonly string[] Docs =
+    [
+        "sunny day at the beach",
+        "rainy day in the city",
+        "cloudy day in the mountains",
+    ];
+
+    [Fact]
+    [UpstreamTest(
+        "packages/ai/src/telemetry/tracing-channel.test.ts::telemetry tracing channel publisher::includes the SDK version with allowlisted context on every tracing span",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit
+    )]
+    public async Task Includes_the_SDK_version_with_allowlisted_context_on_every_tracing_span()
+    {
+        const string callId = "trace-version";
+        var runtimeContext = new Dictionary<string, object?>
+        {
+            ["requestId"] = "request-1",
+            ["accessToken"] = "secret-token",
+        };
+        var telemetry = new TelemetryOptions
+        {
+            IncludeRuntimeContext = new Dictionary<string, bool> { ["requestId"] = true },
+        };
+        var textTelemetry = new TelemetryOptions
+        {
+            IncludeRuntimeContext = telemetry.IncludeRuntimeContext,
+            IncludeToolsContext = new Dictionary<string, IReadOnlyDictionary<string, bool>>
+            {
+                ["weather"] = new Dictionary<string, bool> { ["tenantId"] = true },
+            },
+        };
+        var toolsContext = new Dictionary<string, JsonElement>
+        {
+            ["weather"] = JsonDocument
+                .Parse("{\"tenantId\":\"tenant-1\",\"apiKey\":\"secret-key\"}")
+                .RootElement.Clone(),
+        };
+        var generateModel = new InterruptTestModel
+        {
+            Generate = (_, _) => Task.FromResult(ToolCallResponse()),
+        };
+        var streamModel = new InterruptTestModel
+        {
+            Stream = (_, _) =>
+                Task.FromResult(
+                    ToResult([
+                        new StreamStartStreamPart([]),
+                        new ToolCallStreamPart(
+                            "stream-weather-call",
+                            "weather",
+                            "{\"city\":\"Berlin\"}"
+                        ),
+                        new FinishStreamPart(FinishReason.ToolCalls, UsageOf(1), "tool_calls"),
+                    ])
+                ),
+        };
+
+        var messages = await CollectStartMessages(callId, async () =>
+        {
+            await Client()
+                .GenerateTextAsync(
+                    new GenerateTextOptions
+                    {
+                        Model = generateModel,
+                        Prompt = "What is the weather?",
+                        Tools = [WeatherTool()],
+                        RuntimeContext = runtimeContext,
+                        ToolsContext = toolsContext,
+                        Telemetry = textTelemetry,
+                        GenerateCallId = () => callId,
+                    }
+                );
+
+            var result = Client()
+                .StreamTextAsync(
+                    new StreamTextOptions
+                    {
+                        Model = streamModel,
+                        Prompt = "What is the weather?",
+                        Tools = [WeatherTool()],
+                        RuntimeContext = runtimeContext,
+                        ToolsContext = toolsContext,
+                        Telemetry = textTelemetry,
+                        GenerateCallId = () => callId,
+                    }
+                );
+            await result.ConsumeStreamAsync();
+
+            var embeddingModel = new MockEmbeddingModel();
+            await Embed.EmbedAsync(
+                new EmbedRequest
+                {
+                    Model = embeddingModel,
+                    Value = "sunny day at the beach",
+                    RuntimeContext = runtimeContext,
+                    Telemetry = telemetry,
+                    GenerateCallId = () => callId,
+                }
+            );
+            await EmbedMany.EmbedManyAsync(
+                new EmbedManyRequest
+                {
+                    Model = embeddingModel,
+                    Values = ["sunny day at the beach", "rainy day in the city"],
+                    RuntimeContext = runtimeContext,
+                    Telemetry = telemetry,
+                    GenerateCallId = () => callId,
+                }
+            );
+            await Rerank.RerankAsync(
+                new RerankRequest
+                {
+                    Model = new MockRerankingModel(),
+                    Documents = ["sunny day at the beach"],
+                    Query = "weather",
+                    RuntimeContext = runtimeContext,
+                    Telemetry = telemetry,
+                    GenerateCallId = () => callId,
+                }
+            );
+
+            var decide = RefundRequest(callId);
+            decide.RuntimeContext = runtimeContext;
+            decide.Telemetry = telemetry;
+            await DecideOperation.DecideAsync(decide);
+
+            var extract = InvoiceRequest(callId);
+            extract.RuntimeContext = runtimeContext;
+            extract.Telemetry = telemetry;
+            await ExtractOperation.ExtractAsync(extract);
+        });
+
+        var types = messages.Select(m => m.Type).ToHashSet();
+        foreach (
+            var type in new[]
+            {
+                TelemetryTracingEventType.GenerateText,
+                TelemetryTracingEventType.StreamText,
+                TelemetryTracingEventType.Step,
+                TelemetryTracingEventType.LanguageModelCall,
+                TelemetryTracingEventType.ExecuteTool,
+                TelemetryTracingEventType.Embed,
+                TelemetryTracingEventType.EmbedMany,
+                TelemetryTracingEventType.Rerank,
+                TelemetryTracingEventType.ExperimentalDecide,
+                TelemetryTracingEventType.ExperimentalExtract,
+            }
+        )
+        {
+            Assert.Contains(type, types);
+        }
+
+        foreach (var message in messages)
+        {
+            Assert.Equal(AiSdkVersion.Version, AiVersionOf(message.Event));
+        }
+
+        var expectedContext = new Dictionary<string, object?> { ["requestId"] = "request-1" };
+        foreach (
+            var type in new[]
+            {
+                TelemetryTracingEventType.GenerateText,
+                TelemetryTracingEventType.StreamText,
+                TelemetryTracingEventType.Embed,
+                TelemetryTracingEventType.EmbedMany,
+                TelemetryTracingEventType.Rerank,
+                TelemetryTracingEventType.ExperimentalDecide,
+                TelemetryTracingEventType.ExperimentalExtract,
+            }
+        )
+        {
+            var start = messages.First(m => m.Type == type);
+            Assert.Equal(expectedContext, RuntimeContextOf(start.Event));
+        }
+
+        foreach (
+            var type in new[]
+            {
+                TelemetryTracingEventType.GenerateText,
+                TelemetryTracingEventType.StreamText,
+            }
+        )
+        {
+            var start = Assert.IsType<GenerateTextStartEvent>(
+                messages.First(m => m.Type == type).Event
+            );
+            Assert.Equal(
+                "{\"weather\":{\"tenantId\":\"tenant-1\"}}",
+                JsonSerializer.Serialize(start.ToolsContext)
+            );
+        }
+
+        Assert.Equal(
+            ["{\"tenantId\":\"tenant-1\"}", "{\"tenantId\":\"tenant-1\"}"],
+            messages
+                .Where(m => m.Type == TelemetryTracingEventType.ExecuteTool)
+                .Select(m =>
+                    JsonSerializer.Serialize(((ToolExecutionStartEvent)m.Event!).ToolContext)
+                )
+        );
+    }
+
+    private static string? AiVersionOf(object? @event) =>
+        @event
+            ?.GetType()
+            .GetProperty(
+                "AiVersion",
+                System.Reflection.BindingFlags.Instance
+                    | System.Reflection.BindingFlags.Public
+                    | System.Reflection.BindingFlags.NonPublic
+            )
+            ?.GetValue(@event) as string;
+
+    private static object? RuntimeContextOf(object? @event) =>
+        @event?.GetType().GetProperty("RuntimeContext")?.GetValue(@event);
+
+    [Fact]
+    [UpstreamTest(
+        "packages/ai/src/telemetry/tracing-channel.test.ts::telemetry tracing channel publisher::traces the current embed lifecycle sequence",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit,
+        Note = "Node reports bindStart. The port reports start, because a DiagnosticListener has no bindStore."
+    )]
+    public async Task Traces_the_current_embed_lifecycle_sequence()
+    {
+        var sequence = await CollectEventSequence("trace-embed", async () =>
+        {
+            await Embed.EmbedAsync(
+                new EmbedRequest
+                {
+                    Model = new MockEmbeddingModel(),
+                    Value = "sunny day at the beach",
+                    Telemetry = new TelemetryOptions { FunctionId = "tracing-channel-embed-test" },
+                    GenerateCallId = () => "trace-embed",
+                }
+            );
+        });
+
+        Assert.Equal(["start embed", "asyncEnd embed"], sequence);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/ai/src/telemetry/tracing-channel.test.ts::telemetry tracing channel publisher::traces the current embedMany lifecycle sequence",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit,
+        Note = "Node reports bindStart. The port reports start, because a DiagnosticListener has no bindStore."
+    )]
+    public async Task Traces_the_current_embedMany_lifecycle_sequence()
+    {
+        var sequence = await CollectEventSequence("trace-embed-many", async () =>
+        {
+            await EmbedMany.EmbedManyAsync(
+                new EmbedManyRequest
+                {
+                    Model = new MockEmbeddingModel { MaxEmbeddingsPerCall = 2 },
+                    Values = Docs,
+                    Telemetry = new TelemetryOptions
+                    {
+                        FunctionId = "tracing-channel-embed-many-test",
+                    },
+                    GenerateCallId = () => "trace-embed-many",
+                }
+            );
+        });
+
+        Assert.Equal(["start embedMany", "asyncEnd embedMany"], sequence);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/ai/src/telemetry/tracing-channel.test.ts::telemetry tracing channel publisher::traces the current rerank lifecycle sequence",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit,
+        Note = "Node reports bindStart. The port reports start, because a DiagnosticListener has no bindStore."
+    )]
+    public async Task Traces_the_current_rerank_lifecycle_sequence()
+    {
+        var sequence = await CollectEventSequence("trace-rerank", async () =>
+        {
+            await Rerank.RerankAsync(
+                new RerankRequest
+                {
+                    Model = new MockRerankingModel(),
+                    Documents = Docs,
+                    Query = "weather",
+                    Telemetry = new TelemetryOptions { FunctionId = "tracing-channel-rerank-test" },
+                    GenerateCallId = () => "trace-rerank",
+                }
+            );
+        });
+
+        Assert.Equal(["start rerank", "asyncEnd rerank"], sequence);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/ai/src/telemetry/tracing-channel.test.ts::telemetry tracing channel publisher::publishes the embed result on asyncEnd",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit
+    )]
+    public async Task Publishes_the_embed_result_on_asyncEnd()
+    {
+        var messages = await CollectAsyncEndMessages("trace-embed-result", async () =>
+        {
+            await Embed.EmbedAsync(
+                new EmbedRequest
+                {
+                    Model = new MockEmbeddingModel(),
+                    Value = "sunny day at the beach",
+                    Telemetry = new TelemetryOptions
+                    {
+                        FunctionId = "tracing-channel-embed-result-test",
+                    },
+                    GenerateCallId = () => "trace-embed-result",
+                }
+            );
+        });
+
+        var message = Assert.Single(messages, m => m.Type == "embed");
+        var result = Assert.IsType<EmbedResult>(message.Result);
+        Assert.Equal("sunny day at the beach", result.Value);
+        Assert.Equal([0.1, 0.2, 0.3], result.Embedding);
+        Assert.Equal(10, result.Usage.Tokens);
+        Assert.Empty(result.Warnings);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/ai/src/telemetry/tracing-channel.test.ts::telemetry tracing channel publisher::publishes the embedMany result on asyncEnd",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit
+    )]
+    public async Task Publishes_the_embedMany_result_on_asyncEnd()
+    {
+        var messages = await CollectAsyncEndMessages("trace-embed-many-result", async () =>
+        {
+            await EmbedMany.EmbedManyAsync(
+                new EmbedManyRequest
+                {
+                    Model = new MockEmbeddingModel { MaxEmbeddingsPerCall = 2 },
+                    Values = Docs,
+                    Telemetry = new TelemetryOptions
+                    {
+                        FunctionId = "tracing-channel-embed-many-result-test",
+                    },
+                    GenerateCallId = () => "trace-embed-many-result",
+                }
+            );
+        });
+
+        var message = Assert.Single(messages, m => m.Type == "embedMany");
+        var result = Assert.IsType<EmbedManyResult>(message.Result);
+        Assert.Equal(Docs, result.Values);
+        Assert.Equal(3, result.Embeddings.Count);
+        Assert.All(result.Embeddings, e => Assert.Equal([0.1, 0.2, 0.3], e));
+        Assert.Equal(20, result.Usage.Tokens);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/ai/src/telemetry/tracing-channel.test.ts::telemetry tracing channel publisher::publishes the rerank result on asyncEnd",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit
+    )]
+    public async Task Publishes_the_rerank_result_on_asyncEnd()
+    {
+        var messages = await CollectAsyncEndMessages("trace-rerank-result", async () =>
+        {
+            await Rerank.RerankAsync(
+                new RerankRequest
+                {
+                    Model = new MockRerankingModel(),
+                    Documents = Docs,
+                    Query = "weather",
+                    Telemetry = new TelemetryOptions
+                    {
+                        FunctionId = "tracing-channel-rerank-result-test",
+                    },
+                    GenerateCallId = () => "trace-rerank-result",
+                }
+            );
+        });
+
+        var message = Assert.Single(messages, m => m.Type == "rerank");
+        var result = Assert.IsType<Vercel.AI.Operations.RerankResult>(message.Result);
+        Assert.Equal(Docs, result.OriginalDocuments);
+        Assert.Collection(
+            result.Ranking,
+            first =>
+            {
+                Assert.Equal(2, first.OriginalIndex);
+                Assert.Equal(0.9, first.Score);
+                Assert.Equal("cloudy day in the mountains", first.Document);
+            },
+            second =>
+            {
+                Assert.Equal(0, second.OriginalIndex);
+                Assert.Equal(0.8, second.Score);
+                Assert.Equal("sunny day at the beach", second.Document);
+            }
         );
     }
 

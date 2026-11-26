@@ -56,6 +56,20 @@ internal static class TracingChannelSupport
             .ToList();
     }
 
+    /// <summary>
+    /// Maps to <c>collectTracingChannelAsyncEndMessages</c>: the messages of the <c>asyncEnd</c> sub-channel of one call.
+    /// </summary>
+    internal static async Task<
+        IReadOnlyList<TelemetryTracingChannelMessage>
+    > CollectAsyncEndMessages(string callId, Func<Task> run)
+    {
+        var published = await Collect(run);
+        return published
+            .Where(item => item.Channel == "asyncEnd" && CallIdOf(item.Message) == callId)
+            .Select(item => item.Message)
+            .ToList();
+    }
+
     // The tracing channel is shared by every test of the process, so a collection keeps the spans of its own call.
     internal static string? CallIdOf(TelemetryTracingChannelMessage message)
     {
@@ -67,6 +81,8 @@ internal static class TracingChannelSupport
             TracingChannelStepEvent step => step.CallId,
             LanguageModelCallStartEvent modelCall => modelCall.CallId,
             ToolExecutionStartEvent tool => tool.CallId,
+            Vercel.AI.Operations.EmbedStartEvent embed => embed.CallId,
+            Vercel.AI.Operations.RerankStartEvent rerank => rerank.CallId,
             _ => null,
         };
     }
@@ -111,5 +127,64 @@ internal static class TracingChannelSupport
         public void OnCompleted() { }
 
         public void OnError(Exception error) { }
+    }
+
+    /// <summary>Maps to <c>MockEmbeddingModelV4</c> for the tracing channel tests.</summary>
+    internal sealed class MockEmbeddingModel : Vercel.AI.Operations.IEmbeddingCaller
+    {
+        public string Provider => "mock-provider";
+
+        public string ModelId => "mock-model-id";
+
+        public string SpecificationVersion => "v4";
+
+        public int? MaxEmbeddingsPerCall { get; init; }
+
+        public double? MaxInputBytesPerCall => null;
+
+        public bool SupportsParallelCalls => true;
+
+        public Task<System.Text.Json.JsonElement?> TransformProviderOptionsAsync(
+            System.Text.Json.JsonElement? providerOptions,
+            IReadOnlyList<string> values,
+            int startIndex,
+            int endIndex,
+            CancellationToken cancellationToken
+        ) => Task.FromResult(providerOptions);
+
+        public Task<Vercel.AI.Operations.EmbeddingModelResponse> DoEmbedAsync(
+            Vercel.AI.Operations.EmbeddingModelCall call,
+            CancellationToken cancellationToken
+        ) =>
+            Task.FromResult(
+                new Vercel.AI.Operations.EmbeddingModelResponse(
+                    call.Values.Select(_ => new[] { 0.1, 0.2, 0.3 }).ToArray(),
+                    10
+                )
+            );
+    }
+
+    /// <summary>Maps to <c>MockRerankingModelV4</c> for the tracing channel tests.</summary>
+    internal sealed class MockRerankingModel : Vercel.AI.Operations.IRerankCaller
+    {
+        public string Provider => "mock-provider";
+
+        public string ModelId => "mock-model-id";
+
+        public Task<Vercel.AI.Operations.RerankModelResponse> DoRerankAsync(
+            Vercel.AI.Operations.RerankModelCall call,
+            CancellationToken cancellationToken
+        ) =>
+            Task.FromResult(
+                new Vercel.AI.Operations.RerankModelResponse(
+                    call.Documents.Values.Count == 1
+                        ? [new Vercel.AI.Operations.RerankModelRank(0, 0.9)]
+                        :
+                        [
+                            new Vercel.AI.Operations.RerankModelRank(2, 0.9),
+                            new Vercel.AI.Operations.RerankModelRank(0, 0.8),
+                        ]
+                )
+            );
     }
 }

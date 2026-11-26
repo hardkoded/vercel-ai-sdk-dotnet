@@ -668,6 +668,45 @@ internal sealed class TelemetryDispatcher
                     ),
                     telemetry
                 );
+            case EmbedStartEvent embed:
+                return FilterTelemetryEventHelper.FilterTelemetryEvent(
+                    new EmbedStartEvent(
+                        embed.CallId,
+                        embed.OperationId,
+                        FilterIncludedContextHelper.FilterIncludedContext(
+                            embed.RuntimeContext,
+                            telemetry?.IncludeRuntimeContext
+                        ),
+                        embed.Provider,
+                        embed.ModelId,
+                        embed.Value,
+                        embed.MaxRetries,
+                        embed.Headers,
+                        embed.ProviderOptions,
+                        embed.Dimensions
+                    ),
+                    telemetry
+                );
+            case RerankStartEvent rerank:
+                return FilterTelemetryEventHelper.FilterTelemetryEvent(
+                    new RerankStartEvent(
+                        rerank.CallId,
+                        rerank.OperationId,
+                        FilterIncludedContextHelper.FilterIncludedContext(
+                            rerank.RuntimeContext,
+                            telemetry?.IncludeRuntimeContext
+                        ),
+                        rerank.Provider,
+                        rerank.ModelId,
+                        rerank.Documents,
+                        rerank.Query,
+                        rerank.TopN,
+                        rerank.MaxRetries,
+                        rerank.Headers,
+                        rerank.ProviderOptions
+                    ),
+                    telemetry
+                );
             case DecideEvent decide:
                 return FilterTelemetryEventHelper.FilterTelemetryEvent(
                     new DecideEvent(
@@ -713,6 +752,10 @@ internal sealed class TelemetryDispatcher
                     {
                         CallId = toolExecution.CallId,
                         ToolContext = FilterToolContext(toolExecution, telemetry),
+                        RecordInputs = telemetry?.RecordInputs,
+                        RecordOutputs = telemetry?.RecordOutputs,
+                        FunctionId = telemetry?.FunctionId,
+                        AiVersion = Operations.AiSdkVersion.Version,
                     },
                     telemetry
                 );
