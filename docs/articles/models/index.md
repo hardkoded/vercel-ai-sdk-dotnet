@@ -7,12 +7,13 @@ The upstream catalog is the [Vercel AI Gateway models page](https://vercel.com/a
 | Provider | Kinds |
 | --- | --- |
 | [Alibaba](alibaba.md) | Language, Embedding |
-| [Amazon Bedrock](amazon-bedrock.md) | Language, Embedding, Reranking |
+| [Amazon Bedrock](amazon-bedrock.md) | Language, Embedding, Image, Reranking |
 | [Anthropic](anthropic.md) | Language, Decision |
 | [AssemblyAI](assemblyai.md) | Speech |
 | [Azure OpenAI](azure-openai.md) | Speech, Transcription |
 | [Baseten](baseten.md) | Language |
 | [Black Forest Labs](black-forest-labs.md) | Image, Video |
+| [ByteDance](bytedance.md) | Image, Video |
 | [Cartesia](cartesia.md) | Transcription |
 | [Cerebras](cerebras.md) | Language |
 | [Cohere](cohere.md) | Language, Embedding, Reranking |
@@ -29,11 +30,14 @@ The upstream catalog is the [Vercel AI Gateway models page](https://vercel.com/a
 | [Groq](groq.md) | Language, Transcription |
 | [HeyGen](heygen.md) | Video, Decision |
 | [Hugging Face](hugging-face.md) | Language |
+| [Hume](hume.md) | Speech |
+| [Kling AI](kling-ai.md) | Video |
 | [Liquid](liquid.md) | Decision |
 | [Luma](luma.md) | Image |
 | [MiniMax](minimax.md) | Language, Image, Video |
 | [Mistral](mistral.md) | Language, Embedding |
 | [Moonshot](moonshot.md) | Language |
+| [Open Responses](open-responses.md) | Language |
 | [OpenAI](openai.md) | Language, Embedding, Image, Decision |
 | [OpenAI-compatible](openai-compatible.md) | Language, Embedding |
 | [Parallel](parallel.md) | Decision |

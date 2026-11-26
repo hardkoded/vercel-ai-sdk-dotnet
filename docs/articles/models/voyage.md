@@ -20,11 +20,35 @@ Embedding model:
 ```csharp
 using Vercel.AI.Voyage;
 
-var model = VoyageProvider.Create().EmbeddingModel("voyage-3.5");
+var model = (VoyageProvider.VoyageEmbeddingModel)VoyageProvider.Create().EmbeddingModel("voyage-3.5");
+var result = await model.EmbedAsync(
+    new VoyageEmbeddingRequest(new[] { "sunny day at the beach" }),
+    CancellationToken.None
+);
 
-Console.WriteLine(model.ModelId);
+Console.WriteLine(result.Embeddings[0].Length);
 ```
 
-This model does not plug into the shared `Generate*` helpers. Call the model through the members the API reference lists for its type.
+Reranking model:
+
+```csharp
+using Vercel.AI.Voyage;
+
+var model = (VoyageProvider.VoyageRerankingModel)VoyageProvider.Create().RerankingModel("rerank-2.5");
+var result = await model.RerankAsync(
+    new VoyageRerankRequest
+    {
+        Query = "What is an agent?",
+        TextDocuments = new[] { "An agent calls tools in a loop.", "Bananas are yellow." },
+        TopK = 1,
+    },
+    CancellationToken.None
+);
+
+foreach (var ranked in result.Ranking)
+{
+    Console.WriteLine($"{ranked.Index}: {ranked.Score}");
+}
+```
 
 See the [Providers](providers.md) guide for authentication and provider options.

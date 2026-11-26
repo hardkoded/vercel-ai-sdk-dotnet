@@ -19,11 +19,13 @@ Image model:
 ```csharp
 using Vercel.AI.Luma;
 
-var model = LumaProvider.Create().ImageModel("luma-v1");
+var model = (LumaImageModel)LumaProvider.Create().ImageModel("luma-v1");
+var result = await model.GenerateAsync(
+    new LumaImageRequest("A red apple sticker") { AspectRatio = "16:9" },
+    CancellationToken.None
+);
 
-Console.WriteLine(model.ModelId);
+await File.WriteAllBytesAsync("image.png", result.Images[0].Data!);
 ```
-
-This model does not plug into the shared `Generate*` helpers. Call the model through the members the API reference lists for its type.
 
 See the [Providers](providers.md) guide for authentication and provider options.

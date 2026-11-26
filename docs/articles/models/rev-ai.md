@@ -19,11 +19,14 @@ Transcription model:
 ```csharp
 using Vercel.AI.RevAI;
 
-var model = RevAIProvider.Create().TranscriptionModel("machine");
+var model = (RevAIProvider.RevAITranscriptionModel)RevAIProvider.Create().TranscriptionModel("machine");
+var result = await model.TranscribeAsync(
+    new AudioInput(await File.ReadAllBytesAsync("audio.mp3"), "audio/mpeg", null),
+    new RevAITranscriptionRequest(),
+    CancellationToken.None
+);
 
-Console.WriteLine(model.ModelId);
+Console.WriteLine(result.Text);
 ```
-
-This model does not plug into the shared `Generate*` helpers. Call the model through the members the API reference lists for its type.
 
 See the [Providers](providers.md) guide for authentication and provider options.
