@@ -290,8 +290,18 @@ internal static class LanguageModelCallStreaming
 
         var now = options.NowMs ?? Generation.DefaultNowMs;
         var callStartTimestampMs = now();
-        Task<LanguageModelStreamResult> Execute() =>
-            model.DoStreamAsync(callOptions, cancellationToken);
+        async Task<LanguageModelStreamResult> Execute()
+        {
+            var result = await model
+                .DoStreamAsync(callOptions, cancellationToken)
+                .ConfigureAwait(false);
+            // Telemetry observes the sanitized request metadata.
+            return result.Request == null
+                ? result
+                : result.WithTelemetryRequest(
+                    RequestOrigin.SanitizeRequestMetadata(result.Request)
+                );
+        }
         var streamResult = await (
             options.ExecuteLanguageModelCallInTelemetryContext is { } wrap
                 ? wrap(new ExecuteLanguageModelCallInTelemetryContextParams(startEvent, Execute))

@@ -31,16 +31,21 @@ internal static class TracingChannelPublisher
             return await execute().ConfigureAwait(false);
         }
 
+        message.Parent = TracingChannel.Current;
         SafePublish("start", message);
         SafePublish("end", message);
 
         T result;
+        var previous = TracingChannel.Current;
         try
         {
+            // The span is current while the operation runs, like the store that Node binds to the start sub-channel.
+            TracingChannel.SetCurrent(message);
             result = await execute().ConfigureAwait(false);
         }
         catch (Exception error)
         {
+            message.IsEnded = true;
             // Raw operation errors may carry credentials, so only the redacted copy is published.
             message.Error = recordResult
                 ? RedactTelemetryCredentialsHelper.RedactTelemetryCredentials(error)
@@ -50,7 +55,12 @@ internal static class TracingChannelPublisher
             SafePublish("asyncEnd", message);
             throw;
         }
+        finally
+        {
+            TracingChannel.SetCurrent(previous);
+        }
 
+        message.IsEnded = true;
         // The result may hold both inputs and outputs, so it is published only when both are recorded.
         if (recordResult)
         {
@@ -86,8 +96,12 @@ internal static class TracingChannelPublisher
         }
 
         var asyncEndPublished = 0;
+        message.Parent = TracingChannel.Current;
+        message.Completion = completion;
         SafePublish("start", message);
         SafePublish("end", message);
+        // The span stays current for the rest of the caller's async flow, until its completion ends it.
+        TracingChannel.SetCurrent(message);
 
         // The continuation runs where the completion is set, so the span ends before the code that follows it.
         _ = completion.ContinueWith(
@@ -98,6 +112,7 @@ internal static class TracingChannelPublisher
                     return;
                 }
 
+                message.IsEnded = true;
                 if (task.IsFaulted || task.IsCanceled)
                 {
                     var error = task.IsCanceled
@@ -123,11 +138,12 @@ internal static class TracingChannelPublisher
         return new TracingChannelContext();
     }
 
+    // The span publishes a telemetry copy of the result, while the caller keeps the original.
     private static object RedactResult(object result)
     {
         return result is GenerateTextResult generated
             ? RedactTelemetryCredentialsHelper.RedactTelemetryCredentials(generated)
-            : result;
+            : RedactTelemetryCredentialsHelper.RedactTelemetryCredentials(result);
     }
 
     // Subscribers never affect the operation.

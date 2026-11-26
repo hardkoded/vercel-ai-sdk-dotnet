@@ -1086,6 +1086,171 @@ public sealed class TelemetryTracingChannelPublisherTests
 
     [Fact]
     [UpstreamTest(
+        "packages/ai/src/telemetry/tracing-channel.test.ts::telemetry tracing channel publisher::propagates language model execution context through async work",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit,
+        Note = "Node binds an AsyncLocalStorage to the start sub-channel. The port exposes the span as TracingChannel.Current."
+    )]
+    public async Task Propagates_language_model_execution_context_through_async_work()
+    {
+        TelemetryTracingChannelMessage? capturedContext = null;
+        TelemetryTracingChannelMessage? published = null;
+
+        await Collect(async () =>
+        {
+            var telemetry = TelemetryDispatcher.Create(
+                new TelemetryOptions { FunctionId = "execution-function" }
+            );
+
+            await telemetry.RunInTracingChannelSpan(
+                TelemetryTracingEventType.LanguageModelCall,
+                new LanguageModelCallStartEvent
+                {
+                    CallId = "language-model-call",
+                    Provider = "mock-provider",
+                    ModelId = "mock-model",
+                },
+                async () =>
+                {
+                    await Task.Yield();
+                    capturedContext = Vercel.AI.TracingChannel.Current;
+                    published = capturedContext;
+                    return "result";
+                }
+            );
+        });
+
+        Assert.NotNull(capturedContext);
+        Assert.Equal("languageModelCall", capturedContext.Type);
+        var traced = Assert.IsType<LanguageModelCallStartEvent>(capturedContext.Event);
+        Assert.Equal(AiSdkVersion.Version, traced.AiVersion);
+        Assert.Equal("language-model-call", traced.CallId);
+        Assert.Equal("execution-function", traced.FunctionId);
+        Assert.Equal("mock-model", traced.ModelId);
+        Assert.Equal("mock-provider", traced.Provider);
+        Assert.Null(traced.RecordInputs);
+        Assert.Null(traced.RecordOutputs);
+        Assert.Equal("result", published!.Result);
+        Assert.Null(Vercel.AI.TracingChannel.Current);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/ai/src/telemetry/tracing-channel.test.ts::telemetry tracing channel publisher::propagates tool execution context through async work",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit,
+        Note = "Node binds an AsyncLocalStorage to the start sub-channel. The port exposes the span as TracingChannel.Current."
+    )]
+    public async Task Propagates_tool_execution_context_through_async_work()
+    {
+        TelemetryTracingChannelMessage? capturedContext = null;
+
+        await Collect(async () =>
+        {
+            var telemetry = TelemetryDispatcher.Create(
+                new TelemetryOptions { FunctionId = "execution-function" }
+            );
+
+            await telemetry.RunInTracingChannelSpan(
+                TelemetryTracingEventType.ExecuteTool,
+                new ToolExecutionStartEvent(
+                    new GeneratedToolCall("tool-call-id", "mockTool", "{}"),
+                    []
+                )
+                {
+                    CallId = "tool-call",
+                },
+                async () =>
+                {
+                    await Task.Yield();
+                    capturedContext = Vercel.AI.TracingChannel.Current;
+                    return "result";
+                }
+            );
+        });
+
+        Assert.NotNull(capturedContext);
+        Assert.Equal("executeTool", capturedContext.Type);
+        var traced = Assert.IsType<ToolExecutionStartEvent>(capturedContext.Event);
+        Assert.Equal(AiSdkVersion.Version, traced.AiVersion);
+        Assert.Equal("tool-call", traced.CallId);
+        Assert.Equal("execution-function", traced.FunctionId);
+        Assert.Empty(traced.Messages);
+        Assert.Equal("tool-call-id", traced.ToolCall.ToolCallId);
+        Assert.Equal("mockTool", traced.ToolCall.ToolName);
+        Assert.Null(traced.ToolContext);
+        Assert.Equal("result", capturedContext.Result);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/ai/src/telemetry/tracing-channel.test.ts::telemetry tracing channel publisher::preserves streamText tracing-channel parentage with a tool call",
+        Coverage = UpstreamCoverage.Covered,
+        Commit = UpstreamCommit,
+        Note = "Node reads the parent from the store bound to the start sub-channel. The port reads TracingChannel.Current."
+    )]
+    public async Task Preserves_streamText_tracing_channel_parentage_with_a_tool_call()
+    {
+        var responseCount = 0;
+        var model = new InterruptTestModel
+        {
+            Stream = (_, _) =>
+                Task.FromResult(
+                    responseCount++ switch
+                    {
+                        0 => ToResult([
+                            new StreamStartStreamPart([]),
+                            new ToolCallStreamPart(
+                                "weather-tool-call",
+                                "weather",
+                                "{\"city\":\"San Francisco\"}"
+                            ),
+                            new FinishStreamPart(FinishReason.ToolCalls, UsageOf(10), "tool_calls"),
+                        ]),
+                        1 => ToResult(TextStream("It is sunny.")),
+                        _ => throw new InvalidOperationException(
+                            $"Unexpected response count: {responseCount}"
+                        ),
+                    }
+                ),
+        };
+
+        var parentage = await CollectParentage("tracing-channel-stream-text-parentage", async () =>
+        {
+            var result = Client()
+                .StreamTextAsync(
+                    new StreamTextOptions
+                    {
+                        Model = model,
+                        Prompt = "What is the weather in San Francisco?",
+                        StopWhen = StopWhen.IsStepCount(3),
+                        Tools = [WeatherTool()],
+                        Telemetry = new TelemetryOptions
+                        {
+                            FunctionId = "tracing-channel-stream-text-parentage-test",
+                        },
+                        GenerateCallId = () => "tracing-channel-stream-text-parentage",
+                    }
+                );
+
+            await result.ConsumeStreamAsync();
+        });
+
+        Assert.Equal(
+            [
+                "streamText parent undefined",
+                "step parent streamText",
+                "languageModelCall parent step",
+                "executeTool parent step",
+                "step parent streamText",
+                "languageModelCall parent step",
+            ],
+            parentage
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
         "packages/ai/src/telemetry/tracing-channel.test.ts::telemetry tracing channel publisher::preserves streamText abort behavior with a tracing-channel subscriber",
         Coverage = UpstreamCoverage.Covered,
         Commit = UpstreamCommit
