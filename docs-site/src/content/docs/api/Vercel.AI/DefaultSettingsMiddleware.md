@@ -25,7 +25,7 @@ Fills sampling settings when the caller left them unset. Maps to `defaultSetting
 
 **Implements:** [ILanguageModelMiddleware](/api/Vercel.AI/ILanguageModelMiddleware/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L531)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L725)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates middleware with default sampling settings.
 | `temperature` | [double?](https://learn.microsoft.com/dotnet/api/system.double) |  |
 | `maxOutputTokens` | [int?](https://learn.microsoft.com/dotnet/api/system.int32) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L534)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L728)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Default max output tokens.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L544)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L738)
 
 <a id="Vercel_AI_DefaultSettingsMiddleware_Temperature_"></a>
 <a id="Vercel_AI_DefaultSettingsMiddleware_Temperature"></a>
@@ -85,7 +85,7 @@ Default temperature.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L541)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L735)
 
 ## Methods
 
@@ -112,7 +112,7 @@ Wraps a generate call.
 
 **Returns:** [Task&lt;LanguageModelGenerateResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L547)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L741)
 
 <a id="Vercel_AI_DefaultSettingsMiddleware_WrapStreamAsync_"></a>
 <a id="Vercel_AI_DefaultSettingsMiddleware_WrapStreamAsync_Vercel_AI_Provider_LanguageModelCallOptions_System_Func_Vercel_AI_Provider_LanguageModelCallOptions_System_Threading_CancellationToken_System_Threading_Tasks_Task_Vercel_AI_Provider_LanguageModelStreamResult___System_Threading_CancellationToken_"></a>
@@ -137,4 +137,4 @@ Wraps a stream call.
 
 **Returns:** [Task&lt;LanguageModelStreamResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L558)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L752)

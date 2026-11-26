@@ -46,7 +46,7 @@ True when cancellation is implemented.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/BatchResultDownloads.cs#L28)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/BatchResultDownloads.cs#L31)
 
 <a id="Vercel_AI_ProviderUtils_BatchResultsApiBase_CanList_"></a>
 <a id="Vercel_AI_ProviderUtils_BatchResultsApiBase_CanList"></a>
@@ -63,7 +63,25 @@ True when listing is implemented.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/BatchResultDownloads.cs#L31)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/BatchResultDownloads.cs#L34)
+
+<a id="Vercel_AI_ProviderUtils_BatchResultsApiBase_ModelIds_"></a>
+<a id="Vercel_AI_ProviderUtils_BatchResultsApiBase_ModelIds"></a>
+
+### ModelIds
+
+
+```csharp
+public virtual BatchModelIds? ModelIds { get; }
+```
+
+
+Model IDs this batch API accepts for each modality. Maps to the `ModelIds` type argument of `BatchV4`.
+Null leaves every modality open.
+
+**Value:** [BatchModelIds](/api/Vercel.AI.Operations/BatchModelIds/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/BatchResultDownloads.cs#L28)
 
 <a id="Vercel_AI_ProviderUtils_BatchResultsApiBase_Provider_"></a>
 <a id="Vercel_AI_ProviderUtils_BatchResultsApiBase_Provider"></a>
@@ -124,7 +142,7 @@ Converts each row of a JSON Lines download as it is read.
 
 **Returns:** [IAsyncEnumerable&lt;BatchItem&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.iasyncenumerable-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/BatchResultDownloads.cs#L76)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/BatchResultDownloads.cs#L79)
 
 <a id="Vercel_AI_ProviderUtils_BatchResultsApiBase_DoCancelAsync_"></a>
 <a id="Vercel_AI_ProviderUtils_BatchResultsApiBase_DoCancelAsync_Vercel_AI_Operations_BatchOperationCall_System_Threading_CancellationToken_"></a>
@@ -148,7 +166,7 @@ Cancels a batch.
 
 **Returns:** [Task&lt;BatchCancelResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/BatchResultDownloads.cs#L58)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/BatchResultDownloads.cs#L61)
 
 <a id="Vercel_AI_ProviderUtils_BatchResultsApiBase_DoGetResultsAsync_"></a>
 <a id="Vercel_AI_ProviderUtils_BatchResultsApiBase_DoGetResultsAsync_Vercel_AI_Operations_BatchOperationCall_System_Threading_CancellationToken_"></a>
@@ -173,7 +191,7 @@ Errors found while reading, such as a malformed row, throw from the stream.
 
 **Returns:** [Task&lt;IAsyncEnumerable&lt;BatchItem&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/BatchResultDownloads.cs#L34)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/BatchResultDownloads.cs#L37)
 
 <a id="Vercel_AI_ProviderUtils_BatchResultsApiBase_DoGetStatusAsync_"></a>
 <a id="Vercel_AI_ProviderUtils_BatchResultsApiBase_DoGetStatusAsync_Vercel_AI_Operations_BatchOperationCall_System_Threading_CancellationToken_"></a>
@@ -197,7 +215,7 @@ Reads status.
 
 **Returns:** [Task&lt;BatchStatus&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/BatchResultDownloads.cs#L49)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/BatchResultDownloads.cs#L52)
 
 <a id="Vercel_AI_ProviderUtils_BatchResultsApiBase_DoListAsync_"></a>
 <a id="Vercel_AI_ProviderUtils_BatchResultsApiBase_DoListAsync_Vercel_AI_Operations_BatchOperationCall_System_Threading_CancellationToken_"></a>
@@ -221,7 +239,7 @@ Lists batches. The implementation is invoked on this instance.
 
 **Returns:** [Task&lt;BatchListResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/BatchResultDownloads.cs#L67)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/BatchResultDownloads.cs#L70)
 
 <a id="Vercel_AI_ProviderUtils_BatchResultsApiBase_DoStartAsync_"></a>
 <a id="Vercel_AI_ProviderUtils_BatchResultsApiBase_DoStartAsync_Vercel_AI_Operations_BatchOperationCall_System_Threading_CancellationToken_"></a>
@@ -245,7 +263,7 @@ Starts a batch.
 
 **Returns:** [Task&lt;BatchStartResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/BatchResultDownloads.cs#L40)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/BatchResultDownloads.cs#L43)
 
 <a id="Vercel_AI_ProviderUtils_BatchResultsApiBase_Str_"></a>
 <a id="Vercel_AI_ProviderUtils_BatchResultsApiBase_Str_System_Text_Json_JsonElement_System_String_"></a>
@@ -269,7 +287,7 @@ Text of a string property, or null.
 
 **Returns:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/BatchResultDownloads.cs#L89)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/BatchResultDownloads.cs#L92)
 
 <a id="Vercel_AI_ProviderUtils_BatchResultsApiBase_TextItem_"></a>
 <a id="Vercel_AI_ProviderUtils_BatchResultsApiBase_TextItem_System_String_System_Collections_Generic_IEnumerable_System_String__System_String_System_String_System_String_"></a>
@@ -296,4 +314,4 @@ Builds a succeeded text item from joined text parts.
 
 **Returns:** [BatchItem](/api/Vercel.AI.Operations/BatchItem/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/BatchResultDownloads.cs#L100)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ProviderUtils/BatchResultDownloads.cs#L103)

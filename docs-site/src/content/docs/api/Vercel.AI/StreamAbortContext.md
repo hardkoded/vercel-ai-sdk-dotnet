@@ -28,13 +28,13 @@ Passed to [OnAbort](/api/Vercel.AI/StreamTextOptions/#Vercel_AI_StreamTextOption
 ## Constructors
 
 <a id="Vercel_AI_StreamAbortContext__ctor_"></a>
-<a id="Vercel_AI_StreamAbortContext__ctor_System_Collections_Generic_IReadOnlyList_Vercel_AI_StepResult__System_Exception_"></a>
+<a id="Vercel_AI_StreamAbortContext__ctor_System_Collections_Generic_IReadOnlyList_Vercel_AI_StepResult__System_Exception_System_String_"></a>
 
-### `StreamAbortContext(IReadOnlyList<StepResult>, Exception)`
+### `StreamAbortContext(IReadOnlyList<StepResult>, Exception, string)`
 
 
 ```csharp
-public StreamAbortContext(IReadOnlyList<StepResult> steps, Exception exception)
+public StreamAbortContext(IReadOnlyList<StepResult> steps, Exception exception, string callId = "")
 ```
 
 
@@ -46,10 +46,28 @@ Creates a context.
 | --- | --- | --- |
 | `steps` | [IReadOnlyList&lt;StepResult&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 | `exception` | [Exception](https://learn.microsoft.com/dotnet/api/system.exception) |  |
+| `callId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2249)
 
 ## Properties
+
+<a id="Vercel_AI_StreamAbortContext_CallId_"></a>
+<a id="Vercel_AI_StreamAbortContext_CallId"></a>
+
+### CallId
+
+
+```csharp
+public string CallId { get; }
+```
+
+
+Unique identifier for this generation call, used to correlate events.
+
+**Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2261)
 
 <a id="Vercel_AI_StreamAbortContext_Exception_"></a>
 <a id="Vercel_AI_StreamAbortContext_Exception"></a>
@@ -66,7 +84,7 @@ The cancellation exception, or the abort reason when it is an exception.
 
 **Value:** [Exception](https://learn.microsoft.com/dotnet/api/system.exception)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2259)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2267)
 
 <a id="Vercel_AI_StreamAbortContext_Steps_"></a>
 <a id="Vercel_AI_StreamAbortContext_Steps"></a>
@@ -83,4 +101,4 @@ Steps that finished before the abort.
 
 **Value:** [IReadOnlyList&lt;StepResult&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2256)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2264)

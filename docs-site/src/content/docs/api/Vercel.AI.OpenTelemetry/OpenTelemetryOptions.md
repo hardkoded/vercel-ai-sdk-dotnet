@@ -202,6 +202,23 @@ Emit runtime context values.
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L132)
 
+<a id="Vercel_AI_OpenTelemetry_OpenTelemetryOptions_Schema_"></a>
+<a id="Vercel_AI_OpenTelemetry_OpenTelemetryOptions_Schema"></a>
+
+### Schema
+
+
+```csharp
+public bool? Schema { get; set; }
+```
+
+
+Emit object generation schema information. Maps to `schema`.
+
+**Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L141)
+
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetryOptions_ToolChoice_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetryOptions_ToolChoice"></a>
 
@@ -217,7 +234,7 @@ Emit the tool choice of a step as `ai.prompt.toolChoice`. Maps to `toolChoice`.
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L126)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L138)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetryOptions_Tracer_"></a>
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetryOptions_Tracer"></a>

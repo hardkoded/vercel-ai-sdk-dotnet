@@ -23,7 +23,7 @@ Result of parsing a Rev.ai error body.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/RevAI/RevAIProvider.cs#L44)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/RevAI/RevAIProvider.cs#L45)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates a parse result.
 | `success` | [bool](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 | `value` | [RevAIErrorData](/api/Vercel.AI.RevAI/RevAIErrorData/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/RevAI/RevAIProvider.cs#L47)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/RevAI/RevAIProvider.cs#L48)
 
 ## Properties
 
@@ -66,7 +66,7 @@ Same payload as [Value](#Vercel_AI_RevAI_RevAIErrorParseResult_Value).
 
 **Value:** [RevAIErrorData](/api/Vercel.AI.RevAI/RevAIErrorData/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/RevAI/RevAIProvider.cs#L61)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/RevAI/RevAIProvider.cs#L62)
 
 <a id="Vercel_AI_RevAI_RevAIErrorParseResult_Success_"></a>
 <a id="Vercel_AI_RevAI_RevAIErrorParseResult_Success"></a>
@@ -83,7 +83,7 @@ True when `error.message` and `error.code` were present.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/RevAI/RevAIProvider.cs#L55)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/RevAI/RevAIProvider.cs#L56)
 
 <a id="Vercel_AI_RevAI_RevAIErrorParseResult_Value_"></a>
 <a id="Vercel_AI_RevAI_RevAIErrorParseResult_Value"></a>
@@ -100,4 +100,4 @@ Parsed error.
 
 **Value:** [RevAIErrorData](/api/Vercel.AI.RevAI/RevAIErrorData/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/RevAI/RevAIProvider.cs#L58)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/RevAI/RevAIProvider.cs#L59)

@@ -80,7 +80,7 @@ public string? CallId { get; }
 ```
 
 
-Unique identifier of the failed call. Null for a stream, which has no call id.
+Unique identifier of the failed call.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 

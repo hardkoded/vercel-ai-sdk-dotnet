@@ -25,7 +25,7 @@ Posts utterances to `/v0/tts/file`.
 
 **Implements:** [ISpeechModel](/api/Vercel.AI.Provider/ISpeechModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L246)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L259)
 
 ## Constructors
 
@@ -48,7 +48,7 @@ Creates a speech model.
 | --- | --- | --- |
 | `provider` | [HumeProvider](/api/Vercel.AI.Hume/HumeProvider/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L251)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L264)
 
 ## Properties
 
@@ -67,7 +67,7 @@ Model id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L263)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L276)
 
 <a id="Vercel_AI_Hume_HumeProvider_HumeSpeechModel_Provider_"></a>
 <a id="Vercel_AI_Hume_HumeProvider_HumeSpeechModel_Provider"></a>
@@ -84,7 +84,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L257)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L270)
 
 ## Methods
 
@@ -110,7 +110,7 @@ Synthesizes speech.
 
 **Returns:** [Task&lt;SpeechResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L269)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L282)
 
 <a id="Vercel_AI_Hume_HumeProvider_HumeSpeechModel_GenerateAsync_"></a>
 <a id="Vercel_AI_Hume_HumeProvider_HumeSpeechModel_GenerateAsync_Vercel_AI_Hume_HumeSpeechRequest_System_Threading_CancellationToken_"></a>
@@ -134,4 +134,4 @@ Synthesizes speech and returns the audio bytes with response metadata.
 
 **Returns:** [Task&lt;HumeSpeechResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L280)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L293)

@@ -45,6 +45,23 @@ CSS selector of the element that holds the main content. By default the extracto
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/WebFetch/WebFetchHtml.cs#L20)
 
+<a id="Vercel_AI_WebFetch_WebFetchDefuddleOptions_RemoveExactSelectors_"></a>
+<a id="Vercel_AI_WebFetch_WebFetchDefuddleOptions_RemoveExactSelectors"></a>
+
+### RemoveExactSelectors
+
+
+```csharp
+public bool RemoveExactSelectors { get; set; }
+```
+
+
+Remove elements that match the exact clutter selectors (ads, social widgets, ...). Defaults to `true`.
+
+**Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/WebFetch/WebFetchHtml.cs#L29)
+
 <a id="Vercel_AI_WebFetch_WebFetchDefuddleOptions_RemoveHiddenElements_"></a>
 <a id="Vercel_AI_WebFetch_WebFetchDefuddleOptions_RemoveHiddenElements"></a>
 
@@ -78,3 +95,20 @@ Remove images from the result. Defaults to `false`.
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/WebFetch/WebFetchHtml.cs#L23)
+
+<a id="Vercel_AI_WebFetch_WebFetchDefuddleOptions_RemovePartialSelectors_"></a>
+<a id="Vercel_AI_WebFetch_WebFetchDefuddleOptions_RemovePartialSelectors"></a>
+
+### RemovePartialSelectors
+
+
+```csharp
+public bool RemovePartialSelectors { get; set; }
+```
+
+
+Remove elements whose class, id or test attributes contain a clutter pattern. Defaults to `true`.
+
+**Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/WebFetch/WebFetchHtml.cs#L32)

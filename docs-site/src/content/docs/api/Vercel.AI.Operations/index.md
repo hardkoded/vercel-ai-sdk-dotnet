@@ -27,6 +27,7 @@ Speech, image, video, embeddings, transcription, and other operations.
 | [BatchItemResult](/api/Vercel.AI.Operations/BatchItemResult/) | Normalized batch item. |
 | [BatchItemResult&lt;TOutput&gt;](/api/Vercel.AI.Operations/BatchItemResult-1/) | Normalized batch item whose parsed output has the type of the OutputSpec%601 passed to GetBatchResults. Maps to BatchItemResult<OUTPUT>. |
 | [BatchListResult](/api/Vercel.AI.Operations/BatchListResult/) | A page of batches. |
+| [BatchModelIds](/api/Vercel.AI.Operations/BatchModelIds/) | Model IDs accepted by each batch modality. Maps to BatchV4ModelIds. C# has no string-literal union types, so a batch API declares the closed set at runtime and CancellationToken) checks every request against it. A null list leaves that modality open. |
 | [BatchModels](/api/Vercel.AI.Operations/BatchModels/) | Default provider used when a batch call omits one. |
 | [BatchModelUsage](/api/Vercel.AI.Operations/BatchModelUsage/) | Provider token usage before it is reshaped. |
 | [BatchOperationCall](/api/Vercel.AI.Operations/BatchOperationCall/) | Arguments for a batch operation. |
@@ -266,6 +267,7 @@ Speech, image, video, embeddings, transcription, and other operations.
 | Type | Summary |
 | --- | --- |
 | [IBatchApi](/api/Vercel.AI.Operations/IBatchApi/) | Batch API. |
+| [IBatchApi&lt;TModelIds&gt;](/api/Vercel.AI.Operations/IBatchApi-1/) | Batch API whose accepted model IDs have a declared type. Maps to BatchV4<TModelIds>. Derive a type from BatchModelIds to expose the closed model-id sets of a provider, and implement this interface to hand callers that type. The runtime check of CancellationToken) still applies to every request. |
 | [IBatchProvider](/api/Vercel.AI.Operations/IBatchProvider/) | Provider that exposes experimentalbatch(). |
 | [IDecisionCaller](/api/Vercel.AI.Operations/IDecisionCaller/) | Decision model used by Decide. |
 | [IDecisionProvider](/api/Vercel.AI.Operations/IDecisionProvider/) | A provider that returns decision models. ProviderRegistry and CustomProvider resolve decision models through it. Maps to the optional decisionModel factory of a provider. |

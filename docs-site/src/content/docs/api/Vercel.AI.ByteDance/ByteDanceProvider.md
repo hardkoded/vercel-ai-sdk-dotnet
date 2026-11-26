@@ -23,7 +23,7 @@ ByteDance provider.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [ProviderBase](/api/Vercel.AI.Provider/ProviderBase/) → [OpenAICompatibleProvider](/api/Vercel.AI.OpenAICompatible/OpenAICompatibleProvider/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceProvider.cs#L12)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceProvider.cs#L13)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates a provider.
 | `httpClient` | [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient) |  |
 | `options` | [OpenAICompatibleOptions](/api/Vercel.AI.OpenAICompatible/OpenAICompatibleOptions/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceProvider.cs#L23)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceProvider.cs#L24)
 
 ## Fields
 
@@ -65,7 +65,7 @@ Default API origin.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceProvider.cs#L18)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceProvider.cs#L19)
 
 <a id="Vercel_AI_ByteDance_ByteDanceProvider_ProviderId"></a>
 
@@ -81,7 +81,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceProvider.cs#L15)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceProvider.cs#L16)
 
 ## Methods
 
@@ -107,7 +107,30 @@ Creates a provider.
 
 **Returns:** [ByteDanceProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceProvider.cs#L36)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceProvider.cs#L43)
+
+<a id="Vercel_AI_ByteDance_ByteDanceProvider_EmbeddingModel_"></a>
+<a id="Vercel_AI_ByteDance_ByteDanceProvider_EmbeddingModel_System_String_"></a>
+
+### EmbeddingModel(string)
+
+
+```csharp
+public override IEmbeddingModel EmbeddingModel(string modelId)
+```
+
+
+Returns an embedding model.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+
+**Returns:** [IEmbeddingModel](/api/Vercel.AI.Provider/IEmbeddingModel/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceProvider.cs#L37)
 
 <a id="Vercel_AI_ByteDance_ByteDanceProvider_GenerateImageAsync_"></a>
 <a id="Vercel_AI_ByteDance_ByteDanceProvider_GenerateImageAsync_System_String_Vercel_AI_Provider_ImageCallOptions_System_Collections_Generic_IDictionary_System_String_System_String__System_Threading_CancellationToken_"></a>
@@ -133,7 +156,7 @@ Posts an image generation. &lt;code class="paramref"&gt;headers&lt;/code&gt; ove
 
 **Returns:** [Task&lt;ImageGenerationResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceProvider.cs#L72)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceProvider.cs#L79)
 
 <a id="Vercel_AI_ByteDance_ByteDanceProvider_ImageModel_"></a>
 <a id="Vercel_AI_ByteDance_ByteDanceProvider_ImageModel_System_String_"></a>
@@ -156,7 +179,7 @@ Returns an image model.
 
 **Returns:** [IImageModel](/api/Vercel.AI.Provider/IImageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceProvider.cs#L64)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceProvider.cs#L71)
 
 <a id="Vercel_AI_ByteDance_ByteDanceProvider_LanguageModel_"></a>
 <a id="Vercel_AI_ByteDance_ByteDanceProvider_LanguageModel_System_String_"></a>
@@ -179,7 +202,7 @@ Returns a language model.
 
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceProvider.cs#L30)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceProvider.cs#L31)
 
 <a id="Vercel_AI_ByteDance_ByteDanceProvider_VideoModel_"></a>
 <a id="Vercel_AI_ByteDance_ByteDanceProvider_VideoModel_System_String_"></a>
@@ -202,4 +225,4 @@ Returns a video model.
 
 **Returns:** [IVideoModel](/api/Vercel.AI.Provider/IVideoModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceProvider.cs#L68)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/ByteDance/ByteDanceProvider.cs#L75)

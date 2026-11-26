@@ -70,4 +70,4 @@ Throws when &lt;code class="paramref"&gt;dimensions&lt;/code&gt; is set and is n
 | --- | --- | --- |
 | `dimensions` | [double?](https://learn.microsoft.com/dotnet/api/system.double) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L647)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Embedding.cs#L657)

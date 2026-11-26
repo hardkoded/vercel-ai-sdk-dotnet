@@ -128,3 +128,20 @@ True when the model was resolved from [ModelId](#Vercel_AI_Operations_StreamTran
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L761)
+
+<a id="Vercel_AI_Operations_StreamTranscribeRequest_Telemetry_"></a>
+<a id="Vercel_AI_Operations_StreamTranscribeRequest_Telemetry"></a>
+
+### Telemetry
+
+
+```csharp
+public TelemetryOptions? Telemetry { get; set; }
+```
+
+
+Telemetry callbacks.
+
+**Value:** [TelemetryOptions](/api/Vercel.AI/TelemetryOptions/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L764)

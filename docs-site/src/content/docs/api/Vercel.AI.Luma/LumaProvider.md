@@ -23,7 +23,7 @@ Luma provider.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [ProviderBase](/api/Vercel.AI.Provider/ProviderBase/) → [OpenAICompatibleProvider](/api/Vercel.AI.OpenAICompatible/OpenAICompatibleProvider/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaProvider.cs#L13)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaProvider.cs#L14)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates a provider.
 | `httpClient` | [HttpClient](https://learn.microsoft.com/dotnet/api/system.net.http.httpclient) |  |
 | `options` | [OpenAICompatibleOptions](/api/Vercel.AI.OpenAICompatible/OpenAICompatibleOptions/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaProvider.cs#L24)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaProvider.cs#L25)
 
 ## Fields
 
@@ -65,7 +65,7 @@ Default API origin.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaProvider.cs#L19)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaProvider.cs#L20)
 
 <a id="Vercel_AI_Luma_LumaProvider_ProviderId"></a>
 
@@ -81,7 +81,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaProvider.cs#L16)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaProvider.cs#L17)
 
 ## Methods
 
@@ -107,7 +107,30 @@ Creates a provider.
 
 **Returns:** [LumaProvider](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaProvider.cs#L43)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaProvider.cs#L50)
+
+<a id="Vercel_AI_Luma_LumaProvider_EmbeddingModel_"></a>
+<a id="Vercel_AI_Luma_LumaProvider_EmbeddingModel_System_String_"></a>
+
+### EmbeddingModel(string)
+
+
+```csharp
+public override IEmbeddingModel EmbeddingModel(string modelId)
+```
+
+
+Returns an embedding model.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+
+**Returns:** [IEmbeddingModel](/api/Vercel.AI.Provider/IEmbeddingModel/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaProvider.cs#L38)
 
 <a id="Vercel_AI_Luma_LumaProvider_GenerateImageAsync_"></a>
 <a id="Vercel_AI_Luma_LumaProvider_GenerateImageAsync_System_String_Vercel_AI_Luma_LumaImageRequest_System_Threading_CancellationToken_"></a>
@@ -132,7 +155,7 @@ Generates one image with Dream Machine.
 
 **Returns:** [Task&lt;LumaImageGeneration&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaProvider.cs#L83)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaProvider.cs#L90)
 
 <a id="Vercel_AI_Luma_LumaProvider_ImageModel_"></a>
 <a id="Vercel_AI_Luma_LumaProvider_ImageModel_System_String_"></a>
@@ -155,7 +178,7 @@ Returns an image model.
 
 **Returns:** [IImageModel](/api/Vercel.AI.Provider/IImageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaProvider.cs#L80)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaProvider.cs#L87)
 
 <a id="Vercel_AI_Luma_LumaProvider_LanguageModel_"></a>
 <a id="Vercel_AI_Luma_LumaProvider_LanguageModel_System_String_"></a>
@@ -178,7 +201,7 @@ Returns a language model.
 
 **Returns:** [ILanguageModel](/api/Vercel.AI.Provider/ILanguageModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaProvider.cs#L31)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaProvider.cs#L32)
 
 <a id="Vercel_AI_Luma_LumaProvider_VideoModel_"></a>
 <a id="Vercel_AI_Luma_LumaProvider_VideoModel_System_String_"></a>
@@ -201,4 +224,4 @@ Returns a video model.
 
 **Returns:** [IVideoModel](/api/Vercel.AI.Provider/IVideoModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaProvider.cs#L37)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Luma/LumaProvider.cs#L44)

@@ -23,4 +23,4 @@ One listed batch.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [BatchReference](/api/Vercel.AI.Operations/BatchReference/) → [BatchStatus](/api/Vercel.AI.Operations/BatchStatus/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L703)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L798)

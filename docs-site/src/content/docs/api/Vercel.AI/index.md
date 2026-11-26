@@ -137,6 +137,7 @@ Client, text generation, streaming, tools, and agents.
 | [ToolOutputDeniedPart](/api/Vercel.AI/ToolOutputDeniedPart/) | A tool call was denied, so its tool did not run. Maps to the tool-output-denied stream part. |
 | [ToolResultPart](/api/Vercel.AI/ToolResultPart/) | A tool result. |
 | [TracingChannel](/api/Vercel.AI/TracingChannel/) | The telemetry tracing channel. Maps to telemetry/tracing-channel.ts. Upstream publishes on a Node diagnosticschannel tracing channel. The port publishes on a DiagnosticListener with the same name, one event per sub-channel of the tracing channel: start, end, asyncStart, asyncEnd and error. Each event value is a TelemetryTracingChannelMessage. |
+| [TracingChannelStepEvent](/api/Vercel.AI/TracingChannelStepEvent/) | The event of a step span. Upstream publishes the object literal { callId, stepNumber }, which needs a type here. |
 | [TranscribeOptions](/api/Vercel.AI/TranscribeOptions/) | Transcription options. |
 | [TranscriptionCapabilities](/api/Vercel.AI/TranscriptionCapabilities/) | Upstream ModelCapabilities.transcription. |
 | [TranslateOptions](/api/Vercel.AI/TranslateOptions/) | Speech translation options. |

@@ -23,7 +23,7 @@ Start acknowledgement.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [BatchReference](/api/Vercel.AI.Operations/BatchReference/) → [BatchStatus](/api/Vercel.AI.Operations/BatchStatus/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L695)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L790)
 
 ## Properties
 
@@ -42,4 +42,4 @@ Warnings.
 
 **Value:** [IReadOnlyList&lt;BatchRequestWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L698)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L793)
