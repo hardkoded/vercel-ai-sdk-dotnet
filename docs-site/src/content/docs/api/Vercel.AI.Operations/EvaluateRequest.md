@@ -28,7 +28,7 @@ Deprecated alias of [DecideRequest](/api/Vercel.AI.Operations/DecideRequest/).
 This API is obsolete.
 :::
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/EvaluateAliases.cs#L365)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/EvaluateAliases.cs#L377)
 
 ## Properties
 
@@ -47,7 +47,7 @@ Decision model. A model that implements only [IEvaluationCaller](/api/Vercel.AI.
 
 **Value:** [IEvaluationCaller](/api/Vercel.AI.Operations/IEvaluationCaller/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/EvaluateAliases.cs#L369)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/EvaluateAliases.cs#L381)
 
 <a id="Vercel_AI_Operations_EvaluateRequest_OnEnd_"></a>
 <a id="Vercel_AI_Operations_EvaluateRequest_OnEnd"></a>
@@ -64,7 +64,7 @@ Called when the decision completes.
 
 **Value:** [Func&lt;EvaluateEvent, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/EvaluateAliases.cs#L381)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/EvaluateAliases.cs#L393)
 
 <a id="Vercel_AI_Operations_EvaluateRequest_OnStart_"></a>
 <a id="Vercel_AI_Operations_EvaluateRequest_OnStart"></a>
@@ -81,7 +81,7 @@ Called when the decision begins.
 
 **Value:** [Func&lt;EvaluateEvent, Task&gt;](https://learn.microsoft.com/dotnet/api/system.func-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/EvaluateAliases.cs#L378)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/EvaluateAliases.cs#L390)
 
 <a id="Vercel_AI_Operations_EvaluateRequest_Questions_"></a>
 <a id="Vercel_AI_Operations_EvaluateRequest_Questions"></a>
@@ -98,7 +98,7 @@ Nonempty question map.
 
 **Value:** [IReadOnlyDictionary&lt;string, EvaluationQuestion&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/EvaluateAliases.cs#L375)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/EvaluateAliases.cs#L387)
 
 <a id="Vercel_AI_Operations_EvaluateRequest_State_"></a>
 <a id="Vercel_AI_Operations_EvaluateRequest_State"></a>
@@ -115,7 +115,7 @@ Shared state. See [State](/api/Vercel.AI.Operations/DecideRequest/#Vercel_AI_Ope
 
 **Value:** [DecisionState](/api/Vercel.AI.Operations/DecisionState/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/EvaluateAliases.cs#L372)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/EvaluateAliases.cs#L384)
 
 <a id="Vercel_AI_Operations_EvaluateRequest_Telemetry_"></a>
 <a id="Vercel_AI_Operations_EvaluateRequest_Telemetry"></a>
@@ -132,4 +132,4 @@ Telemetry.
 
 **Value:** [TelemetryOptions](/api/Vercel.AI/TelemetryOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/EvaluateAliases.cs#L384)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/EvaluateAliases.cs#L396)

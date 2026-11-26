@@ -23,7 +23,7 @@ Speech audio plus the response metadata recorded for the call.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L864)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L865)
 
 ## Constructors
 
@@ -56,7 +56,7 @@ Creates a speech result.
 | `sampleRate` | [int](https://learn.microsoft.com/dotnet/api/system.int32) |  |
 | `mimeType` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L867)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L868)
 
 ## Properties
 
@@ -75,7 +75,7 @@ Audio bytes. Raw PCM is wrapped in a WAV container unless `pcm` was requested.
 
 **Value:** [byte\[\]](https://learn.microsoft.com/dotnet/api/system.byte)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L895)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L896)
 
 <a id="Vercel_AI_Google_GoogleSpeechResult_Headers_"></a>
 <a id="Vercel_AI_Google_GoogleSpeechResult_Headers"></a>
@@ -92,7 +92,7 @@ HTTP response headers.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L913)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L914)
 
 <a id="Vercel_AI_Google_GoogleSpeechResult_MediaType_"></a>
 <a id="Vercel_AI_Google_GoogleSpeechResult_MediaType"></a>
@@ -109,7 +109,7 @@ Media type of the audio.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L898)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L899)
 
 <a id="Vercel_AI_Google_GoogleSpeechResult_MimeType_"></a>
 <a id="Vercel_AI_Google_GoogleSpeechResult_MimeType"></a>
@@ -126,7 +126,7 @@ Response mime type, when the provider sent one. Maps to `providerMetadata.google
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L925)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L926)
 
 <a id="Vercel_AI_Google_GoogleSpeechResult_ModelId_"></a>
 <a id="Vercel_AI_Google_GoogleSpeechResult_ModelId"></a>
@@ -143,7 +143,7 @@ Model id used for the call.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L919)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L920)
 
 <a id="Vercel_AI_Google_GoogleSpeechResult_RequestBody_"></a>
 <a id="Vercel_AI_Google_GoogleSpeechResult_RequestBody"></a>
@@ -160,7 +160,7 @@ Body sent to the provider. Maps to `request.body`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L907)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L908)
 
 <a id="Vercel_AI_Google_GoogleSpeechResult_ResponseBody_"></a>
 <a id="Vercel_AI_Google_GoogleSpeechResult_ResponseBody"></a>
@@ -177,7 +177,7 @@ Raw response body. Maps to `response.body`.
 
 **Value:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L910)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L911)
 
 <a id="Vercel_AI_Google_GoogleSpeechResult_SampleRate_"></a>
 <a id="Vercel_AI_Google_GoogleSpeechResult_SampleRate"></a>
@@ -194,7 +194,7 @@ Sample rate from the response mime type, or 24000. Maps to `providerMetadata.goo
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L922)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L923)
 
 <a id="Vercel_AI_Google_GoogleSpeechResult_Timestamp_"></a>
 <a id="Vercel_AI_Google_GoogleSpeechResult_Timestamp"></a>
@@ -211,7 +211,7 @@ Timestamp recorded for the call.
 
 **Value:** [DateTimeOffset](https://learn.microsoft.com/dotnet/api/system.datetimeoffset)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L916)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L917)
 
 <a id="Vercel_AI_Google_GoogleSpeechResult_Usage_"></a>
 <a id="Vercel_AI_Google_GoogleSpeechResult_Usage"></a>
@@ -228,7 +228,7 @@ Raw `usageMetadata` from the response, when present.
 
 **Value:** [JsonObject](https://learn.microsoft.com/dotnet/api/system.text.json.nodes.jsonobject)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L904)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L905)
 
 <a id="Vercel_AI_Google_GoogleSpeechResult_Warnings_"></a>
 <a id="Vercel_AI_Google_GoogleSpeechResult_Warnings"></a>
@@ -245,4 +245,4 @@ Warnings produced for the call.
 
 **Value:** [IReadOnlyList&lt;GoogleWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L901)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Google/GoogleSpeechModel.cs#L902)

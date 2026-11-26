@@ -24,7 +24,7 @@ Maps to `{ type: 'file-data', data, mediaType, filename?, providerOptions }` in 
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [UserContentPart](/api/Vercel.AI.Provider/UserContentPart/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L954)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L968)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ Creates a file-data part.
 | `mediaType` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `fileName` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L957)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L971)
 
 ## Properties
 
@@ -68,7 +68,7 @@ Base64-encoded file data.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L966)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L980)
 
 <a id="Vercel_AI_Provider_FileDataContentPart_FileName_"></a>
 <a id="Vercel_AI_Provider_FileDataContentPart_FileName"></a>
@@ -85,7 +85,7 @@ Optional file name.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L972)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L986)
 
 <a id="Vercel_AI_Provider_FileDataContentPart_MediaType_"></a>
 <a id="Vercel_AI_Provider_FileDataContentPart_MediaType"></a>
@@ -102,7 +102,7 @@ IANA media type.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L969)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L983)
 
 <a id="Vercel_AI_Provider_FileDataContentPart_ProviderOptions_"></a>
 <a id="Vercel_AI_Provider_FileDataContentPart_ProviderOptions"></a>
@@ -119,4 +119,4 @@ Provider-specific options for this part.
 
 **Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L975)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L989)

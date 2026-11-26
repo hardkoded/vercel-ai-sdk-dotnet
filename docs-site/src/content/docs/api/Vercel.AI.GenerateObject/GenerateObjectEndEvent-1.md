@@ -31,7 +31,7 @@ Event sent after the generated object has been parsed and validated.
 
 **Implements:** [IOperationEndEvent](/api/Vercel.AI/IOperationEndEvent/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L369)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L529)
 
 ## Properties
 
@@ -50,7 +50,7 @@ The error, such as a type validation error when the final object does not match 
 
 **Value:** [Exception](https://learn.microsoft.com/dotnet/api/system.exception)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L428)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L590)
 
 <a id="Vercel_AI_GenerateObject_GenerateObjectEndEvent_1_FinishReason_"></a>
 <a id="Vercel_AI_GenerateObject_GenerateObjectEndEvent_1_FinishReason"></a>
@@ -67,7 +67,7 @@ Finish reason.
 
 **Value:** [FinishReason](/api/Vercel.AI.Provider/FinishReason/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L434)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L596)
 
 <a id="Vercel_AI_GenerateObject_GenerateObjectEndEvent_1_Object_"></a>
 <a id="Vercel_AI_GenerateObject_GenerateObjectEndEvent_1_Object"></a>
@@ -84,7 +84,7 @@ The parsed object. It is &lt;a href="https://learn.microsoft.com/dotnet/csharp/l
 
 **Value:** `T`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L425)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L587)
 
 <a id="Vercel_AI_GenerateObject_GenerateObjectEndEvent_1_ProviderMetadata_"></a>
 <a id="Vercel_AI_GenerateObject_GenerateObjectEndEvent_1_ProviderMetadata"></a>
@@ -101,7 +101,7 @@ Provider-specific response metadata.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L449)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L611)
 
 <a id="Vercel_AI_GenerateObject_GenerateObjectEndEvent_1_Reasoning_"></a>
 <a id="Vercel_AI_GenerateObject_GenerateObjectEndEvent_1_Reasoning"></a>
@@ -118,7 +118,7 @@ Reasoning returned by the model.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L431)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L593)
 
 <a id="Vercel_AI_GenerateObject_GenerateObjectEndEvent_1_Request_"></a>
 <a id="Vercel_AI_GenerateObject_GenerateObjectEndEvent_1_Request"></a>
@@ -135,7 +135,7 @@ Request metadata.
 
 **Value:** [LanguageModelRequestMetadata](/api/Vercel.AI/LanguageModelRequestMetadata/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L443)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L605)
 
 <a id="Vercel_AI_GenerateObject_GenerateObjectEndEvent_1_Response_"></a>
 <a id="Vercel_AI_GenerateObject_GenerateObjectEndEvent_1_Response"></a>
@@ -152,7 +152,7 @@ Response metadata.
 
 **Value:** [StepResponse](/api/Vercel.AI/StepResponse/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L446)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L608)
 
 <a id="Vercel_AI_GenerateObject_GenerateObjectEndEvent_1_Usage_"></a>
 <a id="Vercel_AI_GenerateObject_GenerateObjectEndEvent_1_Usage"></a>
@@ -169,7 +169,7 @@ Token usage.
 
 **Value:** [LanguageModelUsage](/api/Vercel.AI.Provider/LanguageModelUsage/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L437)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L599)
 
 <a id="Vercel_AI_GenerateObject_GenerateObjectEndEvent_1_Warnings_"></a>
 <a id="Vercel_AI_GenerateObject_GenerateObjectEndEvent_1_Warnings"></a>
@@ -186,4 +186,4 @@ Provider warnings.
 
 **Value:** [IReadOnlyList&lt;CallWarning&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L440)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L602)

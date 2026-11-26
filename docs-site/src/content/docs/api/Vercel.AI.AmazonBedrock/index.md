@@ -27,6 +27,7 @@ Amazon Bedrock provider.
 | [AmazonBedrockEndpoints](/api/Vercel.AI.AmazonBedrock/AmazonBedrockEndpoints/) | Builds Bedrock service hosts. Partition prefixes select the DNS suffix. |
 | [AmazonBedrockErrors](/api/Vercel.AI.AmazonBedrock/AmazonBedrockErrors/) | Maps a Bedrock JSON error body onto the SDK exception hierarchy. |
 | [AmazonBedrockFetch](/api/Vercel.AI.AmazonBedrock/AmazonBedrockFetch/) | Amazon Bedrock fetch behavior. GET requests and POST requests without a body skip signing. POST bodies are signed with SigV4. Caller headers are signed, except values with non-ASCII characters. |
+| [AmazonBedrockImageModel](/api/Vercel.AI.AmazonBedrock/AmazonBedrockImageModel/) | Amazon Bedrock InvokeModel image model, such as Nova Canvas. Maps to AmazonBedrockImageModel. |
 | [AmazonBedrockLanguageModel](/api/Vercel.AI.AmazonBedrock/AmazonBedrockLanguageModel/) | Bedrock Converse language model. |
 | [AmazonBedrockMessages](/api/Vercel.AI.AmazonBedrock/AmazonBedrockMessages/) | Converts V4 prompt messages into Converse system and messages arrays. |
 | [AmazonBedrockOptions](/api/Vercel.AI.AmazonBedrock/AmazonBedrockOptions/) | Amazon Bedrock settings. |

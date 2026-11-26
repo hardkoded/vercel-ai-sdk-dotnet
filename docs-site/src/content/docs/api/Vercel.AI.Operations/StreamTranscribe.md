@@ -23,7 +23,7 @@ Streams a transcript. Maps to `streamTranscribe`.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L1448)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L1548)
 
 ## Methods
 
@@ -49,4 +49,4 @@ Starts a transcription stream. `doStream` is invoked immediately.
 
 **Returns:** [StreamTranscribeResult](/api/Vercel.AI.Operations/StreamTranscribeResult/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L1451)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Transcribe.cs#L1551)

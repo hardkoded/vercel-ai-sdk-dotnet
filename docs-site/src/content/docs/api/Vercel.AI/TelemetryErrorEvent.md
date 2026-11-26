@@ -80,7 +80,7 @@ public string? CallId { get; }
 ```
 
 
-Unique identifier of the failed call. Null for a stream, which has no call id.
+Unique identifier of the failed call.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
@@ -118,7 +118,7 @@ Copied from [FunctionId](/api/Vercel.AI/TelemetryOptions/#Vercel_AI_TelemetryOpt
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/TelemetryErrorEvent.cs#L36)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/TelemetryErrorEvent.cs#L39)
 
 <a id="Vercel_AI_TelemetryErrorEvent_RecordInputs_"></a>
 <a id="Vercel_AI_TelemetryErrorEvent_RecordInputs"></a>
@@ -135,7 +135,7 @@ Copied from [RecordInputs](/api/Vercel.AI/TelemetryOptions/#Vercel_AI_TelemetryO
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/TelemetryErrorEvent.cs#L30)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/TelemetryErrorEvent.cs#L33)
 
 <a id="Vercel_AI_TelemetryErrorEvent_RecordOutputs_"></a>
 <a id="Vercel_AI_TelemetryErrorEvent_RecordOutputs"></a>
@@ -152,4 +152,21 @@ Copied from [RecordOutputs](/api/Vercel.AI/TelemetryOptions/#Vercel_AI_Telemetry
 
 **Value:** [bool?](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/TelemetryErrorEvent.cs#L33)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/TelemetryErrorEvent.cs#L36)
+
+<a id="Vercel_AI_TelemetryErrorEvent_Timestamp_"></a>
+<a id="Vercel_AI_TelemetryErrorEvent_Timestamp"></a>
+
+### Timestamp
+
+
+```csharp
+public long? Timestamp { get; init; }
+```
+
+
+Time at which the event occurred, in milliseconds since the Unix epoch. Maps to `timestamp`.
+
+**Value:** [long?](https://learn.microsoft.com/dotnet/api/system.int64)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/TelemetryErrorEvent.cs#L30)

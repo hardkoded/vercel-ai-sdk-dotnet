@@ -30,7 +30,7 @@ runs the tool. Maps to `Partial<ToolExecutionStartEvent> & { callId, toolCallId,
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/Telemetry.cs#L197)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/Telemetry.cs#L204)
 
 ## Constructors
 
@@ -54,7 +54,7 @@ Creates the options.
 | `event` | [ToolExecutionStartEvent](/api/Vercel.AI/ToolExecutionStartEvent/) |  |
 | `execute` | [Func&lt;Task&lt;T&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/Telemetry.cs#L200)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/Telemetry.cs#L207)
 
 ## Properties
 
@@ -73,7 +73,7 @@ Id of the generation call. Maps to `callId`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/Telemetry.cs#L210)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/Telemetry.cs#L217)
 
 <a id="Vercel_AI_ExecuteToolOptions_1_Event_"></a>
 <a id="Vercel_AI_ExecuteToolOptions_1_Event"></a>
@@ -90,7 +90,7 @@ The start event of the tool execution, as the integrations see it.
 
 **Value:** [ToolExecutionStartEvent](/api/Vercel.AI/ToolExecutionStartEvent/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/Telemetry.cs#L207)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/Telemetry.cs#L214)
 
 <a id="Vercel_AI_ExecuteToolOptions_1_Execute_"></a>
 <a id="Vercel_AI_ExecuteToolOptions_1_Execute"></a>
@@ -107,7 +107,7 @@ Runs the tool. Maps to `execute`.
 
 **Value:** [Func&lt;Task&lt;T&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.func-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/Telemetry.cs#L216)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/Telemetry.cs#L223)
 
 <a id="Vercel_AI_ExecuteToolOptions_1_ToolCallId_"></a>
 <a id="Vercel_AI_ExecuteToolOptions_1_ToolCallId"></a>
@@ -124,4 +124,4 @@ Id of the tool call. Maps to `toolCallId`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/Telemetry.cs#L213)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/Telemetry.cs#L220)

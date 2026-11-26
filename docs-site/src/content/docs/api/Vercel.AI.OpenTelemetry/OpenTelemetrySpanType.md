@@ -31,7 +31,7 @@ The kind of span an [EnrichSpan](/api/Vercel.AI.OpenTelemetry/EnrichSpan/) callb
 
 
 ```csharp
-Embedding = 4
+Embedding = 6
 ```
 
 
@@ -39,7 +39,7 @@ An embedding model call span. Maps to `'embedding'`.
 
 **Value:** [OpenTelemetrySpanType](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L25)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L31)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetrySpanType_ExperimentalDecision"></a>
 
@@ -47,7 +47,7 @@ An embedding model call span. Maps to `'embedding'`.
 
 
 ```csharp
-ExperimentalDecision = 6
+ExperimentalDecision = 4
 ```
 
 
@@ -55,7 +55,7 @@ A decision model call span. Maps to `'experimental_decision'`.
 
 **Value:** [OpenTelemetrySpanType](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L31)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L25)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetrySpanType_ExperimentalExtraction"></a>
 
@@ -63,7 +63,7 @@ A decision model call span. Maps to `'experimental_decision'`.
 
 
 ```csharp
-ExperimentalExtraction = 7
+ExperimentalExtraction = 5
 ```
 
 
@@ -71,7 +71,7 @@ An extraction model call span. Maps to `'experimental_extraction'`.
 
 **Value:** [OpenTelemetrySpanType](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L34)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L28)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetrySpanType_LanguageModel"></a>
 
@@ -111,7 +111,7 @@ The root span of an operation. Maps to `'operation'`.
 
 
 ```csharp
-Reranking = 5
+Reranking = 7
 ```
 
 
@@ -119,7 +119,7 @@ A reranking model call span. Maps to `'reranking'`.
 
 **Value:** [OpenTelemetrySpanType](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L28)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/OpenTelemetry/SupplementalAttributes.cs#L34)
 
 <a id="Vercel_AI_OpenTelemetry_OpenTelemetrySpanType_Step"></a>
 

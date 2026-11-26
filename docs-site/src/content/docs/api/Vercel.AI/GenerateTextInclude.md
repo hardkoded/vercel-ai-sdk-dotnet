@@ -23,7 +23,9 @@ What `generateText` keeps of each step. Large payloads, such as base64-encoded i
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2598)
+**Derived:** [AgentInclude](/api/Vercel.AI/AgentInclude/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2682)
 
 ## Properties
 
@@ -43,7 +45,7 @@ Maps to `requestBody`. The default is &lt;a href="https://learn.microsoft.com/do
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2604)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2688)
 
 <a id="Vercel_AI_GenerateTextInclude_RequestMessages_"></a>
 <a id="Vercel_AI_GenerateTextInclude_RequestMessages"></a>
@@ -61,7 +63,7 @@ Maps to `requestMessages`. The default is &lt;a href="https://learn.microsoft.co
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2610)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2694)
 
 <a id="Vercel_AI_GenerateTextInclude_ResponseBody_"></a>
 <a id="Vercel_AI_GenerateTextInclude_ResponseBody"></a>
@@ -79,4 +81,4 @@ Maps to `responseBody`. The default is &lt;a href="https://learn.microsoft.com/d
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2616)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L2700)

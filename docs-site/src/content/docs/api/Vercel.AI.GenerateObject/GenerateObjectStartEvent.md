@@ -25,7 +25,7 @@ Event sent before object generation begins.
 
 **Implements:** [IOperationStartEvent](/api/Vercel.AI/IOperationStartEvent/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L195)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L301)
 
 ## Properties
 
@@ -44,7 +44,7 @@ Frequency penalty. Maps to `frequencyPenalty`.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L238)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L344)
 
 <a id="Vercel_AI_GenerateObject_GenerateObjectStartEvent_Headers_"></a>
 <a id="Vercel_AI_GenerateObject_GenerateObjectStartEvent_Headers"></a>
@@ -61,7 +61,7 @@ Additional HTTP headers sent with the request. Maps to `headers`.
 
 **Value:** [IReadOnlyDictionary&lt;string, string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L247)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L353)
 
 <a id="Vercel_AI_GenerateObject_GenerateObjectStartEvent_MaxOutputTokens_"></a>
 <a id="Vercel_AI_GenerateObject_GenerateObjectStartEvent_MaxOutputTokens"></a>
@@ -78,7 +78,7 @@ Maximum number of tokens to generate. Maps to `maxOutputTokens`.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L223)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L329)
 
 <a id="Vercel_AI_GenerateObject_GenerateObjectStartEvent_MaxRetries_"></a>
 <a id="Vercel_AI_GenerateObject_GenerateObjectStartEvent_MaxRetries"></a>
@@ -95,7 +95,7 @@ Maximum number of retries for failed requests. Maps to `maxRetries`.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L244)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L350)
 
 <a id="Vercel_AI_GenerateObject_GenerateObjectStartEvent_Messages_"></a>
 <a id="Vercel_AI_GenerateObject_GenerateObjectStartEvent_Messages"></a>
@@ -112,7 +112,7 @@ The prompt messages, when supplied.
 
 **Value:** [IReadOnlyList&lt;ModelMessage&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L214)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L320)
 
 <a id="Vercel_AI_GenerateObject_GenerateObjectStartEvent_OperationId_"></a>
 <a id="Vercel_AI_GenerateObject_GenerateObjectStartEvent_OperationId"></a>
@@ -129,7 +129,7 @@ Identifies the operation type, `ai.generateObject` or `ai.streamObject`. Maps to
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L217)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L323)
 
 <a id="Vercel_AI_GenerateObject_GenerateObjectStartEvent_Output_"></a>
 <a id="Vercel_AI_GenerateObject_GenerateObjectStartEvent_Output"></a>
@@ -146,7 +146,7 @@ The output strategy type: `object`, `array`, `enum` or `no-schema`. Maps to `out
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L253)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L377)
 
 <a id="Vercel_AI_GenerateObject_GenerateObjectStartEvent_PresencePenalty_"></a>
 <a id="Vercel_AI_GenerateObject_GenerateObjectStartEvent_PresencePenalty"></a>
@@ -163,7 +163,7 @@ Presence penalty. Maps to `presencePenalty`.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L235)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L341)
 
 <a id="Vercel_AI_GenerateObject_GenerateObjectStartEvent_Prompt_"></a>
 <a id="Vercel_AI_GenerateObject_GenerateObjectStartEvent_Prompt"></a>
@@ -180,7 +180,7 @@ The simple prompt, when supplied.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L211)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L317)
 
 <a id="Vercel_AI_GenerateObject_GenerateObjectStartEvent_ProviderOptions_"></a>
 <a id="Vercel_AI_GenerateObject_GenerateObjectStartEvent_ProviderOptions"></a>
@@ -189,7 +189,7 @@ The simple prompt, when supplied.
 
 
 ```csharp
-public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; init; }
+public IReadOnlyDictionary<string, JsonElement>? ProviderOptions { get; }
 ```
 
 
@@ -197,7 +197,7 @@ Additional provider-specific options. Maps to `providerOptions`.
 
 **Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L250)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L356)
 
 <a id="Vercel_AI_GenerateObject_GenerateObjectStartEvent_Schema_"></a>
 <a id="Vercel_AI_GenerateObject_GenerateObjectStartEvent_Schema"></a>
@@ -206,7 +206,7 @@ Additional provider-specific options. Maps to `providerOptions`.
 
 
 ```csharp
-public JsonElement? Schema { get; init; }
+public JsonElement? Schema { get; }
 ```
 
 
@@ -214,7 +214,7 @@ The JSON Schema used for object generation, if any. Maps to `schema`.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L256)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L380)
 
 <a id="Vercel_AI_GenerateObject_GenerateObjectStartEvent_SchemaDescription_"></a>
 <a id="Vercel_AI_GenerateObject_GenerateObjectStartEvent_SchemaDescription"></a>
@@ -223,7 +223,7 @@ The JSON Schema used for object generation, if any. Maps to `schema`.
 
 
 ```csharp
-public string? SchemaDescription { get; init; }
+public string? SchemaDescription { get; }
 ```
 
 
@@ -231,7 +231,7 @@ Optional description of the schema. Maps to `schemaDescription`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L262)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L386)
 
 <a id="Vercel_AI_GenerateObject_GenerateObjectStartEvent_SchemaName_"></a>
 <a id="Vercel_AI_GenerateObject_GenerateObjectStartEvent_SchemaName"></a>
@@ -240,7 +240,7 @@ Optional description of the schema. Maps to `schemaDescription`.
 
 
 ```csharp
-public string? SchemaName { get; init; }
+public string? SchemaName { get; }
 ```
 
 
@@ -248,7 +248,7 @@ Optional name of the schema. Maps to `schemaName`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L259)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L383)
 
 <a id="Vercel_AI_GenerateObject_GenerateObjectStartEvent_Seed_"></a>
 <a id="Vercel_AI_GenerateObject_GenerateObjectStartEvent_Seed"></a>
@@ -265,7 +265,7 @@ Random seed. Maps to `seed`.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L241)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L347)
 
 <a id="Vercel_AI_GenerateObject_GenerateObjectStartEvent_System_"></a>
 <a id="Vercel_AI_GenerateObject_GenerateObjectStartEvent_System"></a>
@@ -274,7 +274,7 @@ Random seed. Maps to `seed`.
 
 
 ```csharp
-public Instructions? System { get; init; }
+public Instructions? System { get; }
 ```
 
 
@@ -282,7 +282,7 @@ The system message(s) provided to the model. Maps to `system`.
 
 **Value:** [Instructions](/api/Vercel.AI.Prompt/Instructions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L220)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L326)
 
 <a id="Vercel_AI_GenerateObject_GenerateObjectStartEvent_Temperature_"></a>
 <a id="Vercel_AI_GenerateObject_GenerateObjectStartEvent_Temperature"></a>
@@ -299,7 +299,7 @@ Sampling temperature. Maps to `temperature`.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L226)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L332)
 
 <a id="Vercel_AI_GenerateObject_GenerateObjectStartEvent_TopK_"></a>
 <a id="Vercel_AI_GenerateObject_GenerateObjectStartEvent_TopK"></a>
@@ -316,7 +316,7 @@ Top-k sampling parameter. Maps to `topK`.
 
 **Value:** [int?](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L232)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L338)
 
 <a id="Vercel_AI_GenerateObject_GenerateObjectStartEvent_TopP_"></a>
 <a id="Vercel_AI_GenerateObject_GenerateObjectStartEvent_TopP"></a>
@@ -333,4 +333,4 @@ Top-p sampling parameter. Maps to `topP`.
 
 **Value:** [double?](https://learn.microsoft.com/dotnet/api/system.double)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L229)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/GenerateObject/GenerateObject.cs#L335)

@@ -25,7 +25,7 @@ Turns a non-streaming model into text deltas. Maps to `simulateStreamingMiddlewa
 
 **Implements:** [ILanguageModelMiddleware](/api/Vercel.AI/ILanguageModelMiddleware/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L480)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L674)
 
 ## Methods
 
@@ -52,4 +52,4 @@ Generates once and yields the text as a single delta.
 
 **Returns:** [Task&lt;LanguageModelStreamResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L483)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Middleware.cs#L677)

@@ -230,7 +230,7 @@ Whether this is a provider-defined tool, which the provider executes. Maps to `{
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L174)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L191)
 
 <a id="Vercel_AI_Tool_Metadata_"></a>
 <a id="Vercel_AI_Tool_Metadata"></a>
@@ -540,7 +540,7 @@ Creates a dynamic tool from a JSON schema string. Maps to `dynamicTool`.
 
 **Returns:** [Tool](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L200)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L217)
 
 <a id="Vercel_AI_Tool_Function_"></a>
 <a id="Vercel_AI_Tool_Function_System_String_System_String_System_String_System_Func_System_Text_Json_JsonElement_System_Threading_CancellationToken_System_Threading_Tasks_Task_System_String___System_Nullable_System_Boolean__"></a>
@@ -567,7 +567,7 @@ Creates a tool from a JSON schema string.
 
 **Returns:** [Tool](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L213)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L230)
 
 <a id="Vercel_AI_Tool_ProviderDefined_"></a>
 <a id="Vercel_AI_Tool_ProviderDefined_System_String_System_String_System_Text_Json_JsonElement_"></a>
@@ -593,7 +593,7 @@ Declares a provider-defined tool. The provider executes it, so it has no [Execut
 
 **Returns:** [Tool](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L180)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L197)
 
 <a id="Vercel_AI_Tool_ProviderDefined_System_String_System_String_System_Text_Json_JsonElement_System_Text_Json_JsonElement_"></a>
 
@@ -619,4 +619,4 @@ schema, so a property the schema does not declare is dropped, as a Zod object do
 
 **Returns:** [Tool](./)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L189)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L206)

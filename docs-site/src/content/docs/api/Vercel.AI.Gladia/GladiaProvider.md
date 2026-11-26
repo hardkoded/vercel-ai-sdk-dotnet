@@ -109,6 +109,52 @@ Creates a provider.
 
 [View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gladia/GladiaProvider.cs#L255)
 
+<a id="Vercel_AI_Gladia_GladiaProvider_EmbeddingModel_"></a>
+<a id="Vercel_AI_Gladia_GladiaProvider_EmbeddingModel_System_String_"></a>
+
+### EmbeddingModel(string)
+
+
+```csharp
+public override IEmbeddingModel EmbeddingModel(string modelId)
+```
+
+
+Returns an embedding model.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+
+**Returns:** [IEmbeddingModel](/api/Vercel.AI.Provider/IEmbeddingModel/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gladia/GladiaProvider.cs#L273)
+
+<a id="Vercel_AI_Gladia_GladiaProvider_ImageModel_"></a>
+<a id="Vercel_AI_Gladia_GladiaProvider_ImageModel_System_String_"></a>
+
+### ImageModel(string)
+
+
+```csharp
+public override IImageModel ImageModel(string modelId)
+```
+
+
+Returns an image model.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `modelId` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
+
+**Returns:** [IImageModel](/api/Vercel.AI.Provider/IImageModel/)
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gladia/GladiaProvider.cs#L279)
+
 <a id="Vercel_AI_Gladia_GladiaProvider_LanguageModel_"></a>
 <a id="Vercel_AI_Gladia_GladiaProvider_LanguageModel_System_String_"></a>
 
@@ -147,7 +193,7 @@ Creates the pre-recorded transcription model.
 
 **Returns:** [GladiaProvider.GladiaTranscriptionModel](/api/Vercel.AI.Gladia/GladiaProvider.GladiaTranscriptionModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gladia/GladiaProvider.cs#L273)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gladia/GladiaProvider.cs#L285)
 
 <a id="Vercel_AI_Gladia_GladiaProvider_TranscriptionModel_"></a>
 <a id="Vercel_AI_Gladia_GladiaProvider_TranscriptionModel_System_String_"></a>
@@ -170,4 +216,4 @@ Returns a transcription model.
 
 **Returns:** [ITranscriptionModel](/api/Vercel.AI.Provider/ITranscriptionModel/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gladia/GladiaProvider.cs#L279)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Gladia/GladiaProvider.cs#L291)

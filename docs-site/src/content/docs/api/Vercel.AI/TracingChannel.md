@@ -67,4 +67,4 @@ operation already finished is skipped, so a step that follows another step has t
 
 **Value:** [TelemetryTracingChannelMessage](/api/Vercel.AI/TelemetryTracingChannelMessage/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/TracingChannel.cs#L18)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/TracingChannel.cs#L27)

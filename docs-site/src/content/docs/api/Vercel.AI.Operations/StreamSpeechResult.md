@@ -43,7 +43,7 @@ stream: only one of them can be accessed, and only once. Access it before any re
 
 **Value:** `OperationFullStream&lt;byte\[\]&gt;`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L483)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L488)
 
 <a id="Vercel_AI_Operations_StreamSpeechResult_FullStream_"></a>
 <a id="Vercel_AI_Operations_StreamSpeechResult_FullStream"></a>
@@ -61,7 +61,7 @@ share one live stream: only one of them can be accessed, and only once. Access i
 
 **Value:** `OperationFullStream&lt;SpeechStreamPart&gt;`
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L496)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L501)
 
 <a id="Vercel_AI_Operations_StreamSpeechResult_ProviderMetadata_"></a>
 <a id="Vercel_AI_Operations_StreamSpeechResult_ProviderMetadata"></a>
@@ -78,7 +78,7 @@ Additional provider-specific metadata. Accessing it claims the stream.
 
 **Value:** [Task&lt;JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L470)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L475)
 
 <a id="Vercel_AI_Operations_StreamSpeechResult_Responses_"></a>
 <a id="Vercel_AI_Operations_StreamSpeechResult_Responses"></a>
@@ -95,7 +95,7 @@ Response metadata. Accessing it claims the stream.
 
 **Value:** [Task&lt;IReadOnlyList&lt;ProviderResponse&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L460)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L465)
 
 <a id="Vercel_AI_Operations_StreamSpeechResult_Usage_"></a>
 <a id="Vercel_AI_Operations_StreamSpeechResult_Usage"></a>
@@ -112,7 +112,7 @@ Usage reported for the call, if available. Accessing it claims the stream.
 
 **Value:** [Task&lt;SpeechStreamUsage&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L440)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L445)
 
 <a id="Vercel_AI_Operations_StreamSpeechResult_Warnings_"></a>
 <a id="Vercel_AI_Operations_StreamSpeechResult_Warnings"></a>
@@ -129,4 +129,4 @@ Warnings for the call, such as unsupported settings. Accessing it claims the str
 
 **Value:** [Task&lt;IReadOnlyList&lt;OperationWarning&gt;&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L450)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/StreamSpeech.cs#L455)

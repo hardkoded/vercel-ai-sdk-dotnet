@@ -23,7 +23,7 @@ A tool result fed back to the model.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [ModelMessage](/api/Vercel.AI.Provider/ModelMessage/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1685)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1699)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Its single-result members are empty.
 | --- | --- | --- |
 | `approvalResponses` | [IReadOnlyList&lt;ToolApprovalResponseModelMessage&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1816)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1830)
 
 <a id="Vercel_AI_Provider_ToolModelMessage__ctor_System_Collections_Generic_IReadOnlyList_Vercel_AI_Provider_ToolModelMessage__"></a>
 
@@ -68,7 +68,7 @@ Its single-result members describe the first result.
 | --- | --- | --- |
 | `results` | [IReadOnlyList&lt;ToolModelMessage&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1781)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1795)
 
 <a id="Vercel_AI_Provider_ToolModelMessage__ctor_System_String_System_String_System_Collections_Generic_IReadOnlyList_Vercel_AI_Provider_UserContentPart__System_Nullable_System_Text_Json_JsonElement__"></a>
 
@@ -93,7 +93,7 @@ does not read [OutputContent](#Vercel_AI_Provider_ToolModelMessage_OutputContent
 | `content` | [IReadOnlyList&lt;UserContentPart&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1) |  |
 | `providerMetadata` | [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1757)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1771)
 
 <a id="Vercel_AI_Provider_ToolModelMessage__ctor_System_String_System_String_System_String_System_Boolean_System_Nullable_System_Text_Json_JsonElement__"></a>
 
@@ -117,7 +117,7 @@ Creates a tool result message. The output type comes from &lt;code class="paramr
 | `isError` | [bool](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 | `providerMetadata` | [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1697)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1711)
 
 <a id="Vercel_AI_Provider_ToolModelMessage__ctor_System_String_System_String_System_String_System_Boolean_System_String_System_Nullable_System_Text_Json_JsonElement__"></a>
 
@@ -145,7 +145,7 @@ For `execution-denied`, &lt;code class="paramref"&gt;outputJson&lt;/code&gt; is 
 | `outputType` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `providerMetadata` | [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1712)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1726)
 
 ## Properties
 
@@ -164,7 +164,7 @@ The `tool-approval-response` parts of this tool message, which come before its r
 
 **Value:** [IReadOnlyList&lt;ToolApprovalResponseModelMessage&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1838)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1852)
 
 <a id="Vercel_AI_Provider_ToolModelMessage_ExecutionDeniedReason_"></a>
 <a id="Vercel_AI_Provider_ToolModelMessage_ExecutionDeniedReason"></a>
@@ -181,7 +181,7 @@ The `reason` of an `execution-denied` output. Null when the output has no reason
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1935)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1949)
 
 <a id="Vercel_AI_Provider_ToolModelMessage_IsError_"></a>
 <a id="Vercel_AI_Provider_ToolModelMessage_IsError"></a>
@@ -198,7 +198,7 @@ Whether the tool failed.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1941)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1955)
 
 <a id="Vercel_AI_Provider_ToolModelMessage_MessageProviderOptions_"></a>
 <a id="Vercel_AI_Provider_ToolModelMessage_MessageProviderOptions"></a>
@@ -215,7 +215,7 @@ Provider options of the whole tool message, such as an Amazon Bedrock `cachePoin
 
 **Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1956)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1970)
 
 <a id="Vercel_AI_Provider_ToolModelMessage_OutputContent_"></a>
 <a id="Vercel_AI_Provider_ToolModelMessage_OutputContent"></a>
@@ -232,7 +232,7 @@ Text, file, and custom parts of a multi-part output, or null for a single value.
 
 **Value:** [IReadOnlyList&lt;UserContentPart&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1938)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1952)
 
 <a id="Vercel_AI_Provider_ToolModelMessage_OutputJson_"></a>
 <a id="Vercel_AI_Provider_ToolModelMessage_OutputJson"></a>
@@ -249,7 +249,7 @@ JSON result. For `text` and `error-text` it is the text itself. For `execution-d
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1932)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1946)
 
 <a id="Vercel_AI_Provider_ToolModelMessage_OutputProviderOptions_"></a>
 <a id="Vercel_AI_Provider_ToolModelMessage_OutputProviderOptions"></a>
@@ -266,7 +266,7 @@ Provider options set on the tool output itself rather than on the tool result, s
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1953)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1967)
 
 <a id="Vercel_AI_Provider_ToolModelMessage_OutputType_"></a>
 <a id="Vercel_AI_Provider_ToolModelMessage_OutputType"></a>
@@ -283,7 +283,7 @@ Output type: `text`, `json`, `error-text`, `error-json`, or `execution-denied`.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1944)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1958)
 
 <a id="Vercel_AI_Provider_ToolModelMessage_ProviderMetadata_"></a>
 <a id="Vercel_AI_Provider_ToolModelMessage_ProviderMetadata"></a>
@@ -300,7 +300,7 @@ Provider metadata carried on this tool result, such as a thought signature.
 
 **Value:** [JsonElement?](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1947)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1961)
 
 <a id="Vercel_AI_Provider_ToolModelMessage_ProviderOptions_"></a>
 <a id="Vercel_AI_Provider_ToolModelMessage_ProviderOptions"></a>
@@ -317,7 +317,7 @@ Provider options set on this tool result, such as an Amazon Bedrock `cachePoint`
 
 **Value:** [IReadOnlyDictionary&lt;string, JsonElement&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlydictionary-2)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1950)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1964)
 
 <a id="Vercel_AI_Provider_ToolModelMessage_Results_"></a>
 <a id="Vercel_AI_Provider_ToolModelMessage_Results"></a>
@@ -334,7 +334,7 @@ The tool results this message carries, one per executed call. A single-result me
 
 **Value:** [IReadOnlyList&lt;ToolModelMessage&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1888)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1902)
 
 <a id="Vercel_AI_Provider_ToolModelMessage_ToolCallId_"></a>
 <a id="Vercel_AI_Provider_ToolModelMessage_ToolCallId"></a>
@@ -351,7 +351,7 @@ Matching tool call id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1926)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1940)
 
 <a id="Vercel_AI_Provider_ToolModelMessage_ToolName_"></a>
 <a id="Vercel_AI_Provider_ToolModelMessage_ToolName"></a>
@@ -368,7 +368,7 @@ Tool name.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1929)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1943)
 
 ## Methods
 
@@ -393,4 +393,4 @@ Splits grouped tool messages into one message per result, in order, after the ap
 
 **Returns:** [IReadOnlyList&lt;ModelMessage&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ireadonlylist-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1891)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Provider/LanguageModel.cs#L1905)

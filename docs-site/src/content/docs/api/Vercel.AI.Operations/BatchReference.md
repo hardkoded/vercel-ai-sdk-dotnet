@@ -25,7 +25,7 @@ A version-2 batch reference. Upstream `BatchReference`.
 
 **Derived:** [BatchStatus](/api/Vercel.AI.Operations/BatchStatus/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L598)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L693)
 
 ## Constructors
 
@@ -42,7 +42,7 @@ public BatchReference()
 
 Creates an empty reference. [Batch](/api/Vercel.AI.Operations/Batch/) fills it in.
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L601)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L696)
 
 <a id="Vercel_AI_Operations_BatchReference__ctor_System_Int32_System_String_System_String_"></a>
 
@@ -64,7 +64,7 @@ Creates a reference.
 | `id` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 | `provider` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L604)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L699)
 
 ## Properties
 
@@ -83,7 +83,7 @@ Batch id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L615)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L710)
 
 <a id="Vercel_AI_Operations_BatchReference_Provider_"></a>
 <a id="Vercel_AI_Operations_BatchReference_Provider"></a>
@@ -100,7 +100,7 @@ Provider id.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L618)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L713)
 
 <a id="Vercel_AI_Operations_BatchReference_Version_"></a>
 <a id="Vercel_AI_Operations_BatchReference_Version"></a>
@@ -117,4 +117,4 @@ Reference version. Only 2 is accepted.
 
 **Value:** [int](https://learn.microsoft.com/dotnet/api/system.int32)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L612)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Operations/Batch.cs#L707)

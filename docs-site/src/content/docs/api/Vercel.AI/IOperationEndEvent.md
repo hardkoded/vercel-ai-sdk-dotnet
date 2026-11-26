@@ -24,4 +24,4 @@ An event passed to [OnEnd](/api/Vercel.AI/ITelemetry/#Vercel_AI_ITelemetry_OnEnd
 
 **Derived:** [GenerateObjectEndEvent&lt;T&gt;](/api/Vercel.AI.GenerateObject/GenerateObjectEndEvent-1/), [GenerateTextResult](/api/Vercel.AI/GenerateTextResult/), [GenerateTextResult&lt;TOutput&gt;](/api/Vercel.AI/GenerateTextResult-1/), [EmbedEndEvent](/api/Vercel.AI.Operations/EmbedEndEvent/), [GenerateSpeechEndEvent](/api/Vercel.AI.Operations/GenerateSpeechEndEvent/), [RerankEndEvent](/api/Vercel.AI.Operations/RerankEndEvent/), [TranscriptionEndEvent](/api/Vercel.AI.Operations/TranscriptionEndEvent/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/Telemetry.cs#L229)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Telemetry/Telemetry.cs#L236)

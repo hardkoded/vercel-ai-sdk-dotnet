@@ -23,7 +23,7 @@ The options of [OnInputAvailable](/api/Vercel.AI/Tool/#Vercel_AI_Tool_OnInputAva
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [ToolExecutionOptions](/api/Vercel.AI/ToolExecutionOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L275)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L292)
 
 ## Constructors
 
@@ -49,7 +49,7 @@ The options of [OnInputAvailable](/api/Vercel.AI/Tool/#Vercel_AI_Tool_OnInputAva
 | `abortSignal` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) |  |
 | `input` | [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L275)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L292)
 
 ## Properties
 
@@ -68,4 +68,4 @@ The input of the tool call.
 
 **Value:** [JsonElement](https://learn.microsoft.com/dotnet/api/system.text.json.jsonelement)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L283)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/PublicTypes.cs#L300)

@@ -23,7 +23,7 @@ Result of parsing a Hume error body.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L38)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L39)
 
 ## Constructors
 
@@ -47,7 +47,7 @@ Creates a parse result.
 | `success` | [bool](https://learn.microsoft.com/dotnet/api/system.boolean) |  |
 | `value` | [HumeErrorData](/api/Vercel.AI.Hume/HumeErrorData/) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L41)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L42)
 
 ## Properties
 
@@ -66,7 +66,7 @@ Same payload as [Value](#Vercel_AI_Hume_HumeErrorParseResult_Value).
 
 **Value:** [HumeErrorData](/api/Vercel.AI.Hume/HumeErrorData/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L55)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L56)
 
 <a id="Vercel_AI_Hume_HumeErrorParseResult_Success_"></a>
 <a id="Vercel_AI_Hume_HumeErrorParseResult_Success"></a>
@@ -83,7 +83,7 @@ True when the error object was present.
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L49)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L50)
 
 <a id="Vercel_AI_Hume_HumeErrorParseResult_Value_"></a>
 <a id="Vercel_AI_Hume_HumeErrorParseResult_Value"></a>
@@ -100,4 +100,4 @@ Parsed error.
 
 **Value:** [HumeErrorData](/api/Vercel.AI.Hume/HumeErrorData/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L52)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Hume/HumeProvider.cs#L53)

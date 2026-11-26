@@ -23,7 +23,7 @@ Cartesia settings.
 
 **Inheritance:** [object](https://learn.microsoft.com/dotnet/api/system.object) → [OpenAICompatibleOptions](/api/Vercel.AI.OpenAICompatible/OpenAICompatibleOptions/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Cartesia/CartesiaProvider.cs#L18)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Cartesia/CartesiaProvider.cs#L19)
 
 ## Properties
 
@@ -42,7 +42,7 @@ The Cartesia API version, sent as the `Cartesia-Version` header. Defaults to `20
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Cartesia/CartesiaProvider.cs#L21)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Cartesia/CartesiaProvider.cs#L22)
 
 <a id="Vercel_AI_Cartesia_CartesiaOptions_WebSocket_"></a>
 <a id="Vercel_AI_Cartesia_CartesiaOptions_WebSocket"></a>
@@ -59,4 +59,4 @@ Custom WebSocket implementation for Ink 2 streaming transcription. Defaults to `
 
 **Value:** [WebSocketFactory](/api/Vercel.AI.ProviderUtils/WebSocketFactory/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Cartesia/CartesiaProvider.cs#L24)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Cartesia/CartesiaProvider.cs#L25)
