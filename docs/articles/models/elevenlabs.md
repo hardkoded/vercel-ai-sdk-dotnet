@@ -20,11 +20,27 @@ Speech model:
 ```csharp
 using Vercel.AI.ElevenLabs;
 
-var model = ElevenLabsProvider.Create().SpeechModel("eleven_multilingual_v2");
+var model = (ISpeechCaller)ElevenLabsProvider.Create().SpeechModel("eleven_multilingual_v2");
+var result = await GenerateSpeech.GenerateSpeechAsync(
+    new GenerateSpeechRequest { Model = model, Text = "Hello from the Vercel AI SDK for .NET." }
+);
 
-Console.WriteLine(model.ModelId);
+await File.WriteAllBytesAsync("speech.mp3", result.Audio.Data);
 ```
 
-This model does not plug into the shared `Generate*` helpers. Call the model through the members the API reference lists for its type.
+Transcription model:
+
+```csharp
+using Vercel.AI.ElevenLabs;
+
+var model = (ElevenLabsProvider.ElevenLabsTranscriptionModel)ElevenLabsProvider.Create().TranscriptionModel("scribe_v1");
+var result = await model.TranscribeAsync(
+    new AudioInput(await File.ReadAllBytesAsync("audio.mp3"), "audio/mpeg", null),
+    new ElevenLabsTranscriptionRequest(),
+    CancellationToken.None
+);
+
+Console.WriteLine(result.Text);
+```
 
 See the [Providers](providers.md) guide for authentication and provider options.

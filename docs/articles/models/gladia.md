@@ -19,11 +19,14 @@ Transcription model:
 ```csharp
 using Vercel.AI.Gladia;
 
-var model = GladiaProvider.Create().TranscriptionModel("solaria-3");
+var model = (GladiaProvider.GladiaTranscriptionModel)GladiaProvider.Create().TranscriptionModel("solaria-3");
+var result = await model.TranscribeAsync(
+    new AudioInput(await File.ReadAllBytesAsync("audio.mp3"), "audio/mpeg", null),
+    new GladiaTranscriptionRequest(),
+    CancellationToken.None
+);
 
-Console.WriteLine(model.ModelId);
+Console.WriteLine(result.Text);
 ```
-
-This model does not plug into the shared `Generate*` helpers. Call the model through the members the API reference lists for its type.
 
 See the [Providers](providers.md) guide for authentication and provider options.

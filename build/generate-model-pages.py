@@ -144,7 +144,16 @@ def provider_for_test(path, names):
 
 
 # Evidence the tests do not carry: the quickstart (docs/articles/quickstart.md) calls the Gateway with this id.
-SEED = {("Gateway", "language", "LanguageModel"): ["openai/gpt-6-astra"]}
+# The same goes for providers whose tests never call a factory method: the ids come from upstream's provider docs
+# (content/providers/01-ai-sdk-providers/*.mdx).
+SEED = {
+    ("Gateway", "language", "LanguageModel"): ["openai/gpt-6-astra"],
+    ("ByteDance", "image", "ImageModel"): ["seedream-5-0-260128", "seedream-4-5-251128"],
+    ("ByteDance", "video", "VideoModel"): ["seedance-1-0-pro-250528", "seedance-1-5-pro-251215"],
+    ("Hume", "speech", "SpeechModel"): ["default"],
+    ("KlingAI", "video", "VideoModel"): ["kling-v3.0-t2v", "kling-v3.0-i2v", "kling-v3.0-motion-control"],
+    ("OpenResponses", "language", "LanguageModel"): ["openai/gpt-6-astra"],
+}
 
 
 def collect_models(providers):
@@ -276,6 +285,112 @@ PROMPTS = {
         "}",
     ],
 }
+
+# Providers whose model does not implement the I*Caller interface that the Generate* helpers need. The page shows a
+# hand-written example that calls the model's own method. build/generate-model-pages.py compiles each one.
+EXAMPLES = {
+    ("AssemblyAI", "speech"): [
+        'var model = AssemblyAIProvider.Create().Speech("{ID}");',
+        "var result = await model.GenerateAsync(",
+        '    new AssemblyAISpeechRequest("Hello from the Vercel AI SDK for .NET.") { Voice = "aai-kyla" },',
+        "    CancellationToken.None",
+        ");",
+        "",
+        'await File.WriteAllBytesAsync("speech.mp3", result.Audio);',
+    ],
+    ("AssemblyAI", "transcription"): [
+        'var model = AssemblyAIProvider.Create().Transcription("{ID}");',
+        "var result = await model.TranscribeAsync(",
+        '    new AudioInput(await File.ReadAllBytesAsync("audio.mp3"), "audio/mpeg", null),',
+        "    new AssemblyAITranscriptionRequest(),",
+        "    CancellationToken.None",
+        ");",
+        "",
+        "Console.WriteLine(result.Text);",
+    ],
+    ("ElevenLabs", "speech"): [
+        'var model = (ISpeechCaller)ElevenLabsProvider.Create().SpeechModel("{ID}");',
+        "var result = await GenerateSpeech.GenerateSpeechAsync(",
+        '    new GenerateSpeechRequest { Model = model, Text = "Hello from the Vercel AI SDK for .NET." }',
+        ");",
+        "",
+        'await File.WriteAllBytesAsync("speech.mp3", result.Audio.Data);',
+    ],
+    ("ElevenLabs", "transcription"): [
+        'var model = (ElevenLabsProvider.ElevenLabsTranscriptionModel)ElevenLabsProvider.Create().TranscriptionModel("{ID}");',
+        "var result = await model.TranscribeAsync(",
+        '    new AudioInput(await File.ReadAllBytesAsync("audio.mp3"), "audio/mpeg", null),',
+        "    new ElevenLabsTranscriptionRequest(),",
+        "    CancellationToken.None",
+        ");",
+        "",
+        "Console.WriteLine(result.Text);",
+    ],
+    ("Gladia", "transcription"): [
+        'var model = (GladiaProvider.GladiaTranscriptionModel)GladiaProvider.Create().TranscriptionModel("{ID}");',
+        "var result = await model.TranscribeAsync(",
+        '    new AudioInput(await File.ReadAllBytesAsync("audio.mp3"), "audio/mpeg", null),',
+        "    new GladiaTranscriptionRequest(),",
+        "    CancellationToken.None",
+        ");",
+        "",
+        "Console.WriteLine(result.Text);",
+    ],
+    ("Hume", "speech"): [
+        "var model = HumeProvider.Create().Speech();",
+        "var result = await model.GenerateAsync(",
+        '    new HumeSpeechRequest("Hello from the Vercel AI SDK for .NET."),',
+        "    CancellationToken.None",
+        ");",
+        "",
+        'await File.WriteAllBytesAsync("speech.mp3", result.Audio);',
+    ],
+    ("Luma", "image"): [
+        'var model = (LumaImageModel)LumaProvider.Create().ImageModel("{ID}");',
+        "var result = await model.GenerateAsync(",
+        '    new LumaImageRequest("A red apple sticker") { AspectRatio = "16:9" },',
+        "    CancellationToken.None",
+        ");",
+        "",
+        'await File.WriteAllBytesAsync("image.png", result.Images[0].Data!);',
+    ],
+    ("RevAI", "transcription"): [
+        'var model = (RevAIProvider.RevAITranscriptionModel)RevAIProvider.Create().TranscriptionModel("{ID}");',
+        "var result = await model.TranscribeAsync(",
+        '    new AudioInput(await File.ReadAllBytesAsync("audio.mp3"), "audio/mpeg", null),',
+        "    new RevAITranscriptionRequest(),",
+        "    CancellationToken.None",
+        ");",
+        "",
+        "Console.WriteLine(result.Text);",
+    ],
+    ("Voyage", "embedding"): [
+        'var model = (VoyageProvider.VoyageEmbeddingModel)VoyageProvider.Create().EmbeddingModel("{ID}");',
+        "var result = await model.EmbedAsync(",
+        '    new VoyageEmbeddingRequest(new[] { "sunny day at the beach" }),',
+        "    CancellationToken.None",
+        ");",
+        "",
+        "Console.WriteLine(result.Embeddings[0].Length);",
+    ],
+    ("Voyage", "reranking"): [
+        'var model = (VoyageProvider.VoyageRerankingModel)VoyageProvider.Create().RerankingModel("{ID}");',
+        "var result = await model.RerankAsync(",
+        "    new VoyageRerankRequest",
+        "    {",
+        '        Query = "What is an agent?",',
+        '        TextDocuments = new[] { "An agent calls tools in a loop.", "Bananas are yellow." },',
+        "        TopK = 1,",
+        "    },",
+        "    CancellationToken.None",
+        ");",
+        "",
+        "foreach (var ranked in result.Ranking)",
+        "{",
+        '    Console.WriteLine($"{ranked.Index}: {ranked.Score}");',
+        "}",
+    ],
+}
 CREATE_ONLY = [
     "var model = {P}.{M}(\"{ID}\");",
     "",
@@ -335,6 +450,11 @@ def variants(info, kind, methods, model_id):
                     f"= {provider}.{method}(", f"= ({caller}){provider}.{method}(", 1
                 )
                 out[f"{method}|cast"] = (cast, f"{provider}.{method}(\"{model_id}\") is {caller}")
+    if (info["dir"], kind) in EXAMPLES:
+        out["example"] = (
+            "\n".join(EXAMPLES[(info["dir"], kind)]).replace("{ID}", model_id),
+            None,
+        )
     for method in methods:
         out[f"{method}|create"] = (render(CREATE_ONLY, provider, method, model_id), None)
     return out
@@ -472,6 +592,14 @@ def main():
         info = providers[name]
         chosen = None
         fallback = None
+        examples = [
+            (kind, snippets[f"{name}|{kind}|example"])
+            for kind in KINDS
+            if kind in kinds and f"{name}|{kind}|example" in snippets
+        ]
+        for example in examples:
+            if f"{name}|{example[0]}|example" not in ok:
+                raise SystemExit(f"the {name} {example[0]} example does not compile")
         for kind in KINDS:
             if kind not in kinds:
                 continue
@@ -492,7 +620,10 @@ def main():
                     if create in ok:
                         fallback = (kind, snippets[create])
                         break
-        write_page(name, info, kinds, chosen or fallback, chosen is None)
+        if examples:
+            write_page(name, info, kinds, examples, False)
+        else:
+            write_page(name, info, kinds, [chosen or fallback] if chosen or fallback else [], chosen is None)
         rows.append((name, kinds))
     write_index(rows)
     print(f"Wrote {len(rows)} provider pages to {os.path.relpath(OUT, ROOT)}")
@@ -529,15 +660,14 @@ def write_page(name, info, kinds, chosen, create_only=False):
         "## Example",
         "",
     ]
-    if chosen:
-        kind, snippet = chosen
+    for kind, snippet in chosen:
         lines += [f"{KIND_TITLE[kind]} model:", "", "```csharp", f"using {info['ns']};", ""]
         lines += [snippet, "```", ""]
-        if create_only:
-            lines += [
-                "This model does not plug into the shared `Generate*` helpers. Call the model through the members the API reference lists for its type.",
-                "",
-            ]
+    if create_only:
+        lines += [
+            "This model does not plug into the shared `Generate*` helpers. Call the model through the members the API reference lists for its type.",
+            "",
+        ]
     lines += ["See the [Providers](providers.md) guide for authentication and provider options.", ""]
     with open(os.path.join(OUT, slug(name) + ".md"), "w", encoding="utf-8") as handle:
         handle.write("\n".join(lines))

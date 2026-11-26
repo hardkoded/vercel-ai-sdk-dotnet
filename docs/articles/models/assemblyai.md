@@ -20,10 +20,12 @@ Speech model:
 using Vercel.AI.AssemblyAI;
 
 var model = AssemblyAIProvider.Create().Speech("assemblyai-tts-1");
+var result = await model.GenerateAsync(
+    new AssemblyAISpeechRequest("Hello from the Vercel AI SDK for .NET.") { Voice = "aai-kyla" },
+    CancellationToken.None
+);
 
-Console.WriteLine(model.ModelId);
+await File.WriteAllBytesAsync("speech.mp3", result.Audio);
 ```
-
-This model does not plug into the shared `Generate*` helpers. Call the model through the members the API reference lists for its type.
 
 See the [Providers](providers.md) guide for authentication and provider options.

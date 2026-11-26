@@ -8,7 +8,7 @@ Browse the upstream catalog of Moonshot models and their pricing on the [Vercel 
 
 | Kind | Factory method | Model ids in this port's tests and docs |
 | --- | --- | --- |
-| Language | `LanguageModel` | `kimi-k3`, `kimi-k2.5`, `kimi-k2-0905-preview` |
+| Language | `LanguageModel` | `kimi-k3`, `kimi-k2.5`, `kimi-k2-0905-preview`, `kimi-k3.1-pro` |
 
 A model id in the table is one that the tests or docs use. It is not the complete list of ids the provider accepts. Pass any id that the provider documents.
 
