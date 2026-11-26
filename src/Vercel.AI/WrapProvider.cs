@@ -23,7 +23,10 @@ public static class WrapProvider
     {
         return new WrappedProvider(
             provider ?? throw new ArgumentNullException(nameof(provider)),
-            (languageModelMiddleware ?? throw new ArgumentNullException(nameof(languageModelMiddleware))).ToArray(),
+            (
+                languageModelMiddleware
+                ?? throw new ArgumentNullException(nameof(languageModelMiddleware))
+            ).ToArray(),
             imageModelMiddleware?.ToArray()
         );
     }

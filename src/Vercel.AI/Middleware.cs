@@ -772,9 +772,7 @@ internal static class MiddlewareResults
                 file.ProviderMetadata
             ),
             GeneratedCustom custom => new CustomStreamPart(custom.Kind, custom.ProviderMetadata),
-            _ => throw new NotSupportedException(
-                "Unsupported content part: " + part.Type
-            ),
+            _ => throw new NotSupportedException("Unsupported content part: " + part.Type),
         };
 
     public static LanguageModelGenerateResult CopyResult(
@@ -839,7 +837,10 @@ public sealed class SimulateStreamingMiddleware : LanguageModelMiddleware
                     if (generatedText.Text.Length > 0 || (generatedText.Citations?.Count ?? 0) > 0)
                     {
                         var textId = id.ToString(System.Globalization.CultureInfo.InvariantCulture);
-                        yield return new TextStartStreamPart(textId, generatedText.ProviderMetadata);
+                        yield return new TextStartStreamPart(
+                            textId,
+                            generatedText.ProviderMetadata
+                        );
                         yield return new TextDeltaStreamPart(textId, generatedText.Text);
                         yield return new TextEndStreamPart(textId, generatedText.Citations);
                         id++;
@@ -847,8 +848,13 @@ public sealed class SimulateStreamingMiddleware : LanguageModelMiddleware
 
                     break;
                 case GeneratedReasoning reasoning:
-                    var reasoningId = id.ToString(System.Globalization.CultureInfo.InvariantCulture);
-                    yield return new ReasoningStartStreamPart(reasoningId, reasoning.ProviderMetadata);
+                    var reasoningId = id.ToString(
+                        System.Globalization.CultureInfo.InvariantCulture
+                    );
+                    yield return new ReasoningStartStreamPart(
+                        reasoningId,
+                        reasoning.ProviderMetadata
+                    );
                     yield return new ReasoningDeltaStreamPart(reasoningId, reasoning.Text);
                     yield return new ReasoningEndStreamPart(reasoningId);
                     id++;
@@ -990,7 +996,9 @@ public sealed class DefaultSettingsMiddleware : LanguageModelMiddleware
         var node = new System.Text.Json.Nodes.JsonObject();
         foreach (var property in defaults.EnumerateObject())
         {
-            node[property.Name] = System.Text.Json.Nodes.JsonNode.Parse(property.Value.GetRawText());
+            node[property.Name] = System.Text.Json.Nodes.JsonNode.Parse(
+                property.Value.GetRawText()
+            );
         }
 
         foreach (var property in overrides.EnumerateObject())
@@ -1019,8 +1027,9 @@ public sealed class DefaultInstructionsMiddleware : LanguageModelMiddleware
     /// <summary>Creates middleware with several system messages, kept in order.</summary>
     public DefaultInstructionsMiddleware(IEnumerable<SystemModelMessage> instructions)
     {
-        _defaults = (instructions ?? throw new ArgumentNullException(nameof(instructions)))
-            .ToList();
+        _defaults = (
+            instructions ?? throw new ArgumentNullException(nameof(instructions))
+        ).ToList();
     }
 
     /// <summary>Instructions to prepend.</summary>
@@ -1072,7 +1081,8 @@ internal sealed class MiddlewareLanguageModel : ILanguageModel
     public IReadOnlyDictionary<string, string> SupportedUrls =>
         _middleware.OverrideSupportedUrls(_inner) ?? _inner.SupportedUrls;
 
-    public string Provider => _providerId ?? _middleware.OverrideProvider(_inner) ?? _inner.Provider;
+    public string Provider =>
+        _providerId ?? _middleware.OverrideProvider(_inner) ?? _inner.Provider;
 
     public string ModelId => _modelId ?? _middleware.OverrideModelId(_inner) ?? _inner.ModelId;
 
@@ -1082,7 +1092,12 @@ internal sealed class MiddlewareLanguageModel : ILanguageModel
     )
     {
         var transformed = await _middleware
-            .TransformParamsAsync(options, LanguageModelCallType.Generate, _inner, cancellationToken)
+            .TransformParamsAsync(
+                options,
+                LanguageModelCallType.Generate,
+                _inner,
+                cancellationToken
+            )
             .ConfigureAwait(false);
         return await _middleware
             .WrapGenerateAsync(Context(transformed), cancellationToken)

@@ -108,7 +108,11 @@ public static class ImageModelMiddlewareExtensions
         }
 
         var current = model;
-        foreach (var item in (middleware ?? throw new ArgumentNullException(nameof(middleware))).Reverse())
+        foreach (
+            var item in (
+                middleware ?? throw new ArgumentNullException(nameof(middleware))
+            ).Reverse()
+        )
         {
             current = new MiddlewareImageModel(current, item, modelId, providerId);
         }
@@ -153,10 +157,8 @@ internal sealed class MiddlewareImageModel(
             .ConfigureAwait(false);
         return await middleware
             .WrapGenerateAsync(
-                new ImageModelWrapContext(
-                    transformed,
-                    inner,
-                    token => inner.DoGenerateAsync(transformed, token)
+                new ImageModelWrapContext(transformed, inner, token =>
+                    inner.DoGenerateAsync(transformed, token)
                 ),
                 cancellationToken
             )
@@ -169,7 +171,10 @@ internal sealed class MiddlewareImageModel(
     )
     {
         options = options ?? throw new ArgumentNullException(nameof(options));
-        var result = await DoGenerateAsync(options.ToModelCall(cancellationToken), cancellationToken)
+        var result = await DoGenerateAsync(
+                options.ToModelCall(cancellationToken),
+                cancellationToken
+            )
             .ConfigureAwait(false);
         var images = new List<ProviderGeneratedImage>();
         foreach (var image in result.Images)
@@ -177,7 +182,8 @@ internal sealed class MiddlewareImageModel(
             var data = image is string base64 ? Convert.FromBase64String(base64) : (byte[])image!;
             images.Add(
                 new ProviderGeneratedImage(
-                    Vercel.AI.ProviderUtils.MediaTypes.DetectMediaType(data, "image") ?? "image/png",
+                    Vercel.AI.ProviderUtils.MediaTypes.DetectMediaType(data, "image")
+                        ?? "image/png",
                     data,
                     null
                 )

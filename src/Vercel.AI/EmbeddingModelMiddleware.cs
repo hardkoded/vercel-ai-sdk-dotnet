@@ -120,9 +120,10 @@ public sealed class DefaultEmbeddingSettingsMiddleware : EmbeddingModelMiddlewar
     )
     {
         var headers = DefaultSettingsMiddleware.MergeMaps(Headers, call.Headers)!;
-        JsonElement? providerOptions = ProviderOptions is { } defaults && call.ProviderOptions is { } given
-            ? DefaultSettingsMiddleware.MergeObjects(defaults, given)
-            : call.ProviderOptions ?? ProviderOptions;
+        JsonElement? providerOptions =
+            ProviderOptions is { } defaults && call.ProviderOptions is { } given
+                ? DefaultSettingsMiddleware.MergeObjects(defaults, given)
+                : call.ProviderOptions ?? ProviderOptions;
         return Task.FromResult(
             new EmbeddingModelCall(
                 call.Values,
@@ -155,7 +156,11 @@ public static class EmbeddingModelMiddlewareExtensions
         }
 
         var current = model;
-        foreach (var item in (middleware ?? throw new ArgumentNullException(nameof(middleware))).Reverse())
+        foreach (
+            var item in (
+                middleware ?? throw new ArgumentNullException(nameof(middleware))
+            ).Reverse()
+        )
         {
             current = new MiddlewareEmbeddingModel(current, item, modelId, providerId);
         }
@@ -218,10 +223,8 @@ internal sealed class MiddlewareEmbeddingModel(
             .ConfigureAwait(false);
         return await middleware
             .WrapEmbedAsync(
-                new EmbeddingModelWrapContext(
-                    transformed,
-                    inner,
-                    token => inner.DoEmbedAsync(transformed, token)
+                new EmbeddingModelWrapContext(transformed, inner, token =>
+                    inner.DoEmbedAsync(transformed, token)
                 ),
                 cancellationToken
             )
