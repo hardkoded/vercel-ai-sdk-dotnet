@@ -29,4 +29,15 @@ var result = await GenerateImage.GenerateImageAsync(
 await File.WriteAllBytesAsync("image.png", result.Image.Data!);
 ```
 
+## Guarded transport
+
+Fal downloads the generated file from a URL in the response. Set `OpenAICompatibleOptions.DownloadFetch` (the provider `fetch` upstream) to route those downloads through a `GuardedFetch`, and pass its pinned `Client` as the provider's `HttpClient`, so API calls and downloads share validated connections. The response URL is untrusted and gets no API key.
+
+```csharp
+using var guardedFetch = new GuardedFetch(["https://fal.run"]);
+var provider = new FalProvider(
+    guardedFetch.Client,
+    new OpenAICompatibleOptions { ApiKey = key, DownloadFetch = guardedFetch });
+```
+
 See the [Providers](providers.md) guide for authentication and provider options.

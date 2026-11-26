@@ -60,7 +60,7 @@ Fetch used when a call does not pass its own. Read on each download so a replace
 
 **Value:** [DownloadFetch](/api/Vercel.AI.Util/DownloadFetch/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L293)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L314)
 
 <a id="Vercel_AI_Util_Download_IsBrowser_"></a>
 <a id="Vercel_AI_Util_Download_IsBrowser"></a>
@@ -77,7 +77,7 @@ When true, an opaque redirect is followed natively. Server runtimes leave this f
 
 **Value:** [bool](https://learn.microsoft.com/dotnet/api/system.boolean)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L298)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L319)
 
 <a id="Vercel_AI_Util_Download_UserAgent_"></a>
 <a id="Vercel_AI_Util_Download_UserAgent"></a>
@@ -94,7 +94,7 @@ User-Agent suffix sent on download requests.
 
 **Value:** [string](https://learn.microsoft.com/dotnet/api/system.string)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L301)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L322)
 
 ## Methods
 
@@ -123,7 +123,46 @@ Creates a download function with configurable options. Maps to `createDownload`.
 
 **Returns:** [CreatedDownload](/api/Vercel.AI.Util/CreatedDownload/)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L311)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L332)
+
+<a id="Vercel_AI_Util_Download_FetchUntrustedUrlAsync_"></a>
+<a id="Vercel_AI_Util_Download_FetchUntrustedUrlAsync_System_String_Vercel_AI_Util_HeaderCollection_System_String_System_Collections_Generic_IEnumerable_System_String__System_Threading_CancellationToken_System_Int32_Vercel_AI_Util_DownloadFetch_System_String_"></a>
+
+### `FetchUntrustedUrlAsync(string, HeaderCollection?, string?, IEnumerable<string>?, CancellationToken, int, DownloadFetch?, string?)`
+
+
+```csharp
+public static Task<DownloadResponse> FetchUntrustedUrlAsync(string url, HeaderCollection? headers = null, string? credentialedOrigin = null, IEnumerable<string>? untrustedFirstHopHeaders = null, CancellationToken abortSignal = default, int maxRedirects = 10, DownloadFetch? fetch = null, string? trustedOrigin = null)
+```
+
+
+Fetches an untrusted URL with first-hop credential isolation and validated redirects. Maps to `fetchUntrustedUrl`.
+Without a matching &lt;code class="paramref"&gt;credentialedOrigin&lt;/code&gt; (or &lt;code class="paramref"&gt;trustedOrigin&lt;/code&gt; when it is omitted), only
+allowlisted request metadata is sent on the first hop. Proxy, metadata, cookie, and hop-by-hop headers are sanitized even
+for a matching origin. Inject [GuardedFetch](/api/Vercel.AI.Util/GuardedFetch/) for connect-time DNS validation.
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `url` | [string](https://learn.microsoft.com/dotnet/api/system.string) | First URL to request. |
+| `headers` | [HeaderCollection](/api/Vercel.AI.Util/HeaderCollection/) | Request headers, or `null` to send none. |
+| `credentialedOrigin` | [string](https://learn.microsoft.com/dotnet/api/system.string) | The developer-configured origin allowed to receive arbitrary caller headers on the first hop. Defaults to &lt;code class="paramref"&gt;trustedOrigin&lt;/code&gt;. An explicit value takes precedence and does not exempt the URL from validation. |
+| `untrustedFirstHopHeaders` | [IEnumerable&lt;string&gt;](https://learn.microsoft.com/dotnet/api/system.collections.generic.ienumerable-1) | Additional header names, matched case-insensitively, that are safe to disclose to an untrusted first hop. Use only for non-credential protocol metadata. |
+| `abortSignal` | [CancellationToken](https://learn.microsoft.com/dotnet/api/system.threading.cancellationtoken) | Cancellation signal passed to every hop. |
+| `maxRedirects` | [int](https://learn.microsoft.com/dotnet/api/system.int32) | Largest number of redirects to follow. |
+| `fetch` | [DownloadFetch](/api/Vercel.AI.Util/DownloadFetch/) | Fetch used for every hop. Defaults to [Fetch](#Vercel_AI_Util_Download_Fetch), then the built-in fetch. |
+| `trustedOrigin` | [string](https://learn.microsoft.com/dotnet/api/system.string) | A developer-configured origin whose hops skip validation. Both origin options must come from developer configuration, never from response data. |
+
+**Returns:** [Task&lt;DownloadResponse&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1) — The final response. The caller checks [Ok](/api/Vercel.AI.Util/DownloadResponse/#Vercel_AI_Util_DownloadResponse_Ok) and reads the body.
+
+**Exceptions**
+
+| Type | Condition |
+| --- | --- |
+| [DownloadError](/api/Vercel.AI.Util/DownloadError/) | A hop is unsafe, the redirect limit is exceeded, or a redirect cannot be validated. |
+
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L535)
 
 <a id="Vercel_AI_Util_Download_FetchWithValidatedEndpointAsync_"></a>
 <a id="Vercel_AI_Util_Download_FetchWithValidatedEndpointAsync_System_String_Vercel_AI_Util_DownloadRequest_Vercel_AI_Util_DownloadFetch_System_String_System_String_System_Boolean_"></a>
@@ -158,7 +197,7 @@ Fetches one validated URL without following redirects. A redirect is rejected by
 | --- | --- |
 | [DownloadError](/api/Vercel.AI.Util/DownloadError/) | The URL is unsafe, or &lt;code class="paramref"&gt;requireDnsValidation&lt;/code&gt; is set and no custom fetch was passed. |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L503)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L592)
 
 <a id="Vercel_AI_Util_Download_FetchWithValidatedRedirectsAsync_"></a>
 <a id="Vercel_AI_Util_Download_FetchWithValidatedRedirectsAsync_System_String_Vercel_AI_Util_HeaderCollection_System_Threading_CancellationToken_System_Int32_Vercel_AI_Util_DownloadFetch_System_String_"></a>
@@ -194,7 +233,7 @@ crosses origin. Each hop gets its own copy of the headers.
 | --- | --- |
 | [DownloadError](/api/Vercel.AI.Util/DownloadError/) | A hop is unsafe, the redirect limit is exceeded, or a redirect cannot be validated. |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L469)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L490)
 
 <a id="Vercel_AI_Util_Download_GetAsync_"></a>
 <a id="Vercel_AI_Util_Download_GetAsync_System_Uri_System_Nullable_System_Int64__System_Threading_CancellationToken_Vercel_AI_Util_DownloadFetch_"></a>
@@ -220,7 +259,7 @@ Downloads &lt;code class="paramref"&gt;url&lt;/code&gt;.
 
 **Returns:** [Task&lt;DownloadResult&gt;](https://learn.microsoft.com/dotnet/api/system.threading.tasks.task-1)
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L317)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L338)
 
 <a id="Vercel_AI_Util_Download_ValidateDownloadUrl_"></a>
 <a id="Vercel_AI_Util_Download_ValidateDownloadUrl_System_String_"></a>
@@ -241,4 +280,4 @@ Throws [DownloadError](/api/Vercel.AI.Util/DownloadError/) when &lt;code class="
 | --- | --- | --- |
 | `url` | [string](https://learn.microsoft.com/dotnet/api/system.string) |  |
 
-[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L336)
+[View source](https://github.com/hardkoded/vercel-ai-sdk-dotnet/blob/main/src/Vercel.AI/Util/Download.cs#L357)
