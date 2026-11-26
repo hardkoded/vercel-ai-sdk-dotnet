@@ -42,6 +42,7 @@
         <Project Path="examples/GenerateImageGatewayStreamingDecoding/GenerateImageGatewayStreamingDecoding.csproj" />
         <Project Path="examples/GenerateVertexAnthropicOutputObjectNative/GenerateVertexAnthropicOutputObjectNative.csproj" />
         <Project Path="examples/StreamVertexAnthropicOutputObjectNative/StreamVertexAnthropicOutputObjectNative.csproj" />
+        <Project Path="examples/StreamVertexFunctionCallArgsEmptyContainers/StreamVertexFunctionCallArgsEmptyContainers.csproj" />
         <Project Path="examples/GenerateText/GenerateText.csproj" />
         <Project Path="examples/GenerateTextCerebrasServiceTier/GenerateTextCerebrasServiceTier.csproj" />
         <Project Path="examples/GenerateVideoHeyGenLongClip/GenerateVideoHeyGenLongClip.csproj" />

@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <Description>Streams a Vertex tool call whose arguments contain empty arrays, objects, and falsy values.</Description>
+    </PropertyGroup>
+</Project>
