@@ -108,7 +108,12 @@ public static class ByteDanceServiceCollectionExtensions
         Action<OpenAICompatibleOptions>? configure = null
     )
     {
-        services.AddHttpClient(ByteDanceProvider.ProviderId);
+        // Redirects are followed by hand so a status poll cannot be bounced to a private address.
+        services
+            .AddHttpClient(ByteDanceProvider.ProviderId)
+            .ConfigurePrimaryHttpMessageHandler(() =>
+                new HttpClientHandler { AllowAutoRedirect = false }
+            );
         services.AddSingleton(sp =>
         {
             var options = new OpenAICompatibleOptions();

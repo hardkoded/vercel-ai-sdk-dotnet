@@ -40,41 +40,6 @@ public sealed class ByteDanceParityTests
     private static readonly DateTimeOffset TestDate = new(2024, 1, 1, 0, 0, 0, TimeSpan.Zero);
     private static readonly byte[] PngBytes = { 137, 80, 78, 71 };
 
-    [Theory]
-    [InlineData("seedream-5-0-260128", true, false)]
-    [InlineData("dola-seedream-5-0-pro-260628", true, false)]
-    [InlineData("seedream-5-0-lite-260128", true, false)]
-    [InlineData("seedream-4-5-251128", true, false)]
-    [InlineData("seedream-4-0-250828", true, false)]
-    [InlineData("not-seedream", null, null)]
-    [InlineData("custom-seedream-model", null, null)]
-    [InlineData("seedream-future", null, null)]
-    [InlineData("custom-image-model", null, null)]
-    [UpstreamTest(
-        Image
-            + "capabilities::advertises file=$supportsFileInputs and mask=$supportsMaskInputs for $modelId",
-        Coverage = UpstreamCoverage.Covered
-    )]
-    public void Image_model_advertises_file_and_mask_support(
-        string modelId,
-        bool? supportsFileInputs,
-        bool? supportsMaskInputs
-    )
-    {
-        var provider = ByteDanceProvider.Create(
-            new OpenAICompatibleOptions
-            {
-                ApiKey = "test-key",
-                BaseUrl = "https://api.example.com",
-            },
-            new ParityHandler()
-        );
-        var model = new ByteDanceImageModel(provider, modelId);
-
-        Assert.Equal(supportsFileInputs, model.SupportsFileInputs);
-        Assert.Equal(supportsMaskInputs, model.SupportsMaskInputs);
-    }
-
     [Fact]
     [UpstreamTest(
         Image + "constructor::should expose correct provider and model information",

@@ -1334,7 +1334,7 @@ Credentials go to the polling URL only when it is on the provider origin or an h
 
 `ByteDanceImageModel.SupportsFileInputs` is `true` for the known Seedream ids (`dola-seedream-5-0-pro-260628`, `seedream-5-0-260128`, `seedream-5-0-lite-260128`, `seedream-4-5-251128`, `seedream-4-0-250828`) and `null` for any other id. `SupportsMaskInputs` is `false` when `SupportsFileInputs` is `true`, and `null` otherwise. An HTTP error from the image model throws an `ApiException` whose `Url` is the request URL.
 
-The configured ByteDance base URL is trusted for the video status request. Every redirect to another origin is validated before it is followed (private addresses and non-http(s) schemes throw `DownloadError`). `ByteDanceProvider.Create` turns off automatic redirects on a supplied handler for that reason.
+The configured ByteDance base URL is trusted for the video status request. Every redirect to another origin is validated before it is followed (private addresses and non-http(s) schemes throw `DownloadError`). `ByteDanceProvider.Create` and `AddByteDance` turn off automatic redirects for that reason. A client you pass to the `ByteDanceProvider` constructor is used as is, so it must not follow redirects on its own.
 
 ## fal image models
 
