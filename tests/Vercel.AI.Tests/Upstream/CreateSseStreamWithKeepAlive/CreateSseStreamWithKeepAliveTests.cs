@@ -33,8 +33,7 @@ public sealed class CreateSseStreamWithKeepAliveTests
 
     [Fact]
     [UpstreamTest(
-        Prefix
-            + "should send an opening comment immediately and comments while the source is idle",
+        Prefix + "should send an opening comment immediately and comments while the source is idle",
         Coverage = UpstreamCoverage.Covered
     )]
     public async Task Should_send_an_opening_comment_immediately_and_comments_while_the_source_is_idle()
@@ -80,9 +79,7 @@ public sealed class CreateSseStreamWithKeepAliveTests
     public async Task Should_reset_the_keep_alive_timer_after_source_activity()
     {
         ReadableStreamController<string> sourceController = null!;
-        var stream = new ReadableStream<string>(start: controller =>
-            sourceController = controller
-        );
+        var stream = new ReadableStream<string>(start: controller => sourceController = controller);
         var reader = UIMessageStreamResult.CreateSseStreamWithKeepAlive(stream, 600).GetReader();
 
         await Next(reader);

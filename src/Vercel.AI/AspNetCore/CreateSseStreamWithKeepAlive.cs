@@ -37,7 +37,6 @@ public sealed partial class UIMessageStreamResult
         return KeepAlive(source, keepAliveMs.Value, cancellationToken);
     }
 
-
     private static readonly TimeSpan SourceStopGrace = TimeSpan.FromSeconds(1);
 
     private static async IAsyncEnumerable<string> KeepAlive(

@@ -51,8 +51,6 @@ public static partial class UIMessageStreamConverter
         var lastMessage =
             originalMessages.Count > 0 ? originalMessages[originalMessages.Count - 1] : null;
 
-        return lastMessage?.Role == UIMessageRole.Assistant
-            ? lastMessage.Id
-            : responseMessageId();
+        return lastMessage?.Role == UIMessageRole.Assistant ? lastMessage.Id : responseMessageId();
     }
 }

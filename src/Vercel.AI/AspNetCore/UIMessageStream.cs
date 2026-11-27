@@ -175,7 +175,6 @@ public static class UIMessageStreamExtensions
 /// <summary>SSE result for the AI SDK UI message protocol.</summary>
 public sealed partial class UIMessageStreamResult : IResult
 {
-
     internal static readonly IReadOnlyDictionary<string, string> ProtocolHeaders = new Dictionary<
         string,
         string
