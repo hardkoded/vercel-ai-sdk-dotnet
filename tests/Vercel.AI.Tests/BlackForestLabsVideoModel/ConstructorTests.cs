@@ -28,7 +28,8 @@ public sealed class ConstructorTests
     [Fact]
     [UpstreamTest(
         "packages/black-forest-labs/src/black-forest-labs-video-model.test.ts::BlackForestLabsVideoModel > constructor::should support workflow serialization",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Partial,
+        Note = "Upstream asserts headers { x-key: test-key } and compares the whole serialized object. The port omits the API key from the serialized config on purpose."
     )]
     public void ShouldSupportWorkflowSerialization()
     {
