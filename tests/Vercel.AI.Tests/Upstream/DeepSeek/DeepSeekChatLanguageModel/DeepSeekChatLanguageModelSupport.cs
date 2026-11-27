@@ -188,7 +188,7 @@ internal static class DeepSeekChatLanguageModelSupport
         );
     }
 
-    /// <summary>Checks the <c>setting</c> of each <c>deprecated</c> warning, in order.</summary>
+    /// <summary>Checks the <c>setting</c> of each <c>deprecated</c> warning, in order, and that no other warning has one.</summary>
     internal static void AssertDeprecatedSettings(
         LanguageModelGenerateResult result,
         params string[] expected
@@ -200,6 +200,9 @@ internal static class DeepSeekChatLanguageModelSupport
                 .Warnings.Where(warning => warning.Type == "deprecated")
                 .Select(warning => warning.Setting)
                 .ToArray()
+        );
+        Assert.All(result.Warnings.Where(warning => warning.Type != "deprecated"), warning =>
+            Assert.Null(warning.Setting)
         );
     }
 
