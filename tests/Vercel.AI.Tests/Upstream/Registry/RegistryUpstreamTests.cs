@@ -5,6 +5,7 @@
 using System.Text.Json;
 using Vercel.AI.Provider;
 using Vercel.AI.Testing;
+using Vercel.AI.Tests.Upstream.Middleware;
 using Vercel.AI.Util;
 
 namespace Vercel.AI.Tests;
@@ -331,8 +332,7 @@ public sealed class RegistryUpstreamTests
     [UpstreamTest(
         Registry
             + "middleware functionality::should wrap all language models accessed through the provider registry",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Middleware has no overrideModelId. Checks that each model's generate call runs through the middleware."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Registry_wraps_every_language_model_with_its_middleware()
     {
@@ -352,16 +352,14 @@ public sealed class RegistryUpstreamTests
         foreach (var id in new[] { "provider1:model-1", "provider1:model-2", "provider2:model-3" })
         {
             var wrapped = registry.LanguageModel(id);
-            Assert.NotSame(
-                models.Single(model => id.EndsWith(model.ModelId, StringComparison.Ordinal)),
-                wrapped
-            );
+            Assert.Equal("override-" + id.Split(':')[1], wrapped.ModelId);
             await wrapped
                 .DoGenerateAsync(new LanguageModelCallOptions(), CancellationToken.None)
                 .ConfigureAwait(false);
         }
 
         Assert.Equal(3, middleware.Calls);
+        Assert.Equal(models, middleware.OverriddenModels);
         Assert.All(models, model => Assert.Single(model.Calls));
     }
 
@@ -584,6 +582,85 @@ public sealed class RegistryUpstreamTests
         Assert.Throws<AiSdkException>(() => new CustomProvider().SkillStore());
     }
 
+    [Theory]
+    [InlineData("__proto__")]
+    [InlineData("constructor")]
+    [InlineData("toString")]
+    [UpstreamTest(
+        Registry + "languageModel::does not resolve unregistered inherited provider %s",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void Registry_does_not_resolve_unregistered_inherited_provider(string providerName)
+    {
+        var registry = new ProviderRegistry();
+        Assert.Throws<NoSuchProviderError>(() => registry.LanguageModel(providerName + ":model"));
+    }
+
+    [Theory]
+    [InlineData("__proto__")]
+    [InlineData("constructor")]
+    [InlineData("toString")]
+    [UpstreamTest(
+        Registry + "languageModel::registers provider %s without exposing its members as providers",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void Registry_registers_provider_without_exposing_its_members_as_providers(
+        string providerName
+    )
+    {
+        var model = new TestLanguageModel();
+        var registry = new ProviderRegistry();
+        registry.Register(providerName, new StubProvider(model));
+
+        Assert.Same(model, registry.LanguageModel(providerName + ":model"));
+        Assert.Throws<NoSuchProviderError>(() => registry.LanguageModel("languageModel:model"));
+        var error = Assert.Throws<NoSuchProviderError>(() =>
+            registry.LanguageModel("missing:model")
+        );
+        Assert.Equal(new[] { providerName }, error.AvailableProviders);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Registry
+            + "middleware functionality::should wrap all image models accessed through the provider registry",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void Registry_wraps_every_image_model_with_its_middleware()
+    {
+        var models = new[]
+        {
+            new MockImageModel { ModelId = "model-1" },
+            new MockImageModel { ModelId = "model-2" },
+            new MockImageModel { ModelId = "model-3" },
+        };
+        var middleware = new OverrideIdMiddleware();
+        var registry = new ProviderRegistry { ImageModelMiddleware = new[] { middleware } };
+        registry.Register(
+            "provider1",
+            new CustomProvider()
+                .AddImageModel("model-1", models[0])
+                .AddImageModel("model-2", models[1])
+        );
+        registry.Register("provider2", new CustomProvider().AddImageModel("model-3", models[2]));
+
+        Assert.Equal("override-model-1", registry.ImageModel("provider1:model-1").ModelId);
+        Assert.Equal("override-model-2", registry.ImageModel("provider1:model-2").ModelId);
+        Assert.Equal("override-model-3", registry.ImageModel("provider2:model-3").ModelId);
+        Assert.Equal(new[] { models[0], models[1], models[2] }, middleware.Models);
+    }
+
+    private sealed class OverrideIdMiddleware : ImageModelMiddleware
+    {
+        public List<Vercel.AI.Operations.IImageCaller> Models { get; } = new();
+
+        public override string? OverrideModelId(Vercel.AI.Operations.IImageCaller model)
+        {
+            Models.Add(model);
+            return "override-" + model.ModelId;
+        }
+    }
+
     private static object Resolve(ProviderRegistry registry, string modelType, string id)
     {
         return modelType switch
@@ -768,6 +845,14 @@ public sealed class RegistryUpstreamTests
     private sealed class RecordingMiddleware : LanguageModelMiddleware
     {
         public int Calls { get; private set; }
+
+        public List<ILanguageModel> OverriddenModels { get; } = new();
+
+        public override string? OverrideModelId(ILanguageModel model)
+        {
+            OverriddenModels.Add(model);
+            return "override-" + model.ModelId;
+        }
 
         public override Task<LanguageModelGenerateResult> WrapGenerateAsync(
             LanguageModelWrapContext context,
