@@ -664,6 +664,330 @@ public sealed class ToUIMessageStreamTests
         Assert.Equal(0, onFinishCalls);
     }
 
+    private static readonly TextStreamPart FinishStop = new FinishPart(
+        FinishReason.Stop,
+        new LanguageModelUsage(1, 1, 2)
+    );
+
+    private static void AssertChunks(string expectedJson, JsonArray chunks)
+    {
+        Assert.True(
+            JsonNode.DeepEquals(JsonNode.Parse(expectedJson), chunks),
+            chunks.ToJsonString()
+        );
+    }
+
+    private static Func<UIMessageStreamOnEndEvent, Task> Record(
+        List<UIMessageStreamOnEndEvent> events
+    ) =>
+        onEndEvent =>
+        {
+            events.Add(onEndEvent);
+            return Task.CompletedTask;
+        };
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "awaits the UI callback before delivering finish-step",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Awaits_the_UI_callback_before_delivering_finish_step()
+    {
+        var callbackStarted = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
+        var callbackFinished = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
+        await using var enumerator = UIMessageStreamConverter
+            .ToUIMessageStream(
+                ToAsync([new StartPart(), TestStep]),
+                new UIMessageStreamOptions
+                {
+                    OnStepEnd = async _ =>
+                    {
+                        callbackStarted.SetResult();
+                        await callbackFinished.Task;
+                    },
+                }
+            )
+            .GetAsyncEnumerator();
+
+        Assert.True(await enumerator.MoveNextAsync());
+        Assert.Equal("""{"type":"start"}""", enumerator.Current.ToJsonString());
+
+        var nextRead = enumerator.MoveNextAsync().AsTask();
+        await callbackStarted.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        await Task.Delay(50);
+        Assert.False(nextRead.IsCompleted);
+
+        callbackFinished.SetResult();
+        Assert.True(await nextRead.WaitAsync(TimeSpan.FromSeconds(10)));
+        Assert.Equal("""{"type":"finish-step"}""", enumerator.Current.ToJsonString());
+        Assert.False(await enumerator.MoveNextAsync());
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "maps text and lifecycle parts to UI message chunks",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Maps_text_and_lifecycle_parts_to_UI_message_chunks()
+    {
+        var chunks = await Convert([
+            new StartPart(),
+            new StartStepPart(),
+            new TextStartPart("t1"),
+            new TextDeltaPart("t1", "Hello"),
+            new TextDeltaPart("t1", ", world!"),
+            new TextEndPart("t1"),
+            TestStep,
+            FinishStop,
+        ]);
+
+        AssertChunks(
+            """
+            [
+              {"type":"start"},
+              {"type":"start-step"},
+              {"type":"text-start","id":"t1"},
+              {"type":"text-delta","id":"t1","delta":"Hello"},
+              {"type":"text-delta","id":"t1","delta":", world!"},
+              {"type":"text-end","id":"t1"},
+              {"type":"finish-step"},
+              {"type":"finish","finishReason":"stop"}
+            ]
+            """,
+            chunks
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "suppresses start/finish chunks when sendStart/sendFinish are false",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Suppresses_start_finish_chunks_when_sendStart_sendFinish_are_false()
+    {
+        var chunks = await Convert(
+            [new StartPart(), new TextStartPart("t1"), new TextEndPart("t1"), FinishStop],
+            new UIMessageStreamOptions { SendStart = false, SendFinish = false }
+        );
+
+        AssertChunks("""[{"type":"text-start","id":"t1"},{"type":"text-end","id":"t1"}]""", chunks);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "skips reasoning parts when sendReasoning is false",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Skips_reasoning_parts_when_sendReasoning_is_false()
+    {
+        var chunks = await Convert(
+            [
+                new ReasoningStartPart("r1"),
+                new ReasoningDeltaPart("r1", "thinking"),
+                new ReasoningEndPart("r1"),
+            ],
+            new UIMessageStreamOptions { SendReasoning = false }
+        );
+
+        Assert.Empty(chunks);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "reports the source outcome to onEnd",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Reports_the_source_outcome_to_onEnd()
+    {
+        async Task<(UIMessageStreamOutcomeStatus Status, string? ErrorMessage)> Observe(
+            params TextStreamPart[] parts
+        )
+        {
+            var onEndEvents = new List<UIMessageStreamOnEndEvent>();
+            await Convert(parts, new UIMessageStreamOptions { OnEnd = Record(onEndEvents) });
+
+            var outcome = onEndEvents[0].Outcome;
+            return (
+                outcome.Status,
+                outcome.Status == UIMessageStreamOutcomeStatus.Failed
+                    ? outcome.Error?.Message
+                    : null
+            );
+        }
+
+        var abortPart = new AbortPart("user cancelled");
+        var errorPart = new ErrorPart("generation failed")
+        {
+            Error = new JsError("generation failed"),
+        };
+
+        Assert.Equal((UIMessageStreamOutcomeStatus.Aborted, null), await Observe(abortPart));
+        Assert.Equal((UIMessageStreamOutcomeStatus.Completed, null), await Observe(FinishStop));
+        Assert.Equal(
+            (UIMessageStreamOutcomeStatus.Failed, "generation failed"),
+            await Observe(errorPart)
+        );
+        Assert.Equal((UIMessageStreamOutcomeStatus.Unknown, null), await Observe());
+        Assert.Equal(
+            (UIMessageStreamOutcomeStatus.Completed, null),
+            await Observe(FinishStop, errorPart)
+        );
+        Assert.Equal(
+            (UIMessageStreamOutcomeStatus.Completed, null),
+            await Observe(errorPart, FinishStop)
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "reports an errored source stream as failed exactly once",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "The source is an IAsyncEnumerable: disposal of its enumerator stands in for upstream's sourceStream.locked check."
+    )]
+    public async Task Reports_an_errored_source_stream_as_failed_exactly_once()
+    {
+        var sourceError = new JsError("source stream failed");
+        var onEndEvents = new List<UIMessageStreamOnEndEvent>();
+        var sourceReleased = false;
+
+        async IAsyncEnumerable<TextStreamPart> Source()
+        {
+            try
+            {
+                await Task.Yield();
+                throw sourceError;
+            }
+            finally
+            {
+                sourceReleased = true;
+            }
+#pragma warning disable CS0162
+            yield break;
+#pragma warning restore CS0162
+        }
+
+        var stream = UIMessageStreamConverter.ToUIMessageStream(
+            Source(),
+            new UIMessageStreamOptions { OnEnd = Record(onEndEvents) }
+        );
+
+        var thrown = await Assert.ThrowsAsync<JsError>(async () =>
+        {
+            await foreach (var unused in stream) { }
+        });
+        Assert.Same(sourceError, thrown);
+
+        var onEnd = Assert.Single(onEndEvents);
+        Assert.Equal(UIMessageStreamOutcomeStatus.Failed, onEnd.Outcome.Status);
+        Assert.Same(sourceError, onEnd.Outcome.Error);
+        Assert.True(sourceReleased);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "releases the source reader lock after completion",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "The source is an IAsyncEnumerable: disposal of its enumerator stands in for upstream's sourceStream.locked check."
+    )]
+    public async Task Releases_the_source_reader_lock_after_completion()
+    {
+        var sourceReleased = false;
+
+        async IAsyncEnumerable<TextStreamPart> Source()
+        {
+            try
+            {
+                await Task.Yield();
+                yield break;
+            }
+            finally
+            {
+                sourceReleased = true;
+            }
+        }
+
+        await foreach (var unused in UIMessageStreamConverter.ToUIMessageStream(Source())) { }
+
+        Assert.True(sourceReleased);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "releases the source reader lock after cancellation",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "The source is an IAsyncEnumerable: disposal of its enumerator stands in for upstream's sourceStream.locked check."
+    )]
+    public async Task Releases_the_source_reader_lock_after_cancellation()
+    {
+        var onEndEvents = new List<UIMessageStreamOnEndEvent>();
+        var sourceReleased = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
+
+        async IAsyncEnumerable<TextStreamPart> Source()
+        {
+            try
+            {
+                yield return new StartPart();
+                await Task.Delay(Timeout.Infinite);
+            }
+            finally
+            {
+                sourceReleased.TrySetResult();
+            }
+        }
+
+        var enumerator = UIMessageStreamConverter
+            .ToUIMessageStream(Source(), new UIMessageStreamOptions { OnEnd = Record(onEndEvents) })
+            .GetAsyncEnumerator();
+
+        Assert.True(await enumerator.MoveNextAsync());
+        await enumerator.DisposeAsync(); // the consumer cancels
+
+        await sourceReleased.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        var onEnd = Assert.Single(onEndEvents);
+        Assert.False(onEnd.IsAborted);
+        Assert.True(onEnd.IsCancelled);
+        Assert.Equal(UIMessageStreamOutcomeStatus.Unknown, onEnd.Outcome.Status);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "does not let an earlier finish part hide a source stream failure",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Does_not_let_an_earlier_finish_part_hide_a_source_stream_failure()
+    {
+        var sourceError = new JsError("source stream failed after finish");
+        var onEndEvents = new List<UIMessageStreamOnEndEvent>();
+
+        async IAsyncEnumerable<TextStreamPart> Source()
+        {
+            yield return FinishStop;
+            await Task.Yield();
+            throw sourceError;
+        }
+
+        var stream = UIMessageStreamConverter.ToUIMessageStream(
+            Source(),
+            new UIMessageStreamOptions { OnEnd = Record(onEndEvents) }
+        );
+
+        var thrown = await Assert.ThrowsAsync<JsError>(async () =>
+        {
+            await foreach (var unused in stream) { }
+        });
+        Assert.Same(sourceError, thrown);
+
+        var onEnd = Assert.Single(onEndEvents);
+        Assert.Equal(UIMessageStreamOutcomeStatus.Failed, onEnd.Outcome.Status);
+        Assert.Same(sourceError, onEnd.Outcome.Error);
+    }
+
     private static readonly TextStreamPart TestStep = new StepFinishPart(
         new StepResult("", null, [], [], FinishReason.Stop, new LanguageModelUsage(1, 1, 2), []),
         new LanguageModelResponseMetadata(
