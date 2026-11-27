@@ -184,7 +184,10 @@ public sealed class AnthropicEvaluationModel : IRubricModel
         if (_provider.Options.TransformRequestBody != null)
         {
             prepared = new AnthropicPreparedRequest(
-                _provider.Options.TransformRequestBody(prepared.Body),
+                _provider.Options.TransformRequestBody(
+                    prepared.Body,
+                    new HashSet<string>(prepared.Betas, StringComparer.Ordinal)
+                ),
                 prepared.Warnings,
                 prepared.Betas,
                 prepared.UsesJsonResponseTool,

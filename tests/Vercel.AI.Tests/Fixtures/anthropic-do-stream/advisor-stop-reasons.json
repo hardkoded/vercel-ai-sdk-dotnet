@@ -1,0 +1,22 @@
+[
+ {
+  "result": {
+   "stopReason": "max_tokens",
+   "text": "Partial plaintext advice.",
+   "type": "advisor_result"
+  },
+  "toolCallId": "srvtoolu_advisor_plaintext",
+  "toolName": "advisor",
+  "type": "tool-result"
+ },
+ {
+  "result": {
+   "encryptedContent": "opaque-encrypted-advice",
+   "stopReason": "end_turn",
+   "type": "advisor_redacted_result"
+  },
+  "toolCallId": "srvtoolu_advisor_redacted",
+  "toolName": "advisor",
+  "type": "tool-result"
+ }
+]

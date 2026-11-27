@@ -608,15 +608,17 @@ public static class AnthropicToolPreparer
                 || Math.Abs(maxTokens.GetDouble() - integer) > 0.0000001
             )
             {
-                throw new Vercel.AI.Provider.AiSdkException(
-                    "advisor_20260301 maxTokens must be an integer."
+                throw new Vercel.AI.ProviderUtils.TypeValidationException(
+                    "advisor_20260301 maxTokens must be an integer.",
+                    maxTokens
                 );
             }
 
             if (integer < 1024)
             {
-                throw new Vercel.AI.Provider.AiSdkException(
-                    "advisor_20260301 maxTokens must be at least 1024."
+                throw new Vercel.AI.ProviderUtils.TypeValidationException(
+                    "advisor_20260301 maxTokens must be at least 1024.",
+                    maxTokens
                 );
             }
         }

@@ -48,8 +48,8 @@ public class AnthropicOptions
     public Dictionary<string, string?> Headers { get; private set; } =
         new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
 
-    /// <summary>Optional rewrite of the JSON body before it is sent.</summary>
-    public Func<JsonObject, JsonObject>? TransformRequestBody { get; set; }
+    /// <summary>Optional rewrite of the JSON body before it is sent. Receives the body and the betas of the request.</summary>
+    public Func<JsonObject, ISet<string>, JsonObject>? TransformRequestBody { get; set; }
 
     /// <summary>Optional rewrite of the combined request headers. Receives the call's provider options and returns the headers to send.</summary>
     public Func<
@@ -327,7 +327,12 @@ public class AnthropicProvider
         IReadOnlyList<string> betas
     )
     {
-        return Options.TransformRequestBody == null ? body : Options.TransformRequestBody(body);
+        return Options.TransformRequestBody == null
+            ? body
+            : Options.TransformRequestBody(
+                body,
+                new HashSet<string>(betas, StringComparer.Ordinal)
+            );
     }
 
     /// <summary>False when the host does not accept the native output format. Structured output then uses the JSON tool.</summary>
@@ -669,6 +674,49 @@ public class AnthropicLanguageModel : ILanguageModel
             );
     }
 
+    // Maps extractCitationDocuments.
+    private static IReadOnlyList<CitationDocument> ExtractCitationDocuments(
+        IReadOnlyList<ModelMessage> prompt
+    )
+    {
+        var documents = new List<CitationDocument>();
+        foreach (var message in prompt)
+        {
+            if (message is not UserModelMessage user)
+            {
+                continue;
+            }
+
+            foreach (var part in user.Content)
+            {
+                if (
+                    part is not FileContentPart file
+                    || (file.MediaType != "application/pdf" && file.MediaType != "text/plain")
+                    || file.ProviderOptions == null
+                    || !file.ProviderOptions.TryGetValue("anthropic", out var anthropic)
+                    || anthropic.ValueKind != JsonValueKind.Object
+                    || !anthropic.TryGetProperty("citations", out var citations)
+                    || citations.ValueKind != JsonValueKind.Object
+                    || !citations.TryGetProperty("enabled", out var enabled)
+                    || enabled.ValueKind != JsonValueKind.True
+                )
+                {
+                    continue;
+                }
+
+                documents.Add(
+                    new CitationDocument(
+                        file.FileName ?? "Untitled Document",
+                        file.FileName,
+                        file.MediaType
+                    )
+                );
+            }
+        }
+
+        return documents;
+    }
+
     /// <inheritdoc />
     public virtual async Task<LanguageModelGenerateResult> DoGenerateAsync(
         LanguageModelCallOptions options,
@@ -699,13 +747,19 @@ public class AnthropicLanguageModel : ILanguageModel
             MarkCodeExecutionDynamic = prepared.MarkCodeExecutionDynamic,
             PreparedTools = prepared.PreparedTools,
             ComputerToolsetName = prepared.ComputerToolsetName,
+            CitationDocuments = ExtractCitationDocuments(options.Prompt),
         };
         foreach (var pair in prepared.ToolNames)
         {
             context.ToolNames[pair.Key] = pair.Value;
         }
 
-        return AnthropicResponse.Parse(response.Body, context, response.Headers);
+        return AnthropicResponse.Parse(
+            response.Body,
+            context,
+            response.Headers,
+            LanguageModelStreamRequest.FromJson(body)
+        );
     }
 
     /// <inheritdoc />
@@ -737,7 +791,13 @@ public class AnthropicLanguageModel : ILanguageModel
                 )
                 .ConfigureAwait(false);
             return sse.ToStreamResult(
-                StreamAsync(options, prepared, events, cancellationToken),
+                StreamAsync(
+                    options,
+                    prepared,
+                    events,
+                    _provider.Options.GenerateId,
+                    cancellationToken
+                ),
                 body
             );
         }
@@ -805,7 +865,11 @@ public class AnthropicLanguageModel : ILanguageModel
                     throw ProviderHttp.MapStatusWithHeaders(
                         statusCode,
                         message,
-                        error.ToJsonString(),
+                        new JsonObject
+                        {
+                            ["type"] = errorType,
+                            ["message"] = message,
+                        }.ToJsonString(),
                         sse.Headers,
                         url.ToString(),
                         requestBodyValues
@@ -847,10 +911,11 @@ public class AnthropicLanguageModel : ILanguageModel
         }
     }
 
-    private static async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(
+    private async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(
         LanguageModelCallOptions options,
         AnthropicPreparedRequest prepared,
         IAsyncEnumerable<string> events,
+        Func<string>? generateId,
         [EnumeratorCancellation] CancellationToken cancellationToken
     )
     {
@@ -867,6 +932,8 @@ public class AnthropicLanguageModel : ILanguageModel
             PreparedTools = prepared.PreparedTools,
             ComputerToolsetName = prepared.ComputerToolsetName,
             IncludePings = prepared.IncludePings,
+            GenerateId = generateId,
+            CitationDocuments = ExtractCitationDocuments(options.Prompt),
         };
         await foreach (var data in events.WithCancellation(cancellationToken).ConfigureAwait(false))
         {
@@ -918,7 +985,8 @@ public class AnthropicLanguageModel : ILanguageModel
             Provider,
             _provider.SupportsNativeStructuredOutputFor(ModelId),
             _provider.SupportsStrictTools,
-            _settings
+            _settings,
+            _provider.Options.Headers
         );
         var transformed = _provider.TransformRequestBody(prepared.Body, prepared.Betas);
         if (ReferenceEquals(transformed, prepared.Body) && callWarnings.Count == 0)

@@ -273,6 +273,11 @@ public sealed class AnthropicLanguageModelClaudeOpus55SpecificBehaviorTests
         Coverage = UpstreamCoverage.Covered,
         Commit = "84208104a4eac2dcc84ef0973ac47d4f9c84088c"
     )]
+    [UpstreamTest(
+        Prefix
+            + "should use auto tool choice for claude-fable-5-1 when tool choice is \"required\"",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_use_auto_tool_choice_for_model_when_tool_choice_is_required(
         string modelId
     )

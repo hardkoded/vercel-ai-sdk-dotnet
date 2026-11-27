@@ -1,0 +1,7 @@
+{
+ "input": "{}",
+ "providerExecuted": true,
+ "toolCallId": "srvtoolu_01R6zRtm9VnRaSJUVkGK9zvM",
+ "toolName": "advisor",
+ "type": "tool-call"
+}

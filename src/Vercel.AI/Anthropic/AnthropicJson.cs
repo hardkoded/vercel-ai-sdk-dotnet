@@ -11,6 +11,13 @@ namespace Vercel.AI.Anthropic;
 /// <summary>JSON helpers for Anthropic request and response bodies.</summary>
 internal static class AnthropicJson
 {
+    private static readonly System.Text.RegularExpressions.Regex s_surrogatePair = new(
+        @"(?<!\\)((?:\\\\)*)\\u(D[89AB][0-9A-F]{2})\\u(D[C-F][0-9A-F]{2})",
+        System.Text.RegularExpressions.RegexOptions.IgnoreCase
+            | System.Text.RegularExpressions.RegexOptions.CultureInvariant,
+        TimeSpan.FromSeconds(1)
+    );
+
     public static JsonObject Object()
     {
         return new JsonObject();
@@ -176,14 +183,53 @@ internal static class AnthropicJson
         return JsonNode.Parse(element.GetRawText()) ?? new JsonObject();
     }
 
+    // Maps JSON.stringify: no whitespace, and non-ASCII text is not escaped.
     public static string Compact(JsonNode node)
     {
-        return node.ToJsonString();
+        return UnescapeSurrogatePairs(
+            node.ToJsonString(
+                new JsonSerializerOptions
+                {
+                    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                }
+            )
+        );
     }
 
+    // Maps JSON.stringify: no whitespace, and non-ASCII text is not escaped.
     public static string Compact(JsonElement element)
     {
-        return element.GetRawText();
+        using var stream = new System.IO.MemoryStream();
+        using (
+            var writer = new Utf8JsonWriter(
+                stream,
+                new JsonWriterOptions
+                {
+                    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                }
+            )
+        )
+        {
+            element.WriteTo(writer);
+        }
+
+        return UnescapeSurrogatePairs(System.Text.Encoding.UTF8.GetString(stream.ToArray()));
+    }
+
+    // The encoder of System.Text.Json always escapes characters outside the basic plane, such as emoji.
+    // JSON.stringify keeps them. An escape that follows an odd number of backslashes is text, not an escape.
+    private static string UnescapeSurrogatePairs(string json)
+    {
+        return s_surrogatePair.Replace(json, match =>
+            match.Groups[1].Value
+            + new string(
+                new[]
+                {
+                    (char)System.Convert.ToInt32(match.Groups[2].Value, 16),
+                    (char)System.Convert.ToInt32(match.Groups[3].Value, 16),
+                }
+            )
+        );
     }
 
     public static bool LooksLikeUrl(string value)

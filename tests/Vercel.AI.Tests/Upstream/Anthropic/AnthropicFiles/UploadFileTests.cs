@@ -13,6 +13,8 @@ public sealed class UploadFileTests
 {
     private const string Prefix =
         "packages/anthropic/src/files/anthropic-files.test.ts::AnthropicFiles > uploadFile::";
+    private const string CatalogPrefix =
+        "packages/anthropic/src/anthropic-files.test.ts::AnthropicFiles > uploadFile::";
     private const string Commit = "8b11ff6eb6302564cf4c2cabd67420f0f04cda05";
     private static readonly byte[] Bytes = [1, 2, 3];
 
@@ -21,6 +23,10 @@ public sealed class UploadFileTests
         Prefix + "sends POST to /v1/files with correct beta header",
         Coverage = UpstreamCoverage.Covered,
         Commit = Commit
+    )]
+    [UpstreamTest(
+        CatalogPrefix + "sends POST to /v1/files with correct beta header",
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Sends_POST_to_v1_files_with_correct_beta_header()
     {
@@ -69,6 +75,10 @@ public sealed class UploadFileTests
         Coverage = UpstreamCoverage.Covered,
         Commit = Commit
     )]
+    [UpstreamTest(
+        CatalogPrefix + "threads per-call headers and abortSignal",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Threads_per_call_headers_and_abortSignal()
     {
         var (files, handler) = FilesFixture.Json(FilesFixture.Metadata);
@@ -105,6 +115,7 @@ public sealed class UploadFileTests
         Coverage = UpstreamCoverage.Covered,
         Commit = Commit
     )]
+    [UpstreamTest(CatalogPrefix + "sends x-api-key header", Coverage = UpstreamCoverage.Covered)]
     public async Task Sends_x_api_key_header()
     {
         var (files, handler) = FilesFixture.Json(FilesFixture.Metadata);
@@ -172,6 +183,10 @@ public sealed class UploadFileTests
         Coverage = UpstreamCoverage.Covered,
         Commit = Commit
     )]
+    [UpstreamTest(
+        CatalogPrefix + "sends multipart form data with file",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Sends_multipart_form_data_with_file()
     {
         var (files, handler) = FilesFixture.Json(FilesFixture.Metadata);
@@ -187,6 +202,10 @@ public sealed class UploadFileTests
         Prefix + "uses default filename \"blob\" when not specified",
         Coverage = UpstreamCoverage.Covered,
         Commit = Commit
+    )]
+    [UpstreamTest(
+        CatalogPrefix + "uses default filename \"blob\" when not specified",
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Uses_default_filename_blob_when_not_specified()
     {
@@ -207,6 +226,10 @@ public sealed class UploadFileTests
         Prefix + "uses custom filename from spec options",
         Coverage = UpstreamCoverage.Covered,
         Commit = Commit
+    )]
+    [UpstreamTest(
+        CatalogPrefix + "uses custom filename from spec options",
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Uses_custom_filename_from_spec_options()
     {
@@ -232,6 +255,10 @@ public sealed class UploadFileTests
         Coverage = UpstreamCoverage.Covered,
         Commit = Commit
     )]
+    [UpstreamTest(
+        CatalogPrefix + "uses mediaType from spec options",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Uses_mediaType_from_spec_options()
     {
         var (files, handler) = FilesFixture.Json(FilesFixture.Metadata);
@@ -246,6 +273,10 @@ public sealed class UploadFileTests
         Prefix + "returns providerReference with anthropic key set to file ID",
         Coverage = UpstreamCoverage.Covered,
         Commit = Commit
+    )]
+    [UpstreamTest(
+        CatalogPrefix + "returns providerReference with anthropic key set to file ID",
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Returns_providerReference_with_anthropic_key_set_to_file_ID()
     {
@@ -264,6 +295,10 @@ public sealed class UploadFileTests
         Prefix + "returns providerMetadata with response data",
         Coverage = UpstreamCoverage.Covered,
         Commit = Commit
+    )]
+    [UpstreamTest(
+        CatalogPrefix + "returns providerMetadata with response data",
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Returns_providerMetadata_with_response_data()
     {
@@ -287,6 +322,10 @@ public sealed class UploadFileTests
         Coverage = UpstreamCoverage.Covered,
         Commit = Commit
     )]
+    [UpstreamTest(
+        CatalogPrefix + "omits downloadable from providerMetadata when null",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Omits_downloadable_from_providerMetadata_when_null()
     {
         var (files, _) = FilesFixture.Json(
@@ -300,9 +339,38 @@ public sealed class UploadFileTests
 
     [Fact]
     [UpstreamTest(
+        CatalogPrefix + "handles base64 string data",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Handles_base64_string_data()
+    {
+        var (files, _) = FilesFixture.Json(FilesFixture.Metadata);
+        var result = await files
+            .UploadFileAsync(
+                new UploadFileCall(
+                    new UploadData("data", "AQID"),
+                    "application/octet-stream",
+                    null,
+                    CancellationToken.None,
+                    null,
+                    null
+                ),
+                CancellationToken.None
+            )
+            .ConfigureAwait(false);
+        Assert.Equal("file-abc123", result.ProviderReference.Id);
+        Assert.Equal("anthropic", result.ProviderReference.Provider);
+    }
+
+    [Fact]
+    [UpstreamTest(
         Prefix + "has specificationVersion v4",
         Coverage = UpstreamCoverage.Covered,
         Commit = Commit
+    )]
+    [UpstreamTest(
+        CatalogPrefix + "has specificationVersion v4",
+        Coverage = UpstreamCoverage.Covered
     )]
     public void Has_specificationVersion_v4()
     {
@@ -316,6 +384,7 @@ public sealed class UploadFileTests
         Coverage = UpstreamCoverage.Covered,
         Commit = Commit
     )]
+    [UpstreamTest(CatalogPrefix + "has correct provider name", Coverage = UpstreamCoverage.Covered)]
     public void Has_correct_provider_name()
     {
         var (files, _) = FilesFixture.Json(FilesFixture.Metadata);

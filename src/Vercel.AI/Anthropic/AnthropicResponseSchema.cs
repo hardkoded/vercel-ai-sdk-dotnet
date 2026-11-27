@@ -464,6 +464,152 @@ internal static class AnthropicResponseSchema
         ("context_management", ContextManagement)
     );
 
+    private static readonly Rule ChunkMessageUsage = Object(
+        ("service_tier", NullishString),
+        ("input_tokens", Number),
+        ("cache_creation_input_tokens", Nullish(Number)),
+        ("cache_read_input_tokens", Nullish(Number))
+    );
+
+    private static readonly Rule ChunkMessageDeltaUsage = Object(
+        ("service_tier", NullishString),
+        ("input_tokens", Nullish(Number)),
+        ("output_tokens", Number),
+        ("output_tokens_details", Nullish(Object(("thinking_tokens", Nullish(Number))))),
+        ("cache_creation_input_tokens", Nullish(Number)),
+        ("cache_read_input_tokens", Nullish(Number)),
+        ("iterations", Nullish(Array(UsageIteration)))
+    );
+
+    private static readonly Rule ChunkTextBlock = Object(("text", String));
+
+    private static readonly Rule ChunkThinkingBlock = Object(("thinking", String));
+
+    private static readonly Rule ChunkToolUseBlock = Object(
+        ("id", String),
+        ("name", String),
+        ("input", Optional(Record(Any))),
+        ("caller", Optional(ToolCallCaller)),
+        ("toolset_name", NullishString)
+    );
+
+    // A streamed content block is the content part of a Message with a thinner text, thinking and tool_use block.
+    private static readonly Rule ChunkContentBlock = value =>
+        value is { ValueKind: JsonValueKind.Object } element
+        && element.TryGetProperty("type", out var type)
+        && type.ValueKind == JsonValueKind.String
+        && type.GetString() switch
+        {
+            "text" => ChunkTextBlock(value),
+            "thinking" => ChunkThinkingBlock(value),
+            "tool_use" => ChunkToolUseBlock(value),
+            "container_upload" => false,
+            _ => ContentPart(value),
+        };
+
+    private static readonly Rule Chunk = Union(
+        (
+            "message_start",
+            Object(
+                (
+                    "message",
+                    Object(
+                        ("id", NullishString),
+                        ("model", NullishString),
+                        ("role", NullishString),
+                        ("service_tier", NullishString),
+                        ("usage", ChunkMessageUsage),
+                        (
+                            "content",
+                            Nullish(
+                                Array(
+                                    Union(
+                                        (
+                                            "tool_use",
+                                            Object(
+                                                ("id", String),
+                                                ("name", String),
+                                                ("caller", Optional(ToolCallCaller)),
+                                                ("toolset_name", NullishString)
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        ),
+                        ("stop_reason", NullishString),
+                        ("input_transformations", Nullish(Array(InputTransformation))),
+                        ("container", Nullish(Object(("expires_at", String), ("id", String))))
+                    )
+                )
+            )
+        ),
+        ("content_block_start", Object(("index", Number), ("content_block", ChunkContentBlock))),
+        (
+            "content_block_delta",
+            Object(
+                ("index", Number),
+                (
+                    "delta",
+                    Union(
+                        ("input_json_delta", Object(("partial_json", String))),
+                        ("text_delta", Object(("text", String))),
+                        ("thinking_delta", Object(("thinking", String))),
+                        ("signature_delta", Object(("signature", String))),
+                        ("compaction_delta", Object(("content", NullishString))),
+                        ("citations_delta", Object(("citation", Citation)))
+                    )
+                )
+            )
+        ),
+        ("content_block_stop", Object(("index", Number))),
+        (
+            "error",
+            Object(
+                (
+                    "error",
+                    Object(
+                        ("type", String),
+                        ("message", String),
+                        ("code", Nullish(Either(String, Number))),
+                        ("statusCode", Nullish(Number)),
+                        ("isRetryable", Nullish(Boolean)),
+                        ("data", Any)
+                    )
+                )
+            )
+        ),
+        (
+            "message_delta",
+            Object(
+                (
+                    "delta",
+                    Object(
+                        ("stop_reason", NullishString),
+                        ("stop_sequence", NullishString),
+                        ("stop_details", Nullish(StopDetails)),
+                        ("safeguard_results", Nullish(Array(SafeguardResult))),
+                        ("container", Container)
+                    )
+                ),
+                ("usage", ChunkMessageDeltaUsage),
+                ("input_transformations", Nullish(Array(InputTransformation))),
+                ("context_management", ContextManagement)
+            )
+        ),
+        ("message_stop", Object()),
+        ("ping", Object())
+    );
+
+    /// <summary>Checks a whole Message body: the message and every content part. Maps to <c>anthropicResponseSchema</c>.</summary>
+    public static bool IsValidResponse(JsonElement response) =>
+        Message(response)
+        && response.TryGetProperty("content", out var content)
+        && content.EnumerateArray().All(part => ContentPart(part));
+
+    /// <summary>Checks one streamed event. Maps to <c>anthropicChunkSchema</c>.</summary>
+    public static bool IsValidChunk(JsonElement chunk) => Chunk(chunk);
+
     /// <summary>Checks everything of a message except its content parts.</summary>
     public static bool IsValidMessage(JsonElement message) => Message(message);
 

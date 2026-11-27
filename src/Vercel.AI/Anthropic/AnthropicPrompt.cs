@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.Anthropic;
 
@@ -126,6 +127,7 @@ public static class AnthropicPrompt
         JsonArray? system = null;
         var messages = new JsonArray();
         var emittedInlineDefinitions = new List<JsonObject>();
+        var lastUserMessageIndex = -1;
 
         for (var i = 0; i < blocks.Count; i++)
         {
@@ -148,6 +150,11 @@ public static class AnthropicPrompt
             }
             else if (block.Role == "user")
             {
+                if (block.Messages.Any(HasUserContent))
+                {
+                    lastUserMessageIndex = messages.Count;
+                }
+
                 messages.Add(
                     new JsonObject
                     {
@@ -182,6 +189,8 @@ public static class AnthropicPrompt
             }
         }
 
+        NormalizeOrphanedCallers(messages, lastUserMessageIndex, warnings);
+
         if (ownsValidator)
         {
             foreach (var warning in validator.Warnings)
@@ -194,6 +203,93 @@ public static class AnthropicPrompt
         {
             InlineToolDefinitions = emittedInlineDefinitions,
         };
+    }
+
+    // Only a user message (not a tool result message) ends a turn.
+    private static bool HasUserContent(JsonElement message)
+    {
+        return AnthropicJson.String(message, "role") == "user"
+            && message.TryGetProperty("content", out var content)
+            && content.ValueKind == JsonValueKind.Array
+            && content.GetArrayLength() > 0;
+    }
+
+    // Pruning can remove a code execution call while retaining tool calls that reference it.
+    // Check the converted blocks, since unsupported source calls may also have been omitted
+    // during conversion. Only history before a subsequent user message is normalized: tool
+    // result messages do not end a turn, so their caller metadata must remain intact for
+    // Anthropic to resume an active code execution.
+    private static void NormalizeOrphanedCallers(
+        JsonArray messages,
+        int lastUserMessageIndex,
+        List<AnthropicWarning> warnings
+    )
+    {
+        var codeExecutionToolCallIds = new HashSet<string>();
+        foreach (var message in messages)
+        {
+            if (message?["role"]?.GetValue<string>() != "assistant")
+            {
+                continue;
+            }
+
+            foreach (var part in (JsonArray)message["content"]!)
+            {
+                if (
+                    part?["type"]?.GetValue<string>() == "server_tool_use"
+                    && part["name"]?.GetValue<string>() == "code_execution"
+                    && part["id"]?.GetValue<string>() is { } sourceId
+                )
+                {
+                    codeExecutionToolCallIds.Add(sourceId);
+                }
+            }
+        }
+
+        var warnedToolCallIds = new HashSet<string>();
+        for (var i = 0; i < lastUserMessageIndex; i++)
+        {
+            var message = messages[i];
+            if (message?["role"]?.GetValue<string>() != "assistant")
+            {
+                continue;
+            }
+
+            foreach (var part in (JsonArray)message["content"]!)
+            {
+                if (part is not JsonObject block || block["caller"] is not JsonObject caller)
+                {
+                    continue;
+                }
+
+                var callerToolId = caller["tool_id"]?.GetValue<string>();
+                if (
+                    caller["type"]?.GetValue<string>() == "direct"
+                    || (callerToolId != null && codeExecutionToolCallIds.Contains(callerToolId))
+                )
+                {
+                    continue;
+                }
+
+                var toolCallId = block["id"]?.GetValue<string>()
+                    ?? block["tool_use_id"]?.GetValue<string>()
+                    ?? string.Empty;
+                block.Remove("caller");
+                if (warnedToolCallIds.Add(toolCallId))
+                {
+                    warnings.Add(
+                        new AnthropicWarning(
+                            "other",
+                            message: "Omitted caller metadata for tool "
+                                + toolCallId
+                                + " because source code execution tool "
+                                + callerToolId
+                                + " is missing from the conversation history."
+                        )
+                    );
+                }
+            }
+        }
     }
 
     private static void ConvertSystem(
@@ -673,41 +769,12 @@ public static class AnthropicPrompt
                     && value.ValueKind == JsonValueKind.Array
                 )
                 {
-                    var nested = new JsonArray();
-                    foreach (var item in value.EnumerateArray())
-                    {
-                        var itemType = AnthropicJson.String(item, "type");
-                        if (itemType == "text")
-                        {
-                            nested.Add(
-                                new JsonObject
-                                {
-                                    ["type"] = "text",
-                                    ["text"] = AnthropicJson.String(item, "text") ?? string.Empty,
-                                }
-                            );
-                        }
-                        else if (
-                            itemType == "file"
-                            || itemType == "tool-reference"
-                            || itemType == "custom"
-                        )
-                        {
-                            if (
-                                itemType == "custom"
-                                || AnthropicJson.String(item, "type") == "tool-reference"
-                            )
-                            {
-                                nested.Add(JsonNode.Parse(item.GetRawText()));
-                            }
-                            else
-                            {
-                                nested.Add(ConvertFile(item, null, betas));
-                            }
-                        }
-                    }
-
-                    result["content"] = nested;
+                    result["content"] = ConvertToolContent(value, warnings, betas);
+                }
+                else if (outputType == "execution-denied")
+                {
+                    result["content"] = AnthropicJson.String(body, "reason")
+                        ?? "Tool call execution denied.";
                 }
                 else if (body.TryGetProperty("value", out var jsonValue))
                 {
@@ -725,6 +792,180 @@ public static class AnthropicPrompt
             AnthropicJson.Set(result, "cache_control", cache);
             content.Add(result);
         }
+    }
+
+    private static string ResolveAnthropicReference(JsonElement data)
+    {
+        var reference = new Dictionary<string, string>();
+        if (
+            data.TryGetProperty("reference", out var referenceValue)
+            && referenceValue.ValueKind == JsonValueKind.Object
+        )
+        {
+            foreach (var entry in referenceValue.EnumerateObject())
+            {
+                if (entry.Value.ValueKind == JsonValueKind.String)
+                {
+                    reference[entry.Name] = entry.Value.GetString()!;
+                }
+            }
+        }
+
+        return ProviderReferences.ResolveProviderReference(reference, "anthropic");
+    }
+
+    private static JsonArray ConvertToolContent(
+        JsonElement parts,
+        List<AnthropicWarning> warnings,
+        List<string> betas
+    )
+    {
+        var nested = new JsonArray();
+        foreach (var item in parts.EnumerateArray())
+        {
+            var itemType = AnthropicJson.String(item, "type");
+            if (itemType == "text")
+            {
+                nested.Add(
+                    new JsonObject
+                    {
+                        ["type"] = "text",
+                        ["text"] = AnthropicJson.String(item, "text") ?? string.Empty,
+                    }
+                );
+            }
+            else if (itemType == "file")
+            {
+                var converted = ConvertToolFile(item, warnings, betas);
+                if (converted != null)
+                {
+                    nested.Add(converted);
+                }
+            }
+            else if (itemType == "custom")
+            {
+                var options = Provider(item);
+                if (
+                    options != null
+                    && AnthropicJson.String(options.Value, "type") == "tool-reference"
+                )
+                {
+                    nested.Add(
+                        new JsonObject
+                        {
+                            ["type"] = "tool_reference",
+                            ["tool_name"] = AnthropicJson.String(options.Value, "toolName"),
+                        }
+                    );
+                }
+                else
+                {
+                    warnings.Add(
+                        new AnthropicWarning(
+                            "other",
+                            message: "unsupported custom tool content part"
+                        )
+                    );
+                }
+            }
+            else
+            {
+                warnings.Add(
+                    new AnthropicWarning(
+                        "other",
+                        message: "unsupported tool content part type: " + itemType
+                    )
+                );
+            }
+        }
+
+        return nested;
+    }
+
+    private static JsonObject? ConvertToolFile(
+        JsonElement item,
+        List<AnthropicWarning> warnings,
+        List<string> betas
+    )
+    {
+        var mediaType = AnthropicJson.String(item, "mediaType") ?? string.Empty;
+        var isImage = TopLevel(mediaType) == "image";
+        var data = item.TryGetProperty("data", out var dataValue) ? dataValue : default;
+        var dataType =
+            data.ValueKind == JsonValueKind.Object ? AnthropicJson.String(data, "type") : null;
+        if (dataType == "reference")
+        {
+            var fileId = ResolveAnthropicReference(data);
+            AddBeta(betas, "files-api-2025-04-14");
+            return new JsonObject
+            {
+                ["type"] = isImage ? "image" : "document",
+                ["source"] = new JsonObject { ["type"] = "file", ["file_id"] = fileId },
+            };
+        }
+
+        if (dataType == "url")
+        {
+            return new JsonObject
+            {
+                ["type"] = isImage ? "image" : "document",
+                ["source"] = new JsonObject
+                {
+                    ["type"] = "url",
+                    ["url"] = AnthropicJson.String(data, "url"),
+                },
+            };
+        }
+
+        if (dataType == "data")
+        {
+            var base64 = AnthropicJson.String(data, "data") ?? string.Empty;
+            if (isImage)
+            {
+                return new JsonObject
+                {
+                    ["type"] = "image",
+                    ["source"] = new JsonObject
+                    {
+                        ["type"] = "base64",
+                        ["media_type"] = ResolveMedia(mediaType, base64),
+                        ["data"] = base64,
+                    },
+                };
+            }
+
+            if (ResolveMedia(mediaType, base64) == "application/pdf")
+            {
+                AddBeta(betas, "pdfs-2024-09-25");
+                return new JsonObject
+                {
+                    ["type"] = "document",
+                    ["source"] = new JsonObject
+                    {
+                        ["type"] = "base64",
+                        ["media_type"] = "application/pdf",
+                        ["data"] = base64,
+                    },
+                };
+            }
+
+            warnings.Add(
+                new AnthropicWarning(
+                    "other",
+                    message: "unsupported tool content part type: file with media type: "
+                        + mediaType
+                )
+            );
+            return null;
+        }
+
+        warnings.Add(
+            new AnthropicWarning(
+                "other",
+                message: "unsupported tool content part type: file with data type: " + dataType
+            )
+        );
+        return null;
     }
 
     private static JsonObject ConvertFile(JsonElement part, JsonObject? cache, List<string> betas)
@@ -748,35 +989,19 @@ public static class AnthropicPrompt
         var dataType = AnthropicJson.String(data, "type");
         if (dataType == "reference")
         {
-            var reference = data.TryGetProperty("reference", out var referenceValue)
-                ? referenceValue
-                : default;
-            if (
-                reference.ValueKind != JsonValueKind.Object
-                || !reference.TryGetProperty("anthropic", out var fileId)
-                || fileId.ValueKind != JsonValueKind.String
-            )
-            {
-                throw new AiSdkException(
-                    "Provider reference does not contain an anthropic file id."
-                );
-            }
+            var fileId = ResolveAnthropicReference(data);
 
             AddBeta(betas, "files-api-2025-04-14");
             if (container)
             {
-                return new JsonObject
-                {
-                    ["type"] = "container_upload",
-                    ["file_id"] = fileId.GetString(),
-                };
+                return new JsonObject { ["type"] = "container_upload", ["file_id"] = fileId };
             }
 
             var kind = TopLevel(mediaType) == "image" ? "image" : "document";
             var node = new JsonObject
             {
                 ["type"] = kind,
-                ["source"] = new JsonObject { ["type"] = "file", ["file_id"] = fileId.GetString() },
+                ["source"] = new JsonObject { ["type"] = "file", ["file_id"] = fileId },
             };
             AnthropicJson.Set(node, "cache_control", cache);
             return node;
@@ -915,6 +1140,7 @@ public static class AnthropicPrompt
     )
     {
         var content = new JsonArray();
+        var mcpToolUseIds = new HashSet<string>();
         for (var j = 0; j < block.Messages.Count; j++)
         {
             var message = block.Messages[j];
@@ -1050,9 +1276,20 @@ public static class AnthropicPrompt
                         );
                     }
                 }
+                else if (type == "custom")
+                {
+                    if (AnthropicJson.String(part, "kind") == "anthropic.fallback")
+                    {
+                        AppendFallback(part, content, warnings, betas);
+                    }
+                }
                 else if (type == "tool-call")
                 {
-                    content.Add(ConvertToolCall(part, cache, warnings, names, toolsets));
+                    AppendToolCall(part, cache, content, warnings, names, toolsets, mcpToolUseIds);
+                }
+                else if (type == "tool-result")
+                {
+                    AppendToolResult(part, cache, content, warnings, names, mcpToolUseIds);
                 }
             }
         }
@@ -1060,9 +1297,736 @@ public static class AnthropicPrompt
         return MoveToolUses(content);
     }
 
+    private static void AppendFallback(
+        JsonElement part,
+        JsonArray content,
+        List<AnthropicWarning> warnings,
+        List<string> betas
+    )
+    {
+        var metadata = Provider(part);
+        var from = metadata == null ? null : FallbackModel(metadata.Value, "from");
+        var to = metadata == null ? null : FallbackModel(metadata.Value, "to");
+        if (
+            metadata == null
+            || AnthropicJson.String(metadata.Value, "type") != "fallback"
+            || from == null
+            || to == null
+        )
+        {
+            warnings.Add(
+                new AnthropicWarning(
+                    "other",
+                    message: "anthropic fallback metadata must include from.model and to.model"
+                )
+            );
+            return;
+        }
+
+        AddBeta(betas, "server-side-fallback-2026-06-01");
+        content.Add(
+            new JsonObject
+            {
+                ["type"] = "fallback",
+                ["from"] = new JsonObject { ["model"] = from },
+                ["to"] = new JsonObject { ["model"] = to },
+            }
+        );
+    }
+
+    private static string? FallbackModel(JsonElement metadata, string name)
+    {
+        return
+            metadata.TryGetProperty(name, out var side)
+            && side.ValueKind == JsonValueKind.Object
+            && side.TryGetProperty("model", out var model)
+            && model.ValueKind == JsonValueKind.String
+            ? model.GetString()
+            : null;
+    }
+
+    // Maps to getAnthropicCaller: a programmatic caller needs a tool id, a direct caller needs none.
+    private static JsonObject? GetAnthropicCaller(JsonElement part)
+    {
+        var metadata = Provider(part);
+        if (
+            metadata == null
+            || !metadata.Value.TryGetProperty("caller", out var caller)
+            || caller.ValueKind != JsonValueKind.Object
+        )
+        {
+            return null;
+        }
+
+        var type = AnthropicJson.String(caller, "type");
+        var toolId = AnthropicJson.String(caller, "toolId");
+        if (
+            (type == "code_execution_20250825" || type == "code_execution_20260120")
+            && !string.IsNullOrEmpty(toolId)
+        )
+        {
+            return new JsonObject { ["type"] = type, ["tool_id"] = toolId };
+        }
+
+        return type == "direct" ? new JsonObject { ["type"] = "direct" } : null;
+    }
+
+    private static void AppendToolCall(
+        JsonElement part,
+        JsonObject? cache,
+        JsonArray content,
+        List<AnthropicWarning> warnings,
+        IReadOnlyDictionary<string, string> names,
+        IReadOnlyDictionary<string, string> toolsets,
+        HashSet<string> mcpToolUseIds
+    )
+    {
+        var toolName = AnthropicJson.String(part, "toolName") ?? string.Empty;
+        var id = AnthropicJson.String(part, "toolCallId") ?? string.Empty;
+        var caller = GetAnthropicCaller(part);
+        if (AnthropicJson.Bool(part, "providerExecuted") != true)
+        {
+            content.Add(ConvertToolCall(part, cache, caller, warnings, names, toolsets));
+            return;
+        }
+
+        var providerToolName = ToProviderName(names, toolName);
+        var metadata = Provider(part);
+        var hasInput = part.TryGetProperty("input", out var inputValue);
+        JsonNode? rawInput = hasInput ? NodeOrNull(inputValue) : null;
+        var inputType =
+            inputValue.ValueKind == JsonValueKind.Object
+                ? AnthropicJson.String(inputValue, "type")
+                : null;
+        if (metadata != null && AnthropicJson.String(metadata.Value, "type") == "mcp-tool-use")
+        {
+            mcpToolUseIds.Add(id);
+            var serverName = AnthropicJson.String(metadata.Value, "serverName");
+            if (serverName == null)
+            {
+                warnings.Add(
+                    new AnthropicWarning(
+                        "other",
+                        message: "mcp tool use server name is required and must be a string"
+                    )
+                );
+                return;
+            }
+
+            var mcpCall = new JsonObject
+            {
+                ["type"] = "mcp_tool_use",
+                ["id"] = id,
+                ["name"] = toolName,
+                ["input"] = rawInput,
+                ["server_name"] = serverName,
+            };
+            AnthropicJson.Set(mcpCall, "cache_control", cache);
+            content.Add(mcpCall);
+            return;
+        }
+
+        string? name = null;
+        var input = rawInput;
+        if (
+            providerToolName == "code_execution"
+            && (inputType == "bash_code_execution" || inputType == "text_editor_code_execution")
+        )
+        {
+            // code execution subtools: map back to the subtool name
+            name = inputType;
+            input = WithoutType(inputValue);
+        }
+        else if (providerToolName == "code_execution" && inputType == "programmatic-tool-call")
+        {
+            // code execution 20250825 programmatic tool calling: strip the fake type
+            name = "code_execution";
+            input = WithoutType(inputValue);
+        }
+        else if (
+            providerToolName == "code_execution"
+            || providerToolName == "web_fetch"
+            || providerToolName == "web_search"
+            || providerToolName == "tool_search_tool_regex"
+            || providerToolName == "tool_search_tool_bm25"
+        )
+        {
+            name = providerToolName;
+        }
+        else if (providerToolName == "advisor")
+        {
+            // The advisor server_tool_use.input is always {}.
+            name = "advisor";
+            input = new JsonObject();
+        }
+
+        if (name == null)
+        {
+            warnings.Add(
+                new AnthropicWarning(
+                    "other",
+                    message: "provider executed tool call for tool "
+                        + toolName
+                        + " is not supported"
+                )
+            );
+            return;
+        }
+
+        var serverCall = new JsonObject
+        {
+            ["type"] = "server_tool_use",
+            ["id"] = id,
+            ["name"] = name,
+            ["input"] = input,
+        };
+        AnthropicJson.Set(serverCall, "caller", caller);
+        AnthropicJson.Set(serverCall, "cache_control", cache);
+        content.Add(serverCall);
+    }
+
+    // A JSON null stays null instead of becoming an empty object.
+    private static JsonNode? NodeOrNull(JsonElement element)
+    {
+        return element.ValueKind == JsonValueKind.Null ? null : AnthropicJson.Node(element);
+    }
+
+    private static JsonObject WithoutType(JsonElement input)
+    {
+        var result = new JsonObject();
+        foreach (var property in input.EnumerateObject())
+        {
+            if (property.Name != "type")
+            {
+                result[property.Name] = NodeOrNull(property.Value);
+            }
+        }
+
+        return result;
+    }
+
+    // Maps to extractErrorValue: the error code of an error output, or null when it is not available.
+    private static string? ExtractErrorCode(JsonElement? value)
+    {
+        if (value == null)
+        {
+            return null;
+        }
+
+        var element = value.Value;
+        if (element.ValueKind == JsonValueKind.String)
+        {
+            try
+            {
+                using var parsed = JsonDocument.Parse(element.GetString() ?? string.Empty);
+                return parsed.RootElement.ValueKind == JsonValueKind.Object
+                    ? AnthropicJson.String(parsed.RootElement, "errorCode")
+                    : null;
+            }
+            catch (JsonException)
+            {
+                return null;
+            }
+        }
+
+        return element.ValueKind == JsonValueKind.Object
+            ? AnthropicJson.String(element, "errorCode")
+            : null;
+    }
+
+    private static JsonObject ToolResultBlock(
+        string type,
+        string toolUseId,
+        JsonNode? resultContent,
+        JsonObject? caller,
+        JsonObject? cache
+    )
+    {
+        var block = new JsonObject
+        {
+            ["type"] = type,
+            ["tool_use_id"] = toolUseId,
+            ["content"] = resultContent,
+        };
+        AnthropicJson.Set(block, "caller", caller);
+        AnthropicJson.Set(block, "cache_control", cache);
+        return block;
+    }
+
+    private static JsonNode? Required(JsonElement element, string name, string toolName)
+    {
+        if (
+            element.ValueKind == JsonValueKind.Object
+            && element.TryGetProperty(name, out var value)
+        )
+        {
+            return NodeOrNull(value);
+        }
+
+        throw new InvalidOperationException(
+            "Type validation failed for the output of tool " + toolName + ": missing " + name
+        );
+    }
+
+    private static void AppendToolResult(
+        JsonElement part,
+        JsonObject? cache,
+        JsonArray content,
+        List<AnthropicWarning> warnings,
+        IReadOnlyDictionary<string, string> names,
+        HashSet<string> mcpToolUseIds
+    )
+    {
+        var toolName = AnthropicJson.String(part, "toolName") ?? string.Empty;
+        var id = AnthropicJson.String(part, "toolCallId") ?? string.Empty;
+        var providerToolName = ToProviderName(names, toolName);
+        var caller = GetAnthropicCaller(part);
+        var output = part.TryGetProperty("output", out var outputValue) ? outputValue : default;
+        var outputType = AnthropicJson.String(output, "type");
+        JsonElement? value =
+            output.ValueKind == JsonValueKind.Object && output.TryGetProperty("value", out var v)
+                ? v
+                : null;
+
+        void UnsupportedOutput() =>
+            warnings.Add(
+                new AnthropicWarning(
+                    "other",
+                    message: "provider executed tool result output type "
+                        + outputType
+                        + " for tool "
+                        + toolName
+                        + " is not supported"
+                )
+            );
+
+        if (mcpToolUseIds.Contains(id))
+        {
+            if (outputType != "json" && outputType != "error-json")
+            {
+                UnsupportedOutput();
+                return;
+            }
+
+            var mcpResult = new JsonObject
+            {
+                ["type"] = "mcp_tool_result",
+                ["tool_use_id"] = id,
+                ["is_error"] = outputType == "error-json",
+                ["content"] = value == null ? null : NodeOrNull(value.Value),
+            };
+            AnthropicJson.Set(mcpResult, "cache_control", cache);
+            content.Add(mcpResult);
+        }
+        else if (providerToolName == "code_execution")
+        {
+            AppendCodeExecutionResult(
+                id,
+                toolName,
+                outputType,
+                value,
+                cache,
+                content,
+                warnings,
+                UnsupportedOutput
+            );
+            return;
+        }
+
+        if (providerToolName == "web_fetch")
+        {
+            if (outputType == "error-json")
+            {
+                content.Add(
+                    ToolResultBlock(
+                        "web_fetch_tool_result",
+                        id,
+                        new JsonObject
+                        {
+                            ["type"] = "web_fetch_tool_result_error",
+                            ["error_code"] = ExtractErrorCode(value) ?? "unavailable",
+                        },
+                        caller,
+                        cache
+                    )
+                );
+                return;
+            }
+
+            if (outputType != "json")
+            {
+                UnsupportedOutput();
+                return;
+            }
+
+            var fetch = value!.Value;
+            var document = fetch.TryGetProperty("content", out var fetchContent)
+                ? fetchContent
+                : default;
+            var source =
+                document.ValueKind == JsonValueKind.Object
+                && document.TryGetProperty("source", out var fetchSource)
+                    ? fetchSource
+                    : default;
+            var documentNode = new JsonObject
+            {
+                ["type"] = "document",
+                ["title"] = Required(document, "title", toolName),
+            };
+            if (
+                document.ValueKind == JsonValueKind.Object
+                && document.TryGetProperty("citations", out var citations)
+            )
+            {
+                documentNode["citations"] = AnthropicJson.Node(citations);
+            }
+
+            documentNode["source"] = new JsonObject
+            {
+                ["type"] = Required(source, "type", toolName),
+                ["media_type"] = Required(source, "mediaType", toolName),
+                ["data"] = Required(source, "data", toolName),
+            };
+            content.Add(
+                ToolResultBlock(
+                    "web_fetch_tool_result",
+                    id,
+                    new JsonObject
+                    {
+                        ["type"] = "web_fetch_result",
+                        ["url"] = Required(fetch, "url", toolName),
+                        ["retrieved_at"] = Required(fetch, "retrievedAt", toolName),
+                        ["content"] = documentNode,
+                    },
+                    caller,
+                    cache
+                )
+            );
+            return;
+        }
+
+        if (providerToolName == "web_search")
+        {
+            if (outputType == "error-json")
+            {
+                content.Add(
+                    ToolResultBlock(
+                        "web_search_tool_result",
+                        id,
+                        new JsonObject
+                        {
+                            ["type"] = "web_search_tool_result_error",
+                            ["error_code"] = ExtractErrorCode(value) ?? "unavailable",
+                        },
+                        caller,
+                        cache
+                    )
+                );
+                return;
+            }
+
+            if (outputType != "json")
+            {
+                UnsupportedOutput();
+                return;
+            }
+
+            var results = new JsonArray();
+            foreach (var result in value!.Value.EnumerateArray())
+            {
+                results.Add(
+                    new JsonObject
+                    {
+                        ["url"] = Required(result, "url", toolName),
+                        ["title"] = Required(result, "title", toolName),
+                        ["page_age"] = Required(result, "pageAge", toolName),
+                        ["encrypted_content"] = Required(result, "encryptedContent", toolName),
+                        ["type"] = Required(result, "type", toolName),
+                    }
+                );
+            }
+
+            content.Add(ToolResultBlock("web_search_tool_result", id, results, caller, cache));
+            return;
+        }
+
+        if (
+            providerToolName == "tool_search_tool_regex"
+            || providerToolName == "tool_search_tool_bm25"
+        )
+        {
+            if (
+                outputType == "error-json"
+                || (
+                    outputType == "json"
+                    && value!.Value.ValueKind == JsonValueKind.Object
+                    && AnthropicJson.String(value.Value, "type") == "tool_search_tool_result_error"
+                )
+            )
+            {
+                content.Add(
+                    ToolResultBlock(
+                        "tool_search_tool_result",
+                        id,
+                        new JsonObject
+                        {
+                            ["type"] = "tool_search_tool_result_error",
+                            ["error_code"] = ExtractErrorCode(value) ?? "unavailable",
+                        },
+                        null,
+                        cache
+                    )
+                );
+                return;
+            }
+
+            if (outputType != "json")
+            {
+                UnsupportedOutput();
+                return;
+            }
+
+            var references = new JsonArray();
+            foreach (var reference in value!.Value.EnumerateArray())
+            {
+                references.Add(
+                    new JsonObject
+                    {
+                        ["type"] = "tool_reference",
+                        ["tool_name"] = Required(reference, "toolName", toolName),
+                    }
+                );
+            }
+
+            content.Add(
+                ToolResultBlock(
+                    "tool_search_tool_result",
+                    id,
+                    new JsonObject
+                    {
+                        ["type"] = "tool_search_tool_search_result",
+                        ["tool_references"] = references,
+                    },
+                    null,
+                    cache
+                )
+            );
+            return;
+        }
+
+        if (providerToolName == "advisor")
+        {
+            if (outputType != "json" && outputType != "error-json")
+            {
+                UnsupportedOutput();
+                return;
+            }
+
+            var advisor = value!.Value;
+            var advisorType = AnthropicJson.String(advisor, "type");
+            var advisorContent = new JsonObject { ["type"] = advisorType };
+            if (advisorType == "advisor_result")
+            {
+                advisorContent["text"] = Required(advisor, "text", toolName);
+                AnthropicJson.Set(
+                    advisorContent,
+                    "stop_reason",
+                    AnthropicJson.String(advisor, "stopReason")
+                );
+            }
+            else if (advisorType == "advisor_redacted_result")
+            {
+                advisorContent["encrypted_content"] = Required(
+                    advisor,
+                    "encryptedContent",
+                    toolName
+                );
+                AnthropicJson.Set(
+                    advisorContent,
+                    "stop_reason",
+                    AnthropicJson.String(advisor, "stopReason")
+                );
+            }
+            else
+            {
+                advisorContent["type"] = "advisor_tool_result_error";
+                advisorContent["error_code"] = Required(advisor, "errorCode", toolName);
+            }
+
+            content.Add(ToolResultBlock("advisor_tool_result", id, advisorContent, null, cache));
+            return;
+        }
+
+        warnings.Add(
+            new AnthropicWarning(
+                "other",
+                message: "provider executed tool result for tool " + toolName + " is not supported"
+            )
+        );
+    }
+
+    private static void AppendCodeExecutionResult(
+        string id,
+        string toolName,
+        string? outputType,
+        JsonElement? value,
+        JsonObject? cache,
+        JsonArray content,
+        List<AnthropicWarning> warnings,
+        Action unsupportedOutput
+    )
+    {
+        // Errors from code_execution tools, such as programmatic tool calling.
+        if (outputType == "error-text" || outputType == "error-json")
+        {
+            JsonElement? info = null;
+            if (value is { ValueKind: JsonValueKind.String } text)
+            {
+                try
+                {
+                    using var parsed = JsonDocument.Parse(text.GetString() ?? string.Empty);
+                    info = parsed.RootElement.Clone();
+                }
+                catch (JsonException)
+                {
+                    info = null;
+                }
+            }
+            else if (value is { ValueKind: JsonValueKind.Object })
+            {
+                info = value;
+            }
+
+            if (info is not { ValueKind: JsonValueKind.Object })
+            {
+                info = null;
+            }
+
+            var errorCode = (info == null ? null : AnthropicJson.String(info.Value, "errorCode"))
+                ?? "unknown";
+            var isCodeExecutionError =
+                info != null
+                && AnthropicJson.String(info.Value, "type") == "code_execution_tool_result_error";
+            content.Add(
+                ToolResultBlock(
+                    isCodeExecutionError
+                        ? "code_execution_tool_result"
+                        : "bash_code_execution_tool_result",
+                    id,
+                    new JsonObject
+                    {
+                        ["type"] = isCodeExecutionError
+                            ? "code_execution_tool_result_error"
+                            : "bash_code_execution_tool_result_error",
+                        ["error_code"] = errorCode,
+                    },
+                    null,
+                    cache
+                )
+            );
+            return;
+        }
+
+        if (outputType != "json")
+        {
+            unsupportedOutput();
+            return;
+        }
+
+        if (
+            value == null
+            || value.Value.ValueKind != JsonValueKind.Object
+            || AnthropicJson.String(value.Value, "type") is not { } resultType
+        )
+        {
+            warnings.Add(
+                new AnthropicWarning(
+                    "other",
+                    message: "provider executed tool result output value is not a valid code execution result for tool "
+                        + toolName
+                )
+            );
+            return;
+        }
+
+        var output = value.Value;
+
+        // The type of the output tells code execution 20250522, 20250825 and the
+        // encrypted results of implicit code execution for dynamic web tools apart.
+        if (
+            resultType == "code_execution_result"
+            || resultType == "encrypted_code_execution_result"
+        )
+        {
+            var inner = new JsonObject { ["type"] = resultType };
+            if (resultType == "code_execution_result")
+            {
+                inner["stdout"] = Required(output, "stdout", toolName);
+            }
+            else
+            {
+                inner["encrypted_stdout"] = Required(output, "encrypted_stdout", toolName);
+            }
+
+            inner["stderr"] = Required(output, "stderr", toolName);
+            inner["return_code"] = Required(output, "return_code", toolName);
+            inner["content"] = output.TryGetProperty("content", out var files)
+                ? AnthropicJson.Node(files)
+                : new JsonArray();
+            content.Add(ToolResultBlock("code_execution_tool_result", id, inner, null, cache));
+        }
+        else if (resultType == "bash_code_execution_result")
+        {
+            // Prompt caching requires stable key ordering.
+            var inner = new JsonObject
+            {
+                ["type"] = resultType,
+                ["stdout"] = Required(output, "stdout", toolName),
+                ["stderr"] = Required(output, "stderr", toolName),
+                ["return_code"] = Required(output, "return_code", toolName),
+                ["content"] = Required(output, "content", toolName),
+            };
+            content.Add(ToolResultBlock("bash_code_execution_tool_result", id, inner, null, cache));
+        }
+        else if (resultType == "bash_code_execution_tool_result_error")
+        {
+            content.Add(
+                ToolResultBlock(
+                    "bash_code_execution_tool_result",
+                    id,
+                    AnthropicJson.Node(output),
+                    null,
+                    cache
+                )
+            );
+        }
+        else if (resultType.StartsWith("text_editor_code_execution_", StringComparison.Ordinal))
+        {
+            content.Add(
+                ToolResultBlock(
+                    "text_editor_code_execution_tool_result",
+                    id,
+                    AnthropicJson.Node(output),
+                    null,
+                    cache
+                )
+            );
+        }
+        else
+        {
+            throw new InvalidOperationException(
+                "Type validation failed for the output of tool "
+                    + toolName
+                    + ": unknown result type "
+                    + resultType
+            );
+        }
+    }
+
     private static JsonObject ConvertToolCall(
         JsonElement part,
         JsonObject? cache,
+        JsonObject? caller,
         List<AnthropicWarning> warnings,
         IReadOnlyDictionary<string, string> names,
         IReadOnlyDictionary<string, string> toolsets
@@ -1100,6 +2064,7 @@ public static class AnthropicPrompt
                 ["toolset_name"] = toolset,
                 ["input"] = rawInput,
             };
+            AnthropicJson.Set(toolsetCall, "caller", caller);
             AnthropicJson.Set(toolsetCall, "cache_control", cache);
             return toolsetCall;
         }
@@ -1111,6 +2076,7 @@ public static class AnthropicPrompt
             ["name"] = ToProviderName(names, toolName),
             ["input"] = input ?? new JsonObject(),
         };
+        AnthropicJson.Set(call, "caller", caller);
         AnthropicJson.Set(call, "cache_control", cache);
         return call;
     }
@@ -1161,7 +2127,7 @@ public static class AnthropicPrompt
         foreach (var part in content)
         {
             var type = part?["type"]?.GetValue<string>();
-            if (type == "thinking" || type == "redacted_thinking")
+            if (type == "thinking" || type == "redacted_thinking" || type == "fallback")
             {
                 Flush(result, segment);
                 result.Add(part!.DeepClone());
@@ -1387,6 +2353,11 @@ public static class AnthropicPrompt
                             ["toolCallId"] = call.ToolCall.ToolCallId,
                             ["toolName"] = call.ToolCall.ToolName,
                             ["input"] = ToolInput(call.ToolCall.ArgumentsJson),
+                        },
+                        AssistantCustomPart custom => new JsonObject
+                        {
+                            ["type"] = "custom",
+                            ["kind"] = custom.Kind,
                         },
                         _ => null,
                     };

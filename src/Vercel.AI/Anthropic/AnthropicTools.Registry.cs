@@ -55,6 +55,39 @@ public static partial class AnthropicTools
 
     private const string Int = "{\"type\":\"integer\"}";
 
+    private const string WebFetchOutput =
+        "{\"type\":\"object\",\"properties\":{\"type\":{\"type\":\"string\",\"const\":\"web_fetch_result\"},\"url\":{\"type\":\"string\"},"
+        + "\"content\":{\"type\":\"object\",\"properties\":{\"type\":{\"type\":\"string\",\"const\":\"document\"},\"title\":{\"type\":[\"string\",\"null\"]},"
+        + "\"citations\":{\"type\":\"object\",\"properties\":{\"enabled\":{\"type\":\"boolean\"}},\"required\":[\"enabled\"]},"
+        + "\"source\":{\"anyOf\":["
+        + "{\"type\":\"object\",\"properties\":{\"type\":{\"type\":\"string\",\"const\":\"base64\"},\"mediaType\":{\"type\":\"string\",\"const\":\"application/pdf\"},\"data\":{\"type\":\"string\"}},\"required\":[\"type\",\"mediaType\",\"data\"]},"
+        + "{\"type\":\"object\",\"properties\":{\"type\":{\"type\":\"string\",\"const\":\"text\"},\"mediaType\":{\"type\":\"string\",\"const\":\"text/plain\"},\"data\":{\"type\":\"string\"}},\"required\":[\"type\",\"mediaType\",\"data\"]}"
+        + "]}},\"required\":[\"type\",\"title\",\"source\"]},"
+        + "\"retrievedAt\":{\"type\":[\"string\",\"null\"]}},\"required\":[\"type\",\"url\",\"content\",\"retrievedAt\"]}";
+
+    private const string WebSearchOutput =
+        "{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"url\":{\"type\":\"string\"},\"title\":{\"type\":[\"string\",\"null\"]},"
+        + "\"pageAge\":{\"type\":[\"string\",\"null\"]},\"encryptedContent\":{\"type\":\"string\"},\"type\":{\"type\":\"string\",\"const\":\"web_search_result\"}},"
+        + "\"required\":[\"url\",\"title\",\"pageAge\",\"encryptedContent\",\"type\"]}}";
+
+    /// <summary>JSON Schema of the output of <c>web_fetch_20250910</c>. Maps to <c>webFetch_20250910OutputSchema</c>.</summary>
+    public static JsonElement WebFetch20250910OutputSchema() => Parse(WebFetchOutput);
+
+    /// <summary>JSON Schema of the output of <c>web_fetch_20260209</c>. Maps to <c>webFetch_20260209OutputSchema</c>.</summary>
+    public static JsonElement WebFetch20260209OutputSchema() => Parse(WebFetchOutput);
+
+    /// <summary>JSON Schema of the output of <c>web_fetch_20260318</c>. Maps to <c>webFetch_20260318OutputSchema</c>.</summary>
+    public static JsonElement WebFetch20260318OutputSchema() => Parse(WebFetchOutput);
+
+    /// <summary>JSON Schema of the output of <c>web_search_20250305</c>. Maps to <c>webSearch_20250305OutputSchema</c>.</summary>
+    public static JsonElement WebSearch20250305OutputSchema() => Parse(WebSearchOutput);
+
+    /// <summary>JSON Schema of the output of <c>web_search_20260209</c>. Maps to <c>webSearch_20260209OutputSchema</c>.</summary>
+    public static JsonElement WebSearch20260209OutputSchema() => Parse(WebSearchOutput);
+
+    /// <summary>JSON Schema of the output of <c>web_search_20260318</c>. Maps to <c>webSearch_20260318OutputSchema</c>.</summary>
+    public static JsonElement WebSearch20260318OutputSchema() => Parse(WebSearchOutput);
+
     /// <summary>
     /// Factory of each Anthropic provider tool, keyed by tool id. Calling a factory returns the tool with its default
     /// arguments, and its <see cref="Tool.InputSchema"/>. Maps to <c>anthropicTools</c>.
@@ -156,12 +189,29 @@ public static partial class AnthropicTools
             _ => throw new ArgumentException("Unknown Anthropic tool: " + id, nameof(id)),
         };
         using var schema = JsonDocument.Parse(json);
-        return Tool.ProviderDefined(
+        var tool = Tool.ProviderDefined(
             id,
             id.Substring("anthropic.".Length),
             JsonSerializer.SerializeToElement(new JsonObject()),
             schema.RootElement
         );
+        tool.OutputSchema = id switch
+        {
+            "anthropic.web_fetch_20250910" => WebFetch20250910OutputSchema(),
+            "anthropic.web_fetch_20260209" => WebFetch20260209OutputSchema(),
+            "anthropic.web_fetch_20260318" => WebFetch20260318OutputSchema(),
+            "anthropic.web_search_20250305" => WebSearch20250305OutputSchema(),
+            "anthropic.web_search_20260209" => WebSearch20260209OutputSchema(),
+            "anthropic.web_search_20260318" => WebSearch20260318OutputSchema(),
+            _ => null,
+        };
+        return tool;
+    }
+
+    private static JsonElement Parse(string json)
+    {
+        using var document = JsonDocument.Parse(json);
+        return document.RootElement.Clone();
     }
 
     // The computer tools share one object shape. Newer versions add a tuple coordinate, duration,

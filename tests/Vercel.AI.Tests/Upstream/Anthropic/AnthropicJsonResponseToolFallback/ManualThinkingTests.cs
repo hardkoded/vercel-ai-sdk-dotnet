@@ -80,6 +80,7 @@ public sealed class ManualThinkingTests
             [
                 "reasoning-start",
                 "reasoning-delta",
+                "reasoning-delta",
                 "reasoning-end",
                 "text-start",
                 "text-delta",

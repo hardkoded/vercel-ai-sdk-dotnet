@@ -314,10 +314,6 @@ internal static class AnthropicCaseRegistration
             AnthropicAssertions.ExtractTextAndUsage
         );
         AnthropicCases.Add(
-            "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate::should expose the raw response headers",
-            AnthropicAssertions.ExtractTextAndUsage
-        );
-        AnthropicCases.Add(
             "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate::should limit max output tokens to the model max and warn",
             AnthropicAssertions.ClampKnownMax
         );

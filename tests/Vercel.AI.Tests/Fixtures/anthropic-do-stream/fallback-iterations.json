@@ -1,0 +1,14 @@
+[
+ {
+  "inputTokens": 408,
+  "model": "claude-fable-5",
+  "outputTokens": 0,
+  "type": "message"
+ },
+ {
+  "inputTokens": 412,
+  "model": "claude-opus-4-8",
+  "outputTokens": 264,
+  "type": "fallback_message"
+ }
+]

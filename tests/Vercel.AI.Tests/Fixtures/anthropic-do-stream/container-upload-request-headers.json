@@ -1,0 +1,6 @@
+{
+ "anthropic-beta": "files-api-2025-04-14,code-execution-2025-08-25",
+ "anthropic-version": "2023-06-01",
+ "content-type": "application/json",
+ "x-api-key": "test-api-key"
+}

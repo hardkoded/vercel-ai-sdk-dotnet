@@ -1,0 +1,117 @@
+[
+ {
+  "type": "stream-start",
+  "warnings": []
+ },
+ {
+  "id": "msg_01GouTqNCGXzrj5LQ5jEkw67",
+  "modelId": "claude-3-haiku-20240307",
+  "type": "response-metadata"
+ },
+ {
+  "kind": "anthropic.message_start",
+  "providerMetadata": {
+   "anthropic": {
+    "id": "msg_01GouTqNCGXzrj5LQ5jEkw67",
+    "model": "claude-3-haiku-20240307",
+    "usage": {
+     "input_tokens": 441,
+     "output_tokens": 2
+    }
+   }
+  },
+  "type": "custom"
+ },
+ {
+  "id": "0",
+  "type": "text-start"
+ },
+ {
+  "delta": "Okay",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": "!",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "id": "0",
+  "type": "text-end"
+ },
+ {
+  "id": "toolu_01DBsB4vvYLnBDzZ5rBSxSLs",
+  "toolName": "test-tool",
+  "type": "tool-input-start"
+ },
+ {
+  "delta": "{\"value",
+  "id": "toolu_01DBsB4vvYLnBDzZ5rBSxSLs",
+  "type": "tool-input-delta"
+ },
+ {
+  "delta": "\":",
+  "id": "toolu_01DBsB4vvYLnBDzZ5rBSxSLs",
+  "type": "tool-input-delta"
+ },
+ {
+  "delta": "\"Spark",
+  "id": "toolu_01DBsB4vvYLnBDzZ5rBSxSLs",
+  "type": "tool-input-delta"
+ },
+ {
+  "delta": "le",
+  "id": "toolu_01DBsB4vvYLnBDzZ5rBSxSLs",
+  "type": "tool-input-delta"
+ },
+ {
+  "delta": " Day\"}",
+  "id": "toolu_01DBsB4vvYLnBDzZ5rBSxSLs",
+  "type": "tool-input-delta"
+ },
+ {
+  "id": "toolu_01DBsB4vvYLnBDzZ5rBSxSLs",
+  "type": "tool-input-end"
+ },
+ {
+  "input": "{\"value\":\"Sparkle Day\"}",
+  "toolCallId": "toolu_01DBsB4vvYLnBDzZ5rBSxSLs",
+  "toolName": "test-tool",
+  "type": "tool-call"
+ },
+ {
+  "finishReason": {
+   "raw": "tool_use",
+   "unified": "tool-calls"
+  },
+  "providerMetadata": {
+   "anthropic": {
+    "container": null,
+    "contextManagement": null,
+    "iterations": null,
+    "stopSequence": null,
+    "usage": {
+     "input_tokens": 441,
+     "output_tokens": 65
+    }
+   }
+  },
+  "type": "finish",
+  "usage": {
+   "inputTokens": {
+    "cacheRead": 0,
+    "cacheWrite": 0,
+    "noCache": 441,
+    "total": 441
+   },
+   "outputTokens": {
+    "total": 65
+   },
+   "raw": {
+    "input_tokens": 441,
+    "output_tokens": 65
+   }
+  }
+ }
+]

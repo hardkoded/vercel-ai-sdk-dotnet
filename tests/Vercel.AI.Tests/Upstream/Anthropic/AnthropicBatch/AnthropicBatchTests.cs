@@ -851,8 +851,7 @@ public sealed class AnthropicBatchTests
     [Fact]
     [UpstreamTest(
         "packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::cancels a batch",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Checks that the caller token reaches the HTTP call, not the identity of the JS abort signal."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Cancels_a_batch()
     {
@@ -888,8 +887,7 @@ public sealed class AnthropicBatchTests
     [Fact]
     [UpstreamTest(
         "packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::lists and normalizes a page of batches",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Checks that the caller token reaches the HTTP call, not the identity of the JS abort signal."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Lists_and_normalizes_a_page_of_batches()
     {
@@ -1527,8 +1525,7 @@ public sealed class AnthropicBatchTests
     [Fact]
     [UpstreamTest(
         "packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::forwards operation headers and the abort signal while retrieving results",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Checks that the caller token reaches both HTTP calls, not the identity of the JS abort signal."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Forwards_operation_headers_and_the_abort_signal_while_retrieving_results()
     {
@@ -1557,23 +1554,45 @@ public sealed class AnthropicBatchTests
             Assert.Equal("operation", request.Headers["operation-header"]);
         });
         Assert.All(handler.Requests, request => Assert.True(request.TokenCanBeCanceled));
+
+        handler.Requests.Clear();
+        handler.OnSend = () => source.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+        {
+            var canceled = await batch.DoGetResultsAsync(
+                OperationCall(null, source.Token),
+                source.Token
+            );
+            await canceled.ToListAsync().AsTask();
+        });
+        Assert.Equal(2, handler.Requests.Count);
+        Assert.All(handler.Requests, request => Assert.True(request.TokenCancelledByCaller));
     }
 
     [Fact]
     [UpstreamTest(
         "packages/anthropic/src/anthropic-batch.test.ts::Anthropic batch::exposes batch support on the provider",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Language models have no batch members by construction in C#, so only the batch API surface is checked."
+        Coverage = UpstreamCoverage.Covered
     )]
     public void Exposes_batch_support_on_the_provider()
     {
-        var batch = AnthropicProvider
-            .Create(new AnthropicOptions { ApiKey = "test-api-key" })
-            .ExperimentalBatch();
+        var provider = AnthropicProvider.Create(new AnthropicOptions { ApiKey = "test-api-key" });
+        var batch = provider.ExperimentalBatch();
 
         Assert.NotNull(batch);
         Assert.True(batch!.CanCancel);
         Assert.True(batch.CanList);
         Assert.Equal("anthropic.batch", batch.Provider);
+
+        foreach (
+            var model in new[]
+            {
+                provider.LanguageModel("claude-3-haiku-20240307"),
+                new AnthropicLanguageModel(provider, "claude-3-haiku-20240307"),
+            }
+        )
+        {
+            Assert.IsNotAssignableFrom<IBatchApi>(model);
+        }
     }
 }

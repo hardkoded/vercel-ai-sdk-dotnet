@@ -1,0 +1,1418 @@
+{
+ "doGenerate > agent skills > should expose container information as provider metadata": {
+  "anthropic": {
+   "container": {
+    "expiresAt": "2025-10-20T11:48:47.798310Z",
+    "id": "container_011CUJKA7aVjWm5XJL9ozHGS",
+    "skills": [
+     {
+      "skillId": "pptx",
+      "type": "anthropic",
+      "version": "20251013"
+     }
+    ]
+   },
+   "contextManagement": null,
+   "iterations": null,
+   "serviceTier": "standard",
+   "stopSequence": null,
+   "usage": {
+    "cache_creation": {
+     "ephemeral_1h_input_tokens": 0,
+     "ephemeral_5m_input_tokens": 0
+    },
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "input_tokens": 950648,
+    "output_tokens": 13856,
+    "server_tool_use": {
+     "web_fetch_requests": 0,
+     "web_search_requests": 0
+    },
+    "service_tier": "standard"
+   }
+  }
+ },
+ "doGenerate > code execution 20250825 > should expose container information as provider metadata": {
+  "anthropic": {
+   "container": {
+    "expiresAt": "2025-10-14T10:28:40.590791Z",
+    "id": "container_011CU6rVteVhydYXRyNs6G1M",
+    "skills": null
+   },
+   "contextManagement": null,
+   "iterations": null,
+   "serviceTier": "standard",
+   "stopSequence": null,
+   "usage": {
+    "cache_creation": {
+     "ephemeral_1h_input_tokens": 0,
+     "ephemeral_5m_input_tokens": 0
+    },
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "input_tokens": 7881,
+    "output_tokens": 608,
+    "server_tool_use": {
+     "web_fetch_requests": 0,
+     "web_search_requests": 0
+    },
+    "service_tier": "standard"
+   }
+  }
+ },
+ "doGenerate > code execution 20250825 > should include code execution tool call and result in content": [
+  {
+   "text": "I'll create a Python script to calculate Fibonacci numbers and then execute it to find the 10th Fibonacci number.",
+   "type": "text"
+  },
+  {
+   "input": "{\"type\":\"text_editor_code_execution\",\"command\":\"create\",\"path\":\"/tmp/fibonacci.py\",\"file_text\":\"def fibonacci(n):\\n    \\\"\\\"\\\"\\n    Calculate the nth Fibonacci number.\\n    \\n    Args:\\n        n: The position in the Fibonacci sequence (1-indexed)\\n    \\n    Returns:\\n        The nth Fibonacci number\\n    \\\"\\\"\\\"\\n    if n <= 0:\\n        raise ValueError(\\\"n must be a positive integer\\\")\\n    elif n == 1 or n == 2:\\n        return 1\\n    \\n    # Using iterative approach for efficiency\\n    fib_prev = 1  # F(1)\\n    fib_curr = 1  # F(2)\\n    \\n    for i in range(3, n + 1):\\n        fib_next = fib_prev + fib_curr\\n        fib_prev = fib_curr\\n        fib_curr = fib_next\\n    \\n    return fib_curr\\n\\n\\nif __name__ == \\\"__main__\\\":\\n    # Calculate the 10th Fibonacci number\\n    n = 10\\n    result = fibonacci(n)\\n    print(f\\\"The {n}th Fibonacci number is: {result}\\\")\\n    \\n    # Display the first 10 Fibonacci numbers for reference\\n    print(f\\\"\\\\nFirst {n} Fibonacci numbers:\\\")\\n    for i in range(1, n + 1):\\n        print(f\\\"F({i}) = {fibonacci(i)}\\\")\\n\"}",
+   "providerExecuted": true,
+   "toolCallId": "srvtoolu_012LCpyzxGBy44bCW4zCxmH2",
+   "toolName": "code_execution",
+   "type": "tool-call"
+  },
+  {
+   "result": {
+    "is_file_update": false,
+    "type": "text_editor_code_execution_create_result"
+   },
+   "toolCallId": "srvtoolu_012LCpyzxGBy44bCW4zCxmH2",
+   "toolName": "code_execution",
+   "type": "tool-result"
+  },
+  {
+   "text": "Now let me execute the script:",
+   "type": "text"
+  },
+  {
+   "input": "{\"type\":\"bash_code_execution\",\"command\":\"python /tmp/fibonacci.py\"}",
+   "providerExecuted": true,
+   "toolCallId": "srvtoolu_01KqzcSjepCqNjqeUVqnmEjj",
+   "toolName": "code_execution",
+   "type": "tool-call"
+  },
+  {
+   "result": {
+    "content": [],
+    "return_code": 0,
+    "stderr": "",
+    "stdout": "The 10th Fibonacci number is: 55\n\nFirst 10 Fibonacci numbers:\nF(1) = 1\nF(2) = 1\nF(3) = 2\nF(4) = 3\nF(5) = 5\nF(6) = 8\nF(7) = 13\nF(8) = 21\nF(9) = 34\nF(10) = 55\n",
+    "type": "bash_code_execution_result"
+   },
+   "toolCallId": "srvtoolu_01KqzcSjepCqNjqeUVqnmEjj",
+   "toolName": "code_execution",
+   "type": "tool-result"
+  },
+  {
+   "text": "Perfect! The script has been created and executed successfully. \n\n**Result: The 10th Fibonacci number is 55**\n\nThe script uses an iterative approach to calculate Fibonacci numbers efficiently, which is better than a recursive approach for larger values of n (avoiding exponential time complexity). The Fibonacci sequence shown is: 1, 1, 2, 3, 5, 8, 13, 21, 34, 55...",
+   "type": "text"
+  }
+ ],
+ "doGenerate > code execution 20250825 > should include file id list in code execution tool generate call result.": {
+  "content": [
+   {
+    "text": "I'll help you create a Python script to calculate Fibonacci numbers, execute it to find the 10th Fibonacci number, and output the results to an Excel file. Let me break this down into steps:\n\n1. First, I'll create the Python script\n2. Execute it to find the 10th Fibonacci number\n3. Save the results to an Excel file\n4. Export both the Excel file and the Python code",
+    "type": "text"
+   },
+   {
+    "input": "{\"type\":\"text_editor_code_execution\",\"command\":\"create\",\"path\":\"/tmp/fibonacci_calculator.py\",\"file_text\":\"import pandas as pd\\nimport os\\n\\ndef fibonacci(n):\\n    \\\"\\\"\\\"\\n    Calculate the nth Fibonacci number using iterative approach.\\n    \\n    Args:\\n        n (int): The position in the Fibonacci sequence (1-indexed)\\n    \\n    Returns:\\n        int: The nth Fibonacci number\\n    \\\"\\\"\\\"\\n    if n <= 0:\\n        return 0\\n    elif n == 1:\\n        return 0\\n    elif n == 2:\\n        return 1\\n    else:\\n        a, b = 0, 1\\n        for _ in range(2, n):\\n            a, b = b, a + b\\n        return b\\n\\ndef generate_fibonacci_sequence(n):\\n    \\\"\\\"\\\"\\n    Generate Fibonacci sequence up to the nth number.\\n    \\n    Args:\\n        n (int): Number of Fibonacci numbers to generate\\n    \\n    Returns:\\n        list: List of tuples containing (position, fibonacci_number)\\n    \\\"\\\"\\\"\\n    sequence = []\\n    for i in range(1, n + 1):\\n        fib_num = fibonacci(i)\\n        sequence.append((i, fib_num))\\n    return sequence\\n\\ndef save_to_excel(data, filename):\\n    \\\"\\\"\\\"\\n    Save Fibonacci sequence data to an Excel file.\\n    \\n    Args:\\n        data (list): List of tuples containing (position, fibonacci_number)\\n        filename (str): Output filename\\n    \\\"\\\"\\\"\\n    # Create a DataFrame\\n    df = pd.DataFrame(data, columns=['Position', 'Fibonacci Number'])\\n    \\n    # Save to Excel\\n    output_dir = os.environ.get('OUTPUT_DIR', '/tmp')\\n    filepath = os.path.join(output_dir, filename)\\n    df.to_excel(filepath, index=False, sheet_name='Fibonacci Sequence')\\n    \\n    print(f\\\"Excel file saved to: {filepath}\\\")\\n    return df\\n\\ndef main():\\n    # Calculate the 10th Fibonacci number\\n    n = 10\\n    print(f\\\"Calculating Fibonacci sequence up to position {n}...\\\")\\n    print()\\n    \\n    # Generate the sequence\\n    fibonacci_sequence = generate_fibonacci_sequence(n)\\n    \\n    # Display results\\n    print(\\\"Fibonacci Sequence:\\\")\\n    print(\\\"-\\\" * 40)\\n    for pos, fib_num in fibonacci_sequence:\\n        print(f\\\"Position {pos:2d}: {fib_num}\\\")\\n    print(\\\"-\\\" * 40)\\n    print()\\n    \\n    # Highlight the 10th Fibonacci number\\n    tenth_fib = fibonacci(n)\\n    print(f\\\"The 10th Fibonacci number is: {tenth_fib}\\\")\\n    print()\\n    \\n    # Save to Excel file\\n    df = save_to_excel(fibonacci_sequence, 'fibonacci_results.xlsx')\\n    print()\\n    print(\\\"DataFrame preview:\\\")\\n    print(df)\\n    \\n    return tenth_fib\\n\\nif __name__ == \\\"__main__\\\":\\n    result = main()\\n\"}",
+    "providerExecuted": true,
+    "toolCallId": "srvtoolu_01PitdyEfvwhjVp11SJarVsT",
+    "toolName": "code_execution",
+    "type": "tool-call"
+   },
+   {
+    "result": {
+     "is_file_update": false,
+     "type": "text_editor_code_execution_create_result"
+    },
+    "toolCallId": "srvtoolu_01PitdyEfvwhjVp11SJarVsT",
+    "toolName": "code_execution",
+    "type": "tool-result"
+   },
+   {
+    "text": "Now let's execute the script to calculate the 10th Fibonacci number and generate the Excel file:",
+    "type": "text"
+   },
+   {
+    "input": "{\"type\":\"bash_code_execution\",\"command\":\"cd /tmp && python fibonacci_calculator.py\"}",
+    "providerExecuted": true,
+    "toolCallId": "srvtoolu_01Lk4vvHmfk7ik3iw5LUUVPm",
+    "toolName": "code_execution",
+    "type": "tool-call"
+   },
+   {
+    "result": {
+     "content": [
+      {
+       "file_id": "file_011CUJascj5v5AsQ2KybX48e",
+       "type": "bash_code_execution_output"
+      }
+     ],
+     "return_code": 0,
+     "stderr": "",
+     "stdout": "Calculating Fibonacci sequence up to position 10...\n\nFibonacci Sequence:\n----------------------------------------\nPosition  1: 0\nPosition  2: 1\nPosition  3: 1\nPosition  4: 2\nPosition  5: 3\nPosition  6: 5\nPosition  7: 8\nPosition  8: 13\nPosition  9: 21\nPosition 10: 34\n----------------------------------------\n\nThe 10th Fibonacci number is: 34\n\nExcel file saved to: /files/output/8f1f10526994b0a8/fibonacci_results.xlsx\n\nDataFrame preview:\n   Position  Fibonacci Number\n0         1                 0\n1         2                 1\n2         3                 1\n3         4                 2\n4         5                 3\n5         6                 5\n6         7                 8\n7         8                13\n8         9                21\n9        10                34\n",
+     "type": "bash_code_execution_result"
+    },
+    "toolCallId": "srvtoolu_01Lk4vvHmfk7ik3iw5LUUVPm",
+    "toolName": "code_execution",
+    "type": "tool-result"
+   },
+   {
+    "text": "Perfect! Now let's export the Python script as well:",
+    "type": "text"
+   },
+   {
+    "input": "{\"type\":\"bash_code_execution\",\"command\":\"cp /tmp/fibonacci_calculator.py $OUTPUT_DIR/fibonacci_calculator.py\"}",
+    "providerExecuted": true,
+    "toolCallId": "srvtoolu_016dr2it9y5xkvQVq2sRfnSX",
+    "toolName": "code_execution",
+    "type": "tool-call"
+   },
+   {
+    "result": {
+     "content": [
+      {
+       "file_id": "file_011CUJat24HHw4F65QJuLjhv",
+       "type": "bash_code_execution_output"
+      }
+     ],
+     "return_code": 0,
+     "stderr": "",
+     "stdout": "",
+     "type": "bash_code_execution_result"
+    },
+    "toolCallId": "srvtoolu_016dr2it9y5xkvQVq2sRfnSX",
+    "toolName": "code_execution",
+    "type": "tool-result"
+   },
+   {
+    "text": "Excellent! I've successfully completed all the tasks:\n\n## Summary\n\n✅ **Python Script Created**: `fibonacci_calculator.py`\n- Implements a Fibonacci number calculator using an efficient iterative approach\n- Generates a complete Fibonacci sequence up to the nth position\n- Includes proper documentation and functions\n\n✅ **Execution Results**:\n- The **10th Fibonacci number is: 34**\n- The complete sequence from positions 1-10: 0, 1, 1, 2, 3, 5, 8, 13, 21, 34\n\n✅ **Files Exported**:\n1. **fibonacci_results.xlsx** - Excel file containing:\n   - Column 1: Position (1-10)\n   - Column 2: Fibonacci Number (0-34)\n   \n2. **fibonacci_calculator.py** - The complete Python source code\n\n## Features of the Script:\n- **fibonacci(n)**: Calculates the nth Fibonacci number\n- **generate_fibonacci_sequence(n)**: Creates a sequence up to position n\n- **save_to_excel()**: Exports data to Excel format using pandas\n- Clean output with formatted display of results\n- Professional code structure with docstrings\n\nBoth files have been exported and are ready for download!",
+    "type": "text"
+   }
+  ],
+  "finishReason": {
+   "raw": "end_turn",
+   "unified": "stop"
+  },
+  "providerMetadata": {
+   "anthropic": {
+    "container": {
+     "expiresAt": "2025-10-20T15:10:44.950231Z",
+     "id": "container_011CUJar2mdkMcv7daEVAQw2",
+     "skills": null
+    },
+    "contextManagement": null,
+    "iterations": null,
+    "serviceTier": "standard",
+    "stopSequence": null,
+    "usage": {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 0,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 0,
+     "cache_read_input_tokens": 0,
+     "input_tokens": 12546,
+     "output_tokens": 1359,
+     "server_tool_use": {
+      "web_fetch_requests": 0,
+      "web_search_requests": 0
+     },
+     "service_tier": "standard"
+    }
+   }
+  },
+  "request": {
+   "body": {
+    "max_tokens": 4096,
+    "messages": [
+     {
+      "content": [
+       {
+        "text": "Hello",
+        "type": "text"
+       }
+      ],
+      "role": "user"
+     }
+    ],
+    "model": "claude-3-haiku-20240307",
+    "tools": [
+     {
+      "name": "code_execution",
+      "type": "code_execution_20250825"
+     }
+    ]
+   }
+  },
+  "response": {
+   "body": {
+    "container": {
+     "expires_at": "2025-10-20T15:10:44.950231Z",
+     "id": "container_011CUJar2mdkMcv7daEVAQw2"
+    },
+    "content": [
+     {
+      "text": "I'll help you create a Python script to calculate Fibonacci numbers, execute it to find the 10th Fibonacci number, and output the results to an Excel file. Let me break this down into steps:\n\n1. First, I'll create the Python script\n2. Execute it to find the 10th Fibonacci number\n3. Save the results to an Excel file\n4. Export both the Excel file and the Python code",
+      "type": "text"
+     },
+     {
+      "id": "srvtoolu_01PitdyEfvwhjVp11SJarVsT",
+      "input": {
+       "command": "create",
+       "file_text": "import pandas as pd\nimport os\n\ndef fibonacci(n):\n    \"\"\"\n    Calculate the nth Fibonacci number using iterative approach.\n    \n    Args:\n        n (int): The position in the Fibonacci sequence (1-indexed)\n    \n    Returns:\n        int: The nth Fibonacci number\n    \"\"\"\n    if n <= 0:\n        return 0\n    elif n == 1:\n        return 0\n    elif n == 2:\n        return 1\n    else:\n        a, b = 0, 1\n        for _ in range(2, n):\n            a, b = b, a + b\n        return b\n\ndef generate_fibonacci_sequence(n):\n    \"\"\"\n    Generate Fibonacci sequence up to the nth number.\n    \n    Args:\n        n (int): Number of Fibonacci numbers to generate\n    \n    Returns:\n        list: List of tuples containing (position, fibonacci_number)\n    \"\"\"\n    sequence = []\n    for i in range(1, n + 1):\n        fib_num = fibonacci(i)\n        sequence.append((i, fib_num))\n    return sequence\n\ndef save_to_excel(data, filename):\n    \"\"\"\n    Save Fibonacci sequence data to an Excel file.\n    \n    Args:\n        data (list): List of tuples containing (position, fibonacci_number)\n        filename (str): Output filename\n    \"\"\"\n    # Create a DataFrame\n    df = pd.DataFrame(data, columns=['Position', 'Fibonacci Number'])\n    \n    # Save to Excel\n    output_dir = os.environ.get('OUTPUT_DIR', '/tmp')\n    filepath = os.path.join(output_dir, filename)\n    df.to_excel(filepath, index=False, sheet_name='Fibonacci Sequence')\n    \n    print(f\"Excel file saved to: {filepath}\")\n    return df\n\ndef main():\n    # Calculate the 10th Fibonacci number\n    n = 10\n    print(f\"Calculating Fibonacci sequence up to position {n}...\")\n    print()\n    \n    # Generate the sequence\n    fibonacci_sequence = generate_fibonacci_sequence(n)\n    \n    # Display results\n    print(\"Fibonacci Sequence:\")\n    print(\"-\" * 40)\n    for pos, fib_num in fibonacci_sequence:\n        print(f\"Position {pos:2d}: {fib_num}\")\n    print(\"-\" * 40)\n    print()\n    \n    # Highlight the 10th Fibonacci number\n    tenth_fib = fibonacci(n)\n    print(f\"The 10th Fibonacci number is: {tenth_fib}\")\n    print()\n    \n    # Save to Excel file\n    df = save_to_excel(fibonacci_sequence, 'fibonacci_results.xlsx')\n    print()\n    print(\"DataFrame preview:\")\n    print(df)\n    \n    return tenth_fib\n\nif __name__ == \"__main__\":\n    result = main()\n",
+       "path": "/tmp/fibonacci_calculator.py"
+      },
+      "name": "text_editor_code_execution",
+      "type": "server_tool_use"
+     },
+     {
+      "content": {
+       "is_file_update": false,
+       "type": "text_editor_code_execution_create_result"
+      },
+      "tool_use_id": "srvtoolu_01PitdyEfvwhjVp11SJarVsT",
+      "type": "text_editor_code_execution_tool_result"
+     },
+     {
+      "text": "Now let's execute the script to calculate the 10th Fibonacci number and generate the Excel file:",
+      "type": "text"
+     },
+     {
+      "id": "srvtoolu_01Lk4vvHmfk7ik3iw5LUUVPm",
+      "input": {
+       "command": "cd /tmp && python fibonacci_calculator.py"
+      },
+      "name": "bash_code_execution",
+      "type": "server_tool_use"
+     },
+     {
+      "content": {
+       "content": [
+        {
+         "file_id": "file_011CUJascj5v5AsQ2KybX48e",
+         "type": "bash_code_execution_output"
+        }
+       ],
+       "return_code": 0,
+       "stderr": "",
+       "stdout": "Calculating Fibonacci sequence up to position 10...\n\nFibonacci Sequence:\n----------------------------------------\nPosition  1: 0\nPosition  2: 1\nPosition  3: 1\nPosition  4: 2\nPosition  5: 3\nPosition  6: 5\nPosition  7: 8\nPosition  8: 13\nPosition  9: 21\nPosition 10: 34\n----------------------------------------\n\nThe 10th Fibonacci number is: 34\n\nExcel file saved to: /files/output/8f1f10526994b0a8/fibonacci_results.xlsx\n\nDataFrame preview:\n   Position  Fibonacci Number\n0         1                 0\n1         2                 1\n2         3                 1\n3         4                 2\n4         5                 3\n5         6                 5\n6         7                 8\n7         8                13\n8         9                21\n9        10                34\n",
+       "type": "bash_code_execution_result"
+      },
+      "tool_use_id": "srvtoolu_01Lk4vvHmfk7ik3iw5LUUVPm",
+      "type": "bash_code_execution_tool_result"
+     },
+     {
+      "text": "Perfect! Now let's export the Python script as well:",
+      "type": "text"
+     },
+     {
+      "id": "srvtoolu_016dr2it9y5xkvQVq2sRfnSX",
+      "input": {
+       "command": "cp /tmp/fibonacci_calculator.py $OUTPUT_DIR/fibonacci_calculator.py"
+      },
+      "name": "bash_code_execution",
+      "type": "server_tool_use"
+     },
+     {
+      "content": {
+       "content": [
+        {
+         "file_id": "file_011CUJat24HHw4F65QJuLjhv",
+         "type": "bash_code_execution_output"
+        }
+       ],
+       "return_code": 0,
+       "stderr": "",
+       "stdout": "",
+       "type": "bash_code_execution_result"
+      },
+      "tool_use_id": "srvtoolu_016dr2it9y5xkvQVq2sRfnSX",
+      "type": "bash_code_execution_tool_result"
+     },
+     {
+      "text": "Excellent! I've successfully completed all the tasks:\n\n## Summary\n\n✅ **Python Script Created**: `fibonacci_calculator.py`\n- Implements a Fibonacci number calculator using an efficient iterative approach\n- Generates a complete Fibonacci sequence up to the nth position\n- Includes proper documentation and functions\n\n✅ **Execution Results**:\n- The **10th Fibonacci number is: 34**\n- The complete sequence from positions 1-10: 0, 1, 1, 2, 3, 5, 8, 13, 21, 34\n\n✅ **Files Exported**:\n1. **fibonacci_results.xlsx** - Excel file containing:\n   - Column 1: Position (1-10)\n   - Column 2: Fibonacci Number (0-34)\n   \n2. **fibonacci_calculator.py** - The complete Python source code\n\n## Features of the Script:\n- **fibonacci(n)**: Calculates the nth Fibonacci number\n- **generate_fibonacci_sequence(n)**: Creates a sequence up to position n\n- **save_to_excel()**: Exports data to Excel format using pandas\n- Clean output with formatted display of results\n- Professional code structure with docstrings\n\nBoth files have been exported and are ready for download!",
+      "type": "text"
+     }
+    ],
+    "id": "msg_01SoDD6rHi4QCh3PxHKK2oZW",
+    "model": "claude-sonnet-4-5-20250929",
+    "role": "assistant",
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 0,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 0,
+     "cache_read_input_tokens": 0,
+     "input_tokens": 12546,
+     "output_tokens": 1359,
+     "server_tool_use": {
+      "web_fetch_requests": 0,
+      "web_search_requests": 0
+     },
+     "service_tier": "standard"
+    }
+   },
+   "headers": {
+    "content-length": "6733",
+    "content-type": "application/json"
+   },
+   "id": "msg_01SoDD6rHi4QCh3PxHKK2oZW",
+   "modelId": "claude-sonnet-4-5-20250929"
+  },
+  "usage": {
+   "inputTokens": {
+    "cacheRead": 0,
+    "cacheWrite": 0,
+    "noCache": 12546,
+    "total": 12546
+   },
+   "outputTokens": {
+    "total": 1359
+   },
+   "raw": {
+    "cache_creation": {
+     "ephemeral_1h_input_tokens": 0,
+     "ephemeral_5m_input_tokens": 0
+    },
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "input_tokens": 12546,
+    "output_tokens": 1359,
+    "server_tool_use": {
+     "web_fetch_requests": 0,
+     "web_search_requests": 0
+    },
+    "service_tier": "standard"
+   }
+  },
+  "warnings": []
+ },
+ "doGenerate > code execution 20260120 > should include code execution tool call and result in content": [
+  {
+   "text": "I'll create a Python script to calculate Fibonacci numbers and then execute it to find the 10th Fibonacci number.",
+   "type": "text"
+  },
+  {
+   "input": "{\"type\":\"text_editor_code_execution\",\"command\":\"create\",\"path\":\"/tmp/fibonacci.py\",\"file_text\":\"def fibonacci(n):\\n    \\\"\\\"\\\"\\n    Calculate the nth Fibonacci number.\\n    \\n    Args:\\n        n: The position in the Fibonacci sequence (1-indexed)\\n    \\n    Returns:\\n        The nth Fibonacci number\\n    \\\"\\\"\\\"\\n    if n <= 0:\\n        raise ValueError(\\\"n must be a positive integer\\\")\\n    elif n == 1 or n == 2:\\n        return 1\\n    \\n    # Using iterative approach for efficiency\\n    fib_prev = 1  # F(1)\\n    fib_curr = 1  # F(2)\\n    \\n    for i in range(3, n + 1):\\n        fib_next = fib_prev + fib_curr\\n        fib_prev = fib_curr\\n        fib_curr = fib_next\\n    \\n    return fib_curr\\n\\n\\nif __name__ == \\\"__main__\\\":\\n    # Calculate the 10th Fibonacci number\\n    n = 10\\n    result = fibonacci(n)\\n    print(f\\\"The {n}th Fibonacci number is: {result}\\\")\\n    \\n    # Display the first 10 Fibonacci numbers for reference\\n    print(f\\\"\\\\nFirst {n} Fibonacci numbers:\\\")\\n    for i in range(1, n + 1):\\n        print(f\\\"F({i}) = {fibonacci(i)}\\\")\\n\"}",
+   "providerExecuted": true,
+   "toolCallId": "srvtoolu_012LCpyzxGBy44bCW4zCxmH2",
+   "toolName": "code_execution",
+   "type": "tool-call"
+  },
+  {
+   "result": {
+    "is_file_update": false,
+    "type": "text_editor_code_execution_create_result"
+   },
+   "toolCallId": "srvtoolu_012LCpyzxGBy44bCW4zCxmH2",
+   "toolName": "code_execution",
+   "type": "tool-result"
+  },
+  {
+   "text": "Now let me execute the script:",
+   "type": "text"
+  },
+  {
+   "input": "{\"type\":\"bash_code_execution\",\"command\":\"python /tmp/fibonacci.py\"}",
+   "providerExecuted": true,
+   "toolCallId": "srvtoolu_01KqzcSjepCqNjqeUVqnmEjj",
+   "toolName": "code_execution",
+   "type": "tool-call"
+  },
+  {
+   "result": {
+    "content": [],
+    "return_code": 0,
+    "stderr": "",
+    "stdout": "The 10th Fibonacci number is: 55\n\nFirst 10 Fibonacci numbers:\nF(1) = 1\nF(2) = 1\nF(3) = 2\nF(4) = 3\nF(5) = 5\nF(6) = 8\nF(7) = 13\nF(8) = 21\nF(9) = 34\nF(10) = 55\n",
+    "type": "bash_code_execution_result"
+   },
+   "toolCallId": "srvtoolu_01KqzcSjepCqNjqeUVqnmEjj",
+   "toolName": "code_execution",
+   "type": "tool-result"
+  },
+  {
+   "text": "Perfect! The script has been created and executed successfully. \n\n**Result: The 10th Fibonacci number is 55**\n\nThe script uses an iterative approach to calculate Fibonacci numbers efficiently, which is better than a recursive approach for larger values of n (avoiding exponential time complexity). The Fibonacci sequence shown is: 1, 1, 2, 3, 5, 8, 13, 21, 34, 55...",
+   "type": "text"
+  }
+ ],
+ "doGenerate > mcp servers > should include mcp tool call and result in content": [
+  {
+   "dynamic": true,
+   "input": "{\"message\":\"hello world\"}",
+   "providerExecuted": true,
+   "providerMetadata": {
+    "anthropic": {
+     "serverName": "echo",
+     "type": "mcp-tool-use"
+    }
+   },
+   "toolCallId": "mcptoolu_015oTj2fXVKLrDohFetJd5UL",
+   "toolName": "echo",
+   "type": "tool-call"
+  },
+  {
+   "dynamic": true,
+   "isError": false,
+   "providerMetadata": {
+    "anthropic": {
+     "serverName": "echo",
+     "type": "mcp-tool-use"
+    }
+   },
+   "result": [
+    {
+     "text": "Tool echo: hello world",
+     "type": "text"
+    }
+   ],
+   "toolCallId": "mcptoolu_015oTj2fXVKLrDohFetJd5UL",
+   "toolName": "echo",
+   "type": "tool-result"
+  },
+  {
+   "text": "The echo tool responded back with: **\"hello world\"**\n\nAs expected, it simply echoes back the exact message that was sent to it!",
+   "type": "text"
+  }
+ ],
+ "doGenerate > memory 20250818 > should include memory tool call and result in content": [
+  {
+   "input": "{\"command\":\"view\",\"path\":\"/memories\"}",
+   "toolCallId": "toolu_01TvNvpwszD4hKeudmbfyWiV",
+   "toolName": "memory",
+   "type": "tool-call"
+  }
+ ],
+ "doGenerate > tool search tool > bm25 variant > should include tool search tool call and result in content": [
+  {
+   "text": "I'll search for a weather-related tool to help you get the current weather in San Francisco.",
+   "type": "text"
+  },
+  {
+   "input": "{\"query\":\"weather current conditions San Francisco\"}",
+   "providerExecuted": true,
+   "providerMetadata": {
+    "anthropic": {
+     "caller": {
+      "type": "direct"
+     }
+    }
+   },
+   "toolCallId": "srvtoolu_011Jcb838xqvZyWwDt7bWqAz",
+   "toolName": "tool_search",
+   "type": "tool-call"
+  },
+  {
+   "result": [
+    {
+     "toolName": "get_weather",
+     "type": "tool_reference"
+    }
+   ],
+   "toolCallId": "srvtoolu_011Jcb838xqvZyWwDt7bWqAz",
+   "toolName": "tool_search",
+   "type": "tool-result"
+  },
+  {
+   "text": "Great! I found a weather tool. Let me get the current weather in San Francisco for you.",
+   "type": "text"
+  },
+  {
+   "input": "{\"location\":\"San Francisco, CA\"}",
+   "providerMetadata": {
+    "anthropic": {
+     "caller": {
+      "type": "direct"
+     }
+    }
+   },
+   "toolCallId": "toolu_01PFQG18bVLaXcEaCxTZtX4G",
+   "toolName": "get_weather",
+   "type": "tool-call"
+  }
+ ],
+ "doGenerate > tool search tool > regex variant > should include tool search tool call and result in content": [
+  {
+   "input": "{\"pattern\":\"weather|SF|San Francisco|forecast|temperature|climate\",\"limit\":10}",
+   "providerExecuted": true,
+   "providerMetadata": {
+    "anthropic": {
+     "caller": {
+      "type": "direct"
+     }
+    }
+   },
+   "toolCallId": "srvtoolu_01SACvPAnp6ucMJsstB5qb3f",
+   "toolName": "tool_search",
+   "type": "tool-call"
+  },
+  {
+   "result": [
+    {
+     "toolName": "get_temp_data",
+     "type": "tool_reference"
+    }
+   ],
+   "toolCallId": "srvtoolu_01SACvPAnp6ucMJsstB5qb3f",
+   "toolName": "tool_search",
+   "type": "tool-result"
+  },
+  {
+   "text": "I found a tool to get temperature data! Let me use it to get the weather information for San Francisco.",
+   "type": "text"
+  },
+  {
+   "input": "{\"location\":\"San Francisco, CA\",\"unit\":\"fahrenheit\"}",
+   "providerMetadata": {
+    "anthropic": {
+     "caller": {
+      "type": "direct"
+     }
+    }
+   },
+   "toolCallId": "toolu_01X4r989CAhzqnFqDJn1gVvp",
+   "toolName": "get_temp_data",
+   "type": "tool-call"
+  }
+ ],
+ "doGenerate > web fetch tool > 20260209 text response > should include web fetch 20260209 tool call and result in content": [
+  {
+   "input": "{\"type\":\"programmatic-tool-call\",\"code\":\"\\nimport json\\nresult = await web_fetch({\\\"url\\\": \\\"https://example.com\\\"})\\nparsed = json.loads(result) if isinstance(result, str) else result\\nif isinstance(parsed, list):\\n    print(parsed[0][\\\"content\\\"][:500])\\nelse:\\n    print(parsed)\\n\"}",
+   "providerExecuted": true,
+   "providerMetadata": {
+    "anthropic": {
+     "caller": {
+      "type": "direct"
+     }
+    }
+   },
+   "toolCallId": "srvtoolu_015CSHH7X69AhdK9gNzotEeh",
+   "toolName": "code_execution",
+   "type": "tool-call"
+  },
+  {
+   "input": "{\"url\":\"https://example.com\"}",
+   "providerExecuted": true,
+   "providerMetadata": {
+    "anthropic": {
+     "caller": {
+      "toolId": "srvtoolu_015CSHH7X69AhdK9gNzotEeh",
+      "type": "code_execution_20260120"
+     }
+    }
+   },
+   "toolCallId": "srvtoolu_0152eMmZnBDZc4C2miykFWW5",
+   "toolName": "web_fetch",
+   "type": "tool-call"
+  },
+  {
+   "providerMetadata": {
+    "anthropic": {
+     "caller": {
+      "toolId": "srvtoolu_015CSHH7X69AhdK9gNzotEeh",
+      "type": "code_execution_20260120"
+     }
+    }
+   },
+   "result": {
+    "content": {
+     "source": {
+      "data": "Example Domain\n\n# Example Domain\n\nThis domain is for use in documentation examples without needing permission. Avoid use in operations.\n\n[Learn more](https://iana.org/domains/example)",
+      "mediaType": "text/plain",
+      "type": "text"
+     },
+     "title": "Example Domain",
+     "type": "document"
+    },
+    "retrievedAt": "2026-03-03T15:05:04.091000+00:00",
+    "type": "web_fetch_result",
+    "url": "https://example.com"
+   },
+   "toolCallId": "srvtoolu_0152eMmZnBDZc4C2miykFWW5",
+   "toolName": "web_fetch",
+   "type": "tool-result"
+  },
+  {
+   "result": {
+    "content": [],
+    "return_code": 0,
+    "stderr": "",
+    "stdout": "{'type': 'web_fetch_result', 'url': 'https://example.com', 'retrieved_at': '2026-03-03T15:05:04.091000+00:00', 'content': {'type': 'document', 'source': {'type': 'text', 'media_type': 'text/plain', 'data': 'Example Domain\\n\\n# Example Domain\\n\\nThis domain is for use in documentation examples without needing permission. Avoid use in operations.\\n\\n[Learn more](https://iana.org/domains/example)'}, 'title': 'Example Domain'}}\n",
+    "type": "code_execution_result"
+   },
+   "toolCallId": "srvtoolu_015CSHH7X69AhdK9gNzotEeh",
+   "toolName": "code_execution",
+   "type": "tool-result"
+  },
+  {
+   "text": "The page at **example.com** is a simple placeholder page for the \"Example Domain,\" which is reserved for use in documentation and illustrative examples without requiring prior permission.",
+   "type": "text"
+  }
+ ],
+ "doGenerate > web fetch tool > text response > should include web fetch tool call and result in content": [
+  {
+   "text": "I'll fetch the Wikipedia page about Maglemosian culture to tell you what it's about.",
+   "type": "text"
+  },
+  {
+   "input": "{\"url\":\"https://en.wikipedia.org/wiki/Maglemosian_culture\"}",
+   "providerExecuted": true,
+   "toolCallId": "srvtoolu_01KQVmoT9PpAS5FTTMFcM5ct",
+   "toolName": "web_fetch",
+   "type": "tool-call"
+  },
+  {
+   "result": {
+    "content": {
+     "source": {
+      "data": "This article needs additional citations for\n|\n![]() |\nThe\n|\n---|\nMaglemosian (c. 9000 – c. 6000 BC) is the name given to a [culture](https://en.wikipedia.org/wiki/Archaeological_culture) of the early [Mesolithic](https://en.wikipedia.org/wiki/Mesolithic) period in [Northern Europe](https://en.wikipedia.org/wiki/Northern_Europe). In [Scandinavia](https://en.wikipedia.org/wiki/Scandinavia), the culture was succeeded by the [Kongemose](https://en.wikipedia.org/wiki/Kongemose_culture) culture.\nThe name originates from the [Danish](https://en.wikipedia.org/wiki/Denmark) archeological site Maglemose, situated near [Gørlev](https://en.wikipedia.org/wiki/Gørlev) and [Høng](https://en.wikipedia.org/wiki/Høng) on western [Zealand](https://en.wikipedia.org/wiki/Zealand_(Denmark)), southwest of lake [Tissø](https://en.wikipedia.org/wiki/Tissø). Here the first settlement of the culture was excavated in 1900, by George Sarauw.[[1]](./Maglemosian_culture#cite_note-1) During the following century a long series of similar settlements were excavated from [England](https://en.wikipedia.org/wiki/England) to [Poland](https://en.wikipedia.org/wiki/Poland) and from [Skåne](https://en.wikipedia.org/wiki/Skåne) in [Sweden](https://en.wikipedia.org/wiki/Sweden) to northern [France](https://en.wikipedia.org/wiki/France).\nWhen the Maglemosian culture flourished, sea levels were much lower than now and what is now mainland Europe and Scandinavia were linked with Britain. The cultural period overlaps the end of the [last ice age](https://en.wikipedia.org/wiki/Weichselian_glaciation),[[2]](./Maglemosian_culture#cite_note-2) when the ice retreated and the glaciers melted. It was a long process and sea levels in [Northern Europe](https://en.wikipedia.org/wiki/Northern_Europe) did not reach current levels until almost 6000 BC, by which time they had inundated large territories previously inhabited by Maglemosian people. Therefore, there is hope that the emerging discipline of [underwater archaeology](https://en.wikipedia.org/wiki/Underwater_archaeology) may reveal interesting findings related to the Maglemosian culture in the future.\nThe Maglemosian people lived in forest and wetland environments, using fishing and hunting tools made from wood, bone, and flint [microliths](https://en.wikipedia.org/wiki/Microlith). It appears that they had domesticated the [dog](https://en.wikipedia.org/wiki/Dog).[[3]](./Maglemosian_culture#cite_note-3) Some may have lived settled lives, but most were nomadic.[[citation needed](https://en.wikipedia.org/wiki/Wikipedia:Citation_needed)]\nHuts made of bark have been preserved, in addition to tools made of [flint](https://en.wikipedia.org/wiki/Flint), [bone](https://en.wikipedia.org/wiki/Bone), and [horn](https://en.wikipedia.org/wiki/Horn_(anatomy)). A characteristic feature of the culture is the sharply edged [microliths](https://en.wikipedia.org/wiki/Microlith) of flintstone, used for spear and arrow heads.[[4]](./Maglemosian_culture#cite_note-4) Another notable feature is the [leister](https://en.wikipedia.org/wiki/Leister), a characteristic type of fishing spear, used for [gigging](https://en.wikipedia.org/wiki/Gigging).\nEra | Timespan |\n|\n---|\n![]() |\nThis section needs expansion. You can help by [adding to it](//en.wikipedia.org/w/index.php?title=Maglemosian_culture&action=edit§ion=). (January 2020)\n[↑](https://en.wikipedia.org/wiki/Maglemosian_culture#cite_ref-1)[Sarauw, G. F. L.](https://en.wikipedia.org/wiki/Georg_F.L._Sarauw)(1903).[\"En Stenaldersboplads i Maglemose ved Mullerup – sammenholdt med beslægtede fund\"](https://books.google.com/books?id=n5VePAAACAAJ)[A Stone Age settlement in Maglemose near Mullerup – compared with related finds. Resumé: Études sur le premier âge de la pierre du Nord de l'Europe]. Aarbøger for Nordisk Oldkyndighed og Historie (in Danish). 1903. A[German](https://en.wikipedia.org/wiki/German_language)translation appeared in Prähistorische Zeitschrift in 1911[↑](https://en.wikipedia.org/wiki/Maglemosian_culture#cite_ref-2)Jessen, Catherine A.; Pedersen, Kristoffer Buck; Christensen, Charlie; Olsen, Jesper; Mortensen, Morten Fischer; Hansen, Keld Møller (2015).[\"Early Maglemosian culture in the Preboreal landscape: Archaeology and vegetation from the earliest Mesolithic site in Denmark at Lundby Mose, Sjælland\"](https://doi.org/10.1016%2Fj.quaint.2014.03.056). Quaternary International. 378: 73–87.[Bibcode](https://en.wikipedia.org/wiki/Bibcode_(identifier)):[2015QuInt.378...73J](https://ui.adsabs.harvard.edu/abs/2015QuInt.378...73J).[doi](https://en.wikipedia.org/wiki/Doi_(identifier)):[10.1016/j.quaint.2014.03.056](https://doi.org/10.1016%2Fj.quaint.2014.03.056).[↑](https://en.wikipedia.org/wiki/Maglemosian_culture#cite_ref-3)[\"Stone Age remains are Britain's earliest house\"](http://www.manchester.ac.uk/discover/news/stone-age-remains-are-britains-earliest-house/). Retrieved 28 January 2018.[↑](https://en.wikipedia.org/wiki/Maglemosian_culture#cite_ref-4)[Med bue, pil og fiskespyd](http://www.denstoredanske.dk/Danmarks_Oldtid/Stenalder/De_vejl%C3%B8se_skove_9.500-6.400_f.Kr/Med_bue,_pil_og_fiskespyd)Gyldendals Open Encyclopedia (in Danish). Pictures of some Maglemosian tools.\n- Anders Fischer: \"Submerged Stone Age – Danish Examples and North sea potential\"; i: N.C.Flemming: Submarine Prehistory and Archaeology of the North Sea: research priorities and collaboration with industry. CBA Research Report 141, 2004, s. 23ff\nDanish-language texts\n- Geoffrey Bibby: Spadens vidnedsbyrd; Wormanium 1980,\n[ISBN](https://en.wikipedia.org/wiki/ISBN_(identifier))[87-8516-071-7](https://en.wikipedia.org/wiki/Special:BookSources/87-8516-071-7)s. 109f - Gyldendal og Politikens Danmarkshistorie (red. af Olaf Olsen); Bind 1: I begyndelsen. Fra de ældste tider til ca. år 200 f.Kr. (ved Jørgen Jensen); 1988, s. 47ff\n- Jørgen Jensen: Danmarks Oldtid. Stenalder, 13.000–2.000 f.Kr.; Gyldendal 2001,\n[ISBN](https://en.wikipedia.org/wiki/ISBN_(identifier))[87-00-49038-5](https://en.wikipedia.org/wiki/Special:BookSources/87-00-49038-5)s. 86ff - Anders Fischer: \"En håndfuld flint\", Skalk nr. 5, 1973, s. 8ff\n- Anders Fischer: \"Mennesket og havet i ældre stenalder\"; i: Carin Bunte (red): Arkeologi och Naturvetenskab, Lund 2005, s. 276ff\n- Kim Aaris-Sørensen: \"Uroksejagt\", Skalk nr. 6, 1984, s. 10ff\n- Ole Grøn: \"Teltning\", Skalk nr. 1, 1988, s. 13f\n- Søren A. Sørensen: \"Hytte ved sø\", Skalk nr. 3, 1988, s. 25ff\n- Peter Vang Petersen: \"Bjørnejagt\", Skalk nr. 5, 1991, s. 3ff\n- Poul og Kristian Krabbe: \"Vest for Valhal\", Skalk nr. 6, 1995, s. 11ff\n- Axel Degn Johansen: \"Ikke en sky og ikke en vind!\", Skalk nr 2, 2008, s. 8ff",
+      "mediaType": "text/plain",
+      "type": "text"
+     },
+     "title": "Maglemosian culture",
+     "type": "document"
+    },
+    "retrievedAt": "2025-07-17T21:38:38.606000+00:00",
+    "type": "web_fetch_result",
+    "url": "https://en.wikipedia.org/wiki/Maglemosian_culture"
+   },
+   "toolCallId": "srvtoolu_01KQVmoT9PpAS5FTTMFcM5ct",
+   "toolName": "web_fetch",
+   "type": "tool-result"
+  },
+  {
+   "text": "This Wikipedia page is about the **Maglemosian culture**, which was an early Mesolithic (Middle Stone Age) culture that existed in Northern Europe from approximately 9000 to 6000 BC.\n\nHere are the key points about what the page covers:\n\n**Geographic and Temporal Context:**\n- The culture stretched across Northern Europe from England to Poland and from southern Sweden to northern France\n- It flourished during a time when sea levels were much lower, and Britain was connected to mainland Europe\n- The period overlapped with the end of the last ice age\n\n**Discovery and Naming:**\n- Named after the Danish archaeological site Maglemose near Gørlev and Høng in western Zealand\n- First excavated in 1900 by George Sarauw\n\n**Lifestyle and Technology:**\n- The Maglemosian people lived in forest and wetland environments\n- They were primarily hunter-gatherers who used fishing and hunting tools\n- They had domesticated dogs\n- Most were nomadic, though some may have lived more settled lives\n- They built huts made of bark\n\n**Material Culture:**\n- Made tools from wood, bone, flint, and horn\n- Known for their characteristic sharply edged flint microliths used for spear and arrow heads\n- Used a distinctive type of fishing spear called a \"leister\"\n\n**Archaeological Significance:**\n- The culture was succeeded by the Kongemose culture in Scandinavia\n- Many Maglemosian sites may now be underwater due to rising sea levels, making underwater archaeology potentially valuable for future discoveries\n\nThe page provides both historical context about this important prehistoric culture and details about their material remains and way of life.",
+   "type": "text"
+  }
+ ],
+ "doGenerate > web fetch tool > text response without title > should include web fetch tool call and result in content": [
+  {
+   "text": "I'll fetch the PDF from the URL you provided to see what it says about AI.",
+   "type": "text"
+  },
+  {
+   "input": "{\"url\":\"https://raw.githubusercontent.com/vercel/ai/main/examples/ai-functions/data/ai.pdf\"}",
+   "providerExecuted": true,
+   "toolCallId": "srvtoolu_01SCw66CVHHhqvHhRgxbXoj4",
+   "toolName": "web_fetch",
+   "type": "tool-call"
+  },
+  {
+   "result": {
+    "content": {
+     "source": {
+      "data": "JVBERi0xLjQKz...UVPRgo=",
+      "mediaType": "text/plain",
+      "type": "text"
+     },
+     "title": null,
+     "type": "document"
+    },
+    "retrievedAt": "2025-09-29T07:28:57.560000+00:00",
+    "type": "web_fetch_result",
+    "url": "https://raw.githubusercontent.com/vercel/ai/main/examples/ai-functions/data/ai.pdf"
+   },
+   "toolCallId": "srvtoolu_01SCw66CVHHhqvHhRgxbXoj4",
+   "toolName": "web_fetch",
+   "type": "tool-result"
+  },
+  {
+   "text": "I can see that this is a PDF document in raw binary format. Let me extract the key information about what this document says regarding AI.\n\nFrom analyzing the PDF content, this appears to be a document titled \"Artificial Intelligence\" that discusses various aspects of AI. The document contains text about:\n\n**Key topics covered in the PDF:**\n\n- **Definition and Overview**: The document provides foundational information about artificial intelligence as a field of study and technology\n\n- **AI Applications**: It discusses various applications and use cases of artificial intelligence in different domains\n\n- **Technical Concepts**: The PDF covers technical aspects of AI systems and methodologies\n\n- **Development and Implementation**: Information about how AI systems are developed and implemented\n\n- **Future Perspectives**: Discussion of AI's potential and future directions\n\nThe document appears to be an educational or reference material that provides a comprehensive overview of artificial intelligence concepts, applications, and technical considerations. It's structured as an informational document that would be suitable for someone looking to understand the fundamentals of AI technology.\n\nHowever, due to copyright restrictions, I cannot reproduce the full text content or provide extensive direct quotes from the document. If you're looking for specific information about particular AI topics covered in this PDF, I'd be happy to help answer questions about AI concepts in general.",
+   "type": "text"
+  }
+ ],
+ "doGenerate > web fetch tool > unavailable error > should include web fetch tool call and result in content": [
+  {
+   "text": "I'll fetch the PDF document from the URL you provided to see what it says about AI.",
+   "type": "text"
+  },
+  {
+   "input": "{\"url\":\"https://raw.githubusercontent.com/vercel/ai/blob/main/examples/ai-functions/data/ai.pdf\"}",
+   "providerExecuted": true,
+   "toolCallId": "srvtoolu_013gia34XNKyTfwHxaPCKEVd",
+   "toolName": "web_fetch",
+   "type": "tool-call"
+  },
+  {
+   "isError": true,
+   "result": {
+    "errorCode": "unavailable",
+    "type": "web_fetch_tool_result_error"
+   },
+   "toolCallId": "srvtoolu_013gia34XNKyTfwHxaPCKEVd",
+   "toolName": "web_fetch",
+   "type": "tool-result"
+  },
+  {
+   "text": "I'm unable to access the PDF document at that URL as the web_fetch tool is currently unavailable. To help you understand what the document says about AI, I would need the tool to be working or you could:\\n\\n1. Try the URL again later when the tool might be available\\n2. Share the content of the PDF directly if you have access to it\\n3. Provide a different accessible URL where the same content might be hosted\\n\\nIs there another way you'd like to proceed, or would you like to try again later?",
+   "type": "text"
+  }
+ ],
+ "doStream > json schema response format with output format (supported model) > should stream the text output": [
+  {
+   "type": "stream-start",
+   "warnings": []
+  },
+  {
+   "id": "msg_01KbeodbKEyjf2fLb2Jnkr5s",
+   "modelId": "claude-sonnet-4-5-20250929",
+   "type": "response-metadata"
+  },
+  {
+   "kind": "anthropic.message_start",
+   "providerMetadata": {
+    "anthropic": {
+     "id": "msg_01KbeodbKEyjf2fLb2Jnkr5s",
+     "model": "claude-sonnet-4-5-20250929",
+     "usage": {
+      "cache_creation": {
+       "ephemeral_1h_input_tokens": 0,
+       "ephemeral_5m_input_tokens": 0
+      },
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 313,
+      "output_tokens": 1,
+      "service_tier": "standard"
+     }
+    }
+   },
+   "type": "custom"
+  },
+  {
+   "id": "0",
+   "type": "text-start"
+  },
+  {
+   "delta": "{\"",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "characters\"",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": ":[{\"name\":\"Th",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "eron",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " Iron",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "heart\",\"class\":\"warrior\",\"description",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "\":\"A battle",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "-scar",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "red veteran",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " with",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " steel",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "-",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "gray hair and a",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " prominent",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " scar across his left eye.",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " Wiel",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "ding a massive two",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "-handed sword passe",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "d down through his family for",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " generations,",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " Theron fights",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " with discipl",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "ined precision h",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "oned through decades",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " of combat. Despite",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " his gruff exterior, he harb",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "ors a deep sense of honor and prot",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "ects the weak",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " without",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " hesitation.",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "\"},{\"name\":\"Lyra",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " Star",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "weaver\",\"class\":\"mage\",\"",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "description\":\"A young",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " pro",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "digy in",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " the",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " arcane arts with",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " flowing",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " silver ro",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "bes ador",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "ned with celest",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "ial patterns",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": ". Her",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " eyes",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " g",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "low f",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "aintly blue",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " when",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " chann",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "eling powerful",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " sp",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "ells.",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " Lyra special",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "izes in ele",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "mental magic an",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "d ast",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "ral div",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "ination, having",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " studie",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "d at",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " the Gran",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "d Academy since",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " childhoo",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "d. She is",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " curious",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " and ide",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "alistic, often getting",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " into",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " trouble",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " while",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " pursuing",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " forbidden",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " knowledge.\"},{\"name\":\"R",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "ook",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " Shadow",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "st",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "ep",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "\",\"class\":\"thief\",\"description\":\"",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "A nim",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "ble and cun",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "ning r",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "ogue who",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " moves through",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " shadows",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " like",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " a whis",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "per in",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " the night. With",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " jet",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "-black hair,",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " leather",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " armor,",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " and an array of lock",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "picks an",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "d daggers hidden on",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " his person, Rook makes his",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " living liber",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "ating treas",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "ures from those",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " he",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " deems unworthy of",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " them",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": ". Behin",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "d his coc",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "ky smile",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " lies a trouble",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "d past and a strict",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " personal",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " code about",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " who",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " deserves to be",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": " rob",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "delta": "bed.\"}]}",
+   "id": "0",
+   "type": "text-delta"
+  },
+  {
+   "id": "0",
+   "type": "text-end"
+  },
+  {
+   "finishReason": {
+    "raw": "end_turn",
+    "unified": "stop"
+   },
+   "providerMetadata": {
+    "anthropic": {
+     "container": null,
+     "contextManagement": null,
+     "iterations": null,
+     "serviceTier": "standard",
+     "stopSequence": null,
+     "usage": {
+      "cache_creation": {
+       "ephemeral_1h_input_tokens": 0,
+       "ephemeral_5m_input_tokens": 0
+      },
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 313,
+      "output_tokens": 305,
+      "service_tier": "standard"
+     }
+    }
+   },
+   "type": "finish",
+   "usage": {
+    "inputTokens": {
+     "cacheRead": 0,
+     "cacheWrite": 0,
+     "noCache": 313,
+     "total": 313
+    },
+    "outputTokens": {
+     "total": 305
+    },
+    "raw": {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 0,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 0,
+     "cache_read_input_tokens": 0,
+     "input_tokens": 313,
+     "output_tokens": 305,
+     "service_tier": "standard"
+    }
+   }
+  }
+ ]
+}

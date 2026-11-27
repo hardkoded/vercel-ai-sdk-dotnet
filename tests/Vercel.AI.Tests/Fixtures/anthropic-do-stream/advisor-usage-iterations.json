@@ -1,0 +1,18 @@
+[
+ {
+  "inputTokens": 1051,
+  "outputTokens": 35,
+  "type": "message"
+ },
+ {
+  "inputTokens": 2728,
+  "model": "claude-opus-4-7",
+  "outputTokens": 3880,
+  "type": "advisor_message"
+ },
+ {
+  "inputTokens": 3676,
+  "outputTokens": 3356,
+  "type": "message"
+ }
+]

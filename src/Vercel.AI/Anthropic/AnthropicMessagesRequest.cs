@@ -95,7 +95,8 @@ public static class AnthropicMessagesRequest
         string providerName,
         bool supportsNativeStructuredOutput = true,
         bool supportsStrictTools = true,
-        AnthropicModelSettings? settings = null
+        AnthropicModelSettings? settings = null,
+        IReadOnlyDictionary<string, string?>? configHeaders = null
     )
     {
         var warnings = new List<AnthropicWarning>();
@@ -366,7 +367,10 @@ public static class AnthropicMessagesRequest
         warnings.AddRange(converted.Warnings);
         betas.AddRange(converted.Betas);
 
-        var explicitBetas = new HashSet<string>(HeaderBetas(options), StringComparer.Ordinal);
+        var explicitBetas = new HashSet<string>(
+            HeaderBetas(configHeaders).Concat(HeaderBetas(options.Headers)),
+            StringComparer.Ordinal
+        );
         var tools = ToTools(options);
         if (hasThread)
         {
@@ -441,9 +445,12 @@ public static class AnthropicMessagesRequest
                     display = mapped.Display;
                 }
 
+                var effectiveThinkingType = HasThinking(anthropic)
+                    ? ThinkingType(anthropic)
+                    : thinkingType;
                 if (
                     mapped.Effort != null
-                    && thinkingType != "disabled"
+                    && effectiveThinkingType != "disabled"
                     && String(anthropic, "thinkingType") != "disabled"
                 )
                 {
@@ -1010,7 +1017,7 @@ public static class AnthropicMessagesRequest
         return new AnthropicPreparedRequest(
             body,
             warnings,
-            betas,
+            betas.Distinct().ToList(),
             usesJsonTool,
             providerOptionsName,
             usedCustom,
@@ -1389,18 +1396,25 @@ public static class AnthropicMessagesRequest
             var node = new JsonObject { ["type"] = type };
             if (type == "custom")
             {
+                var providerReference = new Dictionary<string, string>();
                 if (
-                    !skill.TryGetProperty("providerReference", out var reference)
-                    || reference.ValueKind != JsonValueKind.Object
-                    || !reference.TryGetProperty("anthropic", out var id)
+                    skill.TryGetProperty("providerReference", out var reference)
+                    && reference.ValueKind == JsonValueKind.Object
                 )
                 {
-                    throw new AiSdkException(
-                        "Custom skill provider reference does not include anthropic."
-                    );
+                    foreach (var entry in reference.EnumerateObject())
+                    {
+                        if (entry.Value.ValueKind == JsonValueKind.String)
+                        {
+                            providerReference[entry.Name] = entry.Value.GetString()!;
+                        }
+                    }
                 }
 
-                node["skill_id"] = id.GetString();
+                node["skill_id"] = ProviderReferences.ResolveProviderReference(
+                    providerReference,
+                    "anthropic"
+                );
             }
             else
             {
@@ -1594,6 +1608,7 @@ public static class AnthropicMessagesRequest
                                 examples.Select(example => new { input = example.Input })
                             )
                             : null,
+                        ProviderOptions = tool.ProviderOptions,
                     }
                 );
             }
@@ -1723,15 +1738,15 @@ public static class AnthropicMessagesRequest
         return null;
     }
 
-    private static IEnumerable<string> HeaderBetas(LanguageModelCallOptions options)
+    private static IEnumerable<string> HeaderBetas(IReadOnlyDictionary<string, string?>? headers)
     {
-        if (options.Headers == null)
+        if (headers == null)
         {
             yield break;
         }
 
         string? header = null;
-        foreach (var pair in options.Headers)
+        foreach (var pair in headers)
         {
             if (
                 pair.Key.Equals("anthropic-beta", StringComparison.OrdinalIgnoreCase)
