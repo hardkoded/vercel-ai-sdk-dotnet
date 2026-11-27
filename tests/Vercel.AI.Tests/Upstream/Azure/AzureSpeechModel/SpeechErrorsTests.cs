@@ -72,10 +72,35 @@ public sealed class SpeechErrorsTests
         Assert.Equal("Access denied", error.Message);
     }
 
-    [Theory]
-    [InlineData(
-        "upstream connect error or disconnect/reset before headers. reset reason: protocol error"
+    [Fact]
+    [UpstreamTest(
+        "packages/azure/src/azure-speech-model.test.ts::Speech errors::maps the Envoy protocol-error 502 for unknown voices to a non-retryable 400",
+        Coverage = UpstreamCoverage.Covered
     )]
+    public async Task MapsTheEnvoyProtocolError502ForUnknownVoicesToANonRetryable400()
+    {
+        const string body =
+            "upstream connect error or disconnect/reset before headers. reset reason: protocol error";
+        var setup = AzureSpeechModelSetup.Create(null, () =>
+            Response(HttpStatusCode.BadGateway, body)
+        );
+        var call = AzureSpeechModelSetup.Call("Hi");
+        call.Voice = "x";
+
+        var error = await Assert.ThrowsAsync<BadRequestException>(() =>
+            setup.Provider.Speech("mai-voice-2.1").GenerateAsync(call, CancellationToken.None)
+        );
+
+        Assert.Equal(400, error.StatusCode);
+        Assert.False(error.IsRetryable);
+        Assert.Equal(
+            "Azure Speech could not synthesize the request. Check that the voice is available for this model and that the style is supported by the voice.",
+            error.Message
+        );
+        Assert.Equal(body, error.ResponseBody);
+    }
+
+    [Theory]
     [InlineData(
         "upstream connect error or disconnect/reset before headers. reset reason: connection termination"
     )]

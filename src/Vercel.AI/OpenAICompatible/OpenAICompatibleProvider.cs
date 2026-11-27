@@ -682,6 +682,9 @@ public sealed class OpenAICompatibleEmbeddingModel : IEmbeddingModel
     /// <summary>Maximum inputs accepted by one request.</summary>
     public int MaxEmbeddingsPerCall { get; set; }
 
+    /// <summary>Maximum combined UTF-8 input bytes of one request. Null means the provider sets no limit.</summary>
+    public int? MaxInputBytesPerCall { get; set; }
+
     /// <summary>When set, the embedding call uses this URL instead of the provider embeddings route.</summary>
     public Uri? Endpoint { get; set; }
 

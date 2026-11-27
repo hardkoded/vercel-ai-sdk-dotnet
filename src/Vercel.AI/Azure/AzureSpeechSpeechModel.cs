@@ -365,19 +365,29 @@ public sealed class AzureSpeechSpeechModel : ISpeechModel
             : (voice, null);
     }
 
-    // Azure Speech answers invalid requests (unknown voice, unsupported style, or output format) with an empty 400 body.
+    // Azure Speech answers invalid requests (style or output format) with an empty 400 body. Unknown voices or styles
+    // reset the connection with an Envoy 502 whose reason is `protocol error`; that is a client input error, so it is
+    // reported as a non-retryable 400. Other 502s stay retryable.
     private static ApiException FailedResponse(ApiException exception)
     {
+        var isVoiceReset =
+            exception.StatusCode == 502
+            && exception.ResponseBody?.Contains(
+                "reset reason: protocol error",
+                StringComparison.Ordinal
+            ) == true;
         var message = ParseErrorMessage(exception.ResponseBody)
             ?? (
-                exception.StatusCode == 400
+                isVoiceReset
+                    ? "Azure Speech could not synthesize the request. Check that the voice is available for this model and that the style is supported by the voice."
+                : exception.StatusCode == 400
                     ? "Azure Speech request failed with status 400. Check the voice name, style, and output format."
-                    : "Azure Speech request failed with status "
-                        + exception.StatusCode.ToString(CultureInfo.InvariantCulture)
-                        + "."
+                : "Azure Speech request failed with status "
+                    + exception.StatusCode.ToString(CultureInfo.InvariantCulture)
+                    + "."
             );
         return ProviderHttp.MapStatusWithHeaders(
-            exception.StatusCode,
+            isVoiceReset ? 400 : exception.StatusCode,
             message,
             exception.ResponseBody,
             exception.ResponseHeaders

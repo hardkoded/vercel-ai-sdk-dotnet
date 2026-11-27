@@ -93,14 +93,17 @@ internal static class OpenAIResponsesSupport
     /// <summary>Asserts a stream against an upstream <c>toMatchSnapshot()</c> entry, which the port keeps as JSON in <c>Fixtures</c>.</summary>
     internal static void AssertStreamSnapshot(
         IReadOnlyList<LanguageModelStreamPart> parts,
-        string fixture
+        string fixture,
+        Func<string, string>? sourceId = null,
+        bool includeCitations = false
     )
     {
+        sourceId ??= static id => id;
         var expected = JsonNode.Parse(Fixture(fixture + ".stream.snap.json"))!.AsArray();
         var actual = new JsonArray();
         foreach (var part in parts)
         {
-            actual.Add(SnapshotOf(part));
+            actual.Add(SnapshotOf(part, sourceId, includeCitations));
         }
 
         for (var index = 0; index < Math.Min(expected.Count, actual.Count); index++)
@@ -122,15 +125,28 @@ internal static class OpenAIResponsesSupport
     /// <summary>Asserts generated content against an upstream <c>toMatchSnapshot()</c> entry, which the port keeps as JSON in <c>Fixtures</c>.</summary>
     internal static void AssertContentSnapshot(
         IReadOnlyList<GeneratedContent> content,
-        string fixture
+        string fixture,
+        bool includeCitations = false,
+        Func<string, string>? sourceId = null
     )
     {
-        AssertContent(content, JsonNode.Parse(Fixture(fixture + ".generate.snap.json"))!.AsArray());
+        AssertContent(
+            content,
+            JsonNode.Parse(Fixture(fixture + ".generate.snap.json"))!.AsArray(),
+            includeCitations,
+            sourceId
+        );
     }
 
     /// <summary>Asserts generated content against an upstream inline snapshot, written as JSON.</summary>
-    internal static void AssertContent(IReadOnlyList<GeneratedContent> content, JsonArray expected)
+    internal static void AssertContent(
+        IReadOnlyList<GeneratedContent> content,
+        JsonArray expected,
+        bool includeCitations = false,
+        Func<string, string>? sourceId = null
+    )
     {
+        sourceId ??= static id => id;
         var actual = new JsonArray();
         foreach (var part in content)
         {
@@ -143,6 +159,34 @@ internal static class OpenAIResponsesSupport
                         node,
                         (text as OpenAIText)?.ProviderMetadata ?? text.ProviderMetadata
                     );
+                    if (includeCitations && text.Citations is { Count: > 0 })
+                    {
+                        node["citations"] = CitationsJson(text.Citations);
+                    }
+
+                    break;
+                case GeneratedSource source:
+                    node["sourceType"] = "url";
+                    node["id"] = sourceId(source.Id);
+                    node["url"] = source.Url;
+                    if (source.Title != null)
+                    {
+                        node["title"] = source.Title;
+                    }
+
+                    SetMetadata(node, source.ProviderMetadata);
+                    break;
+                case GeneratedDocumentSource documentSource:
+                    node["sourceType"] = "document";
+                    node["id"] = sourceId(documentSource.Id);
+                    node["mediaType"] = documentSource.MediaType;
+                    node["title"] = documentSource.Title;
+                    if (documentSource.Filename != null)
+                    {
+                        node["filename"] = documentSource.Filename;
+                    }
+
+                    SetMetadata(node, documentSource.ProviderMetadata);
                     break;
                 case GeneratedReasoning reasoning:
                     node["text"] = reasoning.Text;
@@ -191,11 +235,38 @@ internal static class OpenAIResponsesSupport
         );
     }
 
-    private static JsonNode SnapshotOf(LanguageModelStreamPart part)
+    private static JsonNode SnapshotOf(
+        LanguageModelStreamPart part,
+        Func<string, string> sourceId,
+        bool includeCitations
+    )
     {
         var node = new JsonObject { ["type"] = part.Type };
         switch (part)
         {
+            case SourceStreamPart source:
+                node["sourceType"] = "url";
+                node["id"] = sourceId(source.Id);
+                node["url"] = source.Url;
+                if (source.Title != null)
+                {
+                    node["title"] = source.Title;
+                }
+
+                SetMetadata(node, source.ProviderMetadata);
+                break;
+            case DocumentSourceStreamPart documentSource:
+                node["sourceType"] = "document";
+                node["id"] = sourceId(documentSource.Id);
+                node["mediaType"] = documentSource.MediaType;
+                node["title"] = documentSource.Title;
+                if (documentSource.Filename != null)
+                {
+                    node["filename"] = documentSource.Filename;
+                }
+
+                SetMetadata(node, documentSource.ProviderMetadata);
+                break;
             case StreamStartStreamPart start:
                 node["warnings"] = new JsonArray(
                     start
@@ -223,6 +294,11 @@ internal static class OpenAIResponsesSupport
             case TextEndStreamPart textEnd:
                 node["id"] = textEnd.Id;
                 SetMetadata(node, textEnd.ProviderMetadata);
+                if (includeCitations && textEnd.Citations is { Count: > 0 })
+                {
+                    node["citations"] = CitationsJson(textEnd.Citations);
+                }
+
                 break;
             case ReasoningStartStreamPart reasoningStart:
                 node["id"] = reasoningStart.Id;
@@ -240,6 +316,11 @@ internal static class OpenAIResponsesSupport
             case ToolInputStartStreamPart inputStart:
                 node["id"] = inputStart.Id;
                 node["toolName"] = inputStart.ToolName;
+                if (inputStart.ProviderExecuted == true)
+                {
+                    node["providerExecuted"] = true;
+                }
+
                 SetMetadata(node, inputStart.ProviderMetadata);
                 break;
             case ToolInputDeltaStreamPart inputDelta:
@@ -269,6 +350,11 @@ internal static class OpenAIResponsesSupport
                 node["toolCallId"] = toolResult.ToolCallId;
                 node["toolName"] = toolResult.ToolName;
                 node["result"] = JsonNode.Parse(toolResult.Result.GetRawText());
+                if (toolResult.Preliminary == true)
+                {
+                    node["preliminary"] = true;
+                }
+
                 SetMetadata(node, toolResult.ProviderMetadata);
                 break;
             case ToolApprovalRequestStreamPart approvalRequest:

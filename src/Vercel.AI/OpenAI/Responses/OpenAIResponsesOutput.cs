@@ -130,7 +130,8 @@ internal static class OpenAIResponsesOutput
 
     /// <summary>The citations for a text block. A <c>file_path</c> annotation is a generated file, not a citation.</summary>
     public static IReadOnlyList<Citation>? Citations(
-        IEnumerable<OpenAIResponsesApi.Annotation> annotations
+        IEnumerable<OpenAIResponsesApi.Annotation> annotations,
+        string providerName = "openai"
     )
     {
         var citations = new List<Citation>();
@@ -144,7 +145,7 @@ internal static class OpenAIResponsesOutput
             var id = annotation is OpenAIResponsesApi.UrlCitation url
                 ? url.Url
                 : AnnotationFileId(annotation);
-            var source = AnnotationSource(annotation, id);
+            var source = AnnotationSource(annotation, id, providerName);
             int? start = null;
             int? end = null;
             switch (annotation)
@@ -514,6 +515,51 @@ internal static class OpenAIResponsesOutput
 
         return result.ToJsonString();
     }
+
+    /// <summary>The input a <c>code_interpreter_call</c> reports: the code and the container id.</summary>
+    public static string CodeInterpreterInput(string? code, string containerId) =>
+        new JsonObject { ["code"] = code, ["containerId"] = containerId }.ToJsonString(JsonOptions);
+
+    /// <summary>The result a <c>code_interpreter_call</c> reports: its outputs, or null.</summary>
+    public static string CodeInterpreterResult(
+        IReadOnlyList<OpenAIResponsesApi.CodeInterpreterOutput>? outputs
+    )
+    {
+        JsonNode? mapped = null;
+        if (outputs != null)
+        {
+            var array = new JsonArray();
+            foreach (var output in outputs)
+            {
+                array.Add(
+                    output switch
+                    {
+                        OpenAIResponsesApi.CodeInterpreterLogs logs => new JsonObject
+                        {
+                            ["type"] = "logs",
+                            ["logs"] = logs.Logs,
+                        },
+                        OpenAIResponsesApi.CodeInterpreterImage image => new JsonObject
+                        {
+                            ["type"] = "image",
+                            ["url"] = image.Url,
+                        },
+                        _ => throw new InvalidOperationException(
+                            "Unknown code interpreter output."
+                        ),
+                    }
+                );
+            }
+
+            mapped = array;
+        }
+
+        return new JsonObject { ["outputs"] = mapped }.ToJsonString(JsonOptions);
+    }
+
+    /// <summary>The result an <c>image_generation_call</c> reports.</summary>
+    public static string ImageGenerationResult(string result) =>
+        new JsonObject { ["result"] = result }.ToJsonString(JsonOptions);
 
     /// <summary>The result a <c>file_search_call</c> reports.</summary>
     public static string FileSearchResult(
