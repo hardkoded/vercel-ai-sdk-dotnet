@@ -14,7 +14,7 @@ namespace Vercel.AI.Tests.StreamTextTimeout;
 /// <summary>
 /// Port of <c>stream-text-timeout.test.ts</c> &gt; <c>streamText model output timeout boundaries</c>.
 /// The tests use real timers with scaled budgets, because the port has no fake clock.
-/// The tests that need stream retries, a streaming tool, or request retries are not ported, because the port has none of them.
+/// The test that needs a streaming tool is not ported, because the port has no tool that streams its results.
 /// </summary>
 public sealed class StreamTextModelOutputTimeoutBoundariesTests
 {
@@ -287,6 +287,237 @@ public sealed class StreamTextModelOutputTimeoutBoundariesTests
             abortedAt - outputAt >= 100,
             "The chunk timeout fired " + (abortedAt - outputAt) + " ms after the first chunk."
         );
+    }
+
+    private static Task DelayAsync(int milliseconds, AbortSignal signal)
+    {
+        var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var timer = new Timer(_ => done.TrySetResult(), null, milliseconds, Timeout.Infinite);
+        signal.AddAbortHandler(() => done.TrySetCanceled());
+        return done
+            .Task.ContinueWith(
+                t =>
+                {
+                    timer.Dispose();
+                    return t;
+                },
+                TaskScheduler.Default
+            )
+            .Unwrap();
+    }
+
+    private static async IAsyncEnumerable<LanguageModelStreamPart> AfterDelay(
+        int milliseconds,
+        AbortSignal signal,
+        IEnumerable<LanguageModelStreamPart> parts
+    )
+    {
+        await DelayAsync(milliseconds, signal);
+        foreach (var part in parts)
+        {
+            yield return part;
+        }
+    }
+
+    [Theory]
+    [InlineData("stream")]
+    [InlineData("callback")]
+    [UpstreamTest(
+        Prefix + "should give a ${retryKind} retry a fresh firstChunkMs budget",
+        Coverage = UpstreamCoverage.Covered,
+        Note = "The budgets are scaled up for real timers: firstChunkMs 300 and attempts that wait 200 ms. The callback case uses OnErrorRetry, the C# name of the onError that returns { retry: true }."
+    )]
+    public async Task Should_give_a_retry_a_fresh_firstChunkMs_budget(string retryKind)
+    {
+        var attempts = 0;
+        AbortSignal? signal = null;
+        var model = new DelegateModel
+        {
+            Stream = (options, _) =>
+            {
+                signal = options.AbortSignal;
+                attempts++;
+                return Task.FromResult(
+                    new LanguageModelStreamResult(
+                        AfterDelay(
+                            200,
+                            options.AbortSignal!,
+                            attempts == 1
+                                ? new LanguageModelStreamPart[]
+                                {
+                                    new ErrorStreamPart("retryable stream error"),
+                                }
+                                : HelloParts()
+                        )
+                    )
+                );
+            },
+        };
+
+        var result = Client()
+            .StreamTextAsync(
+                new StreamTextOptions
+                {
+                    Model = model,
+                    Prompt = "test",
+                    StreamRetries = retryKind == "stream" ? 1 : 0,
+                    Timeout = new TimeoutConfiguration { FirstChunkMs = 300, ChunkMs = 300 },
+                    OnError = retryKind == "stream" ? (_, _) => Task.CompletedTask : null,
+                    OnErrorRetry =
+                        retryKind == "callback"
+                            ? (_, _) =>
+                                Task.FromResult<StreamTextOnErrorResult?>(
+                                    new StreamTextOnErrorResult { Retry = true }
+                                )
+                            : null,
+                }
+            );
+
+        await Consume(result).WaitAsync(SettleTimeout);
+
+        Assert.Equal(2, attempts);
+        Assert.False(signal?.Aborted);
+        Assert.Equal("Hello", await result.Text);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should re-arm firstChunkMs after retrying an attempt that produced output",
+        Coverage = UpstreamCoverage.Covered,
+        Note = "The budget is scaled up for real timers: firstChunkMs 200."
+    )]
+    public async Task Should_re_arm_firstChunkMs_after_retrying_an_attempt_that_produced_output()
+    {
+        var attempts = 0;
+        AbortSignal? signal = null;
+        var model = new DelegateModel
+        {
+            Stream = (options, _) =>
+            {
+                signal = options.AbortSignal;
+                attempts++;
+                if (attempts == 1)
+                {
+                    return Task.FromResult(
+                        new LanguageModelStreamResult(
+                            Yield(
+                                HelloParts().Take(3).Append(new ErrorStreamPart("retryable error"))
+                            )
+                        )
+                    );
+                }
+
+                var aborted = new TaskCompletionSource(
+                    TaskCreationOptions.RunContinuationsAsynchronously
+                );
+                options.AbortSignal!.AddAbortHandler(() => aborted.TrySetResult());
+                return Task.FromResult(
+                    new LanguageModelStreamResult(
+                        PartsThenStall(Array.Empty<LanguageModelStreamPart>(), aborted.Task)
+                    )
+                );
+            },
+        };
+
+        var result = Client()
+            .StreamTextAsync(
+                new StreamTextOptions
+                {
+                    Model = model,
+                    Prompt = "test",
+                    StreamRetries = 1,
+                    Timeout = new TimeoutConfiguration { FirstChunkMs = 200 },
+                    OnError = (_, _) => Task.CompletedTask,
+                }
+            );
+
+        await Consume(result).WaitAsync(SettleTimeout);
+
+        Assert.Equal(2, attempts);
+        Assert.Equal(
+            "First chunk timeout of 200ms exceeded",
+            Assert.IsType<Vercel.AI.Util.TimeoutError>(signal?.Reason).Message
+        );
+    }
+
+    [Theory]
+    [InlineData("request")]
+    [InlineData("stream")]
+    [UpstreamTest(
+        Prefix + "should keep stepMs cumulative across ${retryKind} retries",
+        Coverage = UpstreamCoverage.Covered,
+        Note = "The budgets are scaled up for real timers: stepMs 300, firstChunkMs 250, and attempts that wait 200 ms."
+    )]
+    public async Task Should_keep_stepMs_cumulative_across_retries(string retryKind)
+    {
+        var attempts = 0;
+        AbortSignal? signal = null;
+        var retryable = new ApiCallError(
+            "retryable error",
+            "https://example.com",
+            new { },
+            429,
+            new Dictionary<string, string> { ["retry-after-ms"] = "0" },
+            isRetryable: true
+        );
+        var model = new DelegateModel
+        {
+            Stream = async (options, _) =>
+            {
+                signal = options.AbortSignal;
+                attempts++;
+                await DelayAsync(200, options.AbortSignal!);
+                if (attempts == 1)
+                {
+                    if (retryKind == "request")
+                    {
+                        throw retryable;
+                    }
+
+                    return new LanguageModelStreamResult(
+                        Yield(
+                            new LanguageModelStreamPart[] { new ErrorStreamPart(retryable.Message) }
+                        )
+                    );
+                }
+
+                return new LanguageModelStreamResult(Yield(HelloParts()));
+            },
+        };
+
+        var result = Client()
+            .StreamTextAsync(
+                new StreamTextOptions
+                {
+                    Model = model,
+                    Prompt = "test",
+                    MaxRetries = 1,
+                    StreamRetries = retryKind == "stream" ? 1 : 0,
+                    Timeout = new TimeoutConfiguration { StepMs = 300, FirstChunkMs = 250 },
+                    OnError = (_, _) => Task.CompletedTask,
+                }
+            );
+
+        await Consume(result).WaitAsync(SettleTimeout);
+
+        Assert.Equal(2, attempts);
+        Assert.Equal(
+            "Step timeout of 300ms exceeded",
+            Assert.IsType<Vercel.AI.Util.TimeoutError>(signal?.Reason).Message
+        );
+    }
+
+    private static async IAsyncEnumerable<LanguageModelStreamPart> PartsThenStall(
+        IEnumerable<LanguageModelStreamPart> parts,
+        Task aborted
+    )
+    {
+        foreach (var part in parts)
+        {
+            yield return part;
+        }
+
+        await aborted;
     }
 
     [Fact]

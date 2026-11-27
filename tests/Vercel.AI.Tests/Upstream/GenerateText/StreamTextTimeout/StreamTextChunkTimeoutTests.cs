@@ -16,7 +16,7 @@ public sealed class StreamTextChunkTimeoutTests
     [InlineData("raw")]
     [InlineData("ping")]
     [UpstreamTest(
-        "packages/ai/src/generate-text/stream-text-timeout.test.ts::streamText chunk timeout::should not reset chunkMs for non-output %s chunks",
+        "packages/ai/src/generate-text/stream-text-timeout.test.ts::streamText chunk timeout::should not reset chunkMs for non-output chunks",
         Coverage = UpstreamCoverage.Covered,
         Note = "Real timers with a longer chunkMs, because the test cannot advance fake time.",
         Commit = "97540149254736e8d566d432ccb7abf7b1cebbb3"
