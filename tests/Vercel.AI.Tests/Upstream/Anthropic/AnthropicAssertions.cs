@@ -2218,7 +2218,7 @@ internal static class AnthropicAssertions
         );
         Assert.Null(noStrict.Tools![0]!["strict"]);
         Assert.Contains(noStrict.Warnings, warning => warning.Feature == "strict");
-        var advisor = Assert.Throws<AiSdkException>(() =>
+        var advisor = Assert.Throws<Vercel.AI.ProviderUtils.TypeValidationException>(() =>
             AnthropicToolPreparer.Prepare(
                 new[]
                 {
