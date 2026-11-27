@@ -664,6 +664,18 @@ public sealed class ElevenLabsTranscriptionResult
         IReadOnlyList<ModelWarning> warnings,
         ElevenLabsResponse response
     )
+        : this(text, segments, language, durationInSeconds, warnings, response, null) { }
+
+    /// <summary>Creates a transcription result with provider metadata.</summary>
+    public ElevenLabsTranscriptionResult(
+        string text,
+        IReadOnlyList<TranscriptSegment> segments,
+        string? language,
+        double? durationInSeconds,
+        IReadOnlyList<ModelWarning> warnings,
+        ElevenLabsResponse response,
+        JsonElement? providerMetadata
+    )
     {
         Text = text ?? string.Empty;
         Segments = segments ?? Array.Empty<TranscriptSegment>();
@@ -671,6 +683,7 @@ public sealed class ElevenLabsTranscriptionResult
         DurationInSeconds = durationInSeconds;
         Warnings = warnings ?? Array.Empty<ModelWarning>();
         Response = response;
+        ProviderMetadata = providerMetadata;
     }
 
     /// <summary>Full transcript.</summary>
@@ -690,6 +703,9 @@ public sealed class ElevenLabsTranscriptionResult
 
     /// <summary>Response metadata.</summary>
     public ElevenLabsResponse Response { get; }
+
+    /// <summary>Provider metadata. <c>elevenlabs.words</c> carries the raw word items, with spacing and audio events, when the API returned words.</summary>
+    public JsonElement? ProviderMetadata { get; }
 }
 
 /// <summary>ElevenLabs provider.</summary>
@@ -2454,7 +2470,7 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
     }
 
     /// <summary>ElevenLabs batch speech-to-text model.</summary>
-    public sealed class ElevenLabsTranscriptionModel : ITranscriptionModel
+    public sealed class ElevenLabsTranscriptionModel : ITranscriptionModel, ITranscriptionCaller
     {
         private readonly ElevenLabsProvider _provider;
 
@@ -2471,6 +2487,12 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
         /// <inheritdoc />
         public string ModelId { get; }
 
+        /// <inheritdoc />
+        public string SpecificationVersion => "v4";
+
+        /// <inheritdoc />
+        public bool CanStream => IsRealtimeTranscriptionModelId(ModelId);
+
         private static bool IsRealtimeTranscriptionModelId(string modelId) =>
             ElevenLabsModelCatalog
                 .GetElevenLabsTranscriptionModelEntry(modelId)
@@ -2485,6 +2507,166 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
             var result = await TranscribeAsync(audio, null, cancellationToken)
                 .ConfigureAwait(false);
             return new TranscriptionResult(result.Text);
+        }
+
+        /// <inheritdoc />
+        public async Task<TranscriptionModelResult> DoGenerateAsync(
+            TranscriptionModelCall call,
+            CancellationToken cancellationToken
+        )
+        {
+            call = call ?? throw new ArgumentNullException(nameof(call));
+            var result = await TranscribeAsync(
+                    new AudioInput(call.Audio, call.MediaType, null),
+                    new ElevenLabsTranscriptionRequest
+                    {
+                        ProviderOptions = call.ProviderOptions,
+                        Headers = call.Headers.ToDictionary(pair => pair.Key, pair => pair.Value),
+                    },
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
+            return new TranscriptionModelResult(
+                result.Text,
+                result.Segments,
+                result.Language,
+                result.DurationInSeconds,
+                result
+                    .Warnings.Select(warning =>
+                        warning switch
+                        {
+                            UnsupportedWarning unsupported => new OperationWarning(
+                                "unsupported",
+                                feature: unsupported.Feature,
+                                details: unsupported.Details
+                            ),
+                            OtherWarning other => new OperationWarning(
+                                "other",
+                                message: other.Message
+                            ),
+                            _ => new OperationWarning("other", message: warning.ToString()),
+                        }
+                    )
+                    .ToList(),
+                result.ProviderMetadata,
+                new ProviderResponse(
+                    result.Response.Headers,
+                    result.Response.Body,
+                    timestamp: result.Response.Timestamp.UtcDateTime,
+                    modelId: result.Response.ModelId
+                )
+            );
+        }
+
+        /// <inheritdoc />
+        public async Task<TranscriptionStreamStart?> DoStreamAsync(
+            TranscriptionStreamCall call,
+            CancellationToken cancellationToken
+        )
+        {
+            call = call ?? throw new ArgumentNullException(nameof(call));
+            if (!IsRealtimeTranscriptionModelId(ModelId))
+            {
+                throw new Operations.UnsupportedFunctionalityException(
+                    "streaming transcription with " + ModelId,
+                    "'streaming transcription with " + ModelId + "' functionality not supported."
+                );
+            }
+
+            var timestamp = _provider.Now();
+            ElevenLabsTranscriptionModelOptions.Validate(call.ProviderOptions);
+            var elevenlabs = ElevenLabsObject(call.ProviderOptions);
+            var streamingOptions = Child(elevenlabs, "streaming");
+            var warnings = new List<OperationWarning>();
+
+            foreach (
+                var option in new[]
+                {
+                    "diarize",
+                    "fileFormat",
+                    "numSpeakers",
+                    "tagAudioEvents",
+                    "timestampsGranularity",
+                }
+            )
+            {
+                if (Child(elevenlabs, option) != null)
+                {
+                    warnings.Add(
+                        new OperationWarning(
+                            "unsupported",
+                            feature: "providerOptions.elevenlabs." + option,
+                            details: "ElevenLabs realtime transcription does not support "
+                                + option
+                                + "."
+                        )
+                    );
+                }
+            }
+
+            // ElevenLabs documents filter_background_audio as incompatible with include_timestamps. Language
+            // detection is delivered on the same timestamp-bearing event, so it also requires include_timestamps here.
+            // https://elevenlabs.io/docs/api-reference/speech-to-text/v-1-speech-to-text-realtime
+            var includeTimestamps =
+                Child(streamingOptions, "includeTimestamps") is { ValueKind: JsonValueKind.True };
+            var includeLanguageDetection =
+                Child(streamingOptions, "includeLanguageDetection") is
+                { ValueKind: JsonValueKind.True };
+            if (
+                Child(streamingOptions, "filterBackgroundAudio")
+                    is { ValueKind: JsonValueKind.True }
+                && (includeTimestamps || includeLanguageDetection)
+            )
+            {
+                throw new InvalidArgumentException(
+                    "providerOptions",
+                    null,
+                    "providerOptions.elevenlabs.streaming.filterBackgroundAudio cannot be combined with includeTimestamps or includeLanguageDetection"
+                );
+            }
+
+            var languageCode = Child(elevenlabs, "languageCode")
+                is { ValueKind: JsonValueKind.String } languageElement
+                ? languageElement.GetString()
+                : null;
+            var inputFormat = ElevenLabsRealtimeTranscription.GetElevenLabsRealtimeAudioFormat(
+                call.InputAudioFormat
+            );
+            var url = ElevenLabsRealtimeTranscription.BuildElevenLabsRealtimeTranscriptionUrl(
+                WebSocketUtils.ToWebSocketUrl(
+                    ApiKeys.Combine(_provider.Options.BaseUrl, "/v1/speech-to-text/realtime")
+                ),
+                inputFormat.AudioFormat,
+                languageCode,
+                ModelId,
+                streamingOptions
+            );
+
+            var headers = await _provider
+                .CreateHeadersAsync(call.Headers, cancellationToken)
+                .ConfigureAwait(false);
+            var previousText = Child(streamingOptions, "previousText")
+                is { ValueKind: JsonValueKind.String } previousTextElement
+                ? previousTextElement.GetString()
+                : null;
+            var session =
+                ElevenLabsRealtimeTranscription.CreateElevenLabsRealtimeTranscriptionStream(
+                    call,
+                    headers,
+                    includeLanguageDetection,
+                    includeTimestamps,
+                    languageCode,
+                    previousText,
+                    inputFormat.SampleRate,
+                    url,
+                    warnings,
+                    (_provider.Options as ElevenLabsOptions)?.WebSocket
+                );
+            return new TranscriptionStreamStart(
+                new ModelPartStream(session.Queue, session.Cancel),
+                new ProviderResponse(timestamp: timestamp.UtcDateTime, modelId: ModelId),
+                new ProviderRequest(url.ToString())
+            );
         }
 
         /// <summary>Uploads audio to <c>/v1/speech-to-text</c> and reads the transcript.</summary>
@@ -2507,6 +2689,7 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
 
             var timestamp = _provider.Now();
             var warnings = new List<ModelWarning>();
+            ElevenLabsTranscriptionModelOptions.Validate(request?.ProviderOptions);
             var elevenlabs = ElevenLabsObject(request?.ProviderOptions);
             if (Child(elevenlabs, "streaming") != null)
             {
@@ -2613,6 +2796,22 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
                 }
             }
 
+            JsonElement? providerMetadata = null;
+            if (words.ValueKind == JsonValueKind.Array)
+            {
+                providerMetadata = JsonDocument
+                    .Parse(
+                        new JsonObject
+                        {
+                            ["elevenlabs"] = new JsonObject
+                            {
+                                ["words"] = JsonNode.Parse(words.GetRawText()),
+                            },
+                        }.ToJsonString()
+                    )
+                    .RootElement.Clone();
+            }
+
             var audioDuration = Child(root, "audio_duration_secs")
                 is { ValueKind: JsonValueKind.Number } audioDurationElement
                 ? audioDurationElement.GetDouble()
@@ -2624,7 +2823,8 @@ public sealed class ElevenLabsProvider : OpenAICompatibleProvider
                 Child(root, "language_code")?.GetString(),
                 audioDuration ?? duration,
                 warnings,
-                new ElevenLabsResponse(timestamp, ModelId, response.Headers, root.Clone())
+                new ElevenLabsResponse(timestamp, ModelId, response.Headers, root.Clone()),
+                providerMetadata
             );
         }
 
