@@ -1827,12 +1827,12 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
 
     private static string ReadStructuredOutputMode(JsonElement? bedrock, JsonElement? anthropic)
     {
+        string? selected = null;
         foreach (var source in new[] { bedrock, anthropic })
         {
             if (
                 source is not { ValueKind: JsonValueKind.Object } value
                 || !value.TryGetProperty("structuredOutputMode", out var mode)
-                || mode.ValueKind == JsonValueKind.Null
             )
             {
                 continue;
@@ -1848,10 +1848,10 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
                 );
             }
 
-            return mode.GetString()!;
+            selected ??= mode.GetString();
         }
 
-        return "auto";
+        return selected ?? "auto";
     }
 
     private static string? ReadServiceTier(JsonElement? bedrock)

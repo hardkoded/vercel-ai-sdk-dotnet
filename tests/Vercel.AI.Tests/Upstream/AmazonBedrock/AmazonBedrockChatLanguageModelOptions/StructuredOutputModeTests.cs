@@ -38,6 +38,7 @@ public sealed class StructuredOutputModeTests
     [Theory]
     [InlineData("\"native\"")]
     [InlineData("42")]
+    [InlineData("null")]
     [UpstreamTest(Prefix + "rejects invalid values", Coverage = UpstreamCoverage.Covered)]
     public async Task Rejects_invalid_values(string json)
     {
