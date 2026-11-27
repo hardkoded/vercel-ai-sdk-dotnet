@@ -163,7 +163,13 @@ public sealed class CartesiaRealtimeModel : IRealtimeModel
         using var response = await (_config.HttpClient ?? DefaultHttpClient.Value)
             .SendAsync(request, cancellationToken)
             .ConfigureAwait(false);
+#if NET
+        var text = await response
+            .Content.ReadAsStringAsync(cancellationToken)
+            .ConfigureAwait(false);
+#else
         var text = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+#endif
         if (!response.IsSuccessStatusCode)
         {
             throw new AiSdkException(
