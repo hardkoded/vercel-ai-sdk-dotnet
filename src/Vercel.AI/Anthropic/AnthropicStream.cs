@@ -508,6 +508,13 @@ public sealed class AnthropicStream
                 customName
             );
         }
+        else if (type == "tool_use" && _usesJsonTool && Text(block["name"]) == "json")
+        {
+            // The JSON response tool call is returned as text.
+            _jsonTool = true;
+            _blocks[index] = new Block("text", id);
+            yield return new TextStartStreamPart(id);
+        }
         else if (type == "tool_use")
         {
             var input = block["input"];
@@ -1052,6 +1059,15 @@ public sealed class AnthropicStream
             foreach (var part in Citation(delta["citation"]!))
             {
                 yield return part;
+            }
+        }
+        else if (deltaType == "input_json_delta" && _jsonTool && block.Kind == "text")
+        {
+            var jsonPartial = Text(delta["partial_json"]) ?? string.Empty;
+            if (jsonPartial.Length > 0)
+            {
+                _hasOutput = true;
+                yield return new TextDeltaStreamPart(block.Id, jsonPartial);
             }
         }
         else if (deltaType == "input_json_delta" && block.Kind == "tool")

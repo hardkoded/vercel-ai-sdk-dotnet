@@ -615,7 +615,7 @@ public static class AnthropicResponse
             new GeneratedToolCall(
                 id,
                 CustomName(context, toolName),
-                input.ToJsonString(s_compact),
+                AnthropicJson.Compact(input),
                 CallerMetadata(part)
             )
             {

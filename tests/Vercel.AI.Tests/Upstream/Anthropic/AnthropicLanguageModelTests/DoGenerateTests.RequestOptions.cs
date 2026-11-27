@@ -10,7 +10,10 @@ namespace Vercel.AI.Tests.AnthropicLanguageModelTests;
 public sealed partial class DoGenerateTests
 {
     [Fact]
-    [UpstreamTest(Prefix + "doGenerate::should set effort", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate::should set effort",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Should_set_effort()
     {
         var handler = JsonFixture("anthropic-text");
@@ -29,7 +32,7 @@ public sealed partial class DoGenerateTests
 
     [Fact]
     [UpstreamTest(
-        Prefix + "doGenerate::should set speed and fast-mode beta header",
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate::should set speed and fast-mode beta header",
         Coverage = UpstreamCoverage.Covered
     )]
     public async Task Should_set_speed_and_fast_mode_beta_header()
@@ -51,7 +54,7 @@ public sealed partial class DoGenerateTests
 
     [Fact]
     [UpstreamTest(
-        Prefix + "doGenerate::should set speed=standard without fast-mode beta header",
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate::should set speed=standard without fast-mode beta header",
         Coverage = UpstreamCoverage.Covered
     )]
     public async Task Should_set_speed_standard_without_fast_mode_beta_header()
@@ -72,7 +75,7 @@ public sealed partial class DoGenerateTests
 
     [Fact]
     [UpstreamTest(
-        Prefix + "doGenerate::should set inference_geo in request body",
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate::should set inference_geo in request body",
         Coverage = UpstreamCoverage.Covered
     )]
     public async Task Should_set_inference_geo_in_request_body()
@@ -93,7 +96,7 @@ public sealed partial class DoGenerateTests
 
     [Fact]
     [UpstreamTest(
-        Prefix + "doGenerate::should pass cache_control to request body",
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate::should pass cache_control to request body",
         Coverage = UpstreamCoverage.Covered
     )]
     public async Task Should_pass_cache_control_to_request_body()
@@ -111,7 +114,7 @@ public sealed partial class DoGenerateTests
 
     [Fact]
     [UpstreamTest(
-        Prefix + "doGenerate::should pass cache_control with ttl to request body",
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate::should pass cache_control with ttl to request body",
         Coverage = UpstreamCoverage.Covered
     )]
     public async Task Should_pass_cache_control_with_ttl_to_request_body()
@@ -132,7 +135,7 @@ public sealed partial class DoGenerateTests
 
     [Fact]
     [UpstreamTest(
-        Prefix + "doGenerate::should pass metadata with user_id to request body",
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate::should pass metadata with user_id to request body",
         Coverage = UpstreamCoverage.Covered
     )]
     public async Task Should_pass_metadata_with_user_id_to_request_body()

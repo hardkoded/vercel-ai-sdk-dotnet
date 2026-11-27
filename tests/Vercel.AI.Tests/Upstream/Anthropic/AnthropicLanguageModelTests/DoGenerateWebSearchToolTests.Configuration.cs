@@ -90,7 +90,8 @@ public sealed partial class DoGenerateWebSearchToolTests
 
     [Fact]
     [UpstreamTest(
-        ConfigurationPrefix + "should use web_search_20260318 with response inclusion and map custom tool names",
+        ConfigurationPrefix
+            + "should use web_search_20260318 with response inclusion and map custom tool names",
         Coverage = UpstreamCoverage.Covered
     )]
     public async Task Should_use_web_search_20260318_with_response_inclusion_and_map_custom_tool_names()
@@ -178,7 +179,8 @@ public sealed partial class DoGenerateWebSearchToolTests
 
     [Fact]
     [UpstreamTest(
-        ConfigurationPrefix + "should handle web search with partial user location (city + country)",
+        ConfigurationPrefix
+            + "should handle web search with partial user location (city + country)",
         Coverage = UpstreamCoverage.Covered
     )]
     public async Task Should_handle_web_search_with_partial_user_location_city_plus_country()
