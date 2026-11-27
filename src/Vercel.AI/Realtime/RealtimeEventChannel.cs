@@ -166,7 +166,9 @@ public sealed class RealtimeEventChannel
         }
 
         ThrowIfClosed();
-        var data = await _options.Model.SerializeClientEventAsync(clientEvent).ConfigureAwait(false);
+        var data = await _options
+            .Model.SerializeClientEventAsync(clientEvent)
+            .ConfigureAwait(false);
         ThrowIfClosed();
         if (shouldSend?.Invoke() == false)
         {
@@ -247,12 +249,7 @@ public sealed class RealtimeEventChannel
         );
     }
 
-    private async Task ProcessIncomingAsync(
-        Task previous,
-        string? text,
-        object? binary,
-        long bytes
-    )
+    private async Task ProcessIncomingAsync(Task previous, string? text, object? binary, long bytes)
     {
         await Task.Yield();
         await previous.ConfigureAwait(false);
@@ -263,10 +260,9 @@ public sealed class RealtimeEventChannel
                 return;
             }
 
-            text ??=
-                binary is RealtimeBlob blob
-                    ? await blob.TextAsync().ConfigureAwait(false)
-                    : Encoding.UTF8.GetString((byte[])binary!);
+            text ??= binary is RealtimeBlob blob
+                ? await blob.TextAsync().ConfigureAwait(false)
+                : Encoding.UTF8.GetString((byte[])binary!);
             JsonElement value;
             try
             {

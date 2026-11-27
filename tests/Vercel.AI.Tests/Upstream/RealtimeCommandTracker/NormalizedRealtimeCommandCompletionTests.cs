@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Vercel.AI.Provider;
-using Tracker = Vercel.AI.RealtimeCommandTracker;
 using Vercel.AI.Tests.Upstream.RealtimeFixtures;
+using Tracker = Vercel.AI.RealtimeCommandTracker;
 
 namespace Vercel.AI.Tests.Upstream.RealtimeCommandTracker;
 
@@ -14,7 +14,8 @@ public sealed class NormalizedRealtimeCommandCompletionTests
     private const string Prefix =
         "packages/ai/src/realtime/realtime-command-tracker.test.ts::normalized realtime command completion::";
 
-    public static TheoryData<string> NoAckCommands => ["input-audio-append", "session-start", "session-close"];
+    public static TheoryData<string> NoAckCommands =>
+        ["input-audio-append", "session-start", "session-close"];
 
     public static TheoryData<string> AcknowledgedCommands =>
         ["session-update", "context-append", "input-audio-mute", "input-audio-unmute"];
@@ -24,11 +25,17 @@ public sealed class NormalizedRealtimeCommandCompletionTests
         {
             EventId = eventId,
             Audio = type == "input-audio-append" ? "AAAA" : null,
-            Config = type is "session-start" or "session-update" ? new RealtimeModelV4SessionConfig() : null,
+            Config = type is "session-start" or "session-update"
+                ? new RealtimeModelV4SessionConfig()
+                : null,
             Content = type == "context-append" ? "context" : null,
         };
 
-    private static RealtimeModelV4ServerEvent Server(string type, string clientEventId, string? command = null) =>
+    private static RealtimeModelV4ServerEvent Server(
+        string type,
+        string clientEventId,
+        string? command = null
+    ) =>
         new(type)
         {
             ClientEventId = clientEventId,
@@ -51,7 +58,9 @@ public sealed class NormalizedRealtimeCommandCompletionTests
         Prefix + "turns over 4100 identified $type sends without an ACK and protects recent IDs",
         Coverage = UpstreamCoverage.Covered
     )]
-    public async Task Turns_over_4100_identified_type_sends_without_an_ACK_and_protects_recent_IDs(string type)
+    public async Task Turns_over_4100_identified_type_sends_without_an_ACK_and_protects_recent_IDs(
+        string type
+    )
     {
         var sent = 0;
         var commands = Coordinator(_ =>
@@ -70,7 +79,9 @@ public sealed class NormalizedRealtimeCommandCompletionTests
         AssertThrowsContaining(() => commands.Send(Command(type, "id-4099")), "fresh eventId");
         await commands.Send(Command(type, "corrected"));
         await commands.Send(Command(type, "id-0"));
-        await commands.Send(new RealtimeModelV4ClientEvent("input-audio-mute") { EventId = "mute" });
+        await commands.Send(
+            new RealtimeModelV4ClientEvent("input-audio-mute") { EventId = "mute" }
+        );
         await commands.Send(Command("session-update", "update"));
     }
 
@@ -148,7 +159,10 @@ public sealed class NormalizedRealtimeCommandCompletionTests
             .Range(0, 512)
             .Select(index => commands.Send(Command("input-audio-append", $"pending-{index}")))
             .ToList();
-        AssertThrowsContaining(() => commands.Send(Command("input-audio-append", "overflow")), "pending");
+        AssertThrowsContaining(
+            () => commands.Send(Command("input-audio-append", "overflow")),
+            "pending"
+        );
         pending.SetResult(true);
         await Task.WhenAll(sends);
         await commands.Send(Command("input-audio-append", "admitted"));
@@ -168,13 +182,15 @@ public sealed class NormalizedRealtimeCommandCompletionTests
                 : Task.CompletedTask
         );
         var error = Assert.Throws<InvalidOperationException>(() =>
-            {
-                _ = commands.Send(Command("session-close", "failed"));
-            }
-        );
+        {
+            _ = commands.Send(Command("session-close", "failed"));
+        });
         Assert.Contains("synchronous send failure", error.Message);
         fail = false;
-        AssertThrowsContaining(() => commands.Send(Command("session-close", "failed")), "fresh eventId");
+        AssertThrowsContaining(
+            () => commands.Send(Command("session-close", "failed")),
+            "fresh eventId"
+        );
         await commands.Send(Command("session-close", "retry"));
     }
 }

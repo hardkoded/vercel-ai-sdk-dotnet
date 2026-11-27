@@ -5,8 +5,8 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Provider;
-using Channel = Vercel.AI.RealtimeEventChannel;
 using Vercel.AI.Tests.Upstream.RealtimeFixtures;
+using Channel = Vercel.AI.RealtimeEventChannel;
 
 namespace Vercel.AI.Tests.Upstream.RealtimeEventChannel;
 
@@ -16,9 +16,12 @@ public sealed class RealtimeEventChannelTests
     private const string Prefix =
         "packages/ai/src/realtime/realtime-event-channel.test.ts::RealtimeEventChannel::";
 
-    private const string Usage1 = "{\"type\":\"session-usage\",\"usage\":{\"seconds\":1},\"raw\":{}}";
-    private const string Usage2 = "{\"type\":\"session-usage\",\"usage\":{\"seconds\":2},\"raw\":{}}";
-    private const string Usage3 = "{\"type\":\"session-usage\",\"usage\":{\"seconds\":3},\"raw\":{}}";
+    private const string Usage1 =
+        "{\"type\":\"session-usage\",\"usage\":{\"seconds\":1},\"raw\":{}}";
+    private const string Usage2 =
+        "{\"type\":\"session-usage\",\"usage\":{\"seconds\":2},\"raw\":{}}";
+    private const string Usage3 =
+        "{\"type\":\"session-usage\",\"usage\":{\"seconds\":3},\"raw\":{}}";
 
     private sealed class BlockedBlob(Task<string> text) : RealtimeBlob
     {
@@ -83,10 +86,9 @@ public sealed class RealtimeEventChannelTests
         codec.Receive("{}");
         Assert.Single(fatalErrors);
         var error = Assert.Throws<InvalidOperationException>(() =>
-            {
-                _ = codec.Send(new RealtimeModelV4ClientEvent("input-audio-mute"));
-            }
-        );
+        {
+            _ = codec.Send(new RealtimeModelV4ClientEvent("input-audio-mute"));
+        });
         Assert.Contains("closed", error.Message);
         blocked.SetResult(Usage1);
         await codec.FinishAsync();
@@ -114,26 +116,16 @@ public sealed class RealtimeEventChannelTests
         };
         var firstSeconds = new List<double?>();
         var secondSeconds = new List<double?>();
-        var first = new Channel(
-            Options(
-                model,
-                onEvent: e =>
-                {
-                    firstSeconds.Add(e.Usage!.Seconds);
-                    return Task.CompletedTask;
-                }
-            )
-        );
-        var second = new Channel(
-            Options(
-                model,
-                onEvent: e =>
-                {
-                    secondSeconds.Add(e.Usage!.Seconds);
-                    return Task.CompletedTask;
-                }
-            )
-        );
+        var first = new Channel(Options(model, onEvent: e =>
+            {
+                firstSeconds.Add(e.Usage!.Seconds);
+                return Task.CompletedTask;
+            }));
+        var second = new Channel(Options(model, onEvent: e =>
+            {
+                secondSeconds.Add(e.Usage!.Seconds);
+                return Task.CompletedTask;
+            }));
         first.Receive("{}");
         first.Receive("{}");
         second.Receive("{}");
@@ -222,10 +214,9 @@ public sealed class RealtimeEventChannelTests
         );
         _ = codec.Send(new RealtimeModelV4ClientEvent("input-audio-mute"));
         var full = Assert.Throws<InvalidOperationException>(() =>
-            {
-                _ = codec.Send(new RealtimeModelV4ClientEvent("input-audio-unmute"));
-            }
-        );
+        {
+            _ = codec.Send(new RealtimeModelV4ClientEvent("input-audio-unmute"));
+        });
         Assert.Contains("outgoing queue is full", full.Message);
         codec.Receive(Usage1);
         codec.Receive(Usage2);
@@ -240,7 +231,8 @@ public sealed class RealtimeEventChannelTests
 
     [Fact]
     [UpstreamTest(
-        Prefix + "continues after an event callback fails, even when the error callback also throws",
+        Prefix
+            + "continues after an event callback fails, even when the error callback also throws",
         Coverage = UpstreamCoverage.Covered
     )]
     public async Task Continues_after_an_event_callback_fails_even_when_the_error_callback_also_throws()

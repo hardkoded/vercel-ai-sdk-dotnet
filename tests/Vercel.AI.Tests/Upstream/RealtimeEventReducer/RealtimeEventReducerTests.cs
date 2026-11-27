@@ -4,8 +4,8 @@
 
 using System.Text.Json;
 using Vercel.AI.Provider;
-using Reducer = Vercel.AI.RealtimeEventReducer;
 using Vercel.AI.Ui;
+using Reducer = Vercel.AI.RealtimeEventReducer;
 
 namespace Vercel.AI.Tests.Upstream.RealtimeEventReducer;
 

@@ -48,11 +48,9 @@ public sealed class RealtimeCommandTracker
     public Task Send(RealtimeModelV4ClientEvent clientEvent)
     {
         bool? muted =
-            clientEvent.Type == "input-audio-mute"
-                ? true
-                : clientEvent.Type == "input-audio-unmute"
-                    ? false
-                    : null;
+            clientEvent.Type == "input-audio-mute" ? true
+            : clientEvent.Type == "input-audio-unmute" ? false
+            : null;
         if (muted != null && clientEvent.EventId == null)
         {
             clientEvent = clientEvent.Clone();

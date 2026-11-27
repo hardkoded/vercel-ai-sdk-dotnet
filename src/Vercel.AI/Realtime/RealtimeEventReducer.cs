@@ -151,7 +151,7 @@ public sealed class RealtimeEventReducer
     private readonly Dictionary<string, string> _toolCallIdToName = [];
     private readonly Dictionary<string, int> _inputAudioMessageInsertIndex = [];
     private readonly Dictionary<string, (string MessageId, int PartIndex)> _itemIdToPartLocation =
-        [];
+    [];
 
     /// <summary>Creates a reducer that keeps <paramref name="maxEvents"/> events.</summary>
     public RealtimeEventReducer(int maxEvents = 500)
@@ -381,13 +381,14 @@ public sealed class RealtimeEventReducer
         var events = state.Events.Append(serverEvent).ToList();
         return state with
         {
-            Events = events.Count > _maxEvents ? events.Skip(events.Count - _maxEvents).ToList() : events,
+            Events =
+                events.Count > _maxEvents
+                    ? events.Skip(events.Count - _maxEvents).ToList()
+                    : events,
         };
     }
 
-    private (RealtimeState State, string MessageId) GetOrCreateAssistantMessage(
-        RealtimeState state
-    )
+    private (RealtimeState State, string MessageId) GetOrCreateAssistantMessage(RealtimeState state)
     {
         if (_currentAssistantMessageId != null)
         {
@@ -431,10 +432,7 @@ public sealed class RealtimeEventReducer
             state.Messages.Count
         );
         var messages = state.Messages.ToList();
-        messages.Insert(
-            insertIndex,
-            new UIMessage(UIMessageRole.User, parts) { Id = messageId }
-        );
+        messages.Insert(insertIndex, new UIMessage(UIMessageRole.User, parts) { Id = messageId });
         return state with { Messages = messages };
     }
 
@@ -537,15 +535,15 @@ public sealed class RealtimeEventReducer
         string name,
         JsonElement input
     ) =>
-        MapToolPart(
-            state,
-            messageId,
+        MapToolPart(state, messageId, callId, _ => new ToolUIPart(
+            name,
             callId,
-            _ => new ToolUIPart(name, callId, ToolUIPartState.InputAvailable, isDynamic: true)
-            {
-                Input = input,
-            }
-        );
+            ToolUIPartState.InputAvailable,
+            isDynamic: true
+        )
+        {
+            Input = input,
+        });
 
     private RealtimeState UpdateToolPartState(
         RealtimeState state,
@@ -558,21 +556,16 @@ public sealed class RealtimeEventReducer
             return state;
         }
 
-        return MapToolPart(
-            state,
-            messageId,
+        return MapToolPart(state, messageId, callId, tool => new ToolUIPart(
+            tool.ToolName,
             callId,
-            tool => new ToolUIPart(
-                tool.ToolName,
-                callId,
-                ToolUIPartState.OutputAvailable,
-                isDynamic: true
-            )
-            {
-                Input = tool.Input,
-                Output = result,
-            }
-        );
+            ToolUIPartState.OutputAvailable,
+            isDynamic: true
+        )
+        {
+            Input = tool.Input,
+            Output = result,
+        });
     }
 
     private static RealtimeState MapToolPart(

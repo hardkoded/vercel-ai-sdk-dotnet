@@ -15,12 +15,19 @@ public sealed class FakeRealtimeModel : IClientRealtimeModel
 
     public string ModelId => "live";
 
-    public Func<JsonElement, IReadOnlyList<RealtimeModelV4ServerEvent>> ParseServerEventHandler { get; set; } =
-        raw => [EventFromRaw(raw)];
+    public Func<
+        JsonElement,
+        IReadOnlyList<RealtimeModelV4ServerEvent>
+    > ParseServerEventHandler { get; set; } = raw => [EventFromRaw(raw)];
 
-    public Func<Func<JsonElement, IReadOnlyList<RealtimeModelV4ServerEvent>>>? CreateServerEventParserHandler { get; set; }
+    public Func<
+        Func<JsonElement, IReadOnlyList<RealtimeModelV4ServerEvent>>
+    >? CreateServerEventParserHandler { get; set; }
 
-    public Func<RealtimeModelV4ClientEvent, Task<JsonNode?>> SerializeClientEventHandler { get; set; } =
+    public Func<
+        RealtimeModelV4ClientEvent,
+        Task<JsonNode?>
+    > SerializeClientEventHandler { get; set; } =
         clientEvent => Task.FromResult<JsonNode?>(new JsonObject { ["type"] = clientEvent.Type });
 
     public Uri BuildUri() => new("wss://example.test");
@@ -31,8 +38,10 @@ public sealed class FakeRealtimeModel : IClientRealtimeModel
     public IReadOnlyList<RealtimeModelV4ServerEvent> ParseServerEvent(JsonElement raw) =>
         ParseServerEventHandler(raw);
 
-    public Func<JsonElement, IReadOnlyList<RealtimeModelV4ServerEvent>>? CreateServerEventParser() =>
-        CreateServerEventParserHandler?.Invoke();
+    public Func<
+        JsonElement,
+        IReadOnlyList<RealtimeModelV4ServerEvent>
+    >? CreateServerEventParser() => CreateServerEventParserHandler?.Invoke();
 
     public Task<JsonNode?> SerializeClientEventAsync(
         RealtimeModelV4ClientEvent clientEvent,
