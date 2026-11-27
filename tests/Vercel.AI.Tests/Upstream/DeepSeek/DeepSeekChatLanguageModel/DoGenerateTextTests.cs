@@ -73,8 +73,7 @@ public sealed class DoGenerateTextTests
     [UpstreamTest(
         Prefix
             + "should omit deprecated and ineffective sampling options in default V4 thinking mode",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "CallWarning has no setting field, so the deprecated warnings are checked by type and message only.",
+        Coverage = UpstreamCoverage.Covered,
         Commit = Commit
     )]
     public async Task Should_omit_deprecated_and_ineffective_sampling_options_in_default_V4_thinking_mode()
@@ -108,14 +107,14 @@ public sealed class DoGenerateTextTests
                 "topP has no effect when DeepSeek thinking is enabled. Set providerOptions.deepseek.thinking.type to 'disabled' to use topP."
             )
         );
+        AssertDeprecatedSettings(result, "frequencyPenalty", "presencePenalty");
     }
 
     [Fact]
     [UpstreamTest(
         Prefix + "should preserve supported sampling options when V4 thinking is disabled",
-        Coverage = UpstreamCoverage.Partial,
-        Commit = Commit,
-        Note = "CallWarning has no setting field, so the deprecated warnings are checked by type and message only."
+        Coverage = UpstreamCoverage.Covered,
+        Commit = Commit
     )]
     public async Task Should_preserve_supported_sampling_options_when_V4_thinking_is_disabled()
     {
@@ -147,6 +146,7 @@ public sealed class DoGenerateTextTests
             ("deprecated", null, FrequencyPenaltyDeprecated),
             ("deprecated", null, PresencePenaltyDeprecated)
         );
+        AssertDeprecatedSettings(result, "frequencyPenalty", "presencePenalty");
     }
 
     [Fact]
