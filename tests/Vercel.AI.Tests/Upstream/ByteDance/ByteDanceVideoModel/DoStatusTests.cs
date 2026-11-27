@@ -67,10 +67,10 @@ public sealed class DoStatusTests
     [Fact]
     [UpstreamTest(
         Prefix + "should validate redirects after trusting the configured origin",
-        Coverage = UpstreamCoverage.Covered,
-        Note = "Upstream asserts redirect: 'manual' on the request init. A .NET handler cannot see that flag. The port follows redirects by hand, so a single recorded call to the trusted URL and the DownloadError show the redirect was not followed."
+        Coverage = UpstreamCoverage.Partial,
+        Note = "Missing the redirect: 'manual' assertion (tracked in #1911). Upstream asserts redirect: 'manual' on the request init. A .NET handler cannot see that flag. The port follows redirects by hand, so a single recorded call to the trusted URL and the DownloadError show the redirect was not followed."
     )]
-    public async Task Should_validate_redirects_after_trusting_the_configured_origin()
+    public async Task Partial_Should_validate_redirects_after_trusting_the_configured_origin()
     {
         var handler = new ParityHandler(_ =>
         {
