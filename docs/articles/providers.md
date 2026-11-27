@@ -1330,6 +1330,12 @@ Credentials go to the polling URL only when it is on the provider origin or an h
 - Provider options are read from `blackForestLabs` and validated before the request (`InvalidArgumentException`): `resolution`, `aspectRatio`, `keyframes`, `safetyTolerance` (0 to 4), `draft`, `draftCache`, and `version` (only `latest`). `keyframes` holds 1 to 10 image URLs or base64 strings, or `[seconds, image]` pairs in chronological order (0 to 20 seconds). It wins over `Image` and `FrameImages`, with a warning. Three or more untimed keyframes need a `Duration` (`InvalidArgumentException` otherwise).
 - Draft mode: `draft` renders a fast preview and reports `draftCache` in the provider metadata. Passing that URL or its base64 bundle as `draftCache` replays it at full quality. The bundle pins everything else, so the request sends only `mode`, `draft_cache`, and `safety_tolerance`, and every other input is reported as an `unsupported` warning.
 
+## ByteDance
+
+`ByteDanceImageModel.SupportsFileInputs` is `true` for the known Seedream ids (`dola-seedream-5-0-pro-260628`, `seedream-5-0-260128`, `seedream-5-0-lite-260128`, `seedream-4-5-251128`, `seedream-4-0-250828`) and `null` for any other id. `SupportsMaskInputs` is `false` when `SupportsFileInputs` is `true`, and `null` otherwise. An HTTP error from the image model throws an `ApiException` whose `Url` is the request URL.
+
+The configured ByteDance base URL is trusted for the video status request. Every redirect to another origin is validated before it is followed (private addresses and non-http(s) schemes throw `DownloadError`). `ByteDanceProvider.Create` turns off automatic redirects on a supplied handler for that reason.
+
 ## fal image models
 
 `FalImageModel.SupportsFileInputs` and `SupportsMaskInputs` report what the model id accepts. `SupportsFileInputs` is `true` for the known image-to-image and edit models (for example `fal-ai/flux-2/edit` and `fal-ai/flux-pro/kontext`), `false` for known text-to-image models (for example `fal-ai/recraft/v3/text-to-image`), and `null` for any other id. `SupportsMaskInputs` is `true` for `fal-ai/flux-general/inpainting` and `fal-ai/flux-lora/inpainting`, `false` for the other known ids, and `null` when `SupportsFileInputs` is `null`.

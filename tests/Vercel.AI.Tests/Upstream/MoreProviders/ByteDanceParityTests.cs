@@ -12,6 +12,7 @@ using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.Tests.MoreProviders;
 using Vercel.AI.Tests.Upstream;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.Tests;
 
@@ -38,6 +39,41 @@ public sealed class ByteDanceParityTests
 
     private static readonly DateTimeOffset TestDate = new(2024, 1, 1, 0, 0, 0, TimeSpan.Zero);
     private static readonly byte[] PngBytes = { 137, 80, 78, 71 };
+
+    [Theory]
+    [InlineData("seedream-5-0-260128", true, false)]
+    [InlineData("dola-seedream-5-0-pro-260628", true, false)]
+    [InlineData("seedream-5-0-lite-260128", true, false)]
+    [InlineData("seedream-4-5-251128", true, false)]
+    [InlineData("seedream-4-0-250828", true, false)]
+    [InlineData("not-seedream", null, null)]
+    [InlineData("custom-seedream-model", null, null)]
+    [InlineData("seedream-future", null, null)]
+    [InlineData("custom-image-model", null, null)]
+    [UpstreamTest(
+        Image
+            + "capabilities::advertises file=$supportsFileInputs and mask=$supportsMaskInputs for $modelId",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void Image_model_advertises_file_and_mask_support(
+        string modelId,
+        bool? supportsFileInputs,
+        bool? supportsMaskInputs
+    )
+    {
+        var provider = ByteDanceProvider.Create(
+            new OpenAICompatibleOptions
+            {
+                ApiKey = "test-key",
+                BaseUrl = "https://api.example.com",
+            },
+            new ParityHandler()
+        );
+        var model = new ByteDanceImageModel(provider, modelId);
+
+        Assert.Equal(supportsFileInputs, model.SupportsFileInputs);
+        Assert.Equal(supportsMaskInputs, model.SupportsMaskInputs);
+    }
 
     [Fact]
     [UpstreamTest(
@@ -161,8 +197,7 @@ public sealed class ByteDanceParityTests
     [Fact]
     [UpstreamTest(
         Image + "doGenerate::should handle API errors",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Checks the message and status code. ApiException has no request URL."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Image_api_errors_keep_message_and_status()
     {
@@ -179,6 +214,7 @@ public sealed class ByteDanceParityTests
             .ConfigureAwait(false);
         Assert.Equal("Invalid prompt content", error.Message);
         Assert.Equal(400, error.StatusCode);
+        Assert.Equal("https://api.example.com/images/generations", error.Url);
     }
 
     [Fact]
@@ -1558,6 +1594,38 @@ public sealed class ByteDanceParityTests
             .ConfigureAwait(false);
         Assert.Equal("provider-header-value", handler.Calls[0].Header("Custom-Provider-Header"));
         Assert.Equal("request-header-value", handler.Calls[0].Header("Custom-Request-Header"));
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Video + "doStatus::should validate redirects after trusting the configured origin",
+        Coverage = UpstreamCoverage.Covered,
+        Note = "Upstream asserts redirect: 'manual' on the request init. A .NET handler cannot see that flag. The port follows redirects by hand, so a single recorded call to the trusted URL and the DownloadError show the redirect was not followed."
+    )]
+    public async Task Status_validates_redirects_after_trusting_the_configured_origin()
+    {
+        var handler = new ParityHandler(_ =>
+        {
+            var response = new HttpResponseMessage(HttpStatusCode.Found);
+            response.Headers.TryAddWithoutValidation(
+                "Location",
+                "http://169.254.169.254/latest/meta-data/"
+            );
+            return response;
+        });
+        var model = VideoModel(handler, configure: options =>
+            options.BaseUrl = "http://localhost:3000/api/v3"
+        );
+
+        await Assert
+            .ThrowsAsync<DownloadError>(() => model.DoStatusAsync(Status(), CancellationToken.None))
+            .ConfigureAwait(false);
+
+        var call = Assert.Single(handler.Calls);
+        Assert.Equal(
+            "http://localhost:3000/api/v3/contents/generations/tasks/test-task-id-123",
+            call.Uri.AbsoluteUri
+        );
     }
 
     private static ByteDanceImageModel ImageModel(
