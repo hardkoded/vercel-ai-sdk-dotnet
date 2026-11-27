@@ -29,6 +29,9 @@ public sealed class FilePartInput
     /// <summary>URL string that has not been parsed yet.</summary>
     public string? UrlText { get; private set; }
 
+    /// <summary>Original URL string of a tagged URL, when parsing changed it.</summary>
+    public string? OriginalUrl { get; private set; }
+
     /// <summary>Provider reference.</summary>
     public IReadOnlyDictionary<string, string>? Reference { get; private set; }
 
@@ -116,6 +119,17 @@ public sealed class FilePartInput
         {
             Type = "url",
             Url = url ?? throw new ArgumentNullException(nameof(url)),
+        };
+    }
+
+    /// <summary>Creates a tagged URL that keeps <paramref name="originalUrl"/>, the string the URL was parsed from.</summary>
+    public static FilePartInput TaggedUrl(Uri url, string? originalUrl)
+    {
+        return new FilePartInput
+        {
+            Type = "url",
+            Url = url ?? throw new ArgumentNullException(nameof(url)),
+            OriginalUrl = originalUrl,
         };
     }
 
@@ -207,12 +221,18 @@ public static class FileParts
 
                     return Inline(content);
                 case "url":
-                    return FromUrl(
+                    var taggedUrl = FromUrl(
                         content.Url
                             ?? throw new InvalidDataContentException(
                                 "URL file data requires a URL."
                             )
                     );
+                    if (content.OriginalUrl != null && taggedUrl.DataType == "url")
+                    {
+                        taggedUrl.OriginalUrl = content.OriginalUrl;
+                    }
+
+                    return taggedUrl;
                 case "reference":
                     return new LanguageModelFilePart("reference", null)
                     {

@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Text.Json;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 using Vercel.AI.Util;
@@ -47,7 +48,126 @@ public static class LanguageModelPrompts
         }
 
         ThrowIfToolResultsAreMissing(converted);
-        return converted;
+        return CombineConsecutiveToolMessages(converted);
+    }
+
+    // Maps to "combine consecutive tool messages into a single tool message". A tool message that carries only a local approval
+    // response is an empty tool message upstream: it is dropped, and its provider options are merged into the combined message.
+    private static IReadOnlyList<ModelMessage> CombineConsecutiveToolMessages(
+        IReadOnlyList<ModelMessage> messages
+    )
+    {
+        var combined = new List<ModelMessage>(messages.Count);
+        var results = new List<ToolModelMessage>();
+        IReadOnlyDictionary<string, JsonElement>? options = null;
+        ModelMessage? only = null;
+        var open = false;
+
+        void Join(
+            IReadOnlyList<ToolModelMessage> next,
+            IReadOnlyDictionary<string, JsonElement>? nextOptions,
+            ModelMessage source
+        )
+        {
+            if (!open)
+            {
+                open = true;
+                results.AddRange(next);
+                options = nextOptions;
+                only = source;
+                return;
+            }
+
+            only = null;
+            var hasLastPart = results.Count > 0;
+            if (hasLastPart && options != null)
+            {
+                var last = results.Count - 1;
+                results[last] = WithProviderOptions(
+                    results[last],
+                    Generation.MergeProviderOptions(options, results[last].ProviderOptions)
+                );
+            }
+
+            results.AddRange(next);
+            options = hasLastPart
+                ? nextOptions
+                : Generation.MergeProviderOptions(options, nextOptions);
+        }
+
+        void Flush()
+        {
+            if (open && results.Count > 0)
+            {
+                combined.Add(
+                    only
+                        ?? new ToolModelMessage(results.ToArray())
+                        {
+                            MessageProviderOptions = options,
+                        }
+                );
+            }
+
+            open = false;
+            results.Clear();
+            options = null;
+            only = null;
+        }
+
+        foreach (var message in messages)
+        {
+            switch (message)
+            {
+                case ToolModelMessage tool:
+                    Join(tool.Results, tool.MessageProviderOptions, tool);
+                    break;
+                case ToolApprovalResponseModelMessage { ProviderExecuted: false } approval:
+                    Join([], approval.MessageProviderOptions, approval);
+                    break;
+                default:
+                    Flush();
+                    combined.Add(message);
+                    break;
+            }
+        }
+
+        Flush();
+        return combined;
+    }
+
+    private static ToolModelMessage WithProviderOptions(
+        ToolModelMessage result,
+        IReadOnlyDictionary<string, JsonElement>? providerOptions
+    )
+    {
+        if (result.OutputContent is not null)
+        {
+            return new ToolModelMessage(
+                result.ToolCallId,
+                result.ToolName,
+                result.OutputContent,
+                result.ProviderMetadata
+            )
+            {
+                ProviderOptions = providerOptions,
+                OutputProviderOptions = result.OutputProviderOptions,
+            };
+        }
+
+        return new ToolModelMessage(
+            result.ToolCallId,
+            result.ToolName,
+            result.OutputType == "execution-denied"
+                ? result.ExecutionDeniedReason
+                : result.OutputJson,
+            result.IsError,
+            result.OutputType,
+            result.ProviderMetadata
+        )
+        {
+            ProviderOptions = providerOptions,
+            OutputProviderOptions = result.OutputProviderOptions,
+        };
     }
 
     // The tool-call bookkeeping at the end of convertToLanguageModelPrompt: every tool call needs a result before the next user or system message.
@@ -582,8 +702,11 @@ public static class LanguageModelPrompts
         var parts = new List<AssistantContentPart>(assistant.Parts.Count);
         foreach (var part in assistant.Parts)
         {
-            // The approval requests are not part of the prompt.
-            if (part is AssistantToolApprovalRequestPart)
+            // The approval requests are not part of the prompt. Empty text parts are removed unless they carry provider options.
+            if (
+                part is AssistantToolApprovalRequestPart
+                || part is AssistantTextPart { Text.Length: 0, ProviderOptions: null }
+            )
             {
                 changed = true;
                 continue;
@@ -652,6 +775,12 @@ public static class LanguageModelPrompts
         var content = new List<UserContentPart>(user.Content.Count);
         foreach (var part in user.Content)
         {
+            // Empty text parts are removed.
+            if (part is TextContentPart { Text.Length: 0 })
+            {
+                continue;
+            }
+
             content.Add(part is FileContentPart file ? ConvertFilePart(file, downloaded) : part);
         }
 
@@ -670,10 +799,13 @@ public static class LanguageModelPrompts
                 is { DataType: "data", Base64: not null } dataUrl
         )
         {
+            var dataUrlBytes = DecodeBase64(dataUrl.Base64);
             return new FileContentPart(
-                dataUrl.MediaType ?? file.MediaType,
+                MediaTypes.DetectMediaType(dataUrlBytes, "image")
+                    ?? dataUrl.MediaType
+                    ?? file.MediaType,
                 null,
-                DecodeBase64(dataUrl.Base64),
+                dataUrlBytes,
                 file.FileName
             )
             {
