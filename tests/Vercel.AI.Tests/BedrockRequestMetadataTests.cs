@@ -70,6 +70,10 @@ public sealed class BedrockRequestMetadataTests
     }
 
     [Fact]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model-options.test.ts::amazonBedrockLanguageModelChatOptions > requestMetadata::rejects non-string values in the record",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task RejectsNonStringValuesInTheRecord()
     {
         var handler = new ScriptedHandler();
@@ -90,6 +94,10 @@ public sealed class BedrockRequestMetadataTests
     }
 
     [Fact]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model-options.test.ts::amazonBedrockLanguageModelChatOptions > requestMetadata::accepts a Record<string, string>",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task AcceptsARecordOfStringString()
     {
         var handler = new ScriptedHandler();
@@ -112,6 +120,10 @@ public sealed class BedrockRequestMetadataTests
     }
 
     [Fact]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/amazon-bedrock-chat-language-model-options.test.ts::amazonBedrockLanguageModelChatOptions > requestMetadata::is optional",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task IsOptional()
     {
         var handler = new ScriptedHandler();

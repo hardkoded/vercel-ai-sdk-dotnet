@@ -1122,6 +1122,12 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
                 "structuredOutputMode"
             )
             ?? "auto";
+        if (structuredOutputMode is not ("outputFormat" or "jsonTool" or "auto"))
+        {
+            throw new ArgumentException(
+                "Bedrock structuredOutputMode must be one of outputFormat, jsonTool, or auto."
+            );
+        }
 
         if (
             structuredOutputMode == "jsonTool"
