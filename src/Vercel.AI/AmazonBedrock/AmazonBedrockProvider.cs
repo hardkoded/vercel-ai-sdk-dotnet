@@ -1116,12 +1116,10 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
             || thinkingType == "adaptive"
             || thinkingType == "between_tools";
 
-        var structuredOutputMode = ReadString(bedrock, "structuredOutputMode")
-            ?? ReadString(
-                ReadProviderOptions(options.ProviderOptions, "anthropic"),
-                "structuredOutputMode"
-            )
-            ?? "auto";
+        var structuredOutputMode = ReadStructuredOutputMode(
+            bedrock,
+            ReadProviderOptions(options.ProviderOptions, "anthropic")
+        );
 
         if (
             structuredOutputMode == "jsonTool"
@@ -1825,6 +1823,35 @@ public sealed class AmazonBedrockLanguageModel : ILanguageModel
         }
 
         return null;
+    }
+
+    private static string ReadStructuredOutputMode(JsonElement? bedrock, JsonElement? anthropic)
+    {
+        string? selected = null;
+        foreach (var source in new[] { bedrock, anthropic })
+        {
+            if (
+                source is not { ValueKind: JsonValueKind.Object } value
+                || !value.TryGetProperty("structuredOutputMode", out var mode)
+            )
+            {
+                continue;
+            }
+
+            if (
+                mode.ValueKind != JsonValueKind.String
+                || mode.GetString() is not ("outputFormat" or "jsonTool" or "auto")
+            )
+            {
+                throw new ArgumentException(
+                    "Bedrock structuredOutputMode must be one of outputFormat, jsonTool, or auto."
+                );
+            }
+
+            selected ??= mode.GetString();
+        }
+
+        return selected ?? "auto";
     }
 
     private static string? ReadServiceTier(JsonElement? bedrock)
