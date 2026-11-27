@@ -1,0 +1,129 @@
+[
+ {
+  "type": "stream-start",
+  "warnings": []
+ },
+ {
+  "id": "msg_01KfpJoAEabmH2iHRRFjQMAG",
+  "modelId": "claude-3-haiku-20240307",
+  "type": "response-metadata"
+ },
+ {
+  "kind": "anthropic.message_start",
+  "providerMetadata": {
+   "anthropic": {
+    "id": "msg_01KfpJoAEabmH2iHRRFjQMAG",
+    "model": "claude-3-haiku-20240307",
+    "usage": {
+     "input_tokens": 17,
+     "output_tokens": 1
+    }
+   }
+  },
+  "type": "custom"
+ },
+ {
+  "id": "0",
+  "type": "text-start"
+ },
+ {
+  "delta": "Based on the document",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "delta": ", results show growth.",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "filename": "financial-report.pdf",
+  "id": "id-0",
+  "mediaType": "application/pdf",
+  "providerMetadata": {
+   "anthropic": {
+    "citedText": "Revenue increased by 25% year over year",
+    "endPageNumber": 6,
+    "startPageNumber": 5
+   }
+  },
+  "sourceType": "document",
+  "title": "Financial Report 2023",
+  "type": "source"
+ },
+ {
+  "citations": [
+   {
+    "citedText": "Revenue increased by 25% year over year",
+    "source": {
+     "filename": "financial-report.pdf",
+     "id": "0",
+     "mediaType": "application/pdf",
+     "providerMetadata": {
+      "anthropic": {
+       "cited_text": "Revenue increased by 25% year over year",
+       "document_index": 0,
+       "document_title": "Financial Report 2023",
+       "end_page_number": 6,
+       "start_page_number": 5,
+       "type": "page_location"
+      }
+     },
+     "sourceType": "document",
+     "title": "Financial Report 2023",
+     "type": "source"
+    }
+   }
+  ],
+  "id": "0",
+  "providerMetadata": {
+   "anthropic": {
+    "citations": [
+     {
+      "cited_text": "Revenue increased by 25% year over year",
+      "document_index": 0,
+      "document_title": "Financial Report 2023",
+      "end_page_number": 6,
+      "start_page_number": 5,
+      "type": "page_location"
+     }
+    ]
+   }
+  },
+  "type": "text-end"
+ },
+ {
+  "finishReason": {
+   "raw": "end_turn",
+   "unified": "stop"
+  },
+  "providerMetadata": {
+   "anthropic": {
+    "container": null,
+    "contextManagement": null,
+    "iterations": null,
+    "stopSequence": null,
+    "usage": {
+     "input_tokens": 17,
+     "output_tokens": 227
+    }
+   }
+  },
+  "type": "finish",
+  "usage": {
+   "inputTokens": {
+    "cacheRead": 0,
+    "cacheWrite": 0,
+    "noCache": 17,
+    "total": 17
+   },
+   "outputTokens": {
+    "total": 227
+   },
+   "raw": {
+    "input_tokens": 17,
+    "output_tokens": 227
+   }
+  }
+ }
+]

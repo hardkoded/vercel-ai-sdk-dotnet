@@ -1,0 +1,76 @@
+[
+ {
+  "type": "stream-start",
+  "warnings": []
+ },
+ {
+  "id": "msg_01KfpJoAEabmH2iHRRFjQMAG",
+  "modelId": "claude-3-haiku-20240307",
+  "type": "response-metadata"
+ },
+ {
+  "kind": "anthropic.message_start",
+  "providerMetadata": {
+   "anthropic": {
+    "id": "msg_01KfpJoAEabmH2iHRRFjQMAG",
+    "model": "claude-3-haiku-20240307",
+    "usage": {
+     "input_tokens": 17,
+     "output_tokens": 1
+    }
+   }
+  },
+  "type": "custom"
+ },
+ {
+  "id": "0",
+  "type": "text-start"
+ },
+ {
+  "delta": "Hello",
+  "id": "0",
+  "type": "text-delta"
+ },
+ {
+  "id": "0",
+  "type": "text-end"
+ },
+ {
+  "finishReason": {
+   "raw": "end_turn",
+   "unified": "stop"
+  },
+  "providerMetadata": {
+   "anthropic": {
+    "container": null,
+    "contextManagement": null,
+    "iterations": null,
+    "stopSequence": null,
+    "usage": {
+     "cache_creation_input_tokens": 10,
+     "cache_read_input_tokens": 5,
+     "input_tokens": 17,
+     "output_tokens": 227
+    }
+   }
+  },
+  "type": "finish",
+  "usage": {
+   "inputTokens": {
+    "cacheRead": 5,
+    "cacheWrite": 10,
+    "noCache": 17,
+    "total": 32
+   },
+   "outputTokens": {
+    "total": 227
+   },
+   "raw": {
+    "cache_creation_input_tokens": 10,
+    "cache_read_input_tokens": 5,
+    "input_tokens": 17,
+    "output_tokens": 227
+   }
+  }
+ }
+]

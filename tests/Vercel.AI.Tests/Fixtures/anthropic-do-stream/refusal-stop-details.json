@@ -1,0 +1,6 @@
+{
+ "category": "cyber",
+ "explanation": "This request triggered restrictions on violative cyber content and was blocked under Anthropic's Usage Policy.",
+ "recommendedModel": "claude-fable-5",
+ "type": "refusal"
+}

@@ -95,7 +95,8 @@ public static class AnthropicMessagesRequest
         string providerName,
         bool supportsNativeStructuredOutput = true,
         bool supportsStrictTools = true,
-        AnthropicModelSettings? settings = null
+        AnthropicModelSettings? settings = null,
+        IReadOnlyDictionary<string, string?>? configHeaders = null
     )
     {
         var warnings = new List<AnthropicWarning>();
@@ -366,7 +367,10 @@ public static class AnthropicMessagesRequest
         warnings.AddRange(converted.Warnings);
         betas.AddRange(converted.Betas);
 
-        var explicitBetas = new HashSet<string>(HeaderBetas(options), StringComparer.Ordinal);
+        var explicitBetas = new HashSet<string>(
+            HeaderBetas(configHeaders).Concat(HeaderBetas(options.Headers)),
+            StringComparer.Ordinal
+        );
         var tools = ToTools(options);
         if (hasThread)
         {
@@ -1723,15 +1727,15 @@ public static class AnthropicMessagesRequest
         return null;
     }
 
-    private static IEnumerable<string> HeaderBetas(LanguageModelCallOptions options)
+    private static IEnumerable<string> HeaderBetas(IReadOnlyDictionary<string, string?>? headers)
     {
-        if (options.Headers == null)
+        if (headers == null)
         {
             yield break;
         }
 
         string? header = null;
-        foreach (var pair in options.Headers)
+        foreach (var pair in headers)
         {
             if (
                 pair.Key.Equals("anthropic-beta", StringComparison.OrdinalIgnoreCase)

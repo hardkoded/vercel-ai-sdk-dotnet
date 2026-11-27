@@ -3036,6 +3036,9 @@ public sealed class ToolResultStreamPart : LanguageModelStreamPart
 
     /// <summary>True when the result is preliminary: the provider-executed tool streams it before its final result, such as a partial image.</summary>
     public bool? Preliminary { get; init; }
+
+    /// <summary>Whether the tool is not known to the caller, like an MCP tool. Maps to <c>dynamic</c>.</summary>
+    public bool? Dynamic { get; init; }
 }
 
 /// <summary>A cited URL.</summary>

@@ -1,0 +1,36 @@
+[
+ {
+  "finishReason": {
+   "raw": "pause_turn",
+   "unified": "stop"
+  },
+  "providerMetadata": {
+   "anthropic": {
+    "container": null,
+    "contextManagement": null,
+    "iterations": null,
+    "stopSequence": null,
+    "usage": {
+     "input_tokens": 17,
+     "output_tokens": 227
+    }
+   }
+  },
+  "type": "finish",
+  "usage": {
+   "inputTokens": {
+    "cacheRead": 0,
+    "cacheWrite": 0,
+    "noCache": 17,
+    "total": 17
+   },
+   "outputTokens": {
+    "total": 227
+   },
+   "raw": {
+    "input_tokens": 17,
+    "output_tokens": 227
+   }
+  }
+ }
+]

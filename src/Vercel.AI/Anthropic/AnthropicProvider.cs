@@ -737,7 +737,13 @@ public class AnthropicLanguageModel : ILanguageModel
                 )
                 .ConfigureAwait(false);
             return sse.ToStreamResult(
-                StreamAsync(options, prepared, events, cancellationToken),
+                StreamAsync(
+                    options,
+                    prepared,
+                    events,
+                    _provider.Options.GenerateId,
+                    cancellationToken
+                ),
                 body
             );
         }
@@ -847,10 +853,46 @@ public class AnthropicLanguageModel : ILanguageModel
         }
     }
 
+    private static List<CitationDocument> ExtractCitationDocuments(
+        IReadOnlyList<ModelMessage> prompt
+    )
+    {
+        var documents = new List<CitationDocument>();
+        foreach (var message in prompt.OfType<UserModelMessage>())
+        {
+            foreach (var part in message.Content.OfType<FileContentPart>())
+            {
+                if (part.MediaType != "application/pdf" && part.MediaType != "text/plain")
+                {
+                    continue;
+                }
+
+                if (
+                    part.ProviderOptions != null
+                    && part.ProviderOptions.TryGetValue("anthropic", out var anthropic)
+                    && AnthropicJson.Property(anthropic, "citations") is { } citations
+                    && AnthropicJson.Bool(citations, "enabled") == true
+                )
+                {
+                    documents.Add(
+                        new CitationDocument(
+                            part.FileName ?? "Untitled Document",
+                            part.FileName,
+                            part.MediaType
+                        )
+                    );
+                }
+            }
+        }
+
+        return documents;
+    }
+
     private static async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(
         LanguageModelCallOptions options,
         AnthropicPreparedRequest prepared,
         IAsyncEnumerable<string> events,
+        Func<string>? generateId,
         [EnumeratorCancellation] CancellationToken cancellationToken
     )
     {
@@ -867,6 +909,8 @@ public class AnthropicLanguageModel : ILanguageModel
             PreparedTools = prepared.PreparedTools,
             ComputerToolsetName = prepared.ComputerToolsetName,
             IncludePings = prepared.IncludePings,
+            GenerateId = generateId,
+            CitationDocuments = ExtractCitationDocuments(options.Prompt),
         };
         await foreach (var data in events.WithCancellation(cancellationToken).ConfigureAwait(false))
         {
@@ -918,7 +962,8 @@ public class AnthropicLanguageModel : ILanguageModel
             Provider,
             _provider.SupportsNativeStructuredOutputFor(ModelId),
             _provider.SupportsStrictTools,
-            _settings
+            _settings,
+            _provider.Options.Headers
         );
         var transformed = _provider.TransformRequestBody(prepared.Body, prepared.Betas);
         if (ReferenceEquals(transformed, prepared.Body) && callWarnings.Count == 0)
