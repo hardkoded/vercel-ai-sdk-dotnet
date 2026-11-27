@@ -132,6 +132,12 @@ public sealed class GatewayProvider
     }
 
     /// <inheritdoc />
+    public override ISpeechModel SpeechModel(string modelId)
+    {
+        return new GatewaySpeechModel(this, modelId);
+    }
+
+    /// <inheritdoc />
     public override ITranscriptionModel TranscriptionModel(string modelId)
     {
         return new GatewayTranscriptionModel(this, modelId);
@@ -1212,7 +1218,7 @@ public sealed class GatewayEmbeddingModel : IEmbeddingModel
             body["providerOptions"] = JsonNode.Parse(options.GetRawText());
         }
 
-        JsonDocument document;
+        ProviderTextResponse response;
         var requestHeaders = await _provider
             .HeadersAsync(
                 "ai-embedding-model-specification-version",
@@ -1226,8 +1232,8 @@ public sealed class GatewayEmbeddingModel : IEmbeddingModel
             .ConfigureAwait(false);
         try
         {
-            document = await _provider
-                .Http.SendJsonAsync(
+            response = await _provider
+                .Http.SendJsonStringAsync(
                     HttpMethod.Post,
                     _provider.Route("embedding-model"),
                     body.ToJsonString(),
@@ -1249,7 +1255,7 @@ public sealed class GatewayEmbeddingModel : IEmbeddingModel
             throw GatewayProvider.MapFailure(exception, requestHeaders, body.ToJsonString());
         }
 
-        using (document)
+        using (var document = JsonDocument.Parse(response.Body))
         {
             var vectors = new List<float[]>();
             foreach (
@@ -1276,8 +1282,53 @@ public sealed class GatewayEmbeddingModel : IEmbeddingModel
                 tokens = tokenCount.GetInt32();
             }
 
-            return new EmbeddingResult(vectors, tokens);
+            var warnings = new List<CallWarning>();
+            if (
+                document.RootElement.TryGetProperty("warnings", out var warningArray)
+                && warningArray.ValueKind == JsonValueKind.Array
+            )
+            {
+                foreach (var warning in warningArray.EnumerateArray())
+                {
+                    warnings.Add(ReadWarning(warning));
+                }
+            }
+
+            JsonElement? providerMetadata =
+                document.RootElement.TryGetProperty("providerMetadata", out var metadata)
+                && metadata.ValueKind == JsonValueKind.Object
+                    ? metadata.Clone()
+                    : null;
+            return new EmbeddingResult(
+                vectors,
+                tokens,
+                warnings,
+                new EmbeddingResponseInfo(response.Headers, response.Body),
+                providerMetadata
+            );
         }
+    }
+
+    private static CallWarning ReadWarning(JsonElement warning)
+    {
+        string? Text(string name) =>
+            warning.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+                ? value.GetString()
+                : null;
+        var type = Text("type") ?? "other";
+        return type switch
+        {
+            "deprecated" => CallWarning.Deprecated(
+                Text("setting") ?? string.Empty,
+                Text("message") ?? string.Empty
+            ),
+            "unsupported" or "compatibility" => new CallWarning(
+                type,
+                Text("feature") ?? string.Empty,
+                Text("details")
+            ),
+            _ => new CallWarning(type, Text("message") ?? string.Empty),
+        };
     }
 }
 

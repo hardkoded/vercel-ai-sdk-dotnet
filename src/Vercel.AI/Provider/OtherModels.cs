@@ -33,10 +33,12 @@ public sealed class EmbeddingResult
         IReadOnlyList<float[]> embeddings,
         int? tokens,
         IReadOnlyList<CallWarning>? warnings = null,
-        EmbeddingResponseInfo? response = null
+        EmbeddingResponseInfo? response = null,
+        JsonElement? providerMetadata = null
     )
     {
         Embeddings = embeddings ?? throw new ArgumentNullException(nameof(embeddings));
+        ProviderMetadata = providerMetadata;
         Tokens = tokens;
         Warnings = warnings ?? Array.Empty<CallWarning>();
         Response = response;
@@ -47,6 +49,9 @@ public sealed class EmbeddingResult
 
     /// <summary>Raw HTTP response of this call, when the provider reports it.</summary>
     public EmbeddingResponseInfo? Response { get; }
+
+    /// <summary>Provider-specific metadata of this call, keyed by provider name. Maps to <c>providerMetadata</c>.</summary>
+    public JsonElement? ProviderMetadata { get; }
 
     /// <summary>One vector per input value.</summary>
     public IReadOnlyList<float[]> Embeddings { get; }
