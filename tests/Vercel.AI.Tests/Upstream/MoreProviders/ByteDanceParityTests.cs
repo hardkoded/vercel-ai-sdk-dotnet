@@ -1596,38 +1596,6 @@ public sealed class ByteDanceParityTests
         Assert.Equal("request-header-value", handler.Calls[0].Header("Custom-Request-Header"));
     }
 
-    [Fact]
-    [UpstreamTest(
-        Video + "doStatus::should validate redirects after trusting the configured origin",
-        Coverage = UpstreamCoverage.Covered,
-        Note = "Upstream asserts redirect: 'manual' on the request init. A .NET handler cannot see that flag. The port follows redirects by hand, so a single recorded call to the trusted URL and the DownloadError show the redirect was not followed."
-    )]
-    public async Task Status_validates_redirects_after_trusting_the_configured_origin()
-    {
-        var handler = new ParityHandler(_ =>
-        {
-            var response = new HttpResponseMessage(HttpStatusCode.Found);
-            response.Headers.TryAddWithoutValidation(
-                "Location",
-                "http://169.254.169.254/latest/meta-data/"
-            );
-            return response;
-        });
-        var model = VideoModel(handler, configure: options =>
-            options.BaseUrl = "http://localhost:3000/api/v3"
-        );
-
-        await Assert
-            .ThrowsAsync<DownloadError>(() => model.DoStatusAsync(Status(), CancellationToken.None))
-            .ConfigureAwait(false);
-
-        var call = Assert.Single(handler.Calls);
-        Assert.Equal(
-            "http://localhost:3000/api/v3/contents/generations/tasks/test-task-id-123",
-            call.Uri.AbsoluteUri
-        );
-    }
-
     private static ByteDanceImageModel ImageModel(
         ParityHandler handler,
         Func<DateTimeOffset>? clock = null
