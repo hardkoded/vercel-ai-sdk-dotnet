@@ -20,7 +20,8 @@ public sealed class PromptAttachmentDownloadCancellationTests
     [Fact]
     [UpstreamTest(
         Prefix + "should cancel generateText downloads when the caller aborts",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Partial,
+        Note = "Does not assert that the fetch signal is the caller's own signal: a .NET CancellationToken is linked, not passed through."
     )]
     public async Task Should_cancel_generateText_downloads_when_the_caller_aborts()
     {
@@ -50,7 +51,8 @@ public sealed class PromptAttachmentDownloadCancellationTests
     [Fact]
     [UpstreamTest(
         Prefix + "should cancel streamText downloads when the caller aborts",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Partial,
+        Note = "Does not assert that the fetch signal is the caller's own signal: a .NET CancellationToken is linked, not passed through."
     )]
     public async Task Should_cancel_streamText_downloads_when_the_caller_aborts()
     {
@@ -69,10 +71,7 @@ public sealed class PromptAttachmentDownloadCancellationTests
                 },
                 abort.Token
             );
-        var operation = Task.Run(async () =>
-        {
-            await foreach (var _ in result.Stream(abort.Token)) { }
-        });
+        var operation = result.Text;
 
         await download.Started.WaitAsync(TimeSpan.FromSeconds(10));
         abort.Cancel();
