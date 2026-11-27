@@ -6,7 +6,7 @@ The upstream catalog is the [Vercel AI Gateway models page](https://vercel.com/a
 
 | Provider | Kinds |
 | --- | --- |
-| [Alibaba](alibaba.md) | Language, Embedding |
+| [Alibaba](alibaba.md) | Language, Embedding, Video |
 | [Amazon Bedrock](amazon-bedrock.md) | Language, Embedding, Image, Reranking |
 | [Anthropic](anthropic.md) | Language, Decision |
 | [AssemblyAI](assemblyai.md) | Speech |

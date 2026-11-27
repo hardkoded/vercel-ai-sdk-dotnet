@@ -198,6 +198,47 @@ public sealed class UnsupportedFunctionalityException : AiSdkException
     public string Functionality { get; }
 }
 
+/// <summary>One embedding call got more values than the model accepts. Maps to <c>TooManyEmbeddingValuesForCallError</c>.</summary>
+public sealed class TooManyEmbeddingValuesForCallException : AiSdkException
+{
+    /// <summary>Creates the exception.</summary>
+    public TooManyEmbeddingValuesForCallException(
+        string provider,
+        string modelId,
+        int maxEmbeddingsPerCall,
+        IReadOnlyList<string> values
+    )
+        : base(
+            "Too many values for a single embedding call. The "
+                + provider
+                + " model \""
+                + modelId
+                + "\" can only embed up to "
+                + maxEmbeddingsPerCall.ToString(CultureInfo.InvariantCulture)
+                + " values per call, but "
+                + (values?.Count ?? 0).ToString(CultureInfo.InvariantCulture)
+                + " values were provided."
+        )
+    {
+        Provider = provider;
+        ModelId = modelId;
+        MaxEmbeddingsPerCall = maxEmbeddingsPerCall;
+        Values = values ?? Array.Empty<string>();
+    }
+
+    /// <summary>Provider id.</summary>
+    public string Provider { get; }
+
+    /// <summary>Model id.</summary>
+    public string ModelId { get; }
+
+    /// <summary>Maximum values the model accepts in one call.</summary>
+    public int MaxEmbeddingsPerCall { get; }
+
+    /// <summary>Values of the rejected call.</summary>
+    public IReadOnlyList<string> Values { get; }
+}
+
 /// <summary>The model specification version is not supported.</summary>
 public sealed class UnsupportedModelVersionException : AiSdkException
 {

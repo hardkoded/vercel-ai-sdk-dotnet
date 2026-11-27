@@ -43,8 +43,11 @@ public sealed class DoStreamTests
             )
         );
         var model = (OpenAICompatibleLanguageModel)
-            AlibabaProvider
-                .Create(new OpenAICompatibleOptions { ApiKey = "secret" }, handler)
+            Vercel
+                .AI.Alibaba.AlibabaProvider.Create(
+                    new OpenAICompatibleOptions { ApiKey = "secret" },
+                    handler
+                )
                 .LanguageModel("qwen-plus");
 
         var parts = await UpstreamChat.Read(

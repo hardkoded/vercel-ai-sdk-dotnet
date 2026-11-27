@@ -25,53 +25,6 @@ internal static class AlibabaChatRequest
         "parallelToolCalls",
     };
 
-    private static readonly string[] PreservedThinkingModelIds =
-    {
-        "kimi-k2.7-code",
-        "qwen3.6-max-preview",
-        "qwen3.6-plus",
-        "qwen3.6-plus-2026-04-02",
-        "qwen3.7-flash",
-        "qwen3.7-flash-2026-07-15",
-        "qwen3.7-max",
-        "qwen3.7-max-2026-05-17",
-        "qwen3.7-max-2026-05-20",
-        "qwen3.7-max-2026-06-08",
-        "qwen3.7-max-preview",
-        "qwen3.7-plus",
-        "qwen3.7-plus-2026-05-26",
-        "qwen3.8-flash",
-        "qwen3.8-max",
-        "qwen3.8-max-0902",
-    };
-
-    private static readonly string[] JsonSchemaModelPrefixes =
-    {
-        "qwen3.7-plus",
-        "qwen3.7-flash",
-        "qwen3.7-max",
-        "qwen3.8-max",
-        "qwen3.8-flash",
-    };
-
-    public static bool SupportsPreservedThinking(string modelId)
-    {
-        return Array.IndexOf(PreservedThinkingModelIds, modelId) >= 0;
-    }
-
-    public static bool SupportsJsonSchemaOutput(string modelId)
-    {
-        foreach (var prefix in JsonSchemaModelPrefixes)
-        {
-            if (modelId == prefix || modelId.StartsWith(prefix + "-", StringComparison.Ordinal))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     public static JsonObject Transform(
         string modelId,
         LanguageModelCallOptions options,
@@ -113,13 +66,18 @@ internal static class AlibabaChatRequest
         // Preserved thinking defaults to on for models that support it. An explicit option always passes through.
         // Unsupported models without an explicit option omit the wire field.
         var preserveThinking = ReadBool(alibaba, "preserveThinking")
-            ?? (SupportsPreservedThinking(modelId) ? true : (bool?)null);
+            ?? (
+                SupportsPreservedThinkingChecker.SupportsPreservedThinking(modelId)
+                    ? true
+                    : (bool?)null
+            );
 
         var hasSchema =
             options.JsonSchema is
             { ValueKind: not (JsonValueKind.Undefined or JsonValueKind.Null) };
         var json = body.ContainsKey("response_format");
-        var useJsonSchema = json && hasSchema && SupportsJsonSchemaOutput(modelId);
+        var useJsonSchema =
+            json && hasSchema && SupportsJsonSchemaOutputChecker.SupportsJsonSchemaOutput(modelId);
         var useJsonObject = json && !useJsonSchema;
         for (var i = warnings.Count - 1; i >= 0; i--)
         {
@@ -214,32 +172,6 @@ internal static class AlibabaChatRequest
         return body;
     }
 
-    public static LanguageModelUsage ConvertUsage(JsonElement usage)
-    {
-        var prompt = ReadNumber(usage, "prompt_tokens") ?? 0;
-        var completion = ReadNumber(usage, "completion_tokens") ?? 0;
-        var cacheRead = ReadNestedNumber(usage, "prompt_tokens_details", "cached_tokens") ?? 0;
-        var cacheWrite = ReadNestedNumber(
-            usage,
-            "prompt_tokens_details",
-            "cache_creation_input_tokens"
-        ) ?? 0;
-        var reasoning = ReadNestedNumber(usage, "completion_tokens_details", "reasoning_tokens")
-            ?? 0;
-        return new LanguageModelUsage(
-            prompt,
-            completion,
-            ReadNumber(usage, "total_tokens"),
-            cacheReadTokens: cacheRead,
-            cacheWriteTokens: cacheWrite,
-            reasoningTokens: reasoning,
-            raw: usage.Clone(),
-            // Alibaba counts both cache reads and cache writes inside prompt_tokens.
-            noCacheInputTokens: prompt - cacheRead - cacheWrite,
-            textTokens: Math.Max(0, completion - reasoning)
-        );
-    }
-
     private static IReadOnlyList<ModelMessage> InjectJsonInstruction(
         IReadOnlyList<ModelMessage> prompt,
         JsonElement? schema
@@ -330,26 +262,6 @@ internal static class AlibabaChatRequest
             && options.TryGetProperty(name, out var value)
             && (value.ValueKind == JsonValueKind.True || value.ValueKind == JsonValueKind.False)
             ? value.GetBoolean()
-            : null;
-    }
-
-    private static int? ReadNumber(JsonElement element, string name)
-    {
-        return
-            element.ValueKind == JsonValueKind.Object
-            && element.TryGetProperty(name, out var value)
-            && value.ValueKind == JsonValueKind.Number
-            && value.TryGetInt32(out var number)
-            ? number
-            : null;
-    }
-
-    private static int? ReadNestedNumber(JsonElement element, string outer, string name)
-    {
-        return
-            element.ValueKind == JsonValueKind.Object
-            && element.TryGetProperty(outer, out var inner)
-            ? ReadNumber(inner, name)
             : null;
     }
 }
