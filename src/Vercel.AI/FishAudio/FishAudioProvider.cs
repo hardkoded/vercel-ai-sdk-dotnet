@@ -334,11 +334,12 @@ public sealed class FishAudioProvider : OpenAICompatibleProvider
                 }
             }
 
+            var requestBody = body.ToJsonString();
             var modelHeader = new Dictionary<string, string> { ["model"] = ModelId };
             var response = await _provider
                 .SendAsync(
                     "/v1/tts",
-                    ProviderExchange.Json(body.ToJsonString()),
+                    ProviderExchange.Json(requestBody),
                     modelHeader,
                     call.Headers,
                     cancellationToken
@@ -351,7 +352,8 @@ public sealed class FishAudioProvider : OpenAICompatibleProvider
                     response.Headers,
                     timestamp: timestamp,
                     modelId: ModelId
-                )
+                ),
+                request: new ProviderRequest(requestBody)
             );
         }
 
