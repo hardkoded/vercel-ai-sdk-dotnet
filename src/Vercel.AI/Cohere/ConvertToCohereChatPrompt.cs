@@ -39,12 +39,13 @@ internal static class ConvertToCohereChatPrompt
     }
 
     /// <summary>Converts the prompt. Maps to <c>convertToCohereChatPrompt</c>.</summary>
-    internal static (JsonArray Messages, JsonArray Documents) Convert(
+    internal static (JsonArray Messages, JsonArray Documents, List<CallWarning> Warnings) Convert(
         IReadOnlyList<ModelMessage> prompt
     )
     {
         var messages = new JsonArray();
         var documents = new JsonArray();
+        var warnings = new List<CallWarning>();
         foreach (var message in ToolModelMessage.Flatten(prompt))
         {
             switch (message)
@@ -109,7 +110,7 @@ internal static class ConvertToCohereChatPrompt
             }
         }
 
-        return (messages, documents);
+        return (messages, documents, warnings);
     }
 
     // Images stay inline. Other files are sent as RAG documents, so a message without images is plain text.
@@ -131,21 +132,21 @@ internal static class ConvertToCohereChatPrompt
             )
             {
                 hasImage = true;
-                var url = file.Url
-                    ?? "data:"
-                        + MediaTypes.ResolveFullMediaType(file.MediaType, file.Data)
-                        + ";base64,"
-                        + System.Convert.ToBase64String(file.Data ?? Array.Empty<byte>());
-                parts.Add(
-                    new JsonObject
-                    {
-                        ["type"] = "image_url",
-                        ["image_url"] = new JsonObject { ["url"] = url },
-                    }
-                );
+                var image = new JsonObject { ["url"] = BuildImageUrl(file) };
+                if (Detail(file) is { Length: > 0 } detail)
+                {
+                    image["detail"] = detail;
+                }
+
+                parts.Add(new JsonObject { ["type"] = "image_url", ["image_url"] = image });
             }
             else if (part is FileContentPart document)
             {
+                if (document.ProviderReference != null)
+                {
+                    throw Unsupported("file parts with provider references");
+                }
+
                 if (document.Url != null)
                 {
                     throw new UnsupportedFunctionalityException(
@@ -156,7 +157,8 @@ internal static class ConvertToCohereChatPrompt
 
                 var data = new JsonObject
                 {
-                    ["text"] = Encoding.UTF8.GetString(document.Data ?? Array.Empty<byte>()),
+                    ["text"] = document.Text
+                        ?? Encoding.UTF8.GetString(document.Data ?? Array.Empty<byte>()),
                 };
                 if (document.FileName != null)
                 {
@@ -168,5 +170,45 @@ internal static class ConvertToCohereChatPrompt
         }
 
         return hasImage ? parts : JsonValue.Create(text.ToString())!;
+    }
+
+    private static string BuildImageUrl(FileContentPart file)
+    {
+        if (file.ProviderReference != null)
+        {
+            throw Unsupported("image file parts with provider references");
+        }
+
+        if (file.Text != null)
+        {
+            throw Unsupported("image file parts with text data");
+        }
+
+        return file.Url
+            ?? "data:"
+                + MediaTypes.ResolveFullMediaType(file.MediaType, file.Data)
+                + ";base64,"
+                + System.Convert.ToBase64String(file.Data ?? Array.Empty<byte>());
+    }
+
+    // The cohereImagePartProviderOptions schema: an optional detail for an image part.
+    private static string? Detail(FileContentPart file)
+    {
+        return
+            file.ProviderOptions != null
+            && file.ProviderOptions.TryGetValue(CohereProvider.ProviderName, out var options)
+            && options.ValueKind == JsonValueKind.Object
+            && options.TryGetProperty("detail", out var detail)
+            && detail.ValueKind == JsonValueKind.String
+            ? detail.GetString()
+            : null;
+    }
+
+    private static UnsupportedFunctionalityException Unsupported(string functionality)
+    {
+        return new UnsupportedFunctionalityException(
+            functionality,
+            "'" + functionality + "' functionality not supported."
+        );
     }
 }

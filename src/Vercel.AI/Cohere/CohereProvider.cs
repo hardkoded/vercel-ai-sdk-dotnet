@@ -99,6 +99,11 @@ public sealed class CohereProvider : ProviderBase
             }
         }
 
+        // withUserAgentSuffix applies to the combined headers.
+        headers["User-Agent"] =
+            headers.TryGetValue("User-Agent", out var userAgent) && !string.IsNullOrEmpty(userAgent)
+                ? userAgent + " ai-sdk-cohere/" + Operations.AiSdkVersion.Version
+                : "ai-sdk-cohere/" + Operations.AiSdkVersion.Version;
         return headers;
     }
 }
@@ -154,15 +159,27 @@ public sealed class CohereEmbeddingModel : IEmbeddingModel
 
         if (Option(providerOptions, "outputDimension") is { } outputDimension)
         {
-            body["output_dimension"] = outputDimension.GetInt32();
+            // The cohereEmbeddingModelOptions schema: 256, 512, 768, 1024, 1536, or 2048.
+            if (
+                outputDimension.ValueKind != JsonValueKind.Number
+                || !outputDimension.TryGetInt32(out var width)
+                || width is not (256 or 512 or 768 or 1024 or 1536 or 2048)
+            )
+            {
+                throw new AiSdkException(
+                    "invalid cohere provider options: outputDimension must be 256, 512, 768, 1024, 1536, or 2048."
+                );
+            }
+
+            body["output_dimension"] = width;
         }
         else if (dimensions is { } width)
         {
             body["output_dimension"] = width;
         }
 
-        using var document = await _provider
-            .Http.SendJsonAsync(
+        var response = await _provider
+            .Http.SendJsonStringAsync(
                 HttpMethod.Post,
                 ApiKeys.Combine(_provider.Options.BaseUrl, "embed"),
                 body.ToJsonString(),
@@ -170,8 +187,26 @@ public sealed class CohereEmbeddingModel : IEmbeddingModel
                 cancellationToken
             )
             .ConfigureAwait(false);
+        JsonDocument document;
+        try
+        {
+            document = JsonDocument.Parse(response.Body);
+        }
+        catch (JsonException)
+        {
+            throw new ApiException("Invalid JSON response", 200, response.Body);
+        }
+
+        using var _ = document;
         var root = document.RootElement;
-        var embeddings = root.GetProperty("embeddings");
+        if (
+            !root.TryGetProperty("embeddings", out var embeddings)
+            || embeddings.ValueKind is not (JsonValueKind.Object or JsonValueKind.Array)
+        )
+        {
+            throw new ApiException("Invalid JSON response", 200, response.Body);
+        }
+
         var vectorsElement = embeddings;
         var found =
             embeddings.ValueKind == JsonValueKind.Object
@@ -179,7 +214,7 @@ public sealed class CohereEmbeddingModel : IEmbeddingModel
                 : embeddingType == "float";
         if (!found)
         {
-            throw new AiSdkException("Cohere response has no " + embeddingType + " embeddings.");
+            throw new ApiException("Invalid JSON response", 200, response.Body);
         }
 
         // Integer and packed binary formats are returned as-is, not scaled or unpacked.
@@ -192,9 +227,7 @@ public sealed class CohereEmbeddingModel : IEmbeddingModel
             {
                 if (number.ValueKind != JsonValueKind.Number)
                 {
-                    throw new AiSdkException(
-                        "Cohere " + embeddingType + " embeddings must contain only numbers."
-                    );
+                    throw new ApiException("Invalid JSON response", 200, response.Body);
                 }
 
                 vector[index++] = number.GetSingle();
@@ -209,7 +242,11 @@ public sealed class CohereEmbeddingModel : IEmbeddingModel
             && billed.TryGetProperty("input_tokens", out var inputTokens)
                 ? inputTokens.GetInt32()
                 : null;
-        return new EmbeddingResult(vectors, tokens);
+        return new EmbeddingResult(
+            vectors,
+            tokens,
+            response: new EmbeddingResponseInfo(response.Headers, response.Body)
+        );
     }
 
     private static string EmbeddingType(IReadOnlyDictionary<string, JsonElement>? providerOptions)

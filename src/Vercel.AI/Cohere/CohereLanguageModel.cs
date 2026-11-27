@@ -151,9 +151,10 @@ public sealed class CohereLanguageModel : ILanguageModel
             usage,
             finishReason,
             warnings,
-            String(root, "generation_id"),
+            String(root, "id") ?? String(root, "generation_id"),
             rawResponse: response.Body,
-            responseHeaders: response.Headers
+            responseHeaders: response.Headers,
+            request: LanguageModelStreamRequest.FromJson(body.ToJsonString())
         );
     }
 
@@ -221,7 +222,10 @@ public sealed class CohereLanguageModel : ILanguageModel
 
     private JsonObject Build(LanguageModelCallOptions options, List<CallWarning> warnings)
     {
-        var (messages, documents) = ConvertToCohereChatPrompt.Convert(options.Prompt);
+        var (messages, documents, promptWarnings) = ConvertToCohereChatPrompt.Convert(
+            options.Prompt
+        );
+        warnings.AddRange(promptWarnings);
         var body = new JsonObject
         {
             ["model"] = ModelId,
@@ -249,7 +253,7 @@ public sealed class CohereLanguageModel : ILanguageModel
                 : null,
             ["messages"] = messages,
         };
-        AddTools(body, options);
+        AddTools(body, options, warnings);
         if (documents.Count > 0)
         {
             body["documents"] = documents;
@@ -271,37 +275,21 @@ public sealed class CohereLanguageModel : ILanguageModel
         return body;
     }
 
-    private static void AddTools(JsonObject body, LanguageModelCallOptions options)
+    private static void AddTools(
+        JsonObject body,
+        LanguageModelCallOptions options,
+        List<CallWarning> warnings
+    )
     {
-        if (options.Tools is not { Count: > 0 } tools)
+        var prepared = CoherePrepareTools.Prepare(options.Tools, options.ToolChoice);
+        warnings.AddRange(prepared.ToolWarnings);
+        if (prepared.Tools is null)
         {
             return;
         }
 
-        var choice = options.ToolChoice;
-        var selected = choice is ToolChoice.NamedChoice named
-            ? tools.Where(tool => tool.Name == named.ToolName)
-            : tools;
-        var array = new JsonArray();
-        foreach (var tool in selected)
-        {
-            var function = new JsonObject { ["name"] = tool.Name };
-            if (tool.Description != null)
-            {
-                function["description"] = tool.Description;
-            }
-
-            function["parameters"] = JsonNode.Parse(tool.InputSchema.GetRawText());
-            array.Add(new JsonObject { ["type"] = "function", ["function"] = function });
-        }
-
-        body["tools"] = array;
-        body["tool_choice"] = choice?.Type switch
-        {
-            "none" => "NONE",
-            "required" or "tool" => "REQUIRED",
-            _ => null,
-        };
+        body["tools"] = prepared.Tools;
+        body["tool_choice"] = prepared.ToolChoice;
     }
 
     // Provider options win over the top-level reasoning setting.
@@ -575,20 +563,49 @@ public sealed class CohereLanguageModel : ILanguageModel
                     var call = ToolCall(chunk);
                     _toolCallId = String(call, "id");
                     _toolName = String(call.GetProperty("function"), "name");
-                    _toolArguments = new StringBuilder(
-                        String(call.GetProperty("function"), "arguments")
+                    var initialArguments = String(call.GetProperty("function"), "arguments");
+                    _toolArguments = new StringBuilder(initialArguments);
+                    parts.Add(
+                        new ToolInputStartStreamPart(
+                            _toolCallId ?? string.Empty,
+                            _toolName ?? string.Empty
+                        )
                     );
+                    if (!string.IsNullOrEmpty(initialArguments))
+                    {
+                        parts.Add(
+                            new ToolInputDeltaStreamPart(
+                                _toolCallId ?? string.Empty,
+                                initialArguments!
+                            )
+                        );
+                    }
+
                     break;
                 case "tool-call-delta":
-                    _toolArguments?.Append(
-                        String(ToolCall(chunk).GetProperty("function"), "arguments")
-                    );
+                    if (_toolArguments != null)
+                    {
+                        var argumentsDelta = String(
+                            ToolCall(chunk).GetProperty("function"),
+                            "arguments"
+                        ) ?? string.Empty;
+                        _toolArguments.Append(argumentsDelta);
+                        parts.Add(
+                            new ToolInputDeltaStreamPart(
+                                _toolCallId ?? string.Empty,
+                                argumentsDelta
+                            )
+                        );
+                    }
+
                     break;
                 case "tool-call-end":
                     if (_toolArguments != null)
                     {
                         var arguments = _toolArguments.ToString().Trim();
+                        parts.Add(new ToolInputEndStreamPart(_toolCallId ?? string.Empty));
                         var input = SecureJson.Parse(arguments.Length == 0 ? "{}" : arguments);
+
                         // Cohere returns "null" arguments for tools that take no arguments.
                         parts.Add(
                             new ToolCallStreamPart(

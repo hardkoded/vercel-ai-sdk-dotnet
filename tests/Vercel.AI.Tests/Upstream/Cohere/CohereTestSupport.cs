@@ -46,17 +46,6 @@ internal static class CohereTestSupport
         return File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", name));
     }
 
-    public static ParityHandler ChunksFixture(string name)
-    {
-        return ChunkLines(
-            File.ReadAllLines(
-                    Path.Combine(AppContext.BaseDirectory, "Fixtures", name + ".chunks.txt")
-                )
-                .Where(line => line.Trim().Length > 0)
-                .ToArray()
-        );
-    }
-
     // Each line becomes one SSE event named after its type, like the Cohere API sends them.
     public static ParityHandler ChunkLines(params string[] lines)
     {
@@ -119,5 +108,84 @@ internal static class CohereTestSupport
         Assert.Equal("text/plain", source.MediaType);
         Assert.Equal(title, source.Title);
         JsonAssert.Equal(source.ProviderMetadata!.Value, metadataJson);
+    }
+
+    public static ParityHandler JsonFixture(
+        string name,
+        params (string Name, string Value)[] headers
+    )
+    {
+        return new ParityHandler(_ => ParityHandler.Json(Fixture(name + ".json"), headers));
+    }
+
+    public static ParityHandler ChunksFixture(
+        string name,
+        params (string Name, string Value)[] headers
+    )
+    {
+        var sse = new StringBuilder();
+        foreach (
+            var line in File.ReadAllLines(
+                    Path.Combine(AppContext.BaseDirectory, "Fixtures", name + ".chunks.txt")
+                )
+                .Where(line => line.Trim().Length > 0)
+        )
+        {
+            sse.Append("event: ")
+                .Append(JsonNode.Parse(line)!["type"]!.GetValue<string>())
+                .Append("\ndata: ")
+                .Append(line)
+                .Append("\n\n");
+        }
+
+        var bytes = Encoding.UTF8.GetBytes(sse.ToString());
+        return new ParityHandler(_ => ParityHandler.Bytes(bytes, "text/event-stream", headers));
+    }
+
+    public static ParityHandler Sse(string raw)
+    {
+        var bytes = Encoding.UTF8.GetBytes(raw);
+        return new ParityHandler(_ => ParityHandler.Bytes(bytes, "text/event-stream"));
+    }
+
+    public static LanguageModelTool FunctionTool(
+        string name,
+        string schema,
+        string? description = null
+    )
+    {
+        return new LanguageModelTool(name, description, Json(schema));
+    }
+
+    public static LanguageModelCallOptions UserPrompt(string text)
+    {
+        return new LanguageModelCallOptions
+        {
+            Prompt = new ModelMessage[] { new UserModelMessage(text) },
+        };
+    }
+
+    public static ILanguageModel ModelWithHeaders(ParityHandler handler)
+    {
+        var options = new CohereOptions { ApiKey = "test-api-key" };
+        options.Headers["Custom-Provider-Header"] = "provider-header-value";
+        return CohereProvider.Create(options, handler).LanguageModel("command-r-plus");
+    }
+
+    public static void AssertTestHeaders(ParityCall call)
+    {
+        Assert.Equal("Bearer test-api-key", call.Header("authorization"));
+        Assert.StartsWith("application/json", call.Header("content-type"));
+        Assert.Equal("provider-header-value", call.Header("custom-provider-header"));
+        Assert.Equal("request-header-value", call.Header("custom-request-header"));
+        Assert.Contains("ai-sdk-cohere/", call.Header("user-agent"));
+    }
+
+    public static IReadOnlyDictionary<string, string?> RequestHeaders()
+    {
+        return new Dictionary<string, string?>
+        {
+            ["Custom-Request-Header"] = "request-header-value",
+        };
     }
 }
