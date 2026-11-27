@@ -2388,6 +2388,13 @@ var result = StreamTranscribe.Start(new StreamTranscribeRequest
 - **Settings.** `CartesiaOptions.Version` sets the `Cartesia-Version` header and the socket's `cartesia_version` (default `2026-03-01`). `CartesiaOptions.WebSocket` takes a `WebSocketFactory`.
 - **Parts.** Turn updates are `transcript-partial` parts and turn ends are `transcript-final` parts, both with `Id` set to Cartesia's `request_id`. `finish` joins the final text (with a space when turn detection is on) and sums the reported duration.
 
+### Cartesia realtime transcription
+
+`CartesiaProvider.ExperimentalRealtime.Model("ink-2")` creates a `CartesiaRealtimeModel` for browser or client realtime sessions over the same Ink 2 WebSocket endpoints. The server mints a short-lived, STT-scoped access token with `ExperimentalRealtime.GetTokenAsync(model, sessionConfig, expiresAfterSeconds)` (`CreateClientSecretAsync` on the model). The result has the token, the WebSocket URL, and `ExpiresAt` when you pass a lifetime of 1 to 3600 seconds. The client opens `GetWebSocketConfig(token, url)`.
+
+- **Endpoint.** Turn detection on (the default) uses `/stt/turns/websocket`. A disabled turn detection (`TurnDetectionDisabled`) uses `/stt/websocket`, and the session language is added to the URL. Ink 2 supports English only. `audio/pcm`, `audio/pcmu`, and `audio/pcma` map to `pcm_s16le`, `pcm_mulaw`, and `pcm_alaw`; the rate defaults to 24000.
+- **Events.** `SerializeClientEvent` sends `input-audio-append` as binary (`byte[]`), sends `finalize` for `input-audio-commit` when turn detection is off, and returns `null` for events Cartesia ignores. `ParseServerEvent` maps turn events to `speech-started`, `speech-stopped`, and `input-transcription-completed`. With manual finalization it assembles the final `transcript` chunks into one transcription when the flush completes. Cartesia errors map to `error` events.
+
 ## Deepgram streaming transcription
 
 `DeepgramProvider.TranscriptionModel(id)` also streams live audio over Deepgram's [`/v1/listen` WebSocket API](https://developers.deepgram.com/reference/speech-to-text/listen-streaming). Pass the model to `StreamTranscribe.Start`. Nova models stream. Flux models use a separate `/v2/listen` protocol, and `DeepgramModelCatalog.GetDeepgramTranscriptionModelEntry(id).Streaming` is `false` for them, so streaming one throws `UnsupportedFunctionalityException`.

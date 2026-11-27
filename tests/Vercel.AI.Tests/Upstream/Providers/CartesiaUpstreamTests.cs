@@ -576,6 +576,26 @@ public sealed class CartesiaUpstreamTests
 
     [Fact]
     [UpstreamTest(
+        Transcription + "transcription::routes dated Ink Whisper snapshots to the batch endpoint",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Transcription_routes_dated_Ink_Whisper_snapshots_to_the_batch_endpoint()
+    {
+        var handler = new ParityHandler(_ => ParityHandler.Json(TranscriptionJson));
+        var provider = CartesiaProvider.Create(
+            new OpenAICompatibleOptions { ApiKey = "test-api-key" },
+            handler
+        );
+        var model = new CartesiaTranscriptionModel(provider, "ink-whisper-2025-06-04");
+
+        await model.DoGenerateAsync(TranscriptionCall(), CancellationToken.None);
+
+        Assert.Equal("https://api.cartesia.ai/stt", handler.Calls[0].Uri.AbsoluteUri);
+        Assert.Equal("ink-whisper-2025-06-04", FormValue(handler.Calls[0], "model"));
+    }
+
+    [Fact]
+    [UpstreamTest(
         Transcription + "transcription::should pass headers",
         Coverage = UpstreamCoverage.Covered
     )]
