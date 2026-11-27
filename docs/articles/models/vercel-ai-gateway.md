@@ -11,6 +11,7 @@ Browse the upstream catalog of Vercel AI Gateway models and their pricing on the
 | Language | `LanguageModel` | `openai/gpt-6-astra` |
 | Embedding | `EmbeddingModel` | `openai/text-embedding-3-small` |
 | Image | `ImageModel` | `openai/gpt-image-1` |
+| Speech | `SpeechModel` | `openai/tts-1` |
 | Video | `VideoModel` | `google/veo-2.0-generate-001` |
 | Reranking | `Reranking`, `RerankingModel` | `cohere/rerank-v3.5` |
 | Decision | `DecisionModel` | `typesafe-ai/jev` |
