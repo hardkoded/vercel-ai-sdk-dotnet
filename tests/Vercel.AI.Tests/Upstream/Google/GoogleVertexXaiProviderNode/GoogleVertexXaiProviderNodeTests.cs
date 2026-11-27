@@ -10,8 +10,6 @@ public sealed class GoogleVertexXaiProviderNodeTests
 {
     private const string Prefix =
         "packages/google-vertex/src/xai/google-vertex-xai-provider-node.test.ts::google-vertex-xai-provider-node::";
-    private const string EdgePrefix =
-        "packages/google-vertex/src/xai/edge/google-vertex-xai-provider-edge.test.ts::google-vertex-xai-provider-edge::";
     private const string ChatResponse =
         "{\"id\":\"chatcmpl-1\",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",\"content\":\"ok\"},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":1}}";
     private const string Endpoint =
@@ -20,10 +18,6 @@ public sealed class GoogleVertexXaiProviderNodeTests
     [Fact]
     [UpstreamTest(
         Prefix + "should create provider with auth wrapper",
-        Coverage = UpstreamCoverage.Covered
-    )]
-    [UpstreamTest(
-        EdgePrefix + "should create provider with auth wrapper",
         Coverage = UpstreamCoverage.Covered
     )]
     public async Task Should_create_provider_with_auth_wrapper()
@@ -50,10 +44,6 @@ public sealed class GoogleVertexXaiProviderNodeTests
         Prefix + "should generate auth token and add to request headers",
         Coverage = UpstreamCoverage.Covered
     )]
-    [UpstreamTest(
-        EdgePrefix + "should generate auth token and add to request headers",
-        Coverage = UpstreamCoverage.Covered
-    )]
     public async Task Should_generate_auth_token_and_add_to_request_headers()
     {
         var handler = new RecordingHandler { ResponseText = ChatResponse };
@@ -73,10 +63,6 @@ public sealed class GoogleVertexXaiProviderNodeTests
         Prefix + "should merge custom headers with auth header",
         Coverage = UpstreamCoverage.Covered
     )]
-    [UpstreamTest(
-        EdgePrefix + "should merge custom headers with auth header",
-        Coverage = UpstreamCoverage.Covered
-    )]
     public async Task Should_merge_custom_headers_with_auth_header()
     {
         var handler = new RecordingHandler { ResponseText = ChatResponse };
@@ -94,10 +80,6 @@ public sealed class GoogleVertexXaiProviderNodeTests
     [Fact]
     [UpstreamTest(
         Prefix + "should use custom fetch when provided",
-        Coverage = UpstreamCoverage.Covered
-    )]
-    [UpstreamTest(
-        EdgePrefix + "should use custom fetch when provided",
         Coverage = UpstreamCoverage.Covered
     )]
     public async Task Should_use_custom_fetch_when_provided()
