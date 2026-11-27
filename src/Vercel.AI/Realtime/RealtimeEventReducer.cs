@@ -142,6 +142,7 @@ public sealed class RealtimeToolOutputResult
 /// <summary>Folds normalized server events into UI messages. Maps to <c>RealtimeEventReducer</c>.</summary>
 public sealed class RealtimeEventReducer
 {
+    private readonly object _gate = new();
     private readonly int _maxEvents;
     private string? _currentAssistantMessageId;
     private readonly Dictionary<string, string> _textAccumulators = [];
@@ -199,15 +200,29 @@ public sealed class RealtimeEventReducer
         JsonElement result
     )
     {
-        _toolCallIdToName.TryGetValue(callId, out var name);
-        return new RealtimeToolOutputResult(
-            UpdateToolPartState(state, callId, result),
-            new RealtimeToolOutput(callId, name, result.GetRawText())
-        );
+        lock (_gate)
+        {
+            _toolCallIdToName.TryGetValue(callId, out var name);
+            return new RealtimeToolOutputResult(
+                UpdateToolPartState(state, callId, result),
+                new RealtimeToolOutput(callId, name, result.GetRawText())
+            );
+        }
     }
 
     /// <summary>Folds a server event into the state. Maps to <c>reduceServerEvent</c>.</summary>
     public Task<RealtimeReduction> ReduceServerEventAsync(
+        RealtimeState state,
+        RealtimeModelV4ServerEvent serverEvent
+    )
+    {
+        lock (_gate)
+        {
+            return Task.FromResult(ReduceServerEvent(state, serverEvent));
+        }
+    }
+
+    private RealtimeReduction ReduceServerEvent(
         RealtimeState state,
         RealtimeModelV4ServerEvent serverEvent
     )
@@ -312,7 +327,7 @@ public sealed class RealtimeEventReducer
                 break;
         }
 
-        return Task.FromResult(new RealtimeReduction(nextState, effects));
+        return new RealtimeReduction(nextState, effects);
     }
 
     private static UIMessage Replace(UIMessage message, IReadOnlyList<UIMessagePart> parts) =>

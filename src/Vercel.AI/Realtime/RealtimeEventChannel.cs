@@ -343,13 +343,19 @@ public sealed class RealtimeEventChannel
             return;
         }
 
-        if (_options.OnFatalError != null)
+        if (_options.OnFatalError == null)
+        {
+            Report(error);
+            return;
+        }
+
+        try
         {
             _options.OnFatalError(error);
         }
-        else
+        catch
         {
-            Report(error);
+            // Application callbacks cannot break the codec queue.
         }
     }
 
