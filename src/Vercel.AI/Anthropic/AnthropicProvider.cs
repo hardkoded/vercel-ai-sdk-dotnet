@@ -911,41 +911,6 @@ public class AnthropicLanguageModel : ILanguageModel
         }
     }
 
-    private static List<CitationDocument> ExtractCitationDocuments(
-        IReadOnlyList<ModelMessage> prompt
-    )
-    {
-        var documents = new List<CitationDocument>();
-        foreach (var message in prompt.OfType<UserModelMessage>())
-        {
-            foreach (var part in message.Content.OfType<FileContentPart>())
-            {
-                if (part.MediaType != "application/pdf" && part.MediaType != "text/plain")
-                {
-                    continue;
-                }
-
-                if (
-                    part.ProviderOptions != null
-                    && part.ProviderOptions.TryGetValue("anthropic", out var anthropic)
-                    && AnthropicJson.Property(anthropic, "citations") is { } citations
-                    && AnthropicJson.Bool(citations, "enabled") == true
-                )
-                {
-                    documents.Add(
-                        new CitationDocument(
-                            part.FileName ?? "Untitled Document",
-                            part.FileName,
-                            part.MediaType
-                        )
-                    );
-                }
-            }
-        }
-
-        return documents;
-    }
-
     private static async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(
         LanguageModelCallOptions options,
         AnthropicPreparedRequest prepared,
