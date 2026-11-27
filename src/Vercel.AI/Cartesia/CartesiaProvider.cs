@@ -115,7 +115,7 @@ public sealed class CartesiaProvider : OpenAICompatibleProvider
         options.ApiKeyStyle = ApiKeyStyle.Bearer;
         options.Headers["Cartesia-Version"] = (options as CartesiaOptions)?.Version
             ?? DefaultVersion;
-        options.UserAgent = ProviderExchange.UserAgent("cartesia");
+        options.UserAgent = "ai-sdk-cartesia/" + AiSdkVersion.Version;
         return options;
     }
 
