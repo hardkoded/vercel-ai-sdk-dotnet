@@ -2,12 +2,12 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Net;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
-using System.Net;
-using Vercel.AI.Tests.Upstream;
 using Vercel.AI.Tests.MoreProviders;
+using Vercel.AI.Tests.Upstream;
 using Vercel.AI.Util;
 using static Vercel.AI.Tests.FishAudioSpeechModel.FishAudioSpeechModelTestSupport;
 using FishAudioProviderType = Vercel.AI.FishAudio.FishAudioProvider;
@@ -32,7 +32,6 @@ public sealed class DoGenerateTests
         JsonAssert.Equal(Body(handler), "{\"text\":\"Hello, world!\",\"format\":\"mp3\"}");
     }
 
-
     [Fact]
     [UpstreamTest(
         Prefix + "should send the model id as the `model` header",
@@ -44,7 +43,6 @@ public sealed class DoGenerateTests
         await model.DoGenerateAsync(SpeechCall(), CancellationToken.None);
         Assert.Equal("s2.1-pro", handler.Calls[0].Header("model"));
     }
-
 
     [Fact]
     [UpstreamTest(
@@ -58,7 +56,6 @@ public sealed class DoGenerateTests
         Assert.Equal("Bearer test-api-key", handler.Calls[0].Header("Authorization"));
     }
 
-
     [Fact]
     [UpstreamTest(Prefix + "should map voice to reference_id", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_map_voice_to_reference_id()
@@ -67,7 +64,6 @@ public sealed class DoGenerateTests
         await model.DoGenerateAsync(SpeechCall(voice: "test-reference-id"), CancellationToken.None);
         Assert.Equal("test-reference-id", Body(handler).GetProperty("reference_id").GetString());
     }
-
 
     [Fact]
     [UpstreamTest(
@@ -90,7 +86,6 @@ public sealed class DoGenerateTests
         );
     }
 
-
     [Fact]
     [UpstreamTest(
         Prefix + "should map supported output formats",
@@ -109,7 +104,6 @@ public sealed class DoGenerateTests
             Assert.Empty(result.Warnings);
         }
     }
-
 
     [Fact]
     [UpstreamTest(
@@ -133,7 +127,6 @@ public sealed class DoGenerateTests
         );
     }
 
-
     [Fact]
     [UpstreamTest(
         Prefix + "should map speed to prosody.speed",
@@ -146,7 +139,6 @@ public sealed class DoGenerateTests
         JsonAssert.Equal(Body(handler).GetProperty("prosody"), "{\"speed\":1.5}");
         Assert.Empty(result.Warnings);
     }
-
 
     [Fact]
     [UpstreamTest(
@@ -163,7 +155,6 @@ public sealed class DoGenerateTests
             ("speed", "Fish Audio speed must be between 0.5 and 2. The speed option was ignored.")
         );
     }
-
 
     [Fact]
     [UpstreamTest(
@@ -187,7 +178,6 @@ public sealed class DoGenerateTests
         Assert.Empty(result.Warnings);
     }
 
-
     [Fact]
     [UpstreamTest(
         Prefix + "should send normalizeLoudness for the s2.1-pro model",
@@ -203,7 +193,6 @@ public sealed class DoGenerateTests
         JsonAssert.Equal(Body(handler).GetProperty("prosody"), "{\"normalize_loudness\":true}");
         Assert.Empty(result.Warnings);
     }
-
 
     [Fact]
     [UpstreamTest(
@@ -226,7 +215,6 @@ public sealed class DoGenerateTests
             )
         );
     }
-
 
     [Fact]
     [UpstreamTest(
@@ -253,7 +241,6 @@ public sealed class DoGenerateTests
         );
     }
 
-
     [Fact]
     [UpstreamTest(
         Prefix + "should pass through provider options",
@@ -273,7 +260,6 @@ public sealed class DoGenerateTests
             "{\"text\":\"Hello, world!\",\"format\":\"mp3\",\"sample_rate\":44100,\"mp3_bitrate\":192,\"latency\":\"balanced\",\"temperature\":0.5,\"top_p\":0.9,\"chunk_length\":200,\"min_chunk_length\":20,\"normalize\":false,\"max_new_tokens\":2048,\"repetition_penalty\":1.5,\"condition_on_previous_chunks\":false,\"early_stop_threshold\":0.8,\"features\":[\"quality-guard\"]}"
         );
     }
-
 
     [Fact]
     [UpstreamTest(
@@ -300,7 +286,6 @@ public sealed class DoGenerateTests
         );
     }
 
-
     [Fact]
     [UpstreamTest(
         Prefix + "should warn when opusBitrate is used with a non-opus format",
@@ -323,7 +308,6 @@ public sealed class DoGenerateTests
         );
     }
 
-
     [Fact]
     [UpstreamTest(
         Prefix + "should send opus_bitrate for opus output",
@@ -344,7 +328,6 @@ public sealed class DoGenerateTests
         Assert.Equal(-1000, body.GetProperty("opus_bitrate").GetInt32());
         Assert.Empty(result.Warnings);
     }
-
 
     [Fact]
     [UpstreamTest(
@@ -371,7 +354,6 @@ public sealed class DoGenerateTests
         Assert.Equal("{\"text\":\"Hello, world!\",\"format\":\"mp3\"}", result.Request?.Body);
     }
 
-
     [Fact]
     [UpstreamTest(
         Prefix + "should include a user agent suffix",
@@ -387,7 +369,6 @@ public sealed class DoGenerateTests
             StringComparison.Ordinal
         );
     }
-
 
     [Fact]
     [UpstreamTest(Prefix + "should surface API errors", Coverage = UpstreamCoverage.Covered)]
@@ -415,5 +396,4 @@ public sealed class DoGenerateTests
             StringComparison.Ordinal
         );
     }
-
 }

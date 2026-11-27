@@ -4,8 +4,8 @@
 
 using System.Net;
 using System.Text;
-using Vercel.AI.Operations;
 using Vercel.AI.OpenAICompatible;
+using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.Tests.MoreProviders;
 using Vercel.AI.Tests.Upstream;
@@ -38,12 +38,8 @@ public sealed class FishAudioTranscriptionModelTests
         );
     }
 
-
     [Fact]
-    [UpstreamTest(
-        Prefix + "should accept base64 audio",
-        Coverage = UpstreamCoverage.Covered
-    )]
+    [UpstreamTest(Prefix + "should accept base64 audio", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_accept_base64_audio()
     {
         var (model, handler) = TranscriptionModel();
@@ -61,7 +57,14 @@ public sealed class FishAudioTranscriptionModelTests
 
         var text = Encoding.Latin1.GetString(handler.Calls[0].Body);
         Assert.Contains("name=audio; filename=audio.mp3", text, StringComparison.Ordinal);
-        Assert.Contains(Encoding.Latin1.GetString(AudioData), text, StringComparison.Ordinal);
+        var start =
+            text.IndexOf(
+                "\r\n\r\n",
+                text.IndexOf("name=audio", StringComparison.Ordinal),
+                StringComparison.Ordinal
+            ) + 4;
+        var end = text.IndexOf("\r\n--", start, StringComparison.Ordinal);
+        Assert.Equal(AudioData, Encoding.Latin1.GetBytes(text.Substring(start, end - start)));
     }
 
     [Fact]
@@ -76,7 +79,6 @@ public sealed class FishAudioTranscriptionModelTests
         Assert.Equal("Bearer test-api-key", handler.Calls[0].Header("Authorization"));
     }
 
-
     [Fact]
     [UpstreamTest(
         Prefix + "should request timestamps by default",
@@ -88,7 +90,6 @@ public sealed class FishAudioTranscriptionModelTests
         await model.DoGenerateAsync(TranscriptionCall(), CancellationToken.None);
         Assert.Equal("false", FormValue(handler.Calls[0], "ignore_timestamps"));
     }
-
 
     [Fact]
     [UpstreamTest(
@@ -105,7 +106,6 @@ public sealed class FishAudioTranscriptionModelTests
         Assert.Equal("true", FormValue(handler.Calls[0], "ignore_timestamps"));
     }
 
-
     [Fact]
     [UpstreamTest(
         Prefix + "should send the language when provided",
@@ -121,7 +121,6 @@ public sealed class FishAudioTranscriptionModelTests
         Assert.Equal("en", FormValue(handler.Calls[0], "language"));
     }
 
-
     [Fact]
     [UpstreamTest(
         Prefix + "should omit the language when not provided",
@@ -133,7 +132,6 @@ public sealed class FishAudioTranscriptionModelTests
         await model.DoGenerateAsync(TranscriptionCall(), CancellationToken.None);
         Assert.Null(FormValue(handler.Calls[0], "language"));
     }
-
 
     [Fact]
     [UpstreamTest(
@@ -162,7 +160,6 @@ public sealed class FishAudioTranscriptionModelTests
         Assert.Empty(result.Warnings);
     }
 
-
     [Fact]
     [UpstreamTest(
         Prefix + "should report the detected language code",
@@ -174,7 +171,6 @@ public sealed class FishAudioTranscriptionModelTests
         var result = await model.DoGenerateAsync(TranscriptionCall(), CancellationToken.None);
         Assert.Equal("en", result.Language);
     }
-
 
     [Fact]
     [UpstreamTest(
@@ -191,7 +187,6 @@ public sealed class FishAudioTranscriptionModelTests
         Assert.Equal("en", result.Language);
     }
 
-
     [Fact]
     [UpstreamTest(
         Prefix + "should expose the human-readable language as provider metadata",
@@ -207,7 +202,6 @@ public sealed class FishAudioTranscriptionModelTests
         );
     }
 
-
     [Fact]
     [UpstreamTest(
         Prefix + "should report an undefined language when the response omits it",
@@ -220,7 +214,6 @@ public sealed class FishAudioTranscriptionModelTests
         Assert.Null(result.Language);
         Assert.Null(result.ProviderMetadata);
     }
-
 
     [Fact]
     [UpstreamTest(
@@ -235,7 +228,6 @@ public sealed class FishAudioTranscriptionModelTests
         Assert.Equal(1, result.DurationInSeconds);
     }
 
-
     [Fact]
     [UpstreamTest(
         Prefix + "should tolerate a missing duration",
@@ -248,12 +240,8 @@ public sealed class FishAudioTranscriptionModelTests
         Assert.Null(result.DurationInSeconds);
     }
 
-
     [Fact]
-    [UpstreamTest(
-        Prefix + "should return response metadata",
-        Coverage = UpstreamCoverage.Covered
-    )]
+    [UpstreamTest(Prefix + "should return response metadata", Coverage = UpstreamCoverage.Covered)]
     public async Task Should_return_response_metadata()
     {
         var handler = new ParityHandler(_ =>
@@ -272,7 +260,6 @@ public sealed class FishAudioTranscriptionModelTests
         Assert.Equal("test-request-id", result.Response.Headers!["x-request-id"]);
     }
 
-
     [Fact]
     [UpstreamTest(
         Prefix + "should include a user agent suffix",
@@ -288,7 +275,6 @@ public sealed class FishAudioTranscriptionModelTests
             StringComparison.Ordinal
         );
     }
-
 
     [Fact]
     [UpstreamTest(Prefix + "should surface API errors", Coverage = UpstreamCoverage.Covered)]
@@ -316,5 +302,4 @@ public sealed class FishAudioTranscriptionModelTests
             StringComparison.Ordinal
         );
     }
-
 }

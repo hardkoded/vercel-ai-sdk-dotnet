@@ -17,7 +17,8 @@ public sealed class CreateFishAudioTests
     [Fact]
     [UpstreamTest(
         Prefix + "should create speech models",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Partial,
+        Note = "Checks Speech and SpeechModel. The callable form provider('s1').speech has no .NET counterpart."
     )]
     public void Should_create_speech_models()
     {
@@ -27,7 +28,6 @@ public sealed class CreateFishAudioTests
         Assert.IsType<FishAudioProviderType.FishSpeechModel>(provider.Speech("s1"));
         Assert.IsType<FishAudioProviderType.FishSpeechModel>(provider.SpeechModel("s1"));
     }
-
 
     [Fact]
     [UpstreamTest(
@@ -45,7 +45,6 @@ public sealed class CreateFishAudioTests
         );
     }
 
-
     [Fact]
     [UpstreamTest(
         Prefix + "should default the transcription model id to `transcribe-1`",
@@ -58,7 +57,6 @@ public sealed class CreateFishAudioTests
         );
         Assert.Equal("transcribe-1", provider.Transcription().ModelId);
     }
-
 
     [Fact]
     [UpstreamTest(
@@ -76,7 +74,6 @@ public sealed class CreateFishAudioTests
         Assert.Equal("v4", model.SpecificationVersion);
     }
 
-
     [Fact]
     [UpstreamTest(
         Prefix + "should expose the transcription model provider",
@@ -91,7 +88,6 @@ public sealed class CreateFishAudioTests
         Assert.Equal("fish-audio.transcription", model.Provider);
         Assert.Equal("v4", model.SpecificationVersion);
     }
-
 
     [Fact]
     [UpstreamTest(
@@ -108,7 +104,6 @@ public sealed class CreateFishAudioTests
         Assert.Throws<NoSuchModelError>(() => provider.ImageModel("s1"));
     }
 
-
     [Fact]
     [UpstreamTest(
         Prefix + "should report specification version v4",
@@ -123,5 +118,4 @@ public sealed class CreateFishAudioTests
                 .SpecificationVersion
         );
     }
-
 }
