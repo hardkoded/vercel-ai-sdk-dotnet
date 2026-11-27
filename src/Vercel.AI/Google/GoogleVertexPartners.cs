@@ -490,12 +490,16 @@ public sealed class GoogleVertexXaiProvider
         return Client().LanguageModel(modelId);
     }
 
+    /// <summary>The OpenAI-compatible settings the inner provider was created with. Null before the first model.</summary>
+    internal OpenAICompatibleOptions? CompatibleOptions { get; private set; }
+
     private OpenAICompatibleProvider Client()
     {
         lock (_clientGate)
         {
-            return _client ??= new GoogleVertexOpenAICompatibleProvider(
-                new OpenAICompatibleOptions
+            if (_client is null)
+            {
+                CompatibleOptions = new OpenAICompatibleOptions
                 {
                     BaseUrl = BaseUrl,
                     ProviderName = "googleVertex.xai",
@@ -505,15 +509,21 @@ public sealed class GoogleVertexXaiProvider
                     {
                         ["image/*"] = "^https?://.*\\z",
                     },
+                    ConvertUsage = ConvertGoogleVertexXaiUsage,
                     TransformRequestBody = (body, _) => TransformBody(body),
-                },
-                _options,
-                Handler
-            );
+                };
+                _client = new GoogleVertexOpenAICompatibleProvider(
+                    CompatibleOptions,
+                    _options,
+                    Handler
+                );
+            }
+
+            return _client;
         }
     }
 
-    /// <summary>Removes <c>reasoning_effort</c>. Vertex Grok does not accept it.</summary>
+    /// <summary>Removes <c>reasoning_effort</c>. Vertex Grok does not accept it. Maps to <c>transformGoogleVertexXaiRequestBody</c>.</summary>
     public static JsonObject TransformBody(JsonObject body)
     {
         var clone = (JsonObject)body.DeepClone();
@@ -523,35 +533,61 @@ public sealed class GoogleVertexXaiProvider
 
     /// <summary>
     /// Counts Grok reasoning tokens separately. Output total is completion tokens plus reasoning tokens.
+    /// Maps to <c>convertGoogleVertexXaiUsage</c>.
     /// </summary>
-    public static GoogleTokenUsage ConvertUsage(
-        int? promptTokens,
-        int? completionTokens,
-        int? cachedTokens,
-        int? reasoningTokens
-    )
+    internal static LanguageModelUsage ConvertGoogleVertexXaiUsage(JsonElement usage)
     {
-        var prompt = promptTokens ?? 0;
-        var completion = completionTokens ?? 0;
-        var cached = cachedTokens ?? 0;
-        var reasoning = reasoningTokens ?? 0;
-        return new GoogleTokenUsage(
-            prompt,
-            prompt - cached,
-            cached,
-            completion + reasoning,
-            completion,
-            reasoning,
-            null
+        var promptTokens = ReadNumber(usage, "prompt_tokens") ?? 0;
+        var completionTokens = ReadNumber(usage, "completion_tokens") ?? 0;
+        var cacheReadTokens = ReadNestedNumber(usage, "prompt_tokens_details", "cached_tokens")
+            ?? 0;
+        var reasoningTokens = ReadNestedNumber(
+            usage,
+            "completion_tokens_details",
+            "reasoning_tokens"
+        ) ?? 0;
+        return new LanguageModelUsage(
+            promptTokens,
+            completionTokens + reasoningTokens,
+            null,
+            cacheReadTokens: cacheReadTokens,
+            reasoningTokens: reasoningTokens,
+            raw: usage.Clone(),
+            noCacheInputTokens: promptTokens - cacheReadTokens,
+            textTokens: completionTokens
         );
     }
 
-    /// <summary>Embedding and image models are not available.</summary>
+    /// <summary>Embedding models are not available. Maps to <c>embeddingModel</c> throwing <c>NoSuchModelError</c>.</summary>
     public IEmbeddingModel EmbeddingModel(string modelId)
     {
-        throw new AiSdkException(
-            "Provider 'google.vertex.xai' does not support embedding model '" + modelId + "'."
-        );
+        throw new NoSuchModelError(modelId, "embeddingModel");
+    }
+
+    /// <summary>Image models are not available. Maps to <c>imageModel</c> throwing <c>NoSuchModelError</c>.</summary>
+    public IImageModel ImageModel(string modelId)
+    {
+        throw new NoSuchModelError(modelId, "imageModel");
+    }
+
+    private static int? ReadNumber(JsonElement element, string name)
+    {
+        return
+            element.ValueKind == JsonValueKind.Object
+            && element.TryGetProperty(name, out var value)
+            && value.ValueKind == JsonValueKind.Number
+            && value.TryGetInt32(out var number)
+            ? number
+            : null;
+    }
+
+    private static int? ReadNestedNumber(JsonElement element, string outer, string name)
+    {
+        return
+            element.ValueKind == JsonValueKind.Object
+            && element.TryGetProperty(outer, out var inner)
+            ? ReadNumber(inner, name)
+            : null;
     }
 }
 
