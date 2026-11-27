@@ -362,7 +362,9 @@ public sealed class GoogleVertexMaasProvider
         _options = options ?? throw new ArgumentNullException(nameof(options));
         Project = options.Project
             ?? throw new ArgumentNullException(nameof(options), "A Vertex project is required.");
-        Location = string.IsNullOrEmpty(options.Location) ? "global" : options.Location!;
+        Location = options.Location
+            ?? Environment.GetEnvironmentVariable("GOOGLE_VERTEX_LOCATION")
+            ?? "global";
         BaseUrl = GoogleVertexEndpoints.MaasBaseUrl(Project, Location, options.BaseUrl);
         Handler = handler;
     }

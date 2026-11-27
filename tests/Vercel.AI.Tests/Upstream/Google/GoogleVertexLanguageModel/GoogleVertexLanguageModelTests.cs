@@ -61,4 +61,51 @@ public sealed class GoogleVertexLanguageModelTests
         );
         Assert.Empty(prepared.Warnings);
     }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/google-vertex/src/google-vertex-language-model.test.ts::should preserve local JSON Schema references in tool requests",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_preserve_local_JSON_Schema_references_in_tool_requests()
+    {
+        var handler = new RecordingHandler
+        {
+            ResponseText =
+                "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"Done\"}],\"role\":\"model\"},\"finishReason\":\"STOP\",\"index\":0}],\"usageMetadata\":{\"promptTokenCount\":1,\"candidatesTokenCount\":1,\"totalTokenCount\":2}}",
+        };
+        var provider = GoogleVertexProvider.Create(
+            new VertexOptions { ApiKey = "test-api-key", UpstreamRoutes = true },
+            handler
+        );
+
+        await provider
+            .LanguageModel("gemini-2.5-flash")
+            .DoGenerateAsync(
+                new LanguageModelCallOptions
+                {
+                    Tools = new[]
+                    {
+                        GoogleUpstream.Function(
+                            "format-date",
+                            "{\"type\":\"object\",\"properties\":{\"locale\":{\"$ref\":\"#/$defs/Locale\",\"description\":\"Locale for formatting\"}},\"required\":[\"locale\"],\"additionalProperties\":false,\"$defs\":{\"Locale\":{\"type\":\"string\",\"enum\":[\"de\",\"en\"]}}}",
+                            "Format a date"
+                        ),
+                    },
+                    Prompt = new ModelMessage[] { new UserModelMessage("Hello") },
+                },
+                CancellationToken.None
+            );
+
+        Assert.Equal(
+            "https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.5-flash:generateContent",
+            handler.Uris[0]
+        );
+        GoogleUpstream.JsonEqual(
+            System.Text.Json.Nodes.JsonNode.Parse(handler.Body)!["tools"]![0]![
+                "functionDeclarations"
+            ]![0]!["parametersJsonSchema"],
+            "{\"type\":\"object\",\"properties\":{\"locale\":{\"$ref\":\"#/$defs/Locale\",\"description\":\"Locale for formatting\"}},\"required\":[\"locale\"],\"additionalProperties\":false,\"$defs\":{\"Locale\":{\"type\":\"string\",\"enum\":[\"de\",\"en\"]}}}"
+        );
+    }
 }

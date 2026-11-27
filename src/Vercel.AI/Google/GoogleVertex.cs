@@ -107,7 +107,7 @@ public static class GoogleVertexEndpoints
             return custom;
         }
 
-        var label = string.IsNullOrEmpty(location) ? "global" : RequireLabel(location!, "location");
+        var label = RequireLabel(location ?? "global", "location");
         return "https://"
             + Host(label)
             + "/v1/projects/"
@@ -341,6 +341,14 @@ public sealed class GoogleVertexProvider : GoogleProvider
         return new GoogleVertexProvider(client, options);
     }
 
+    /// <summary>Throws because the JavaScript provider function rejects <c>new</c>.</summary>
+    public ILanguageModel New(string modelId)
+    {
+        throw new InvalidOperationException(
+            "The Google Vertex AI model function cannot be called with the new keyword."
+        );
+    }
+
     /// <summary>Tuned <c>endpoints/</c> models reject Express Mode and omit <c>/publishers/google</c>.</summary>
     public override ILanguageModel LanguageModel(string modelId)
     {
@@ -384,6 +392,18 @@ public sealed class GoogleVertexProvider : GoogleProvider
         return base.Interactions(agent);
     }
 
+    /// <summary>Vertex image models call the Gemini image endpoint. The provider id is <c>google.vertex.image</c>.</summary>
+    public override IImageModel ImageModel(string modelId)
+    {
+        return new GoogleVertexImageModel(this, modelId);
+    }
+
+    /// <summary>Vertex embedding models use <c>:predict</c>, or <c>:embedContent</c> for <c>gemini-embedding-2</c>.</summary>
+    public override IEmbeddingModel EmbeddingModel(string modelId)
+    {
+        return new GoogleVertexEmbeddingModel(this, modelId);
+    }
+
     /// <summary>Chirp speech models use Cloud Text-to-Speech. Gemini speech models use generateContent.</summary>
     public override ISpeechModel SpeechModel(string modelId)
     {
@@ -412,9 +432,17 @@ public sealed class GoogleVertexProvider : GoogleProvider
             );
         }
 
-        if (modelId != null && modelId.StartsWith("gemini", StringComparison.Ordinal))
+        var gemini = modelId != null && modelId.StartsWith("gemini", StringComparison.Ordinal);
+
+        // Speech-to-Text and the Live API use a separate regional host, so the location is validated even with a custom base URL.
+        if (!gemini || GoogleTranscriptionModel.IsLive(modelId!))
         {
-            return new GoogleVertexGeminiTranscriptionModel(this, modelId);
+            GoogleVertexEndpoints.RequireLabel(Vertex.Region, "location");
+        }
+
+        if (gemini)
+        {
+            return new GoogleVertexGeminiTranscriptionModel(this, modelId!);
         }
 
         return new GoogleVertexSpeechTranscriptionModel(this, modelId!);
@@ -453,7 +481,12 @@ public sealed class GoogleVertexProvider : GoogleProvider
             return options;
         }
 
-        if (options.Region != null && !HostnameParts.IsValidHostnamePart(options.Region))
+        var express = options.UpstreamRoutes && options.ApiKey is not null;
+        if (
+            !express
+            && options.Region != null
+            && !HostnameParts.IsValidHostnamePart(options.Region)
+        )
         {
             throw new ArgumentException(
                 "A Vertex location must be a single DNS label.",
@@ -469,7 +502,6 @@ public sealed class GoogleVertexProvider : GoogleProvider
 
         if (options.UpstreamRoutes)
         {
-            var express = options.ApiKey is not null;
             options.BaseUrl = GoogleVertexEndpoints.GeminiBaseUrl(
                 options.Project,
                 options.Region,

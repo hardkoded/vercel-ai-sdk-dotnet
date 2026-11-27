@@ -12,7 +12,7 @@ using Vercel.AI.ProviderUtils;
 namespace Vercel.AI.Google;
 
 /// <summary>Cloud Text-to-Speech <c>text:synthesize</c> for Chirp 3 HD voices.</summary>
-public sealed class GoogleVertexCloudSpeechModel : ISpeechModel
+public sealed class GoogleVertexCloudSpeechModel : ISpeechModel, ISpeechCaller
 {
     /// <summary>Synthesize endpoint. Cloud TTS uses one non-regional host.</summary>
     public const string SynthesizeUrl = "https://texttospeech.googleapis.com/v1/text:synthesize";
@@ -45,36 +45,130 @@ public sealed class GoogleVertexCloudSpeechModel : ISpeechModel
         CancellationToken cancellationToken
     )
     {
-        var prepared = Prepare(
-            options.Text,
-            options.Voice,
-            options.Language,
-            options.Speed,
-            options.Instructions
+        var result = await GenerateAsync(
+                options.Text,
+                options.Voice,
+                options.OutputFormat,
+                options.Instructions,
+                options.Speed,
+                options.Language,
+                options.Headers,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
+        return new SpeechResult(result.Audio, "audio/wav", null);
+    }
+
+    /// <inheritdoc />
+    public async Task<SpeechModelResult> DoGenerateAsync(
+        SpeechModelCall call,
+        CancellationToken cancellationToken
+    )
+    {
+        if (call == null)
+        {
+            throw new ArgumentNullException(nameof(call));
+        }
+
+        var result = await GenerateAsync(
+                call.Text,
+                call.Voice,
+                call.OutputFormat,
+                call.Instructions,
+                call.Speed,
+                call.Language,
+                call.Headers.ToDictionary(pair => pair.Key, pair => (string?)pair.Value),
+                cancellationToken
+            )
+            .ConfigureAwait(false);
+        return new SpeechModelResult(
+            result.Audio,
+            result
+                .Warnings.Select(warning => new OperationWarning(
+                    warning.Type,
+                    warning.Message,
+                    warning.Feature,
+                    warning.Details
+                ))
+                .ToList(),
+            JsonSerializer.SerializeToElement(
+                new JsonObject { ["google"] = new JsonObject { ["mimeType"] = "audio/wav" } }
+            ),
+            new ProviderResponse(
+                result.Headers,
+                result.ResponseBody,
+                timestamp: result.Timestamp.UtcDateTime,
+                modelId: ModelId
+            ),
+            new ProviderRequest(result.RequestBody)
         );
+    }
+
+    private async Task<CloudSpeechOutcome> GenerateAsync(
+        string text,
+        string? voice,
+        string? outputFormat,
+        string? instructions,
+        double? speed,
+        string? language,
+        IReadOnlyDictionary<string, string?>? callHeaders,
+        CancellationToken cancellationToken
+    )
+    {
+        var timestamp = _provider.Clock();
+        var prepared = Prepare(text, voice, language, speed, instructions, outputFormat);
         Warnings = prepared.Warnings;
         var headers = await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false);
-        using var document = await _provider
-            .Http.SendJsonAsync(
+        if (callHeaders != null)
+        {
+            foreach (var header in callHeaders)
+            {
+                headers[header.Key] = header.Value;
+            }
+        }
+
+        var requestBody = GoogleJson.Write(prepared.Body);
+        var response = await _provider
+            .Http.SendJsonStringAsync(
                 HttpMethod.Post,
                 new Uri(SynthesizeUrl),
-                GoogleJson.Write(prepared.Body),
+                requestBody,
                 headers,
                 cancellationToken
             )
             .ConfigureAwait(false);
+        using var document = JsonDocument.Parse(
+            string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body
+        );
         var audio = Array.Empty<byte>();
         if (
-            document.RootElement.TryGetProperty("audioContent", out var content)
-            && content.ValueKind == System.Text.Json.JsonValueKind.String
+            document.RootElement.ValueKind == JsonValueKind.Object
+            && document.RootElement.TryGetProperty("audioContent", out var content)
+            && content.ValueKind == JsonValueKind.String
             && !string.IsNullOrEmpty(content.GetString())
         )
         {
             audio = Convert.FromBase64String(content.GetString()!);
         }
 
-        return new SpeechResult(audio, "audio/wav", null);
+        return new CloudSpeechOutcome(
+            audio,
+            prepared.Warnings,
+            requestBody,
+            document.RootElement.Clone(),
+            response.Headers,
+            timestamp
+        );
     }
+
+    private sealed record CloudSpeechOutcome(
+        byte[] Audio,
+        IReadOnlyList<GoogleWarning> Warnings,
+        string RequestBody,
+        JsonElement ResponseBody,
+        IReadOnlyDictionary<string, string> Headers,
+        DateTimeOffset Timestamp
+    );
 
     /// <summary>Builds the synthesize body.</summary>
     public static GoogleSpeechPreparation Prepare(
@@ -82,7 +176,8 @@ public sealed class GoogleVertexCloudSpeechModel : ISpeechModel
         string? voice,
         string? language,
         double? speed,
-        string? instructions
+        string? instructions,
+        string? outputFormat = null
     )
     {
         var warnings = new List<GoogleWarning>();
@@ -114,6 +209,17 @@ public sealed class GoogleVertexCloudSpeechModel : ISpeechModel
             );
         }
 
+        // LINEAR16 responses are WAV (RIFF) files, so only wav is supported.
+        if (outputFormat != null && outputFormat != "wav")
+        {
+            warnings.Add(
+                GoogleWarning.Unsupported(
+                    "outputFormat",
+                    "Unsupported output format: " + outputFormat + ". Using wav instead."
+                )
+            );
+        }
+
         var audio = new JsonObject { ["audioEncoding"] = "LINEAR16" };
         if (speed != null)
         {
@@ -131,8 +237,201 @@ public sealed class GoogleVertexCloudSpeechModel : ISpeechModel
 }
 
 /// <summary>Cloud Speech-to-Text recognize.</summary>
-public sealed class GoogleVertexSpeechTranscriptionModel : ITranscriptionModel
+public sealed class GoogleVertexSpeechTranscriptionModel : ITranscriptionModel, ITranscriptionCaller
 {
+    private static readonly string[] OptionNamespaces = { "googleVertex", "vertex", "google" };
+
+    /// <summary>ISO-639-2/3 codes that have an ISO-639-1 code. <c>cmn</c> canonicalizes to <c>zh</c>.</summary>
+    private static readonly Dictionary<string, string> LanguageAliases = new(
+        StringComparer.OrdinalIgnoreCase
+    )
+    {
+        ["aar"] = "aa",
+        ["abk"] = "ab",
+        ["afr"] = "af",
+        ["aka"] = "ak",
+        ["amh"] = "am",
+        ["ara"] = "ar",
+        ["arg"] = "an",
+        ["asm"] = "as",
+        ["ava"] = "av",
+        ["ave"] = "ae",
+        ["aym"] = "ay",
+        ["aze"] = "az",
+        ["bak"] = "ba",
+        ["bam"] = "bm",
+        ["bel"] = "be",
+        ["ben"] = "bn",
+        ["bis"] = "bi",
+        ["bod"] = "bo",
+        ["bos"] = "bs",
+        ["bre"] = "br",
+        ["bul"] = "bg",
+        ["cat"] = "ca",
+        ["ces"] = "cs",
+        ["cha"] = "ch",
+        ["che"] = "ce",
+        ["chu"] = "cu",
+        ["chv"] = "cv",
+        ["cor"] = "kw",
+        ["cos"] = "co",
+        ["cre"] = "cr",
+        ["cym"] = "cy",
+        ["dan"] = "da",
+        ["deu"] = "de",
+        ["div"] = "dv",
+        ["dzo"] = "dz",
+        ["ell"] = "el",
+        ["eng"] = "en",
+        ["epo"] = "eo",
+        ["est"] = "et",
+        ["eus"] = "eu",
+        ["ewe"] = "ee",
+        ["fao"] = "fo",
+        ["fas"] = "fa",
+        ["fij"] = "fj",
+        ["fin"] = "fi",
+        ["fra"] = "fr",
+        ["fry"] = "fy",
+        ["ful"] = "ff",
+        ["gla"] = "gd",
+        ["gle"] = "ga",
+        ["glg"] = "gl",
+        ["glv"] = "gv",
+        ["grn"] = "gn",
+        ["guj"] = "gu",
+        ["hat"] = "ht",
+        ["hau"] = "ha",
+        ["heb"] = "he",
+        ["her"] = "hz",
+        ["hin"] = "hi",
+        ["hmo"] = "ho",
+        ["hrv"] = "hr",
+        ["hun"] = "hu",
+        ["hye"] = "hy",
+        ["ibo"] = "ig",
+        ["ido"] = "io",
+        ["iii"] = "ii",
+        ["iku"] = "iu",
+        ["ile"] = "ie",
+        ["ina"] = "ia",
+        ["ind"] = "id",
+        ["ipk"] = "ik",
+        ["isl"] = "is",
+        ["ita"] = "it",
+        ["jav"] = "jv",
+        ["jpn"] = "ja",
+        ["kal"] = "kl",
+        ["kan"] = "kn",
+        ["kas"] = "ks",
+        ["kat"] = "ka",
+        ["kau"] = "kr",
+        ["kaz"] = "kk",
+        ["khm"] = "km",
+        ["kik"] = "ki",
+        ["kin"] = "rw",
+        ["kir"] = "ky",
+        ["kom"] = "kv",
+        ["kon"] = "kg",
+        ["kor"] = "ko",
+        ["kua"] = "kj",
+        ["kur"] = "ku",
+        ["lao"] = "lo",
+        ["lat"] = "la",
+        ["lav"] = "lv",
+        ["lim"] = "li",
+        ["lin"] = "ln",
+        ["lit"] = "lt",
+        ["ltz"] = "lb",
+        ["lub"] = "lu",
+        ["lug"] = "lg",
+        ["mah"] = "mh",
+        ["mal"] = "ml",
+        ["mar"] = "mr",
+        ["mkd"] = "mk",
+        ["mlg"] = "mg",
+        ["mlt"] = "mt",
+        ["mon"] = "mn",
+        ["mri"] = "mi",
+        ["msa"] = "ms",
+        ["mya"] = "my",
+        ["nau"] = "na",
+        ["nav"] = "nv",
+        ["nbl"] = "nr",
+        ["nde"] = "nd",
+        ["ndo"] = "ng",
+        ["nep"] = "ne",
+        ["nld"] = "nl",
+        ["nno"] = "nn",
+        ["nob"] = "nb",
+        ["nor"] = "no",
+        ["nya"] = "ny",
+        ["oci"] = "oc",
+        ["oji"] = "oj",
+        ["ori"] = "or",
+        ["orm"] = "om",
+        ["oss"] = "os",
+        ["pan"] = "pa",
+        ["pli"] = "pi",
+        ["pol"] = "pl",
+        ["por"] = "pt",
+        ["pus"] = "ps",
+        ["que"] = "qu",
+        ["roh"] = "rm",
+        ["ron"] = "ro",
+        ["run"] = "rn",
+        ["rus"] = "ru",
+        ["sag"] = "sg",
+        ["san"] = "sa",
+        ["sin"] = "si",
+        ["slk"] = "sk",
+        ["slv"] = "sl",
+        ["sme"] = "se",
+        ["smo"] = "sm",
+        ["sna"] = "sn",
+        ["snd"] = "sd",
+        ["som"] = "so",
+        ["sot"] = "st",
+        ["spa"] = "es",
+        ["sqi"] = "sq",
+        ["srd"] = "sc",
+        ["srp"] = "sr",
+        ["ssw"] = "ss",
+        ["sun"] = "su",
+        ["swa"] = "sw",
+        ["swe"] = "sv",
+        ["tah"] = "ty",
+        ["tam"] = "ta",
+        ["tat"] = "tt",
+        ["tel"] = "te",
+        ["tgk"] = "tg",
+        ["tgl"] = "tl",
+        ["tha"] = "th",
+        ["tir"] = "ti",
+        ["ton"] = "to",
+        ["tsn"] = "tn",
+        ["tso"] = "ts",
+        ["tuk"] = "tk",
+        ["tur"] = "tr",
+        ["twi"] = "tw",
+        ["uig"] = "ug",
+        ["ukr"] = "uk",
+        ["urd"] = "ur",
+        ["uzb"] = "uz",
+        ["ven"] = "ve",
+        ["vie"] = "vi",
+        ["vol"] = "vo",
+        ["wln"] = "wa",
+        ["wol"] = "wo",
+        ["xho"] = "xh",
+        ["yid"] = "yi",
+        ["yor"] = "yo",
+        ["zha"] = "za",
+        ["zho"] = "zh",
+        ["zul"] = "zu",
+        ["cmn"] = "zh",
+    };
+
     private readonly GoogleVertexProvider _provider;
 
     /// <summary>Creates a transcription model.</summary>
@@ -152,34 +451,194 @@ public sealed class GoogleVertexSpeechTranscriptionModel : ITranscriptionModel
     public string ModelId { get; }
 
     /// <inheritdoc />
+    public string SpecificationVersion
+    {
+        get { return "v4"; }
+    }
+
+    /// <summary>False. Cloud Speech-to-Text recognize has no streaming path here.</summary>
+    public bool CanStream
+    {
+        get { return false; }
+    }
+
+    /// <inheritdoc />
     public async Task<TranscriptionResult> DoTranscribeAsync(
         AudioInput audio,
         CancellationToken cancellationToken
     )
     {
-        var url = GoogleVertexEndpoints.RecognizeUrl(
-            _provider.Vertex.Project,
-            _provider.Vertex.Region
+        var call = new TranscriptionModelCall(
+            audio.Data,
+            audio.MediaType,
+            default,
+            new Dictionary<string, string>(),
+            cancellationToken
         );
-        var body = Request(ModelId, audio.Data, null);
+        var result = await DoGenerateAsync(call, cancellationToken).ConfigureAwait(false);
+        return new TranscriptionResult(result.Text ?? string.Empty, null);
+    }
+
+    /// <inheritdoc />
+    public Task<TranscriptionStreamStart?> DoStreamAsync(
+        TranscriptionStreamCall call,
+        CancellationToken cancellationToken
+    )
+    {
+        return Task.FromResult<TranscriptionStreamStart?>(null);
+    }
+
+    /// <summary>
+    /// Recognizes audio. Options are read from <c>googleVertex</c>, then <c>vertex</c>, then <c>google</c>.
+    /// The <c>region</c> option routes the request to another Speech-to-Text location.
+    /// </summary>
+    public async Task<TranscriptionModelResult> DoGenerateAsync(
+        TranscriptionModelCall call,
+        CancellationToken cancellationToken
+    )
+    {
+        if (call == null)
+        {
+            throw new ArgumentNullException(nameof(call));
+        }
+
+        var timestamp = _provider.Clock();
+        var options = ReadOptions(call.ProviderOptions);
+        var region = options.Region ?? _provider.Vertex.Region;
+        if (!HostnameParts.IsValidHostnamePart(region))
+        {
+            throw new InvalidArgumentException(
+                options.Region != null ? "region" : "location",
+                region,
+                "Invalid Google Cloud Speech-to-Text region. Expected a single DNS label (letters, digits, and hyphens)."
+            );
+        }
+
+        var requestBody = Request(
+            ModelId,
+            call.AudioBase64 ?? Convert.ToBase64String(call.Audio),
+            options.LanguageCodes,
+            options.EnableWordTimeOffsets ?? true,
+            options.EnableAutomaticPunctuation ?? true
+        );
         var headers = await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false);
-        using var document = await _provider
-            .Http.SendJsonAsync(
+        foreach (var header in call.Headers)
+        {
+            headers[header.Key] = header.Value;
+        }
+
+        var response = await _provider
+            .Http.SendJsonStringAsync(
                 HttpMethod.Post,
-                new Uri(url),
-                GoogleJson.Write(body),
+                new Uri(GoogleVertexEndpoints.RecognizeUrl(_provider.Vertex.Project, region)),
+                GoogleJson.Write(requestBody),
                 headers,
                 cancellationToken
             )
             .ConfigureAwait(false);
-        return new TranscriptionResult(ReadTranscript(document.RootElement), null);
+        using var document = JsonDocument.Parse(
+            string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body
+        );
+        var root = document.RootElement;
+        var texts = new List<string>();
+        var segments = new List<TranscriptSegment>();
+        string? languageCode = null;
+        var first = true;
+        if (
+            root.ValueKind == JsonValueKind.Object
+            && root.TryGetProperty("results", out var results)
+            && results.ValueKind == JsonValueKind.Array
+        )
+        {
+            foreach (var result in results.EnumerateArray())
+            {
+                if (first)
+                {
+                    languageCode = GoogleJson.String(result, "languageCode");
+                    first = false;
+                }
+
+                JsonElement alternative = default;
+                if (
+                    result.TryGetProperty("alternatives", out var alternatives)
+                    && alternatives.ValueKind == JsonValueKind.Array
+                    && alternatives.GetArrayLength() > 0
+                )
+                {
+                    alternative = alternatives[0];
+                }
+
+                texts.Add(
+                    alternative.ValueKind == JsonValueKind.Object
+                        ? GoogleJson.String(alternative, "transcript") ?? string.Empty
+                        : string.Empty
+                );
+                if (
+                    alternative.ValueKind == JsonValueKind.Object
+                    && alternative.TryGetProperty("words", out var words)
+                    && words.ValueKind == JsonValueKind.Array
+                )
+                {
+                    foreach (var word in words.EnumerateArray())
+                    {
+                        var text = GoogleJson.String(word, "word");
+                        var start = ParseDuration(GoogleJson.String(word, "startOffset"));
+                        var end = ParseDuration(GoogleJson.String(word, "endOffset"));
+                        if (text != null && start != null && end != null)
+                        {
+                            segments.Add(new TranscriptSegment(text, start.Value, end.Value));
+                        }
+                    }
+                }
+            }
+        }
+
+        double? duration = null;
+        if (
+            root.ValueKind == JsonValueKind.Object
+            && root.TryGetProperty("metadata", out var metadata)
+            && metadata.ValueKind == JsonValueKind.Object
+        )
+        {
+            duration = ParseDuration(GoogleJson.String(metadata, "totalBilledDuration"));
+        }
+
+        return new TranscriptionModelResult(
+            string.Join(" ", texts).Trim(),
+            segments,
+            ToIso6391(languageCode),
+            duration,
+            response: new ProviderResponse(
+                response.Headers,
+                root.Clone(),
+                timestamp: timestamp.UtcDateTime,
+                modelId: ModelId
+            )
+        );
     }
 
     /// <summary>Builds the recognize body. Audio bytes are base64-encoded.</summary>
     public static JsonObject Request(string modelId, byte[] audio, string[]? languageCodes)
     {
+        return Request(
+            modelId,
+            Convert.ToBase64String(audio ?? Array.Empty<byte>()),
+            languageCodes,
+            true,
+            true
+        );
+    }
+
+    private static JsonObject Request(
+        string modelId,
+        string content,
+        string[]? languageCodes,
+        bool enableWordTimeOffsets,
+        bool enableAutomaticPunctuation
+    )
+    {
         var codes = new JsonArray();
-        if (languageCodes == null || languageCodes.Length == 0)
+        if (languageCodes == null)
         {
             codes.Add(JsonValue.Create("auto"));
         }
@@ -200,15 +659,15 @@ public sealed class GoogleVertexSpeechTranscriptionModel : ITranscriptionModel
                 ["autoDecodingConfig"] = new JsonObject(),
                 ["features"] = new JsonObject
                 {
-                    ["enableWordTimeOffsets"] = true,
-                    ["enableAutomaticPunctuation"] = true,
+                    ["enableWordTimeOffsets"] = enableWordTimeOffsets,
+                    ["enableAutomaticPunctuation"] = enableAutomaticPunctuation,
                 },
             },
-            ["content"] = Convert.ToBase64String(audio ?? Array.Empty<byte>()),
+            ["content"] = content,
         };
     }
 
-    /// <summary>Maps a BCP-47 tag onto a two-letter ISO-639-1 code.</summary>
+    /// <summary>Maps a BCP-47 tag onto a two-letter ISO-639-1 code, or null when the language has none.</summary>
     public static string? ToIso6391(string? tag)
     {
         if (string.IsNullOrWhiteSpace(tag))
@@ -217,13 +676,23 @@ public sealed class GoogleVertexSpeechTranscriptionModel : ITranscriptionModel
         }
 
         var language = tag!;
-        var dash = language.IndexOf('-');
-        if (dash > 0)
+        var dash = language.IndexOfAny(new[] { '-', '_' });
+        if (dash >= 0)
         {
             language = language.Substring(0, dash);
         }
 
-        return language.Length == 2 ? language.ToLowerInvariant() : null;
+        if (language.Length < 2 || language.Length > 3 || !language.All(char.IsLetter))
+        {
+            return null;
+        }
+
+        if (language.Length == 2)
+        {
+            return language.ToLowerInvariant();
+        }
+
+        return LanguageAliases.TryGetValue(language, out var alias) ? alias : null;
     }
 
     /// <summary>Parses a duration such as <c>1.200s</c>.</summary>
@@ -247,30 +716,63 @@ public sealed class GoogleVertexSpeechTranscriptionModel : ITranscriptionModel
             : null;
     }
 
-    private static string ReadTranscript(System.Text.Json.JsonElement root)
+    private static RecognizeOptions ReadOptions(JsonElement providerOptions)
     {
-        if (!root.TryGetProperty("results", out var results))
+        if (providerOptions.ValueKind != JsonValueKind.Object)
         {
-            return string.Empty;
+            return new RecognizeOptions();
         }
 
-        var parts = new List<string>();
-        foreach (var result in results.EnumerateArray())
+        foreach (var name in OptionNamespaces)
         {
             if (
-                result.TryGetProperty("alternatives", out var alternatives)
-                && alternatives.GetArrayLength() > 0
+                providerOptions.TryGetProperty(name, out var section)
+                && section.ValueKind == JsonValueKind.Object
             )
             {
-                var transcript = GoogleJson.String(alternatives[0], "transcript");
-                if (!string.IsNullOrEmpty(transcript))
+                string[]? codes = null;
+                if (
+                    section.TryGetProperty("languageCodes", out var list)
+                    && list.ValueKind == JsonValueKind.Array
+                )
                 {
-                    parts.Add(transcript!);
+                    codes = list.EnumerateArray()
+                        .Where(item => item.ValueKind == JsonValueKind.String)
+                        .Select(item => item.GetString()!)
+                        .ToArray();
                 }
+
+                return new RecognizeOptions
+                {
+                    LanguageCodes = codes,
+                    EnableAutomaticPunctuation = Bool(section, "enableAutomaticPunctuation"),
+                    EnableWordTimeOffsets = Bool(section, "enableWordTimeOffsets"),
+                    Region = GoogleJson.String(section, "region"),
+                };
             }
         }
 
-        return string.Join(" ", parts).Trim();
+        return new RecognizeOptions();
+    }
+
+    private static bool? Bool(JsonElement section, string name)
+    {
+        return
+            section.TryGetProperty(name, out var value)
+            && (value.ValueKind == JsonValueKind.True || value.ValueKind == JsonValueKind.False)
+            ? value.GetBoolean()
+            : null;
+    }
+
+    private sealed class RecognizeOptions
+    {
+        public string[]? LanguageCodes { get; init; }
+
+        public bool? EnableAutomaticPunctuation { get; init; }
+
+        public bool? EnableWordTimeOffsets { get; init; }
+
+        public string? Region { get; init; }
     }
 }
 
