@@ -139,17 +139,11 @@ public static partial class UIMessageStreamConverter
             outcome = new UIMessageStreamOutcome(UIMessageStreamOutcomeStatus.Failed, error);
         }
 
-        // upstream getResponseUIMessageId: a continued assistant message keeps its id
-        string? responseMessageId = null;
-        if (options.GenerateMessageId != null && options.OriginalMessages is { } originals)
-        {
-            // when there are no original messages (no persistence), the client generates the message id
-            var lastOriginal = originals.Count > 0 ? originals[originals.Count - 1] : null;
-            responseMessageId =
-                lastOriginal?.Role == UIMessageRole.Assistant
-                    ? lastOriginal.Id
-                    : options.GenerateMessageId();
-        }
+        // when there are no original messages (no persistence), the client generates the message id
+        var responseMessageId =
+            options.GenerateMessageId != null
+                ? GetResponseUIMessageId(options.OriginalMessages, options.GenerateMessageId)
+                : null;
 
         var chunkOptions = new ToUIMessageChunkOptions
         {

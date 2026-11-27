@@ -86,16 +86,10 @@ public static partial class UIMessageStreamResponses
         init ??= new UIMessageStreamResponseInit();
         UIMessageStreamResult.ValidateKeepAlive(init.KeepAliveMs);
 
-        var sseStream = JsonToSse(stream);
-        if (init.KeepAliveMs is not null)
-        {
-            sseStream = ReadableStream<string>.From(
-                UIMessageStreamResult.CreateSseStreamWithKeepAlive(
-                    new AsyncIterableStream<string>(sseStream),
-                    init.KeepAliveMs
-                )
-            );
-        }
+        var sseStream = UIMessageStreamResult.CreateSseStreamWithKeepAlive(
+            JsonToSse(stream),
+            init.KeepAliveMs
+        );
 
         // when the consumeSseStream is provided, we need to tee the stream
         // and send the second part to the consumeSseStream function

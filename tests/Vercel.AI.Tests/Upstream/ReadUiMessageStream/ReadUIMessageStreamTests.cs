@@ -403,6 +403,194 @@ public sealed class ReadUIMessageStreamTests
         Assert.Equal(1, Volatile.Read(ref cancelCount));
     }
 
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should preserve independent snapshots without cloning accumulated text",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "UIMessage metadata and data parts are immutable JsonElement values, so upstream's reference-inequality checks on nested objects have no equivalent. Snapshot, parts-list and part instances are asserted distinct."
+    )]
+    public async Task Should_preserve_independent_snapshots_without_cloning_accumulated_text()
+    {
+        var message = new UIMessage(
+            UIMessageRole.Assistant,
+            [new DataUIPart("test", JsonSerializer.SerializeToElement(new { value = "data" }))]
+        )
+        {
+            Id = "msg-123",
+            Metadata = JsonSerializer.SerializeToElement(
+                new { nested = new { value = "metadata" } }
+            ),
+        };
+
+        var snapshots = await Read(
+            new ReadUIMessageStreamOptions(
+                CreateUIMessageStream(
+                    """{"type":"text-start","id":"text-1"}""",
+                    """{"type":"text-delta","id":"text-1","delta":"Hello"}""",
+                    """{"type":"text-end","id":"text-1"}"""
+                )
+            )
+            {
+                Message = message,
+            }
+        );
+
+        Assert.Equal(3, snapshots.Count);
+        Assert.NotSame(snapshots[0], snapshots[1]);
+        Assert.NotSame(snapshots[0].Parts, snapshots[1].Parts);
+        Assert.NotSame(snapshots[0].Parts[0], snapshots[1].Parts[0]);
+
+        foreach (var snapshot in snapshots)
+        {
+            Assert.Equal(
+                "metadata",
+                snapshot.Metadata!.Value.GetProperty("nested").GetProperty("value").GetString()
+            );
+            var data = Assert.IsType<DataUIPart>(snapshot.Parts[0]);
+            Assert.Equal("test", data.Name);
+            Assert.Equal("data", data.Data.GetProperty("value").GetString());
+        }
+
+        AssertText(snapshots[0], "", "streaming");
+        AssertText(snapshots[1], "Hello", "streaming");
+        AssertText(snapshots[2], "Hello", "done");
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should exclude accumulated text from structured cloning",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "The port does not use structuredClone, so there is no clone to spy on. The accumulated text and each snapshot's own text are asserted."
+    )]
+    public async Task Should_exclude_accumulated_text_from_structured_cloning()
+    {
+        var chunks = new List<string> { """{"type":"text-start","id":"text-1"}""" };
+        for (var index = 0; index < 10; index++)
+        {
+            chunks.Add(
+                "{\"type\":\"text-delta\",\"id\":\"text-1\",\"delta\":\""
+                    + new string('x', 100)
+                    + "\"}"
+            );
+        }
+
+        chunks.Add("""{"type":"text-end","id":"text-1"}""");
+
+        var snapshots = await Read(
+            new ReadUIMessageStreamOptions(CreateUIMessageStream([.. chunks]))
+        );
+
+        AssertText(snapshots[snapshots.Count - 1], new string('x', 1000), "done");
+        Assert.Equal(100, Assert.IsType<TextUIPart>(snapshots[1].Parts[0]).Text.Length);
+        Assert.Equal(1000, Assert.IsType<TextUIPart>(snapshots[10].Parts[0]).Text.Length);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should isolate nested snapshot values from other snapshots and inputs",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "Nested metadata and data are immutable JsonElement values and cannot be mutated through a snapshot, so only the unchanged-values checks of upstream apply."
+    )]
+    public async Task Should_isolate_nested_snapshot_values_from_other_snapshots_and_inputs()
+    {
+        var message = new UIMessage(
+            UIMessageRole.Assistant,
+            [new DataUIPart("test", JsonSerializer.SerializeToElement(new { value = "seed" }))]
+        )
+        {
+            Id = "msg-123",
+            Metadata = JsonSerializer.SerializeToElement(new { custom = new { value = "custom" } }),
+        };
+
+        var snapshots = await Read(
+            new ReadUIMessageStreamOptions(
+                CreateUIMessageStream(
+                    """{"type":"data-test","data":{"value":"chunk"}}""",
+                    """{"type":"text-start","id":"text-1"}"""
+                )
+            )
+            {
+                Message = message,
+            }
+        );
+
+        Assert.Equal(2, snapshots.Count);
+        Assert.Equal(
+            "custom",
+            snapshots[1].Metadata!.Value.GetProperty("custom").GetProperty("value").GetString()
+        );
+        Assert.Equal(
+            "seed",
+            Assert.IsType<DataUIPart>(snapshots[1].Parts[0]).Data.GetProperty("value").GetString()
+        );
+        Assert.Equal(
+            "chunk",
+            Assert.IsType<DataUIPart>(snapshots[1].Parts[1]).Data.GetProperty("value").GetString()
+        );
+        Assert.NotSame(snapshots[0].Parts[1], snapshots[1].Parts[1]);
+
+        // the input message is not changed
+        Assert.Single(message.Parts);
+        Assert.Equal(
+            "seed",
+            Assert.IsType<DataUIPart>(message.Parts[0]).Data.GetProperty("value").GetString()
+        );
+        Assert.Equal(
+            "custom",
+            message.Metadata!.Value.GetProperty("custom").GetProperty("value").GetString()
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should cancel the input stream when its reader is cancelled",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_cancel_the_input_stream_when_its_reader_is_cancelled()
+    {
+        var cancelCount = 0;
+
+        async IAsyncEnumerable<JsonObject> Source()
+        {
+            try
+            {
+                yield return Chunk("""{"type":"start","messageId":"msg-123"}""");
+                yield return Chunk("""{"type":"text-start","id":"text-1"}""");
+                yield return Chunk("""{"type":"text-delta","id":"text-1","delta":"Hello"}""");
+                await Task.Delay(Timeout.Infinite);
+            }
+            finally
+            {
+                Interlocked.Increment(ref cancelCount);
+            }
+        }
+
+        // cancelling the reader of the stream is disposing its enumerator
+        var enumerator = UIMessageStreamConverter
+            .ReadUIMessageStream(new ReadUIMessageStreamOptions(Source()))
+            .GetAsyncEnumerator();
+        try
+        {
+            while (
+                await enumerator.MoveNextAsync()
+                && !enumerator.Current.Parts.Any(part => part is TextUIPart { Text.Length: > 0 })
+            ) { }
+        }
+        finally
+        {
+            await enumerator.DisposeAsync();
+        }
+
+        Assert.Equal(1, Volatile.Read(ref cancelCount));
+    }
+
+    private static void AssertText(UIMessage message, string text, string state)
+    {
+        var part = message.Parts.OfType<TextUIPart>().Single();
+        Assert.Equal(text, part.Text);
+        Assert.Equal(state, part.State);
+    }
+
     private static void AssertStepAndText(UIMessage message, string text, string state)
     {
         Assert.Equal(2, message.Parts.Count);

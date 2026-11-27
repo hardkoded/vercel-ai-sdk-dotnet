@@ -184,6 +184,75 @@ public sealed class CreateUiMessageStreamResponseConsumeSseStreamTests
         Assert.Equal(1, calls);
     }
 
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should send opening and keep-alive comments for an idle stream",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_send_opening_and_keep_alive_comments_for_an_idle_stream()
+    {
+        var response = UIMessageStreamResponses.CreateUIMessageStreamResponse(
+            new ReadableStream<JsonObject>(),
+            new UIMessageStreamResponseInit { KeepAliveMs = 100 }
+        );
+        var reader = response.Body.GetReader();
+
+        var open = await reader.ReadAsync().WaitAsync(Limit);
+        Assert.False(open.Done);
+        Assert.Equal(": stream-open\n\n", Encoding.UTF8.GetString(open.Value));
+
+        var keepAlive = await reader.ReadAsync().WaitAsync(Limit);
+        Assert.False(keepAlive.Done);
+        Assert.Equal(": keep-alive\n\n", Encoding.UTF8.GetString(keepAlive.Value));
+
+        await reader.CancelAsync();
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "can respond with a stream created by toUIMessageStream",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Can_respond_with_a_stream_created_by_toUIMessageStream()
+    {
+        var response = UIMessageStreamResponses.CreateUIMessageStreamResponse(
+            ReadableStream<JsonObject>.From(
+                UIMessageStreamConverter.ToUIMessageStream(
+                    ToAsync([
+                        new StartPart(),
+                        new TextStartPart("t1"),
+                        new TextDeltaPart("t1", "Hello"),
+                        new TextEndPart("t1"),
+                    ]),
+                    new UIMessageStreamOptions { GenerateMessageId = () => "msg-123" }
+                )
+            ),
+            new UIMessageStreamResponseInit { Status = 200 }
+        );
+
+        Assert.Equal(
+            [
+                "data: {\"type\":\"start\",\"messageId\":\"msg-123\"}\n\n",
+                "data: {\"type\":\"text-start\",\"id\":\"t1\"}\n\n",
+                "data: {\"type\":\"text-delta\",\"id\":\"t1\",\"delta\":\"Hello\"}\n\n",
+                "data: {\"type\":\"text-end\",\"id\":\"t1\"}\n\n",
+                "data: [DONE]\n\n",
+            ],
+            await Decode(response)
+        );
+    }
+
+    private static async IAsyncEnumerable<TextStreamPart> ToAsync(
+        IReadOnlyList<TextStreamPart> parts
+    )
+    {
+        foreach (var part in parts)
+        {
+            yield return part;
+            await Task.Yield();
+        }
+    }
+
     private static JsonObject Delta(string delta) =>
         new()
         {

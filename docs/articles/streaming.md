@@ -132,6 +132,12 @@ foreach (var part in result.Content.OfType<GeneratedText>())
 
 In a model stream, citations arrive on `TextEndStreamPart.Citations`, tied to the id of the text block they end. `StreamTextAsync` keeps them on the matching text part in `StepResult.Content`. `SimulateStreamingMiddleware` copies `GeneratedText.Citations` onto the text-end part it emits, and emits a text block that has citations even when its text is empty. Citation-derived sources can arrive at the end of the provider stream, after the SDK knows whether the provider sent retrieval data.
 
+### Creating a UI message stream
+
+`UIMessageStreams.CreateUIMessageStream(new CreateUIMessageStreamOptions { Execute = ... })` is the counterpart of upstream `createUIMessageStream`. `Execute` receives an `IUIMessageStreamWriterWithOutcome`. `Write(chunk)` sends a UI message chunk, `Merge(stream)` forwards another `ReadableStream<JsonObject>` (also after `Execute` has returned, as long as a merged stream is still open), and `SetOutcome(outcome)` declares the operation outcome (the first declared outcome wins). The result is a `ReadableStream<JsonObject>` that you can pass to `CreateUIMessageStreamResponse`. An error thrown by `Execute` or by a merged stream becomes an `error` chunk with the text from `OnError` (default `An error occurred.`) and a `Failed` outcome. Writing after the stream has closed is ignored. Cancelling the stream cancels the merged streams.
+
+The options also take `OriginalMessages` (persistence mode: the `start` chunk gets a message id, and the last assistant message is continued), `GenerateId`, `OnStepEnd`, and `OnEnd` (`OnStepFinish` and `OnFinish` are the deprecated aliases). `UIMessageStreamConverter.GetResponseUIMessageId(originalMessages, responseMessageId)` returns the id of the response message. It is `null` without original messages and the id of the last message when that is an assistant message.
+
 ### Responding with a UI message stream
 
 `UIMessageStreamResponses.CreateUIMessageStreamResponse(stream, init)` is the counterpart of upstream `createUIMessageStreamResponse`. It encodes a `ReadableStream<JsonObject>` of UI message chunks as Server-Sent Events and returns a `UIMessageStreamResponse` with `Status`, `StatusText`, `Headers`, and a UTF-8 `Body`. Use `ReadableStream<JsonObject>.From(chunks)` to turn the `IAsyncEnumerable` of `UIMessageStreamConverter.ToUIMessageStream` into a stream. `UIMessageStreamResponseInit` takes `Status`, `StatusText`, `Headers`, `KeepAliveMs`, and `ConsumeSseStream`.
