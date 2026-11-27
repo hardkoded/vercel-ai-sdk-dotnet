@@ -48,8 +48,8 @@ public class AnthropicOptions
     public Dictionary<string, string?> Headers { get; private set; } =
         new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
 
-    /// <summary>Optional rewrite of the JSON body before it is sent.</summary>
-    public Func<JsonObject, JsonObject>? TransformRequestBody { get; set; }
+    /// <summary>Optional rewrite of the JSON body before it is sent. Receives the body and the betas of the request.</summary>
+    public Func<JsonObject, ISet<string>, JsonObject>? TransformRequestBody { get; set; }
 
     /// <summary>Optional rewrite of the combined request headers. Receives the call's provider options and returns the headers to send.</summary>
     public Func<
@@ -327,7 +327,12 @@ public class AnthropicProvider
         IReadOnlyList<string> betas
     )
     {
-        return Options.TransformRequestBody == null ? body : Options.TransformRequestBody(body);
+        return Options.TransformRequestBody == null
+            ? body
+            : Options.TransformRequestBody(
+                body,
+                new HashSet<string>(betas, StringComparer.Ordinal)
+            );
     }
 
     /// <summary>False when the host does not accept the native output format. Structured output then uses the JSON tool.</summary>
@@ -811,7 +816,11 @@ public class AnthropicLanguageModel : ILanguageModel
                     throw ProviderHttp.MapStatusWithHeaders(
                         statusCode,
                         message,
-                        error.ToJsonString(),
+                        new JsonObject
+                        {
+                            ["type"] = errorType,
+                            ["message"] = message,
+                        }.ToJsonString(),
                         sse.Headers,
                         url.ToString(),
                         requestBodyValues

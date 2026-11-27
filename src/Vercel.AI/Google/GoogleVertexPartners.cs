@@ -313,7 +313,7 @@ public sealed class GoogleVertexAnthropicProvider : AnthropicProvider
                 vertex.BaseUrl
             ),
             Name = ModelProviderName,
-            TransformRequestBody = TransformBody,
+            TransformRequestBody = (body, _) => TransformBody(body),
             TransformRequestHeaders = TransformHeaders,
         };
         foreach (var pair in vertex.Headers)

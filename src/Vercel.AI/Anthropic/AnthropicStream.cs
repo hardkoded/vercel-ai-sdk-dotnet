@@ -44,7 +44,8 @@ public sealed class AnthropicStream
     private bool _hasWebSearchResults;
     private readonly List<JsonElement> _fallbackWebCitations = [];
     private readonly Dictionary<string, string> _serverToolCalls = [];
-    private readonly Dictionary<string, (string ToolName, JsonElement Metadata)> _mcpToolCalls = [];
+    private readonly Dictionary<string, (string ToolName, JsonElement? Metadata)> _mcpToolCalls =
+    [];
     private List<CitationDocument>? _citationDocuments;
 
     /// <summary>
@@ -595,10 +596,10 @@ public sealed class AnthropicStream
         else if (type == "mcp_tool_result")
         {
             var toolUseId = Text(block["tool_use_id"]) ?? string.Empty;
-            var call = _mcpToolCalls[toolUseId];
+            _mcpToolCalls.TryGetValue(toolUseId, out var call);
             yield return new ToolResultStreamPart(
                 toolUseId,
-                call.ToolName,
+                call.ToolName ?? string.Empty,
                 ParseElement(Stringify(block["content"]))
             )
             {

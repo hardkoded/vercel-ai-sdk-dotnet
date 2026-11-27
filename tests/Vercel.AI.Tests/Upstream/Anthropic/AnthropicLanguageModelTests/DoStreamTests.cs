@@ -1468,6 +1468,115 @@ public sealed class DoStreamTests
         );
     }
 
+    [Theory]
+    [InlineData("overloaded_error", "Overloaded", 529, true)]
+    [InlineData("api_error", "Internal server error", 500, true)]
+    [InlineData("request_too_large", "Request too large", 413, false)]
+    [UpstreamTest(
+        Prefix + "should attach provider-owned metadata to a mid-stream $type error",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_attach_provider_owned_metadata_to_a_mid_stream_type_error(
+        string type,
+        string message,
+        int statusCode,
+        bool isRetryable
+    )
+    {
+        var handler = new SseStreamHandler([
+            """data: {"type":"message_start","message":{"id":"msg_01KfpJoAEabmH2iHRRFjQMAG","type":"message","role":"assistant","content":[],"model":"claude-3-haiku-20240307","stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":17,"output_tokens":1}}}"""
+                + "\n\n",
+            """data: {"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}"""
+                + "\n\n",
+            """data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"Hello"}}"""
+                + "\n\n",
+            "event: error\n",
+            "data: "
+                + new JsonObject
+                {
+                    ["type"] = "error",
+                    ["error"] = new JsonObject { ["type"] = type, ["message"] = message },
+                }.ToJsonString()
+                + "\n\n",
+        ]);
+
+        var chunks = await DoStreamSupport.Collect(
+            DoStreamSupport.Provider(handler),
+            "claude-3-haiku-20240307"
+        );
+        var errorPart = chunks.OfType<ErrorStreamPart>().FirstOrDefault();
+
+        Assert.Equal(6, chunks.Count);
+        var start = Assert.IsType<StreamStartStreamPart>(chunks[0]);
+        Assert.Empty(start.Warnings);
+        var metadata = Assert.IsType<ResponseMetadataStreamPart>(chunks[1]);
+        Assert.Equal("msg_01KfpJoAEabmH2iHRRFjQMAG", metadata.Id);
+        Assert.Equal("claude-3-haiku-20240307", metadata.ModelId);
+        Assert.Equal("anthropic.message_start", Assert.IsType<CustomStreamPart>(chunks[2]).Kind);
+        Assert.Equal("0", Assert.IsType<TextStartStreamPart>(chunks[3]).Id);
+        var delta = Assert.IsType<TextDeltaStreamPart>(chunks[4]);
+        Assert.Equal("0", delta.Id);
+        Assert.Equal("Hello", delta.Delta);
+        Assert.IsType<ErrorStreamPart>(chunks[5]);
+        Assert.NotNull(errorPart);
+        var error = errorPart!.Error;
+        Assert.NotNull(error);
+        Assert.Equal(message, error!.Message);
+        Assert.Equal(type, error.Type);
+        Assert.Equal(statusCode, error.StatusCode);
+        Assert.Equal(isRetryable, error.IsRetryable);
+        JsonAssert.Equal(
+            (JsonNode)error.Data!,
+            new JsonObject { ["message"] = message, ["type"] = type }.ToJsonString()
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should preserve explicit metadata from an Anthropic-compatible transport",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_preserve_explicit_metadata_from_an_Anthropic_compatible_transport()
+    {
+        var data = new JsonObject
+        {
+            ["message"] = "The model stream failed",
+            ["originalStatusCode"] = 503,
+        };
+        var error = new JsonObject
+        {
+            ["type"] = "modelStreamErrorException",
+            ["code"] = "bedrock_stream_error",
+            ["message"] = "The model stream failed",
+            ["statusCode"] = 424,
+            ["isRetryable"] = true,
+            ["data"] = data.DeepClone(),
+        };
+        var handler = new SseStreamHandler([
+            """data: {"type":"message_start","message":{"id":"msg_01KfpJoAEabmH2iHRRFjQMAG","type":"message","role":"assistant","content":[],"model":"claude-3-haiku-20240307","stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":17,"output_tokens":1}}}"""
+                + "\n\n",
+            "event: error\n",
+            "data: "
+                + new JsonObject { ["type"] = "error", ["error"] = error }.ToJsonString()
+                + "\n\n",
+        ]);
+
+        var chunks = await DoStreamSupport.Collect(
+            DoStreamSupport.Provider(handler),
+            "claude-3-haiku-20240307"
+        );
+        var errorPart = Assert.Single(chunks.OfType<ErrorStreamPart>());
+
+        var providerError = errorPart.Error;
+        Assert.NotNull(providerError);
+        Assert.Equal("The model stream failed", providerError!.Message);
+        Assert.Equal("modelStreamErrorException", providerError.Type);
+        Assert.Equal("bedrock_stream_error", providerError.Code);
+        Assert.Equal(424, providerError.StatusCode);
+        Assert.True(providerError.IsRetryable);
+        JsonAssert.Equal((JsonNode)providerError.Data!, data.ToJsonString());
+    }
+
     private static async Task<List<LanguageModelStreamPart>> StreamAsync(string sse)
     {
         var handler = new CaptureHandler { ContentType = "text/event-stream", ResponseBody = sse };
@@ -1573,7 +1682,8 @@ public sealed class DoStreamTests
 
     [Fact]
     [UpstreamTest(
-        Prefix + "should throw an api error when the first stream chunk is an overloaded error"
+        Prefix + "should throw an api error when the first stream chunk is an overloaded error",
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Should_throw_an_api_error_when_the_first_stream_chunk_is_an_overloaded_error()
     {
@@ -1607,9 +1717,7 @@ public sealed class DoStreamTests
         Assert.True(ProviderHttp.IsRetryable(exception.StatusCode));
         Assert.True(
             JsonNode.DeepEquals(
-                JsonNode.Parse(
-                    "{\"details\":null,\"type\":\"overloaded_error\",\"message\":\"Overloaded\"}"
-                ),
+                JsonNode.Parse("{\"type\":\"overloaded_error\",\"message\":\"Overloaded\"}"),
                 JsonNode.Parse(exception.ResponseBody!)
             )
         );
