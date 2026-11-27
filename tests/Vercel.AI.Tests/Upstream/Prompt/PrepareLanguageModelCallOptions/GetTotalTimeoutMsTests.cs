@@ -50,4 +50,17 @@ public sealed class GetTotalTimeoutMsTests
 
         Assert.Null(timeout.TotalMs);
     }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should return undefined when timeout is undefined",
+        Coverage = UpstreamCoverage.Covered,
+        Note = "Upstream's getTotalTimeoutMs is the TotalMs property here."
+    )]
+    public void Should_return_undefined_when_timeout_is_undefined()
+    {
+        TimeoutConfiguration? timeout = null;
+
+        Assert.Null(timeout?.TotalMs);
+    }
 }

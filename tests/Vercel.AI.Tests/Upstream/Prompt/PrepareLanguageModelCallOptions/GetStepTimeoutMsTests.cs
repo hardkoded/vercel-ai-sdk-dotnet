@@ -24,4 +24,30 @@ public sealed class GetStepTimeoutMsTests
 
         Assert.Equal(3000, timeout.StepMs);
     }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should return undefined when timeout is undefined",
+        Coverage = UpstreamCoverage.Covered,
+        Note = "Upstream's getStepTimeoutMs is the StepMs property here."
+    )]
+    public void Should_return_undefined_when_timeout_is_undefined()
+    {
+        TimeoutConfiguration? timeout = null;
+
+        Assert.Null(timeout?.StepMs);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should return undefined when timeout is a number",
+        Coverage = UpstreamCoverage.Covered,
+        Note = "The number form is a TimeSpan, which converts to a configuration with the total timeout only."
+    )]
+    public void Should_return_undefined_when_timeout_is_a_number()
+    {
+        TimeoutConfiguration timeout = TimeSpan.FromMilliseconds(5000);
+
+        Assert.Null(timeout.StepMs);
+    }
 }

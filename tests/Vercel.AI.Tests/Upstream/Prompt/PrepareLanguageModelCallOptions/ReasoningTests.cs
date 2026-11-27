@@ -40,4 +40,18 @@ public sealed class ReasoningTests
 
         Assert.Null(options.Reasoning);
     }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should pass through provider-default",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void Should_pass_through_provider_default()
+    {
+        var options = LanguageModelCallPreparation.PrepareLanguageModelCallOptions(
+            new LanguageModelCallOptionsInput { Reasoning = "provider-default" }
+        );
+
+        Assert.Equal("provider-default", options.Reasoning);
+    }
 }

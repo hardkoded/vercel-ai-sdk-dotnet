@@ -1699,6 +1699,9 @@ public sealed class ToolApprovalResponseModelMessage : ModelMessage
     /// The generation loop sets it while it prepares the prompt.
     /// </summary>
     public ToolModelMessage? DeniedToolResult { get; init; }
+
+    /// <summary>Provider options of the tool message that carried this response and no results. They are combined with the next tool message.</summary>
+    internal IReadOnlyDictionary<string, JsonElement>? MessageProviderOptions { get; init; }
 }
 
 /// <summary>A tool result fed back to the model.</summary>
@@ -1890,7 +1893,31 @@ public sealed class ToolModelMessage : ModelMessage
                 continue;
             }
 
-            expanded.AddRange(tool.ApprovalResponses);
+            var responses = tool.ApprovalResponses;
+            for (var i = 0; i < responses.Count; i++)
+            {
+                var response = responses[i];
+                if (
+                    i == responses.Count - 1
+                    && tool.Results.Count == 0
+                    && tool.MessageProviderOptions != null
+                )
+                {
+                    response = new ToolApprovalResponseModelMessage(
+                        response.ApprovalId,
+                        response.Approved,
+                        response.Reason,
+                        response.ProviderExecuted
+                    )
+                    {
+                        DeniedToolResult = response.DeniedToolResult,
+                        MessageProviderOptions = tool.MessageProviderOptions,
+                    };
+                }
+
+                expanded.Add(response);
+            }
+
             if (tool.Results.Count > 0)
             {
                 expanded.Add(tool.WithoutApprovalResponses());
