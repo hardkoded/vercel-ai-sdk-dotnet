@@ -109,6 +109,24 @@ public sealed class GatewayProviderDefaultExportedProviderTests
 
     [Fact]
     [UpstreamTest(
+        Prefix + "should expose speechModel on the default provider and construct model",
+        Coverage = UpstreamCoverage.Covered,
+        Note = "Upstream reads provider and baseURL from the internal model config. The port asserts the provider id and the provider's base URL."
+    )]
+    public void Should_expose_speechModel_on_the_default_provider_and_construct_model()
+    {
+        var gateway = GatewayProvider.Create();
+
+        var model = Assert.IsType<Vercel.AI.Gateway.GatewaySpeechModel>(
+            gateway.SpeechModel("openai/tts-1")
+        );
+
+        Assert.Equal("gateway", model.Provider);
+        Assert.Equal(DefaultBaseUrl, gateway.CreateConfig().BaseUrl);
+    }
+
+    [Fact]
+    [UpstreamTest(
         Prefix + "should expose transcriptionModel on the default provider and construct model",
         Coverage = UpstreamCoverage.Covered,
         Note = "Upstream reads provider and baseURL from the internal model config. The port asserts the provider id and the provider's base URL."

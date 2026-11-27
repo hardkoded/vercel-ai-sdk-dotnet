@@ -137,6 +137,12 @@ public sealed class GatewayProvider
         return new GatewaySpeechModel(this, modelId);
     }
 
+    /// <summary>Alias of <see cref="SpeechModel"/>. Maps to <c>speech</c>. Returns the concrete model.</summary>
+    public GatewaySpeechModel Speech(string modelId)
+    {
+        return new GatewaySpeechModel(this, modelId);
+    }
+
     /// <inheritdoc />
     public override ITranscriptionModel TranscriptionModel(string modelId)
     {

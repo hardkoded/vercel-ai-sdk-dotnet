@@ -281,6 +281,74 @@ public sealed class GatewayProviderTests
 
     [Fact]
     [UpstreamTest(
+        Prefix + "::should create GatewaySpeechModel for speechModel",
+        Coverage = UpstreamCoverage.Covered,
+        Note = "Upstream reads provider and baseURL from the internal model config. The port asserts the provider id and the provider's base URL."
+    )]
+    public void Should_create_GatewaySpeechModel_for_speechModel()
+    {
+        var provider = GatewayProvider.Create(
+            new GatewayOptions { BaseUrl = "https://api.example.com", ApiKey = "test-api-key" }
+        );
+
+        var model = Assert.IsType<Vercel.AI.Gateway.GatewaySpeechModel>(
+            provider.SpeechModel("openai/tts-1")
+        );
+
+        Assert.Equal("gateway", model.Provider);
+        Assert.Equal("https://api.example.com", provider.CreateConfig().BaseUrl);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "::should create GatewaySpeechModel for speech alias",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void Should_create_GatewaySpeechModel_for_speech_alias()
+    {
+        var provider = GatewayProvider.Create(
+            new GatewayOptions { BaseUrl = "https://api.example.com", ApiKey = "test-api-key" }
+        );
+
+        var model = provider.Speech("openai/tts-1");
+
+        Assert.IsType<Vercel.AI.Gateway.GatewaySpeechModel>(model);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "::should reuse gateway headers and fetch for speechModel",
+        Coverage = UpstreamCoverage.Covered,
+        Note = "Upstream reads config.headers and config.fetch. The port reads the provider's headers (getHeaders) and its HTTP client, which stands in for fetch."
+    )]
+    public async Task Should_reuse_gateway_headers_and_fetch_for_speechModel()
+    {
+        using var scope = new GatewayProviderTestScope();
+        var provider = GatewayProvider.Create(
+            new GatewayOptions
+            {
+                BaseUrl = "https://api.example.com",
+                ApiKey = "test-api-key",
+                Headers = new Dictionary<string, string> { ["Custom-Header"] = "value" },
+            }
+        );
+
+        var model = Assert.IsType<Vercel.AI.Gateway.GatewaySpeechModel>(
+            provider.SpeechModel("openai/tts-1")
+        );
+
+        AssertGatewayHeaders(
+            await provider.GetHeadersAsync(CancellationToken.None),
+            "Bearer test-api-key",
+            "api-key",
+            custom: "value"
+        );
+        Assert.Same(provider.Http, provider.CreateConfig().Http);
+        Assert.Equal("gateway", model.Provider);
+    }
+
+    [Fact]
+    [UpstreamTest(
         Prefix + "::should create GatewayTranscriptionModel for transcriptionModel",
         Coverage = UpstreamCoverage.Covered,
         Note = "Upstream reads provider and baseURL from the internal model config. The port asserts the provider id and the provider's base URL."
