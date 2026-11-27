@@ -2041,6 +2041,18 @@ var result = await Extract.ExtractAsync(new ExtractRequest
 });
 ```
 
+## String aliases and image middleware in registries
+
+`CustomProvider.AddLanguageModel`, `AddEmbeddingModel`, `AddImageModel`, `AddTranscriptionModel`, `AddSpeechModel`, `AddRerankingModel`, and `AddVideoModel` each have an overload that takes `(alias, "model-id")`. It registers a string alias that goes through `DecisionModels.DefaultProvider` (`AI_SDK_DEFAULT_PROVIDER` upstream), or the Gateway when it is null, when you ask the provider for the alias. It maps to a string value in the `languageModels`, `embeddingModels`, and other maps of `customProvider`.
+
+`ProviderRegistry.ImageModelMiddleware` wraps every image model the registry returns, like `LanguageModelMiddleware` does for language models. The first middleware transforms the call first, and the last wraps the model directly. It maps to `imageModelMiddleware` in `createProviderRegistry`.
+
+```csharp
+var registry = new ProviderRegistry { ImageModelMiddleware = new[] { myImageMiddleware } };
+registry.Register("openai", openai);
+var image = registry.ImageModel("openai:gpt-image-2");
+```
+
 ## Gateway decision fallbacks
 
 `providerOptions.gateway.models` for a decision request may start with one conditional entry, `{ "model": "...", "when": { ... } }`, followed by plain model ids. `when` is `confidenceBelow`, `probabilityBetween: [min, max]`, or an `any`, `all`, or `atLeast` group of conditions, nested at most 5 levels with 1 to 20 conditions per list. `GatewayDecisionModel` rejects an invalid shape with an `InvalidArgumentException` before any request. Other gateway options pass through unchanged.

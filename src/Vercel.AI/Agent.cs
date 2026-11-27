@@ -927,6 +927,9 @@ public sealed class ProviderRegistry
     /// <summary>Middleware applied to every language model the registry returns. The first one sees the call first.</summary>
     public IReadOnlyList<ILanguageModelMiddleware>? LanguageModelMiddleware { get; set; }
 
+    /// <summary>Middleware applied to every image model the registry returns. The first one sees the call first.</summary>
+    public IReadOnlyList<IImageModelMiddleware>? ImageModelMiddleware { get; set; }
+
     /// <summary>Registers a provider under <paramref name="id"/>.</summary>
     public void Register(string id, ProviderBase provider)
     {
@@ -960,9 +963,14 @@ public sealed class ProviderRegistry
     /// <summary>Resolves <c>provider:model</c> to an image model.</summary>
     public IImageModel ImageModel(string providerAndModel)
     {
-        return Model(providerAndModel, "imageModel", (provider, modelId) =>
+        var model = Model(providerAndModel, "imageModel", (provider, modelId) =>
             provider.ImageModel(modelId)
         );
+        return
+            ImageModelMiddleware is { Count: > 0 } middleware
+            && model is Operations.IImageCaller caller
+            ? (IImageModel)caller.WrapImageModel(middleware)
+            : model;
     }
 
     /// <summary>Resolves <c>provider:model</c> to a transcription model.</summary>
@@ -1106,15 +1114,21 @@ public sealed class CustomProvider
         Operations.IDecisionProvider,
         Operations.IExtractionProvider
 {
-    private readonly Dictionary<string, ILanguageModel> _language = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, IEmbeddingModel> _embedding = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, IImageModel> _image = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, ITranscriptionModel> _transcription = new(
+    private readonly Dictionary<string, Func<ILanguageModel>> _language = new(
         StringComparer.Ordinal
     );
-    private readonly Dictionary<string, ISpeechModel> _speech = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, IRerankingModel> _reranking = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, IVideoModel> _video = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Func<IEmbeddingModel>> _embedding = new(
+        StringComparer.Ordinal
+    );
+    private readonly Dictionary<string, Func<IImageModel>> _image = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Func<ITranscriptionModel>> _transcription = new(
+        StringComparer.Ordinal
+    );
+    private readonly Dictionary<string, Func<ISpeechModel>> _speech = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Func<IRerankingModel>> _reranking = new(
+        StringComparer.Ordinal
+    );
+    private readonly Dictionary<string, Func<IVideoModel>> _video = new(StringComparer.Ordinal);
     private readonly Dictionary<string, IRubricModel> _rubric = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Func<Operations.IDecisionCaller>> _decision = new(
         StringComparer.Ordinal
@@ -1153,7 +1167,12 @@ public sealed class CustomProvider
     /// <summary>Registers a language model under <paramref name="modelId"/>.</summary>
     public CustomProvider AddLanguageModel(string modelId, ILanguageModel model)
     {
-        return Add(_language, modelId, model);
+        if (model is null)
+        {
+            throw new ArgumentNullException(nameof(model));
+        }
+
+        return Add(_language, modelId, () => model);
     }
 
     /// <summary>Registers an embedding model under its own model id.</summary>
@@ -1170,37 +1189,173 @@ public sealed class CustomProvider
     /// <summary>Registers an embedding model under <paramref name="modelId"/>.</summary>
     public CustomProvider AddEmbeddingModel(string modelId, IEmbeddingModel model)
     {
-        return Add(_embedding, modelId, model);
+        if (model is null)
+        {
+            throw new ArgumentNullException(nameof(model));
+        }
+
+        return Add(_embedding, modelId, () => model);
     }
 
     /// <summary>Registers an image model under <paramref name="modelId"/>.</summary>
     public CustomProvider AddImageModel(string modelId, IImageModel model)
     {
-        return Add(_image, modelId, model);
+        if (model is null)
+        {
+            throw new ArgumentNullException(nameof(model));
+        }
+
+        return Add(_image, modelId, () => model);
     }
 
     /// <summary>Registers a transcription model under <paramref name="modelId"/>.</summary>
     public CustomProvider AddTranscriptionModel(string modelId, ITranscriptionModel model)
     {
-        return Add(_transcription, modelId, model);
+        if (model is null)
+        {
+            throw new ArgumentNullException(nameof(model));
+        }
+
+        return Add(_transcription, modelId, () => model);
     }
 
     /// <summary>Registers a speech model under <paramref name="modelId"/>.</summary>
     public CustomProvider AddSpeechModel(string modelId, ISpeechModel model)
     {
-        return Add(_speech, modelId, model);
+        if (model is null)
+        {
+            throw new ArgumentNullException(nameof(model));
+        }
+
+        return Add(_speech, modelId, () => model);
     }
 
     /// <summary>Registers a reranking model under <paramref name="modelId"/>.</summary>
     public CustomProvider AddRerankingModel(string modelId, IRerankingModel model)
     {
-        return Add(_reranking, modelId, model);
+        if (model is null)
+        {
+            throw new ArgumentNullException(nameof(model));
+        }
+
+        return Add(_reranking, modelId, () => model);
     }
 
     /// <summary>Registers a video model under <paramref name="modelId"/>.</summary>
     public CustomProvider AddVideoModel(string modelId, IVideoModel model)
     {
-        return Add(_video, modelId, model);
+        if (model is null)
+        {
+            throw new ArgumentNullException(nameof(model));
+        }
+
+        return Add(_video, modelId, () => model);
+    }
+
+    /// <summary>
+    /// Registers a string alias for a language model. The id is resolved through
+    /// <see cref="Operations.DecisionModels.DefaultProvider"/>, or Gateway when none is set, when <see cref="LanguageModel"/> is called.
+    /// </summary>
+    public CustomProvider AddLanguageModel(string modelId, string providerModelId)
+    {
+        if (providerModelId is null)
+        {
+            throw new ArgumentNullException(nameof(providerModelId));
+        }
+
+        return Add(_language, modelId, () =>
+            ResolveModel.ResolveLanguageModel(null, providerModelId)
+        );
+    }
+
+    /// <summary>
+    /// Registers a string alias for an embedding model. The id is resolved through
+    /// <see cref="Operations.DecisionModels.DefaultProvider"/>, or Gateway when none is set, when <see cref="EmbeddingModel"/> is called.
+    /// </summary>
+    public CustomProvider AddEmbeddingModel(string modelId, string providerModelId)
+    {
+        if (providerModelId is null)
+        {
+            throw new ArgumentNullException(nameof(providerModelId));
+        }
+
+        return Add(_embedding, modelId, () =>
+            ResolveModel.ResolveEmbeddingModel(null, providerModelId)
+        );
+    }
+
+    /// <summary>
+    /// Registers a string alias for an image model. The id is resolved through
+    /// <see cref="Operations.DecisionModels.DefaultProvider"/>, or Gateway when none is set, when <see cref="ImageModel"/> is called.
+    /// </summary>
+    public CustomProvider AddImageModel(string modelId, string providerModelId)
+    {
+        if (providerModelId is null)
+        {
+            throw new ArgumentNullException(nameof(providerModelId));
+        }
+
+        return Add(_image, modelId, () => ResolveModel.ResolveImageModel(null, providerModelId));
+    }
+
+    /// <summary>
+    /// Registers a string alias for a transcription model. The id is resolved through
+    /// <see cref="Operations.DecisionModels.DefaultProvider"/>, or Gateway when none is set, when <see cref="TranscriptionModel"/> is called.
+    /// </summary>
+    public CustomProvider AddTranscriptionModel(string modelId, string providerModelId)
+    {
+        if (providerModelId is null)
+        {
+            throw new ArgumentNullException(nameof(providerModelId));
+        }
+
+        return Add(_transcription, modelId, () =>
+            ResolveModel.ResolveTranscriptionModel(null, providerModelId)
+        );
+    }
+
+    /// <summary>
+    /// Registers a string alias for a speech model. The id is resolved through
+    /// <see cref="Operations.DecisionModels.DefaultProvider"/>, or Gateway when none is set, when <see cref="SpeechModel"/> is called.
+    /// </summary>
+    public CustomProvider AddSpeechModel(string modelId, string providerModelId)
+    {
+        if (providerModelId is null)
+        {
+            throw new ArgumentNullException(nameof(providerModelId));
+        }
+
+        return Add(_speech, modelId, () => ResolveModel.ResolveSpeechModel(null, providerModelId));
+    }
+
+    /// <summary>
+    /// Registers a string alias for a reranking model. The id is resolved through
+    /// <see cref="Operations.DecisionModels.DefaultProvider"/>, or Gateway when none is set, when <see cref="RerankingModel"/> is called.
+    /// </summary>
+    public CustomProvider AddRerankingModel(string modelId, string providerModelId)
+    {
+        if (providerModelId is null)
+        {
+            throw new ArgumentNullException(nameof(providerModelId));
+        }
+
+        return Add(_reranking, modelId, () =>
+            ResolveModel.ResolveRerankingModel(null, providerModelId)
+        );
+    }
+
+    /// <summary>
+    /// Registers a string alias for a video model. The id is resolved through
+    /// <see cref="Operations.DecisionModels.DefaultProvider"/>, or Gateway when none is set, when <see cref="VideoModel"/> is called.
+    /// </summary>
+    public CustomProvider AddVideoModel(string modelId, string providerModelId)
+    {
+        if (providerModelId is null)
+        {
+            throw new ArgumentNullException(nameof(providerModelId));
+        }
+
+        return Add(_video, modelId, () => ResolveModel.ResolveVideoModel(null, providerModelId));
     }
 
     /// <summary>Registers a model that scores a candidate against a rubric under <paramref name="modelId"/>.</summary>
@@ -1284,51 +1439,78 @@ public sealed class CustomProvider
     /// <inheritdoc />
     public override ILanguageModel LanguageModel(string modelId)
     {
-        return Find(_language, modelId, "languageModel", fallback =>
-            fallback.LanguageModel(modelId)
-        );
+        var factory = Find(_language, modelId, "languageModel", fallback =>
+        {
+            var found = fallback.LanguageModel(modelId);
+            return found is null ? null : (Func<ILanguageModel>)(() => found);
+        });
+        return factory();
     }
 
     /// <inheritdoc />
     public override IEmbeddingModel EmbeddingModel(string modelId)
     {
-        return Find(_embedding, modelId, "embeddingModel", fallback =>
-            fallback.EmbeddingModel(modelId)
-        );
+        var factory = Find(_embedding, modelId, "embeddingModel", fallback =>
+        {
+            var found = fallback.EmbeddingModel(modelId);
+            return found is null ? null : (Func<IEmbeddingModel>)(() => found);
+        });
+        return factory();
     }
 
     /// <inheritdoc />
     public override IImageModel ImageModel(string modelId)
     {
-        return Find(_image, modelId, "imageModel", fallback => fallback.ImageModel(modelId));
+        var factory = Find(_image, modelId, "imageModel", fallback =>
+        {
+            var found = fallback.ImageModel(modelId);
+            return found is null ? null : (Func<IImageModel>)(() => found);
+        });
+        return factory();
     }
 
     /// <inheritdoc />
     public override ITranscriptionModel TranscriptionModel(string modelId)
     {
-        return Find(_transcription, modelId, "transcriptionModel", fallback =>
-            fallback.TranscriptionModel(modelId)
-        );
+        var factory = Find(_transcription, modelId, "transcriptionModel", fallback =>
+        {
+            var found = fallback.TranscriptionModel(modelId);
+            return found is null ? null : (Func<ITranscriptionModel>)(() => found);
+        });
+        return factory();
     }
 
     /// <inheritdoc />
     public override ISpeechModel SpeechModel(string modelId)
     {
-        return Find(_speech, modelId, "speechModel", fallback => fallback.SpeechModel(modelId));
+        var factory = Find(_speech, modelId, "speechModel", fallback =>
+        {
+            var found = fallback.SpeechModel(modelId);
+            return found is null ? null : (Func<ISpeechModel>)(() => found);
+        });
+        return factory();
     }
 
     /// <inheritdoc />
     public override IRerankingModel RerankingModel(string modelId)
     {
-        return Find(_reranking, modelId, "rerankingModel", fallback =>
-            fallback.RerankingModel(modelId)
-        );
+        var factory = Find(_reranking, modelId, "rerankingModel", fallback =>
+        {
+            var found = fallback.RerankingModel(modelId);
+            return found is null ? null : (Func<IRerankingModel>)(() => found);
+        });
+        return factory();
     }
 
     /// <inheritdoc />
     public override IVideoModel VideoModel(string modelId)
     {
-        return Find(_video, modelId, "videoModel", fallback => fallback.VideoModel(modelId));
+        var factory = Find(_video, modelId, "videoModel", fallback =>
+        {
+            var found = fallback.VideoModel(modelId);
+            return found is null ? null : (Func<IVideoModel>)(() => found);
+        });
+        return factory();
     }
 
     /// <inheritdoc />
