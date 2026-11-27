@@ -140,7 +140,7 @@ public sealed class PrimaryEndpointParityTests
             )
             .ConfigureAwait(false);
         Assert.Contains(
-            "ai-sdk/cartesia/" + AiSdkVersion.Version,
+            "ai-sdk-cartesia/" + AiSdkVersion.Version,
             handler.Calls[0].Header("User-Agent") ?? string.Empty,
             StringComparison.Ordinal
         );

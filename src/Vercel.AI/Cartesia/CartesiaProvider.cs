@@ -39,6 +39,8 @@ public sealed class CartesiaProvider : OpenAICompatibleProvider
 
     private readonly HttpClient _httpClient;
 
+    internal HttpClient HttpClient => _httpClient;
+
     /// <summary>Creates a provider.</summary>
     public CartesiaProvider(HttpClient httpClient, OpenAICompatibleOptions? options = null)
         : base(Prepare(options), httpClient)
@@ -61,6 +63,13 @@ public sealed class CartesiaProvider : OpenAICompatibleProvider
             },
             ["required"] = new JsonArray("title", "message", "request_id"),
         };
+
+    /// <summary>Creates realtime Ink speech-to-text models. Maps to <c>experimental_realtime</c>.</summary>
+    public CartesiaRealtimeFactory ExperimentalRealtime => new(this);
+
+    /// <inheritdoc />
+    public override IRealtimeModel RealtimeModel(string modelId) =>
+        ExperimentalRealtime.Model(modelId);
 
     /// <inheritdoc />
     public override ILanguageModel LanguageModel(string modelId)
@@ -106,7 +115,7 @@ public sealed class CartesiaProvider : OpenAICompatibleProvider
         options.ApiKeyStyle = ApiKeyStyle.Bearer;
         options.Headers["Cartesia-Version"] = (options as CartesiaOptions)?.Version
             ?? DefaultVersion;
-        options.UserAgent = ProviderExchange.UserAgent("cartesia");
+        options.UserAgent = "ai-sdk-cartesia/" + AiSdkVersion.Version;
         return options;
     }
 
