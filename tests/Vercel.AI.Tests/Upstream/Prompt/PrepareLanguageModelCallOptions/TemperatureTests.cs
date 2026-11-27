@@ -16,10 +16,10 @@ public sealed class TemperatureTests
     [Fact]
     [UpstreamTest(
         Prefix + "should throw InvalidArgumentError if temperature is not a number",
-        Coverage = UpstreamCoverage.Covered,
-        Note = "A C# double? cannot hold a non-number, so NaN stands for it."
+        Coverage = UpstreamCoverage.Partial,
+        Note = "A C# double? cannot hold a non-number, so NaN stands for upstream's string input; the typeof check upstream is not reproduced."
     )]
-    public void Should_throw_InvalidArgumentError_if_temperature_is_not_a_number()
+    public void Partial_Should_throw_InvalidArgumentError_if_temperature_is_not_a_number()
     {
         var exception = Assert.Throws<InvalidArgumentError>(() =>
             LanguageModelCallPreparation.PrepareLanguageModelCallOptions(

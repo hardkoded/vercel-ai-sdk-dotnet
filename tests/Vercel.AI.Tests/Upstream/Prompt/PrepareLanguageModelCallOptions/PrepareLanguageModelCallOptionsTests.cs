@@ -16,10 +16,10 @@ public sealed class PrepareLanguageModelCallOptionsTests
     [Fact]
     [UpstreamTest(
         Prefix + "should return a new object with limited values",
-        Coverage = UpstreamCoverage.Covered,
+        Coverage = UpstreamCoverage.Partial,
         Note = "The typed input has no property for an unknown setting, so the upstream extra random property cannot be passed."
     )]
-    public void Should_return_a_new_object_with_limited_values()
+    public void Partial_Should_return_a_new_object_with_limited_values()
     {
         var input = new LanguageModelCallOptionsInput { MaxOutputTokens = 100, Temperature = 0.7 };
 

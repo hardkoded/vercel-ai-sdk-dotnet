@@ -155,9 +155,10 @@ public sealed class MessageAssistantTests
     [Fact]
     [UpstreamTest(
         Id + " > reasoning-file parts::should convert reasoning-file part with base64 data",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Partial,
+        Note = "FileContentPart takes decoded bytes, so the base64 string input of upstream is decoded by the caller; the string handling is not exercised."
     )]
-    public void Should_convert_reasoning_file_part_with_base64_data()
+    public void Partial_Should_convert_reasoning_file_part_with_base64_data()
     {
         var part = Assert.IsType<AssistantReasoningFilePart>(
             Assert.Single(
@@ -279,9 +280,10 @@ public sealed class MessageAssistantTests
     [Fact]
     [UpstreamTest(
         Id + " > file parts::should convert file data correctly",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Partial,
+        Note = "FileContentPart takes decoded bytes, so the base64 string input of upstream is decoded by the caller; the string handling is not exercised."
     )]
-    public void Should_convert_file_data_correctly()
+    public void Partial_Should_convert_file_data_correctly()
     {
         var file = Assert.IsType<AssistantFilePart>(
             Assert.Single(
@@ -296,9 +298,10 @@ public sealed class MessageAssistantTests
     [Fact]
     [UpstreamTest(
         Id + " > file parts::should preserve filename when present",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Partial,
+        Note = "FileContentPart takes decoded bytes, so the base64 string input of upstream is decoded by the caller; the string handling is not exercised."
     )]
-    public void Should_preserve_filename_when_present()
+    public void Partial_Should_preserve_filename_when_present()
     {
         var file = Assert.IsType<AssistantFilePart>(
             Assert.Single(
@@ -319,9 +322,10 @@ public sealed class MessageAssistantTests
     [Fact]
     [UpstreamTest(
         Id + " > file parts::should handle provider options",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Partial,
+        Note = "FileContentPart takes decoded bytes, so the base64 string input of upstream is decoded by the caller; the string handling is not exercised."
     )]
-    public void Should_handle_provider_options()
+    public void Partial_Should_handle_provider_options()
     {
         var file = Assert.IsType<AssistantFilePart>(
             Assert.Single(

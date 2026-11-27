@@ -74,9 +74,10 @@ public sealed class UserMessageFilePartsTests
     [Fact]
     [UpstreamTest(
         Id + "should handle file parts with base64 string data",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Partial,
+        Note = "FileContentPart takes decoded bytes, so the base64 string input of upstream is decoded by the caller; the string handling is not exercised."
     )]
-    public async Task Should_handle_file_parts_with_base64_string_data()
+    public async Task Partial_Should_handle_file_parts_with_base64_string_data()
     {
         var result = await ConvertAsync(
             [
@@ -191,9 +192,10 @@ public sealed class UserMessageFilePartsTests
     [Fact]
     [UpstreamTest(
         Id + "should handle file parts with filename",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Partial,
+        Note = "FileContentPart takes decoded bytes, so the base64 string input of upstream is decoded by the caller; the string handling is not exercised."
     )]
-    public async Task Should_handle_file_parts_with_filename()
+    public async Task Partial_Should_handle_file_parts_with_filename()
     {
         var result = await ConvertAsync(
             [
