@@ -67,6 +67,10 @@ public static class UIMessageStreams
         var ongoingStreamPromises = new Queue<Task>();
         var activeReaders = new List<ReadableStreamReader<JsonObject>>();
         var isCancelled = false;
+        List<Action>? deferredErrors = [];
+        var executeReturned = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
         var outcome = new UIMessageStreamOutcome(UIMessageStreamOutcomeStatus.Unknown);
         ReadableStreamController<JsonObject> controller = null!;
 
@@ -163,6 +167,9 @@ public static class UIMessageStreams
 
                 try
                 {
+                    // upstream reads the merged stream in a microtask, after the synchronous part of execute has written its chunks
+                    await executeReturned.Task.ConfigureAwait(false);
+
                     while (true)
                     {
                         var read = await reader.ReadAsync().ConfigureAwait(false);
@@ -194,8 +201,23 @@ public static class UIMessageStreams
             }
             catch (Exception error)
             {
-                HandleError(error);
+                // upstream handles the rejection of the async merge in a later microtask, after the caller's following writes
+                DeferWhileExecuting(() => HandleError(error));
             }
+        }
+
+        void DeferWhileExecuting(Action action)
+        {
+            lock (gate)
+            {
+                if (deferredErrors is not null)
+                {
+                    deferredErrors.Add(action);
+                    return;
+                }
+            }
+
+            action();
         }
 
         async Task ObserveAsync(Task execution)
@@ -251,6 +273,20 @@ public static class UIMessageStreams
         catch (Exception error)
         {
             HandleError(error);
+        }
+
+        executeReturned.TrySetResult();
+
+        List<Action> pendingErrors;
+        lock (gate)
+        {
+            pendingErrors = deferredErrors!;
+            deferredErrors = null;
+        }
+
+        foreach (var action in pendingErrors)
+        {
+            action();
         }
 
         // Wait until all ongoing streams are done. This approach enables merging
