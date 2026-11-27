@@ -57,4 +57,26 @@ public static class FileDataConversions
             + ";base64,"
             + ByteEncoding.ToBase64(file.Data ?? Array.Empty<byte>());
     }
+
+    /// <summary>
+    /// Returns the URL of a URL video model file, or a base64 data URI for a file with data. Base64 text is
+    /// sent unchanged. Maps to <c>convertImageModelFileToDataUri</c>, which also takes a <c>VideoModelV4File</c>.
+    /// </summary>
+    public static string ConvertImageModelFileToDataUri(VideoModelFile file)
+    {
+        if (file is null)
+        {
+            throw new ArgumentNullException(nameof(file));
+        }
+
+        if (file.Url != null)
+        {
+            return file.Url;
+        }
+
+        return "data:"
+            + file.MediaType
+            + ";base64,"
+            + (file.Base64 ?? ByteEncoding.ToBase64(file.Data ?? Array.Empty<byte>()));
+    }
 }

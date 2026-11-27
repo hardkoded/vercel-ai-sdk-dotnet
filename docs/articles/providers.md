@@ -365,6 +365,42 @@ var message = new UserModelMessage(new UserContentPart[]
 
 The minimum content length for a cache block is 1,024 tokens. Alibaba allows 4 cache breakpoints per request. A fifth marker adds an `other` warning, `Max breakpoint limit exceeded. Only the last 4 cache markers will take effect.`, and is still sent.
 
+## Alibaba video models
+
+`AlibabaProvider.VideoModel(id)` (also `Video(id)`) returns an `AlibabaVideoModel` for the [Wan](https://www.alibabacloud.com/help/en/model-studio/use-video-generation) models, with the provider id `alibaba.video`. The video API uses the DashScope native endpoint, not the OpenAI-compatible one. Set `OpenAICompatibleOptions.VideoBaseUrl` (upstream `videoBaseURL`) to use a different URL prefix. The default prefix is `https://dashscope-intl.aliyuncs.com`.
+
+The model generates one video per call (`MaxVideosPerCall` is 1) and supports `DoStartAsync` and `DoStatusAsync`. `DoStartAsync` posts to `/api/v1/services/aigc/video-generation/video-synthesis` with the `X-DashScope-Async: enable` header and returns an operation with the `taskId`. `DoStatusAsync` reads `/api/v1/tasks/{taskId}` and returns `pending`, `completed` (one `url` video, `video/mp4`), or `error` (for `FAILED` or `CANCELED`). The provider metadata under `alibaba` holds `taskId`, `videoUrl`, `actualPrompt`, and `usage` (`duration`, `outputVideoDuration`, `resolution`, `size`, and, for wan3, `inputVideoDuration`, `fps`, and `ratio`).
+
+Alibaba supports three modes: text-to-video, image-to-video (first frame), and reference-to-video. The model id decides the request protocol:
+
+- wan2.6 and earlier send `parameters.size` (`1280x720` becomes `1280*720`) for text-to-video and reference-to-video, `input.img_url` for image-to-video, and `input.reference_urls` for reference-to-video. Use `character1`, `character2`, and so on in the prompt. Image-to-video maps the resolution to a `720P` or `1080P` tier.
+- wan2.7 sends a resolution tier (`720P` or `1080P`), a `ratio` for text-to-video and reference-to-video, and `input.media` for references. Use `Image 1`, `Video 1`, and so on in the prompt. It always generates audio, so `GenerateAudio` adds a warning, and it has no `shotType`.
+- wan3 (`wan3.0-video`) serves every mode from one id. The media of the request decides the mode. It sends `input.media` with references and both frames, a `480P`, `720P`, or `1080P` tier, a `ratio` (including `adaptive`), and the `audio` toggle.
+
+An unlisted id picks its protocol from the version it names (`wanx2.1-t2v-turbo` is legacy, `wan2.8-r2v` is wan2.7, `wan4.0-video` is wan3). URL references ending in `.mp4` or `.mov` are sent as `reference_video`, other URLs as `reference_image`. Image files are sent as data URIs. A video file reference is skipped with a warning, because Alibaba needs a URL for it. `Fps` and an `N` above 1 add warnings.
+
+Pass options as JSON under `alibaba` in the call's provider options. `AlibabaVideoModelOptions.Parse` reads them:
+
+| Option | Description |
+| --- | --- |
+| `negativePrompt` | A description of what to avoid in the generated video (max 500 characters). |
+| `audioUrl` | URL to an audio file for audio-video sync (WAV/MP3, 3-30 seconds, max 15MB). |
+| `promptExtend` | Enable prompt extension/rewriting for better generation quality. Defaults to `true`. |
+| `shotType` | `single` or `multi`. `multi` enables multi-shot cinematic narrative (wan2.6 models only). |
+| `watermark` | Whether to add a watermark to the generated video. Defaults to `false`. |
+| `audio` | Whether to generate audio (wan2.6 I2V and R2V models, and wan3). `GenerateAudio` wins. wan2.7 models always generate audio. |
+| `referenceUrls` | Reference image/video URLs for reference-to-video mode (wan2.6 models). 0-5 images and 0-3 videos, max 5 total. Prefer `InputReferences`. |
+| `media` | Explicit media array (wan2.7 and wan3). Each item has a `type` (`reference_image`, `reference_video`, `reference_audio`, `first_frame`, `last_frame`, `file`, or `link`), a `url`, and an optional `referenceVoice` audio URL. It overrides the mapping from `InputReferences` and `FrameImages`. `reference_audio`, `file`, and `link` are wan3-only. |
+| `ratio` | `adaptive`, `16:9`, `9:16`, `1:1`, `4:3`, or `3:4` (wan2.7 text-to-video and reference-to-video, and wan3; `adaptive` is wan3-only). It wins over `AspectRatio`, which wins over a ratio derived from the resolution. |
+| `pollIntervalMs` | Polling interval in milliseconds. Defaults to 5000. |
+| `pollTimeoutMs` | Maximum wait time in milliseconds. Defaults to 600000 (10 minutes). |
+
+```csharp
+using Vercel.AI.Alibaba;
+
+var model = AlibabaProvider.Create().Video("wan2.6-t2v");
+```
+
 ## Cohere sources
 
 Ground a Cohere response in documents by adding text files to the prompt as `FileContentPart` values. When the model cites one of these documents, the provider returns the cited text span as a source.

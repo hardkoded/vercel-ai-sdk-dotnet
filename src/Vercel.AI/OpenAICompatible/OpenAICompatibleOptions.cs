@@ -239,6 +239,9 @@ public class OpenAICompatibleOptions
     /// <summary>Origin for image calls when it differs from <see cref="BaseUrl"/>.</summary>
     public string? ImageBaseUrl { get; set; }
 
+    /// <summary>Origin for video calls when it differs from <see cref="BaseUrl"/>. Alibaba reads it as <c>videoBaseURL</c>.</summary>
+    public string? VideoBaseUrl { get; set; }
+
     /// <summary>
     /// Client for hops off the provider origin when a URL from a response body is downloaded (Fal, Replicate, Luma, Prodia).
     /// It must not follow redirects: each hop is validated before it is requested. Null uses the HttpClient the provider was created with when <c>Create</c> was given a handler, else a shared client that does not follow them.

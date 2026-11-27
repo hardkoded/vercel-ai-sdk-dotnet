@@ -41,6 +41,28 @@ public sealed class AlibabaProvider : OpenAICompatibleProvider
         return new AlibabaEmbeddingModel(this, modelId);
     }
 
+    /// <summary>Creates a model for video generation. The provider id is <c>alibaba.video</c>.</summary>
+    public override IVideoModel VideoModel(string modelId)
+    {
+        return Video(modelId);
+    }
+
+    /// <summary>Creates a model for video generation. Same as <see cref="VideoModel(string)"/>.</summary>
+    public IVideoModel Video(string modelId)
+    {
+        // The video API uses the DashScope native endpoint, not the OpenAI-compatible one.
+        return new AlibabaVideoModel(
+            modelId,
+            new AlibabaVideoModelConfig(
+                "alibaba.video",
+                ProviderValues.WithoutTrailingSlash(Options.VideoBaseUrl)
+                    ?? "https://dashscope-intl.aliyuncs.com",
+                async ct => await CreateHeadersAsync(ct).ConfigureAwait(false),
+                _httpClient
+            )
+        );
+    }
+
     /// <summary>Creates a provider. Pass a handler from tests.</summary>
     public static new AlibabaProvider Create(
         OpenAICompatibleOptions? options = null,

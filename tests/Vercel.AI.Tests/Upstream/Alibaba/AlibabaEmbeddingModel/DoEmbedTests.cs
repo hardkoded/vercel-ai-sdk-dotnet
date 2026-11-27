@@ -29,7 +29,7 @@ public sealed class DoEmbedTests
         var capture = new EmbeddingCapture(
             "{\"output\":{\"embeddings\":[{\"text_index\":0,\"embedding\":[0.1]},{\"text_index\":1,\"embedding\":[0.2]}]},\"usage\":{\"total_tokens\":12}}"
         );
-        var provider = AlibabaProvider.Create(
+        var provider = Vercel.AI.Alibaba.AlibabaProvider.Create(
             new OpenAICompatibleOptions { ApiKey = "test-api-key" },
             capture
         );

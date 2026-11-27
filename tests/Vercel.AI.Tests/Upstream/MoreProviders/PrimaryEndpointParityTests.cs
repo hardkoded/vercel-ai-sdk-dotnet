@@ -35,11 +35,11 @@ public sealed class PrimaryEndpointParityTests
         var handler = new ParityHandler(_ =>
             ParityHandler.Json("{\"output\":{\"embeddings\":[]}}")
         );
-        var provider = AlibabaProvider.Create(
+        var provider = Vercel.AI.Alibaba.AlibabaProvider.Create(
             new OpenAICompatibleOptions { ApiKey = "test-api-key" },
             handler
         );
-        var model = (AlibabaProvider.AlibabaEmbeddingModel)
+        var model = (Vercel.AI.Alibaba.AlibabaProvider.AlibabaEmbeddingModel)
             provider.EmbeddingModel("text-embedding-v4");
         await model
             .EmbedAsync(new AlibabaEmbeddingRequest(EmbeddingValues), CancellationToken.None)
@@ -66,8 +66,8 @@ public sealed class PrimaryEndpointParityTests
         );
         var options = new OpenAICompatibleOptions { ApiKey = "test-api-key" };
         options.Headers["Custom-Provider-Header"] = "provider-header-value";
-        var provider = AlibabaProvider.Create(options, handler);
-        var model = (AlibabaProvider.AlibabaEmbeddingModel)
+        var provider = Vercel.AI.Alibaba.AlibabaProvider.Create(options, handler);
+        var model = (Vercel.AI.Alibaba.AlibabaProvider.AlibabaEmbeddingModel)
             provider.EmbeddingModel("text-embedding-v4");
         await model
             .EmbedAsync(
