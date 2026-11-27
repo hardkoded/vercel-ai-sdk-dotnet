@@ -15,6 +15,35 @@ public sealed class GatewayProviderRealWorldUsageScenariosTests
 
     [Fact]
     [UpstreamTest(
+        Prefix + "should work in Vercel deployment with OIDC",
+        Coverage = UpstreamCoverage.Covered,
+        Note = "Upstream reads config.headers of the GatewayLanguageModel constructor call. The port reads the provider's headers (getHeaders)."
+    )]
+    public async Task Should_work_in_Vercel_deployment_with_OIDC()
+    {
+        using var scope = new GatewayProviderTestScope();
+
+        // Simulate Vercel deployment environment
+        scope.SetEnvironment("VERCEL_OIDC_TOKEN", "vercel-deployment-oidc-token");
+        scope.SetEnvironment("VERCEL_DEPLOYMENT_ID", "dpl_12345");
+        scope.SetEnvironment("VERCEL_ENV", "production");
+        scope.SetEnvironment("VERCEL_REGION", "iad1");
+
+        // Explicitly remove AI_GATEWAY_API_KEY to force OIDC usage
+        scope.SetEnvironment(GatewayProvider.ApiKeyEnvironmentVariable, null);
+        scope.MockOidc("vercel-deployment-oidc-token");
+        var provider = GatewayProvider.Create(new GatewayOptions());
+        provider.LanguageModel("test-model");
+
+        var headers = await provider.GetHeadersAsync(CancellationToken.None);
+
+        Assert.Equal("Bearer vercel-deployment-oidc-token", headers["authorization"]);
+        Assert.Equal("oidc", headers["ai-gateway-auth-method"]);
+        Assert.True(scope.OidcCalls > 0);
+    }
+
+    [Fact]
+    [UpstreamTest(
         Prefix + "should work in local development with API key",
         Coverage = UpstreamCoverage.Covered
     )]

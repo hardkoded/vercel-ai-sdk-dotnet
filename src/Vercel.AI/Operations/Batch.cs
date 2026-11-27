@@ -782,6 +782,12 @@ public class BatchStatus : BatchReference
     /// <summary>Code of the batch-level error.</summary>
     public string? ErrorCode { get; set; }
 
+    /// <summary>Type of the batch-level error.</summary>
+    public string? ErrorType { get; set; }
+
+    /// <summary>HTTP status code of the batch-level error.</summary>
+    public int? ErrorStatusCode { get; set; }
+
     /// <summary>Provider metadata.</summary>
     public JsonElement? ProviderMetadata { get; set; }
 }
