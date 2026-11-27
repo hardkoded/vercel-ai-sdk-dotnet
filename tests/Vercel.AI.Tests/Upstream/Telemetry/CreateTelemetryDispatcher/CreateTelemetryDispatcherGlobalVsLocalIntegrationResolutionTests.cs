@@ -6,7 +6,6 @@ namespace Vercel.AI.Tests.Upstream.Telemetry.CreateTelemetryDispatcher;
 
 /// <summary>
 /// Port of <c>create-telemetry-dispatcher.test.ts</c> &gt; <c>createTelemetryDispatcher &gt; global vs local integration resolution</c>.
-/// The port dispatches <c>onLanguageModelCallStart</c>, which carries the augmented fields, where upstream's tests use <c>onStart</c>.
 /// </summary>
 [Collection("TelemetryRegistry")]
 public sealed class CreateTelemetryDispatcherGlobalVsLocalIntegrationResolutionTests : IDisposable
@@ -25,20 +24,18 @@ public sealed class CreateTelemetryDispatcherGlobalVsLocalIntegrationResolutionT
     }
 
     private static Task Dispatch(Vercel.AI.TelemetryDispatcher telemetry) =>
-        telemetry.OnLanguageModelCallStart!(
-            DispatcherEvents.LanguageModelCallStart(),
-            CancellationToken.None
-        );
+        telemetry.OnStart!(new GenerateTextStartEvent(), CancellationToken.None);
 
     [Fact]
     [UpstreamTest(
-        Id + "uses globally registered integrations when no local integrations are provided"
+        Id + "uses globally registered integrations when no local integrations are provided",
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Uses_globally_registered_integrations_when_no_local_integrations_are_provided()
     {
-        var calls = new List<LanguageModelCallStartEvent>();
+        var calls = new List<GenerateTextStartEvent>();
         Vercel.AI.TelemetryRegistry.RegisterTelemetry(
-            CreateTelemetryDispatcherTests.OnCallStart(calls)
+            CreateTelemetryDispatcherTests.OnStartCapture(calls)
         );
 
         await Dispatch(Vercel.AI.TelemetryDispatcher.Create(new TelemetryOptions()));
@@ -47,19 +44,22 @@ public sealed class CreateTelemetryDispatcherGlobalVsLocalIntegrationResolutionT
     }
 
     [Fact]
-    [UpstreamTest(Id + "uses only local integrations when provided, ignoring global")]
+    [UpstreamTest(
+        Id + "uses only local integrations when provided, ignoring global",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Uses_only_local_integrations_when_provided_ignoring_global()
     {
-        var global = new List<LanguageModelCallStartEvent>();
-        var local = new List<LanguageModelCallStartEvent>();
+        var global = new List<GenerateTextStartEvent>();
+        var local = new List<GenerateTextStartEvent>();
         Vercel.AI.TelemetryRegistry.RegisterTelemetry(
-            CreateTelemetryDispatcherTests.OnCallStart(global)
+            CreateTelemetryDispatcherTests.OnStartCapture(global)
         );
 
         await Dispatch(
             Vercel.AI.TelemetryDispatcher.Create(
                 CreateTelemetryDispatcherTests.Options(
-                    CreateTelemetryDispatcherTests.OnCallStart(local)
+                    CreateTelemetryDispatcherTests.OnStartCapture(local)
                 )
             )
         );
@@ -69,21 +69,24 @@ public sealed class CreateTelemetryDispatcherGlobalVsLocalIntegrationResolutionT
     }
 
     [Fact]
-    [UpstreamTest(Id + "uses only local integration array when provided, ignoring global")]
+    [UpstreamTest(
+        Id + "uses only local integration array when provided, ignoring global",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Uses_only_local_integration_array_when_provided_ignoring_global()
     {
-        var global = new List<LanguageModelCallStartEvent>();
-        var first = new List<LanguageModelCallStartEvent>();
-        var second = new List<LanguageModelCallStartEvent>();
+        var global = new List<GenerateTextStartEvent>();
+        var first = new List<GenerateTextStartEvent>();
+        var second = new List<GenerateTextStartEvent>();
         Vercel.AI.TelemetryRegistry.RegisterTelemetry(
-            CreateTelemetryDispatcherTests.OnCallStart(global)
+            CreateTelemetryDispatcherTests.OnStartCapture(global)
         );
 
         await Dispatch(
             Vercel.AI.TelemetryDispatcher.Create(
                 CreateTelemetryDispatcherTests.Options(
-                    CreateTelemetryDispatcherTests.OnCallStart(first),
-                    CreateTelemetryDispatcherTests.OnCallStart(second)
+                    CreateTelemetryDispatcherTests.OnStartCapture(first),
+                    CreateTelemetryDispatcherTests.OnStartCapture(second)
                 )
             )
         );
@@ -94,18 +97,21 @@ public sealed class CreateTelemetryDispatcherGlobalVsLocalIntegrationResolutionT
     }
 
     [Fact]
-    [UpstreamTest(Id + "global integrations still work for calls without local integrations")]
+    [UpstreamTest(
+        Id + "global integrations still work for calls without local integrations",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Global_integrations_still_work_for_calls_without_local_integrations()
     {
-        var global = new List<LanguageModelCallStartEvent>();
-        var local = new List<LanguageModelCallStartEvent>();
+        var global = new List<GenerateTextStartEvent>();
+        var local = new List<GenerateTextStartEvent>();
         Vercel.AI.TelemetryRegistry.RegisterTelemetry(
-            CreateTelemetryDispatcherTests.OnCallStart(global)
+            CreateTelemetryDispatcherTests.OnStartCapture(global)
         );
 
         var withLocal = Vercel.AI.TelemetryDispatcher.Create(
             CreateTelemetryDispatcherTests.Options(
-                CreateTelemetryDispatcherTests.OnCallStart(local)
+                CreateTelemetryDispatcherTests.OnStartCapture(local)
             )
         );
         var withoutLocal = Vercel.AI.TelemetryDispatcher.Create(new TelemetryOptions());
@@ -115,5 +121,36 @@ public sealed class CreateTelemetryDispatcherGlobalVsLocalIntegrationResolutionT
 
         Assert.Single(local);
         Assert.Single(global);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Id + "auto-binds class-based global integrations",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Auto_binds_class_based_global_integrations()
+    {
+        var integration = new ClassGlobalIntegration();
+        Vercel.AI.TelemetryRegistry.RegisterTelemetry(integration);
+
+        var telemetry = Vercel.AI.TelemetryDispatcher.Create(new TelemetryOptions());
+        await Dispatch(telemetry);
+
+        Assert.Equal(1, integration.Calls);
+    }
+
+    // Stands in for upstream's class with an onStart method, whose this context the dispatcher must keep.
+    private sealed class ClassGlobalIntegration : TestTelemetry
+    {
+        public ClassGlobalIntegration()
+        {
+            OnStart = (_, _) =>
+            {
+                Calls++;
+                return Task.CompletedTask;
+            };
+        }
+
+        public int Calls { get; private set; }
     }
 }

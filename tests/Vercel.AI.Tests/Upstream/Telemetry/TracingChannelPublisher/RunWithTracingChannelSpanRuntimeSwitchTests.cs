@@ -10,8 +10,9 @@ using Publisher = Vercel.AI.TracingChannelPublisher;
 namespace Vercel.AI.Tests.Upstream.Telemetry.TracingChannelPublisher;
 
 /// <summary>
-/// Port of <c>tracing-channel-publisher.test.ts</c> &gt; <c>runWithTracingChannelSpan runtime switch</c>. The three tests that mock
-/// <c>isNodeRuntime</c> are not ported, because the port has no runtime switch: a .NET process always has the diagnostics listener.
+/// Port of <c>tracing-channel-publisher.test.ts</c> &gt; <c>runWithTracingChannelSpan runtime switch</c>. The port has no
+/// <c>isNodeRuntime</c> switch: a .NET process always has the diagnostics listener, so the two "not running on Node" tests are
+/// not ported.
 /// </summary>
 public sealed class RunWithTracingChannelSpanRuntimeSwitchTests
 {
@@ -55,6 +56,57 @@ public sealed class RunWithTracingChannelSpanRuntimeSwitchTests
                 ? new TextDeltaStreamPart(text.Id, text.Delta + "!")
                 : part;
         }
+    }
+
+    private static readonly TelemetryTracingChannelMessage Message = new(
+        TelemetryTracingEventType.LanguageModelCall,
+        new LanguageModelCallStartEvent { CallId = "call-1" }
+    );
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "traces through the diagnostics channel when running on Node",
+        Coverage = UpstreamCoverage.Covered,
+        Note = "The port always has the diagnostics listener, so this is the only branch."
+    )]
+    public async Task Traces_through_the_diagnostics_channel_when_running_on_Node()
+    {
+        var message = new TelemetryTracingChannelMessage(
+            Message.Type,
+            new LanguageModelCallStartEvent { CallId = "traces-channel" }
+        );
+        var starts = new List<TelemetryTracingChannelMessage>();
+        using var subscription = TracingChannelSupport.SubscribeToChannel(() =>
+            new StartObserver(message, starts)
+        );
+
+        var result = await Publisher.RunWithTracingChannelSpan(message, () =>
+            Task.FromResult("result")
+        );
+
+        Assert.Equal("result", result);
+        // The subscriber receives the start event with the message context.
+        var start = Assert.Single(starts);
+        Assert.Same(message, start);
+        Assert.Equal(TelemetryTracingEventType.LanguageModelCall, start.Type);
+    }
+
+    private sealed class StartObserver(
+        TelemetryTracingChannelMessage message,
+        List<TelemetryTracingChannelMessage> starts
+    ) : IObserver<KeyValuePair<string, object?>>
+    {
+        public void OnNext(KeyValuePair<string, object?> item)
+        {
+            if (item.Key == "start" && ReferenceEquals(item.Value, message))
+            {
+                starts.Add(message);
+            }
+        }
+
+        public void OnCompleted() { }
+
+        public void OnError(Exception error) { }
     }
 
     [Theory]

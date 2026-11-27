@@ -22,7 +22,10 @@ public sealed class GetGlobalTelemetryIntegrationsTests : IDisposable
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "returns an empty array when no integrations are registered")]
+    [UpstreamTest(
+        Prefix + "returns an empty array when no integrations are registered",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Returns_an_empty_array_when_no_integrations_are_registered()
     {
         Assert.Empty(Vercel.AI.TelemetryRegistry.GetGlobalTelemetryIntegrations());

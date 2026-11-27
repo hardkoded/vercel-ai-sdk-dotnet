@@ -14,7 +14,10 @@ public sealed class CreateTelemetryDispatcherIsEnabledFilterTests
         "packages/ai/src/telemetry/create-telemetry-dispatcher.test.ts::createTelemetryDispatcher > isEnabled filter::";
 
     [Fact]
-    [UpstreamTest(Id + "does not invoke any integration callbacks when isEnabled is false")]
+    [UpstreamTest(
+        Id + "does not invoke any integration callbacks when isEnabled is false",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Does_not_invoke_any_integration_callbacks_when_isEnabled_is_false()
     {
         var wrapper = new PassThroughWrapper();
@@ -130,7 +133,10 @@ public sealed class CreateTelemetryDispatcherIsEnabledFilterTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "ignores globally registered integrations when isEnabled is false")]
+    [UpstreamTest(
+        Id + "ignores globally registered integrations when isEnabled is false",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Ignores_globally_registered_integrations_when_isEnabled_is_false()
     {
         var wrapper = new PassThroughWrapper();
@@ -163,23 +169,20 @@ public sealed class CreateTelemetryDispatcherIsEnabledFilterTests
     [Fact]
     [UpstreamTest(
         Id + "invokes integrations when isEnabled is true",
-        Note = "Dispatches onLanguageModelCallStart, which carries the augmented fields, where upstream's test uses onStart."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Invokes_integrations_when_isEnabled_is_true()
     {
-        var calls = new List<LanguageModelCallStartEvent>();
+        var calls = new List<GenerateTextStartEvent>();
         var telemetry = Vercel.AI.TelemetryDispatcher.Create(
             new TelemetryOptions
             {
                 IsEnabled = true,
-                Integrations = [CreateTelemetryDispatcherTests.OnCallStart(calls)],
+                Integrations = [CreateTelemetryDispatcherTests.OnStartCapture(calls)],
             }
         );
 
-        await telemetry.OnLanguageModelCallStart!(
-            DispatcherEvents.LanguageModelCallStart(),
-            CancellationToken.None
-        );
+        await telemetry.OnStart!(new GenerateTextStartEvent(), CancellationToken.None);
 
         Assert.Equal(Vercel.AI.Operations.AiSdkVersion.Version, Assert.Single(calls).AiVersion);
     }
@@ -187,22 +190,19 @@ public sealed class CreateTelemetryDispatcherIsEnabledFilterTests
     [Fact]
     [UpstreamTest(
         Id + "invokes integrations when isEnabled is undefined (default enabled)",
-        Note = "Dispatches onLanguageModelCallStart, which carries the augmented fields, where upstream's test uses onStart."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Invokes_integrations_when_isEnabled_is_undefined_default_enabled()
     {
-        var calls = new List<LanguageModelCallStartEvent>();
+        var calls = new List<GenerateTextStartEvent>();
         var telemetry = Vercel.AI.TelemetryDispatcher.Create(
             new TelemetryOptions
             {
-                Integrations = [CreateTelemetryDispatcherTests.OnCallStart(calls)],
+                Integrations = [CreateTelemetryDispatcherTests.OnStartCapture(calls)],
             }
         );
 
-        await telemetry.OnLanguageModelCallStart!(
-            DispatcherEvents.LanguageModelCallStart(),
-            CancellationToken.None
-        );
+        await telemetry.OnStart!(new GenerateTextStartEvent(), CancellationToken.None);
 
         Assert.Equal(Vercel.AI.Operations.AiSdkVersion.Version, Assert.Single(calls).AiVersion);
     }
@@ -210,11 +210,11 @@ public sealed class CreateTelemetryDispatcherIsEnabledFilterTests
     [Fact]
     [UpstreamTest(
         Id + "does not augment events with isEnabled",
-        Note = "Checked on onLanguageModelCallStart, the start event the port dispatches."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Does_not_augment_events_with_isEnabled()
     {
-        LanguageModelCallStartEvent? received = null;
+        GenerateTextStartEvent? received = null;
         var telemetry = Vercel.AI.TelemetryDispatcher.Create(
             new TelemetryOptions
             {
@@ -223,9 +223,9 @@ public sealed class CreateTelemetryDispatcherIsEnabledFilterTests
                 [
                     new TestTelemetry
                     {
-                        OnLanguageModelCallStart = (e, _) =>
+                        OnStart = (e, _) =>
                         {
-                            received = e;
+                            received = Assert.IsType<GenerateTextStartEvent>(e);
                             return Task.CompletedTask;
                         },
                     },
@@ -233,8 +233,8 @@ public sealed class CreateTelemetryDispatcherIsEnabledFilterTests
             }
         );
 
-        await telemetry.OnLanguageModelCallStart!(
-            new LanguageModelCallStartEvent { CallId = "call-1", ModelId = "model-1" },
+        await telemetry.OnStart!(
+            new GenerateTextStartEvent { CallId = "call-1", ModelId = "model-1" },
             CancellationToken.None
         );
 

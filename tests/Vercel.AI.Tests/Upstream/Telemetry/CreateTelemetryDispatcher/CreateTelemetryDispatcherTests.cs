@@ -9,7 +9,7 @@ using Vercel.AI.Tests.Upstream.GenerateObject.GenerateObject;
 
 namespace Vercel.AI.Tests.Upstream.Telemetry.CreateTelemetryDispatcher;
 
-/// <summary>Port of <c>create-telemetry-dispatcher.test.ts</c> &gt; <c>createTelemetryDispatcher</c>. The port dispatches <c>onLanguageModelCallStart</c> where upstream's test uses <c>onStart</c>, which the port has not ported.</summary>
+/// <summary>Port of <c>create-telemetry-dispatcher.test.ts</c> &gt; <c>createTelemetryDispatcher</c>.</summary>
 [Collection("LogWarnings")]
 public sealed class CreateTelemetryDispatcherTests
 {
@@ -54,13 +54,12 @@ public sealed class CreateTelemetryDispatcherTests
     [Fact]
     [UpstreamTest(
         Prefix + "omits listeners when no integrations are configured",
-        Note = "Passes an empty integrations list instead of no options, so a globally registered integration cannot reach the test."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Omits_listeners_when_no_integrations_are_configured()
     {
-        var telemetry = Vercel.AI.TelemetryDispatcher.Create(
-            new TelemetryOptions { Integrations = [] }
-        );
+        Vercel.AI.TelemetryRegistry.Integrations = null;
+        var telemetry = Vercel.AI.TelemetryDispatcher.Create(new TelemetryOptions());
 
         Assert.Null(telemetry.OnStart);
         Assert.Null(telemetry.OnStepStart);
@@ -108,26 +107,23 @@ public sealed class CreateTelemetryDispatcherTests
     }
 
     [Fact]
-    [UpstreamTest(
-        Prefix + "accepts a single integration",
-        Note = "Dispatches onLanguageModelCallStart, which carries the augmented fields, where upstream's test uses onStart."
-    )]
+    [UpstreamTest(Prefix + "accepts a single integration", Coverage = UpstreamCoverage.Covered)]
     public async Task Accepts_a_single_integration()
     {
-        var calls = new List<LanguageModelCallStartEvent>();
-        var telemetry = Vercel.AI.TelemetryDispatcher.Create(Options(OnCallStart(calls)));
+        var calls = new List<GenerateTextStartEvent>();
+        var telemetry = Vercel.AI.TelemetryDispatcher.Create(Options(OnStartCapture(calls)));
 
-        await telemetry.OnLanguageModelCallStart!(
-            DispatcherEvents.LanguageModelCallStart(),
-            CancellationToken.None
-        );
+        await telemetry.OnStart!(new GenerateTextStartEvent(), CancellationToken.None);
 
         var delivered = Assert.Single(calls);
         Assert.Equal(Vercel.AI.Operations.AiSdkVersion.Version, delivered.AiVersion);
+        Assert.Null(delivered.RecordInputs);
+        Assert.Null(delivered.RecordOutputs);
+        Assert.Null(delivered.FunctionId);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "accepts an array of integrations")]
+    [UpstreamTest(Prefix + "accepts an array of integrations", Coverage = UpstreamCoverage.Covered)]
     public void Accepts_an_array_of_integrations()
     {
         var telemetry = Vercel.AI.TelemetryDispatcher.Create(
@@ -142,7 +138,10 @@ public sealed class CreateTelemetryDispatcherTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "omits listeners for methods that no integration implements")]
+    [UpstreamTest(
+        Prefix + "omits listeners for methods that no integration implements",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Omits_listeners_for_methods_that_no_integration_implements()
     {
         var telemetry = Vercel.AI.TelemetryDispatcher.Create(
@@ -156,27 +155,27 @@ public sealed class CreateTelemetryDispatcherTests
     [Fact]
     [UpstreamTest(
         Prefix + "broadcasts an event to all integrations that implement the method",
-        Note = "Dispatches onLanguageModelCallStart, which carries the augmented fields, where upstream's test uses onStart."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Broadcasts_an_event_to_all_integrations_that_implement_the_method()
     {
-        var first = new List<LanguageModelCallStartEvent>();
-        var second = new List<LanguageModelCallStartEvent>();
+        var first = new List<GenerateTextStartEvent>();
+        var second = new List<GenerateTextStartEvent>();
         var telemetry = Vercel.AI.TelemetryDispatcher.Create(
-            Options(OnCallStart(first), OnCallStart(second))
+            Options(OnStartCapture(first), OnStartCapture(second))
         );
 
-        await telemetry.OnLanguageModelCallStart!(
-            DispatcherEvents.LanguageModelCallStart(),
-            CancellationToken.None
-        );
+        await telemetry.OnStart!(new GenerateTextStartEvent(), CancellationToken.None);
 
         Assert.Equal(Vercel.AI.Operations.AiSdkVersion.Version, Assert.Single(first).AiVersion);
         Assert.Equal(Vercel.AI.Operations.AiSdkVersion.Version, Assert.Single(second).AiVersion);
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "fans out step-end events to deprecated onStepFinish integrations")]
+    [UpstreamTest(
+        Prefix + "fans out step-end events to deprecated onStepFinish integrations",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Fans_out_step_end_events_to_deprecated_onStepFinish_integrations()
     {
         var stepEnd = 0;
@@ -209,7 +208,10 @@ public sealed class CreateTelemetryDispatcherTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "skips integrations that do not implement the method")]
+    [UpstreamTest(
+        Prefix + "skips integrations that do not implement the method",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Skips_integrations_that_do_not_implement_the_method()
     {
         var calls = 0;
@@ -234,7 +236,8 @@ public sealed class CreateTelemetryDispatcherTests
 
     [Fact]
     [UpstreamTest(
-        Prefix + "swallows async errors from individual integrations without affecting others"
+        Prefix + "swallows async errors from individual integrations without affecting others",
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Swallows_async_errors_from_individual_integrations_without_affecting_others()
     {
@@ -269,7 +272,10 @@ public sealed class CreateTelemetryDispatcherTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "swallows sync errors thrown by integrations")]
+    [UpstreamTest(
+        Prefix + "swallows sync errors thrown by integrations",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Swallows_sync_errors_thrown_by_integrations()
     {
         var telemetry = Vercel.AI.TelemetryDispatcher.Create(
@@ -285,7 +291,7 @@ public sealed class CreateTelemetryDispatcherTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "works with all lifecycle methods")]
+    [UpstreamTest(Prefix + "works with all lifecycle methods", Coverage = UpstreamCoverage.Covered)]
     public async Task Works_with_all_lifecycle_methods()
     {
         var calls = new List<string>();
@@ -526,7 +532,10 @@ public sealed class CreateTelemetryDispatcherTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "handles an empty array of integrations")]
+    [UpstreamTest(
+        Prefix + "handles an empty array of integrations",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Handles_an_empty_array_of_integrations()
     {
         var telemetry = Vercel.AI.TelemetryDispatcher.Create(
@@ -539,6 +548,16 @@ public sealed class CreateTelemetryDispatcherTests
 
     internal static TelemetryOptions Options(params ITelemetry[] integrations) =>
         new() { Integrations = integrations };
+
+    internal static TestTelemetry OnStartCapture(List<GenerateTextStartEvent> calls) =>
+        new()
+        {
+            OnStart = (e, _) =>
+            {
+                calls.Add(Assert.IsType<GenerateTextStartEvent>(e));
+                return Task.CompletedTask;
+            },
+        };
 
     internal static TestTelemetry OnCallStart(List<LanguageModelCallStartEvent> calls) =>
         new()
