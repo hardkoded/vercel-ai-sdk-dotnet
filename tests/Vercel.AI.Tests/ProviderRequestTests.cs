@@ -187,7 +187,7 @@ public sealed class ProviderRequestTests
     public static IEnumerable<object[]> Cases()
     {
         yield return Chat("alibaba", "dashscope-intl.aliyuncs.com", h =>
-            AlibabaProvider.Create(Key(), h)
+            Vercel.AI.Alibaba.AlibabaProvider.Create(Key(), h)
         );
         yield return Chat("baseten", "inference.baseten.co", h => BasetenProvider.Create(Key(), h));
         yield return Chat("cerebras", "api.cerebras.ai", h => CerebrasProvider.Create(Key(), h));

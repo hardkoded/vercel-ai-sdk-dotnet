@@ -10,6 +10,7 @@ Browse the upstream catalog of Alibaba models and their pricing on the [Vercel A
 | --- | --- | --- |
 | Language | `LanguageModel` | `qwen-plus` |
 | Embedding | `EmbeddingModel` | `text-embedding-v4` |
+| Video | `VideoModel`, `Video` | `wan2.6-t2v`, `wan2.6-i2v`, `wan2.6-r2v-flash`, `wan2.7-r2v`, `wan3.0-video` |
 
 A model id in the table is one that the tests or docs use. It is not the complete list of ids the provider accepts. Pass any id that the provider documents.
 
@@ -31,5 +32,7 @@ var result = await Ai.GenerateTextAsync(
 
 Console.WriteLine(result.Text);
 ```
+
+Video models are described in [Alibaba video models](providers.md#alibaba-video-models).
 
 See the [Providers](providers.md) guide for authentication and provider options.
