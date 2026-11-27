@@ -171,6 +171,17 @@ public sealed class StopConditionTests
 {
     [Fact]
     [UpstreamTest(
+        "packages/ai/src/generate-text/stop-condition.test.ts::stop conditions > isStepCount::should return true when the step count matches exactly",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void Step_count_matches_exactly()
+    {
+        var stop = StopWhen.IsStepCount(2);
+        Assert.True(stop.ShouldStop(new[] { Step(), Step() }));
+    }
+
+    [Fact]
+    [UpstreamTest(
         "packages/ai/src/generate-text/stop-condition.test.ts::stop conditions > isStepCount::should return false when the step count does not match exactly",
         Coverage = UpstreamCoverage.Covered
     )]

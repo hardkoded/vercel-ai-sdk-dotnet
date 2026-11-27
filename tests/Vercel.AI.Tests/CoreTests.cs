@@ -27,11 +27,6 @@ public sealed class CoreTests
 
     [Fact]
     [UpstreamTest(
-        "packages/ai/src/generate-text/stop-condition.test.ts::stop conditions > isStepCount::should return true when the step count matches exactly",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Stops a tool loop at two steps. Does not assert the other stop conditions."
-    )]
-    [UpstreamTest(
         "packages/ai/src/generate-text/generate-text.test.ts::generateText > options.stopWhen > 2 steps: initial, tool-result::result.toolResults should contain tool results from all steps",
         Coverage = UpstreamCoverage.Partial,
         Note = "Runs one tool and checks its output. Does not cover multi-tool steps."
