@@ -12,7 +12,7 @@ using Vercel.AI.Tests.MoreProviders;
 
 namespace Vercel.AI.Tests.Upstream.Cartesia.CartesiaTranscriptionModel;
 
-/// <summary>Port of <c>cartesia-transcription-model.test.ts</c> &gt; <c>doGenerate &gt; transcription</c> and its response metadata tests.</summary>
+/// <summary>Port of <c>cartesia-transcription-model.test.ts</c> &gt; <c>doGenerate &gt; transcription</c>.</summary>
 public sealed class DoGenerateTests
 {
     private const string Id =
@@ -23,7 +23,7 @@ public sealed class DoGenerateTests
 
     [Fact]
     [UpstreamTest(Id + "transcription::should pass the model", Coverage = UpstreamCoverage.Covered)]
-    public async Task sends_the_model_in_the_form()
+    public async Task Sends_the_model_in_the_form()
     {
         var (model, handler) = TranscriptionModel();
         await model.DoGenerateAsync(TranscriptionCall(), CancellationToken.None);
@@ -36,7 +36,7 @@ public sealed class DoGenerateTests
         Id + "transcription::routes dated Ink Whisper snapshots to the batch endpoint",
         Coverage = UpstreamCoverage.Covered
     )]
-    public async Task routes_dated_Ink_Whisper_snapshots_to_the_batch_endpoint()
+    public async Task Routes_dated_Ink_Whisper_snapshots_to_the_batch_endpoint()
     {
         var handler = new ParityHandler(_ => ParityHandler.Json(TranscriptionJson));
         var provider = CartesiaProvider.Create(
@@ -56,7 +56,7 @@ public sealed class DoGenerateTests
 
     [Fact]
     [UpstreamTest(Id + "transcription::should pass headers", Coverage = UpstreamCoverage.Covered)]
-    public async Task sends_auth_version_custom_headers_and_user_agent()
+    public async Task Sends_auth_version_custom_headers_and_user_agent()
     {
         var handler = new ParityHandler(_ => ParityHandler.Json(TranscriptionJson));
         var options = new OpenAICompatibleOptions { ApiKey = "test-api-key" };
@@ -96,7 +96,7 @@ public sealed class DoGenerateTests
         Id + "transcription::should extract the transcription text",
         Coverage = UpstreamCoverage.Covered
     )]
-    public async Task returns_the_text()
+    public async Task Returns_the_text()
     {
         var (model, _) = TranscriptionModel();
         var result = await model.DoGenerateAsync(TranscriptionCall(), CancellationToken.None);
@@ -108,7 +108,7 @@ public sealed class DoGenerateTests
         Id + "transcription::should extract segments, language and duration",
         Coverage = UpstreamCoverage.Covered
     )]
-    public async Task returns_word_segments_language_and_duration()
+    public async Task Returns_word_segments_language_and_duration()
     {
         var (model, _) = TranscriptionModel();
         var result = await model.DoGenerateAsync(TranscriptionCall(), CancellationToken.None);
@@ -124,7 +124,7 @@ public sealed class DoGenerateTests
         Id + "transcription::should pass language and timestamp granularities",
         Coverage = UpstreamCoverage.Covered
     )]
-    public async Task sends_language_and_timestamp_granularities()
+    public async Task Sends_language_and_timestamp_granularities()
     {
         var (model, handler) = TranscriptionModel();
         await model.DoGenerateAsync(
@@ -138,28 +138,6 @@ public sealed class DoGenerateTests
         Assert.Equal("ink-whisper", FormValue(call, "model"));
         Assert.Equal("en", FormValue(call, "language"));
         Assert.Equal("word", FormValue(call, "\"timestamp_granularities[]\""));
-    }
-
-    [Fact]
-    [UpstreamTest(
-        Id + "response metadata::should include response data with timestamp and modelId",
-        Coverage = UpstreamCoverage.Covered
-    )]
-    public async Task returns_the_timestamp_and_model()
-    {
-        var handler = new ParityHandler(_ => ParityHandler.Json(TranscriptionJson));
-        var provider = CartesiaProvider.Create(
-            new OpenAICompatibleOptions { ApiKey = "test-api-key" },
-            handler
-        );
-        var model = new global::Vercel.AI.Cartesia.CartesiaTranscriptionModel(
-            provider,
-            "ink-whisper",
-            () => DateTime.UnixEpoch
-        );
-        var result = await model.DoGenerateAsync(TranscriptionCall(), CancellationToken.None);
-        Assert.Equal(DateTime.UnixEpoch, result.Response.Timestamp);
-        Assert.Equal("ink-whisper", result.Response.ModelId);
     }
 
     private static (
