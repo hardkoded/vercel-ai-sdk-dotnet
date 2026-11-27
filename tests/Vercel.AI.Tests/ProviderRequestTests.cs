@@ -406,7 +406,7 @@ public sealed class ProviderRequestTests
             "/v1/tts",
             "Authorization",
             "Bearer secret",
-            h => FishAudioProvider.Create(Key(), h),
+            h => Vercel.AI.FishAudio.FishAudioProvider.Create(Key(), h),
             "speech"
         );
         yield return Media(
