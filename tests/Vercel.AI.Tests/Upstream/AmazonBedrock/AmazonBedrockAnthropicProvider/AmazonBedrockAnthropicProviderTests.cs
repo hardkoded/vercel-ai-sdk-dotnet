@@ -411,6 +411,30 @@ public sealed class AmazonBedrockAnthropicProviderTests : BedrockEndpointEnviron
     }
 
     [Theory]
+    [InlineData("anthropic.claude-sonnet-4-6-v1")]
+    [InlineData("us.anthropic.claude-haiku-4-5-20251001-v1:0")]
+    [UpstreamTest(
+        "packages/amazon-bedrock/src/anthropic/amazon-bedrock-anthropic-provider.test.ts::amazon-bedrock-anthropic-provider::should keep strict tools enabled for %s",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void Should_keep_strict_tools_enabled_for(string modelId)
+    {
+        var provider = BedrockProvider.Create(
+            new AmazonBedrockAnthropicOptions
+            {
+                Region = "us-east-1",
+                AccessKeyId = "test-key",
+                SecretAccessKey = "test-secret",
+            }
+        );
+        var model = Assert.IsType<AmazonBedrockAnthropicLanguageModel>(
+            provider.LanguageModel(modelId)
+        );
+
+        Assert.True(model.CreateInnerProvider().SupportsStrictTools);
+    }
+
+    [Theory]
     [InlineData("anthropic.claude-opus-5")]
     [InlineData("us.anthropic.claude-opus-5")]
     [InlineData("eu.anthropic.claude-opus-5")]
