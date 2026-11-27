@@ -35,7 +35,7 @@ internal static class AlibabaChatTestSupport
         var options = new OpenAICompatibleOptions { ApiKey = "test-api-key" };
         configure?.Invoke(options);
         return (OpenAICompatibleLanguageModel)
-            AlibabaProvider.Create(options, handler).LanguageModel(modelId);
+            Vercel.AI.Alibaba.AlibabaProvider.Create(options, handler).LanguageModel(modelId);
     }
 
     /// <summary>The reasoning id upstream gets from its mocked <c>generateId</c>.</summary>

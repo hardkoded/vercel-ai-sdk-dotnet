@@ -4,7 +4,6 @@
 
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Vercel.AI.Alibaba;
 using Vercel.AI.AssemblyAI;
 using Vercel.AI.ByteDance;
 using Vercel.AI.Cartesia;
@@ -19,80 +18,6 @@ namespace Vercel.AI.Tests;
 /// <summary>Construction, auth, and the primary modality endpoint for the larger assigned providers.</summary>
 public sealed class PrimaryEndpointParityTests
 {
-    private static readonly string[] EmbeddingValues =
-    {
-        "sunny day at the beach",
-        "rainy day in the city",
-    };
-
-    [Fact]
-    [UpstreamTest(
-        "packages/alibaba/src/alibaba-embedding-model.test.ts::doEmbed::should pass the model and values",
-        Coverage = UpstreamCoverage.Covered
-    )]
-    public async Task Alibaba_embedding_posts_texts_and_empty_parameters()
-    {
-        var handler = new ParityHandler(_ =>
-            ParityHandler.Json("{\"output\":{\"embeddings\":[]}}")
-        );
-        var provider = AlibabaProvider.Create(
-            new OpenAICompatibleOptions { ApiKey = "test-api-key" },
-            handler
-        );
-        var model = (AlibabaProvider.AlibabaEmbeddingModel)
-            provider.EmbeddingModel("text-embedding-v4");
-        await model
-            .EmbedAsync(new AlibabaEmbeddingRequest(EmbeddingValues), CancellationToken.None)
-            .ConfigureAwait(false);
-        Assert.Equal(
-            "https://dashscope-intl.aliyuncs.com/api/v1/services/embeddings/text-embedding/text-embedding",
-            handler.Calls[0].Uri.AbsoluteUri
-        );
-        Assert.Equal(
-            "{\"model\":\"text-embedding-v4\",\"input\":{\"texts\":[\"sunny day at the beach\",\"rainy day in the city\"]},\"parameters\":{}}",
-            handler.Calls[0].Text
-        );
-    }
-
-    [Fact]
-    [UpstreamTest(
-        "packages/alibaba/src/alibaba-embedding-model.test.ts::doEmbed::should pass headers",
-        Coverage = UpstreamCoverage.Covered
-    )]
-    public async Task Alibaba_embedding_sends_bearer_custom_headers_and_user_agent()
-    {
-        var handler = new ParityHandler(_ =>
-            ParityHandler.Json("{\"output\":{\"embeddings\":[]}}")
-        );
-        var options = new OpenAICompatibleOptions { ApiKey = "test-api-key" };
-        options.Headers["Custom-Provider-Header"] = "provider-header-value";
-        var provider = AlibabaProvider.Create(options, handler);
-        var model = (AlibabaProvider.AlibabaEmbeddingModel)
-            provider.EmbeddingModel("text-embedding-v4");
-        await model
-            .EmbedAsync(
-                new AlibabaEmbeddingRequest(EmbeddingValues)
-                {
-                    Headers = new Dictionary<string, string>
-                    {
-                        ["Custom-Request-Header"] = "request-header-value",
-                    },
-                },
-                CancellationToken.None
-            )
-            .ConfigureAwait(false);
-        var call = handler.Calls[0];
-        Assert.Equal("Bearer test-api-key", call.Header("Authorization"));
-        Assert.Equal("application/json", call.Header("Content-Type"));
-        Assert.Equal("provider-header-value", call.Header("Custom-Provider-Header"));
-        Assert.Equal("request-header-value", call.Header("Custom-Request-Header"));
-        Assert.Contains(
-            "ai-sdk/alibaba/" + AiSdkVersion.Version,
-            call.Header("User-Agent") ?? string.Empty,
-            StringComparison.Ordinal
-        );
-    }
-
     [Fact]
     [UpstreamTest(
         "packages/assemblyai/src/assemblyai-transcription-model.test.ts::doGenerate::should pass headers",

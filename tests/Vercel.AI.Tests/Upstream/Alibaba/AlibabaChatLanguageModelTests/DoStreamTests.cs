@@ -5,6 +5,7 @@
 using Vercel.AI.Alibaba;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
+using AlibabaProviderType = Vercel.AI.Alibaba.AlibabaProvider;
 
 namespace Vercel.AI.Tests.Upstream.Alibaba.AlibabaChatLanguageModelTests;
 
@@ -43,7 +44,7 @@ public sealed class DoStreamTests
             )
         );
         var model = (OpenAICompatibleLanguageModel)
-            AlibabaProvider
+            AlibabaProviderType
                 .Create(new OpenAICompatibleOptions { ApiKey = "secret" }, handler)
                 .LanguageModel("qwen-plus");
 
