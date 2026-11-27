@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Vercel.AI.GenerateText;
+using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
@@ -63,6 +64,136 @@ public sealed class BlackForestLabsVideoModel : IVideoModel, IVideoCaller
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
         _clock = clock ?? (() => DateTimeOffset.UtcNow);
+    }
+
+    /// <summary>
+    /// Serializes the model id and config for a workflow boundary. Maps to <c>[WORKFLOW_SERIALIZE]</c>.
+    /// The API key is not part of the serialized config. Pass it to <see cref="Deserialize"/>.
+    /// </summary>
+    public SerializedModelOptions Serialize()
+    {
+        var headers = new Dictionary<string, object?>();
+        foreach (var pair in _provider.Options.Headers)
+        {
+            if (!IsSensitiveHeader(pair.Key))
+            {
+                headers[pair.Key] = pair.Value;
+            }
+        }
+
+        var config = new Dictionary<string, object?>
+        {
+            ["provider"] = Provider,
+            ["baseURL"] = _provider.Options.BaseUrl,
+            ["headers"] = headers,
+        };
+        if (_provider.PollIntervalMillis is { } interval)
+        {
+            config["pollIntervalMillis"] = interval;
+        }
+
+        if (_provider.PollTimeoutMillis is { } timeout)
+        {
+            config["pollTimeoutMillis"] = timeout;
+        }
+
+        return ModelOptionsSerialization.SerializeModelOptions(ModelId, config);
+    }
+
+    /// <summary>Restores a model from <see cref="Serialize"/>. Maps to <c>[WORKFLOW_DESERIALIZE]</c>.</summary>
+    /// <param name="serialized">The serialized model id and config.</param>
+    /// <param name="apiKey">API key. Defaults to the <c>BFL_API_KEY</c> environment variable.</param>
+    /// <param name="handler">HTTP handler. Pass one from tests.</param>
+    public static BlackForestLabsVideoModel Deserialize(
+        SerializedModelOptions serialized,
+        string? apiKey = null,
+        HttpMessageHandler? handler = null
+    )
+    {
+        if (serialized is null)
+        {
+            throw new ArgumentNullException(nameof(serialized));
+        }
+
+        var options = new OpenAICompatibleOptions
+        {
+            ApiKey = apiKey is null ? null : Resolvable<string>.From(apiKey),
+        };
+        var baseUrl = ConfigString(serialized.Config, "baseURL");
+        if (!string.IsNullOrEmpty(baseUrl))
+        {
+            options.BaseUrl = baseUrl;
+        }
+
+        if (serialized.Config.TryGetValue("headers", out var headers))
+        {
+            if (headers is JsonElement { ValueKind: JsonValueKind.Object } json)
+            {
+                foreach (var property in json.EnumerateObject())
+                {
+                    if (property.Value.ValueKind == JsonValueKind.String)
+                    {
+                        options.Headers[property.Name] = property.Value.GetString()!;
+                    }
+                }
+            }
+            else if (headers is System.Collections.IDictionary map)
+            {
+                foreach (System.Collections.DictionaryEntry entry in map)
+                {
+                    if (entry.Value is string value)
+                    {
+                        options.Headers[(string)entry.Key] = value;
+                    }
+                }
+            }
+        }
+
+        var provider = BlackForestLabsProvider.Create(
+            options,
+            handler,
+            ConfigInt(serialized.Config, "pollIntervalMillis"),
+            ConfigInt(serialized.Config, "pollTimeoutMillis")
+        );
+        return new BlackForestLabsVideoModel(provider, serialized.ModelId);
+    }
+
+    private static string? ConfigString(IReadOnlyDictionary<string, object?> config, string key)
+    {
+        return config.TryGetValue(key, out var value)
+            ? value is JsonElement { ValueKind: JsonValueKind.String } element
+                ? element.GetString()
+                : value as string
+            : null;
+    }
+
+    private static int? ConfigInt(IReadOnlyDictionary<string, object?> config, string key)
+    {
+        if (!config.TryGetValue(key, out var value))
+        {
+            return null;
+        }
+
+        return value switch
+        {
+            JsonElement { ValueKind: JsonValueKind.Number } element => element.GetInt32(),
+            int number => number,
+            long number => checked((int)number),
+            _ => null,
+        };
+    }
+
+    private static bool IsSensitiveHeader(string name)
+    {
+        foreach (var marker in new[] { "authorization", "key", "token", "secret", "cookie" })
+        {
+            if (name.IndexOf(marker, StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <inheritdoc />
