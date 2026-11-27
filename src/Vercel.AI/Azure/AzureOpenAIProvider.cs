@@ -404,6 +404,18 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
     }
 
     /// <summary>
+    /// Embedding model. Azure OpenAI embeddings accept up to 300,000 input bytes in one call, as
+    /// <see cref="OpenAI.OpenAIEmbeddingModel"/> does. Maps to <c>embedding</c>.
+    /// </summary>
+    public override IEmbeddingModel EmbeddingModel(string deploymentId)
+    {
+        return new OpenAICompatibleEmbeddingModel(this, deploymentId)
+        {
+            MaxInputBytesPerCall = OpenAI.OpenAIEmbeddingModel.DefaultMaxInputBytesPerCall,
+        };
+    }
+
+    /// <summary>
     /// Image model. MAI-Image models use the MAI image API by default; other IDs use OpenAI. Override with
     /// <c>providerOptions.azure.api</c>. Maps to <c>image</c>.
     /// </summary>
@@ -536,6 +548,7 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
             SupportsEmbeddings = true,
             SupportsImages = false,
             DownloadHttpClient = downloadClient,
+            UserAgent = "ai-sdk-azure/" + Operations.AiSdkVersion.Version,
         };
         foreach (var pair in options.Headers)
         {
@@ -554,7 +567,9 @@ public sealed class AzureOpenAIProvider : OpenAICompatibleProvider
 
         // ResourceName is concatenated into the host. A value such as
         // user@internal:8080/# would send the request somewhere else.
-        var resource = options.ResourceName ?? "resource";
+        var resource = options.ResourceName
+            ?? Environment.GetEnvironmentVariable("AZURE_RESOURCE_NAME")
+            ?? "resource";
         if (!IsValidHostnamePart(resource))
         {
             throw new ArgumentException(

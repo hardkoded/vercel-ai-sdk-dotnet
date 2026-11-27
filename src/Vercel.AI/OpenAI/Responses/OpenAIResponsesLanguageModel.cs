@@ -775,6 +775,15 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
             include.Add("web_search_call.action.sources");
         }
 
+        // When a code interpreter tool is present, the outputs are included automatically.
+        if (
+            options.Tools?.Any(tool => tool.ProviderToolId == "openai.code_interpreter") == true
+            && !include.Contains("code_interpreter_call.outputs")
+        )
+        {
+            include.Add("code_interpreter_call.outputs");
+        }
+
         if (include.Count > 0)
         {
             var includeArray = new JsonArray();
@@ -1251,7 +1260,7 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                         content.Add(
                             new OpenAIText(
                                 textPart.Text,
-                                OpenAIResponsesOutput.Citations(annotations),
+                                OpenAIResponsesOutput.Citations(annotations, providerOptionsName),
                                 OpenAIResponsesOutput.TextMetadata(
                                     itemId,
                                     annotations,
@@ -1371,11 +1380,60 @@ public sealed class OpenAIResponsesLanguageModel : ILanguageModel
                     }
 
                     break;
+                case OpenAIResponsesApi.ImageGenerationCall imageGenerationCall:
+                    var imageGenerationName = toolNameMapping?.ToCustomToolName("image_generation")
+                        ?? "image_generation";
+                    content.Add(
+                        new GeneratedToolCall(imageGenerationCall.Id, imageGenerationName, "{}")
+                        {
+                            ProviderExecuted = true,
+                        }
+                    );
+                    content.Add(
+                        new GeneratedToolResult(
+                            imageGenerationCall.Id,
+                            imageGenerationName,
+                            OpenAIResponsesOutput.ImageGenerationResult(imageGenerationCall.Result)
+                        )
+                    );
+                    break;
+                case OpenAIResponsesApi.CodeInterpreterCall codeInterpreterCall:
+                    var codeInterpreterName = toolNameMapping?.ToCustomToolName("code_interpreter")
+                        ?? "code_interpreter";
+                    content.Add(
+                        new GeneratedToolCall(
+                            codeInterpreterCall.Id,
+                            codeInterpreterName,
+                            OpenAIResponsesOutput.CodeInterpreterInput(
+                                codeInterpreterCall.Code,
+                                codeInterpreterCall.ContainerId
+                            )
+                        )
+                        {
+                            ProviderExecuted = true,
+                        }
+                    );
+                    content.Add(
+                        new GeneratedToolResult(
+                            codeInterpreterCall.Id,
+                            codeInterpreterName,
+                            OpenAIResponsesOutput.CodeInterpreterResult(codeInterpreterCall.Outputs)
+                        )
+                    );
+                    break;
                 case OpenAIResponsesApi.FileSearchCall fileSearchCall:
+                    var fileSearchName = toolNameMapping?.ToCustomToolName("file_search")
+                        ?? "file_search";
+                    content.Add(
+                        new GeneratedToolCall(fileSearchCall.Id, fileSearchName, "{}")
+                        {
+                            ProviderExecuted = true,
+                        }
+                    );
                     content.Add(
                         new GeneratedToolResult(
                             fileSearchCall.Id,
-                            "file_search",
+                            fileSearchName,
                             OpenAIResponsesOutput.FileSearchResult(
                                 fileSearchCall.Queries,
                                 fileSearchCall.Results

@@ -10,14 +10,90 @@ using AzureProvider = Vercel.AI.Azure.AzureOpenAIProvider;
 
 namespace Vercel.AI.Tests.Upstream.Azure.AzureOpenAIProviderTests;
 
-/// <summary>
-/// Port of <c>azure-openai-provider.test.ts</c> &gt; <c>chat</c> &gt; <c>doGenerate</c>. The other tests of this
-/// describe are ported in <c>AzureOpenAIParityTests</c>.
-/// </summary>
+/// <summary>Port of <c>azure-openai-provider.test.ts</c> &gt; <c>chat</c> &gt; <c>doGenerate</c>.</summary>
 public sealed class ChatDoGenerateTests
 {
     private const string ChatResponse =
         "{\"choices\":[{\"message\":{\"content\":\"ok\"},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":1,\"total_tokens\":2}}";
+
+    [Fact]
+    [UpstreamTest(
+        "packages/azure/src/azure-openai-provider.test.ts::chat > doGenerate::should set the correct default api version",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_set_the_correct_default_api_version()
+    {
+        var handler = new UpstreamRecordingHandler(ChatResponse);
+        var provider = AzureProvider.Create(
+            new AzureOpenAIOptions { ApiKey = "test-api-key", ResourceName = "test-resource" },
+            handler
+        );
+
+        await provider
+            .ChatModel("test-deployment", null)
+            .DoGenerateAsync(Call(new Dictionary<string, JsonElement>()), CancellationToken.None);
+
+        Assert.Equal(
+            "https://test-resource.openai.azure.com/openai/v1/chat/completions?api-version=v1",
+            handler.Uri
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/azure/src/azure-openai-provider.test.ts::chat > doGenerate::should set the correct modified api version",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_set_the_correct_modified_api_version()
+    {
+        var handler = new UpstreamRecordingHandler(ChatResponse);
+        var provider = AzureProvider.Create(
+            new AzureOpenAIOptions
+            {
+                ApiKey = "test-api-key",
+                ResourceName = "test-resource",
+                ApiVersion = "2025-04-01-preview",
+            },
+            handler
+        );
+
+        await provider
+            .ChatModel("test-deployment", null)
+            .DoGenerateAsync(Call(new Dictionary<string, JsonElement>()), CancellationToken.None);
+
+        Assert.Contains("api-version=2025-04-01-preview", handler.Uri);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/azure/src/azure-openai-provider.test.ts::chat > doGenerate::should pass headers",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_pass_headers()
+    {
+        var handler = new UpstreamRecordingHandler(ChatResponse);
+        var options = new AzureOpenAIOptions
+        {
+            ApiKey = "test-api-key",
+            ResourceName = "test-resource",
+        };
+        options.Headers["Custom-Provider-Header"] = "provider-header-value";
+        var call = Call(new Dictionary<string, JsonElement>());
+        call.Headers = new Dictionary<string, string?>
+        {
+            ["Custom-Request-Header"] = "request-header-value",
+        };
+
+        await AzureProvider
+            .Create(options, handler)
+            .ChatModel("test-deployment", null)
+            .DoGenerateAsync(call, CancellationToken.None);
+
+        AzureResponsesToolSupport.AssertRequestHeaders(
+            handler.Headers,
+            AzureResponsesToolSupport.ProviderAndRequestHeaders
+        );
+    }
 
     [Fact]
     [UpstreamTest(

@@ -49,6 +49,8 @@ internal sealed class OpenAIResponsesStream
     private readonly Dictionary<int, OngoingFunctionCall> _ongoingFunctionCalls = new();
     private readonly Dictionary<int, OngoingCustomToolCall> _ongoingCustomToolCalls = new();
     private readonly Dictionary<int, OngoingApplyPatchCall> _ongoingApplyPatchCalls = new();
+    private readonly Dictionary<int, OngoingCodeInterpreterCall> _ongoingCodeInterpreterCalls =
+        new();
     private readonly bool _isShellProviderExecuted;
 
     private readonly ToolNameMapping? _toolNameMapping;
@@ -320,6 +322,51 @@ internal sealed class OpenAIResponsesStream
                 }
 
                 break;
+            case OpenAIResponsesApi.CodeInterpreterCallCodeDelta codeDelta:
+                if (
+                    _ongoingCodeInterpreterCalls.TryGetValue(
+                        (int)codeDelta.OutputIndex,
+                        out var ongoingCode
+                    )
+                )
+                {
+                    parts.Add(
+                        new ToolInputDeltaStreamPart(
+                            ongoingCode.ToolCallId,
+                            EscapeJsonDelta(codeDelta.Delta)
+                        )
+                    );
+                }
+
+                break;
+            case OpenAIResponsesApi.CodeInterpreterCallCodeDone codeDone:
+                if (
+                    _ongoingCodeInterpreterCalls.TryGetValue(
+                        (int)codeDone.OutputIndex,
+                        out var doneCode
+                    )
+                )
+                {
+                    parts.Add(new ToolInputDeltaStreamPart(doneCode.ToolCallId, "\"}"));
+                    parts.Add(new ToolInputEndStreamPart(doneCode.ToolCallId));
+
+                    // The tool call is sent right after the input end.
+                    parts.Add(
+                        new ToolCallStreamPart(
+                            doneCode.ToolCallId,
+                            ToCustomToolName("code_interpreter"),
+                            OpenAIResponsesOutput.CodeInterpreterInput(
+                                codeDone.Code,
+                                doneCode.ContainerId
+                            )
+                        )
+                        {
+                            ProviderExecuted = true,
+                        }
+                    );
+                }
+
+                break;
             case OpenAIResponsesApi.ImageGenerationCallPartialImage partialImage:
                 parts.Add(
                     new ToolResultStreamPart(
@@ -430,6 +477,45 @@ internal sealed class OpenAIResponsesStream
                 parts.Add(new ToolInputEndStreamPart(webSearch.Id));
                 parts.Add(
                     new ToolCallStreamPart(webSearch.Id, WebSearchName(), "{}")
+                    {
+                        ProviderExecuted = true,
+                    }
+                );
+                break;
+            case OpenAIResponsesApi.AddedCodeInterpreterCall codeInterpreter:
+                _ongoingCodeInterpreterCalls[index] = new OngoingCodeInterpreterCall(
+                    codeInterpreter.Id,
+                    codeInterpreter.ContainerId
+                );
+                parts.Add(
+                    new ToolInputStartStreamPart(
+                        codeInterpreter.Id,
+                        ToCustomToolName("code_interpreter"),
+                        providerExecuted: true
+                    )
+                );
+                parts.Add(
+                    new ToolInputDeltaStreamPart(
+                        codeInterpreter.Id,
+                        "{\"containerId\":\"" + codeInterpreter.ContainerId + "\",\"code\":\""
+                    )
+                );
+                break;
+            case OpenAIResponsesApi.AddedFileSearchCall fileSearchCall:
+                parts.Add(
+                    new ToolCallStreamPart(fileSearchCall.Id, ToCustomToolName("file_search"), "{}")
+                    {
+                        ProviderExecuted = true,
+                    }
+                );
+                break;
+            case OpenAIResponsesApi.AddedImageGenerationCall imageGenerationCall:
+                parts.Add(
+                    new ToolCallStreamPart(
+                        imageGenerationCall.Id,
+                        ToCustomToolName("image_generation"),
+                        "{}"
+                    )
                     {
                         ProviderExecuted = true,
                     }
@@ -860,6 +946,13 @@ internal sealed class OpenAIResponsesStream
         public List<string> BufferedInputDeltas { get; } = new();
     }
 
+    private sealed class OngoingCodeInterpreterCall(string toolCallId, string containerId)
+    {
+        public string ToolCallId { get; } = toolCallId;
+
+        public string ContainerId { get; } = containerId;
+    }
+
     private sealed class OngoingApplyPatchCall(string toolCallId)
     {
         public string ToolCallId { get; } = toolCallId;
@@ -1020,7 +1113,7 @@ internal sealed class OpenAIResponsesStream
                 parts.Add(
                     new TextEndStreamPart(
                         id,
-                        OpenAIResponsesOutput.Citations(_annotations),
+                        OpenAIResponsesOutput.Citations(_annotations, _providerOptionsName),
                         OpenAIResponsesOutput.TextMetadata(
                             id,
                             _annotations,
@@ -1150,11 +1243,34 @@ internal sealed class OpenAIResponsesStream
 
                 _activeOutputItemIds.Remove(outputIndex);
                 break;
+            case OpenAIResponsesApi.DoneCodeInterpreterCall codeInterpreter:
+                _ongoingCodeInterpreterCalls.Remove(outputIndex);
+                parts.Add(
+                    new ToolResultStreamPart(
+                        codeInterpreter.Id,
+                        ToCustomToolName("code_interpreter"),
+                        JsonSerializer.Deserialize<JsonElement>(
+                            OpenAIResponsesOutput.CodeInterpreterResult(codeInterpreter.Outputs)
+                        )
+                    )
+                );
+                break;
+            case OpenAIResponsesApi.ImageGenerationCall imageGeneration:
+                parts.Add(
+                    new ToolResultStreamPart(
+                        imageGeneration.Id,
+                        ToCustomToolName("image_generation"),
+                        JsonSerializer.Deserialize<JsonElement>(
+                            OpenAIResponsesOutput.ImageGenerationResult(imageGeneration.Result)
+                        )
+                    )
+                );
+                break;
             case OpenAIResponsesApi.DoneFileSearchCall fileSearch:
                 parts.Add(
                     new ToolResultStreamPart(
                         fileSearch.Id,
-                        "file_search",
+                        ToCustomToolName("file_search"),
                         JsonSerializer.Deserialize<JsonElement>(
                             OpenAIResponsesOutput.FileSearchResult(
                                 fileSearch.Queries,
