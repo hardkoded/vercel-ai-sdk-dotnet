@@ -40,21 +40,23 @@ internal static class AnthropicCitations
             );
         }
 
-        var index =
+        var documentNumber =
             citation.TryGetProperty("document_index", out var documentIndex)
             && documentIndex.ValueKind == JsonValueKind.Number
                 ? documentIndex.GetInt32()
                 : 0;
+        var index = documentNumber.ToString(CultureInfo.InvariantCulture);
         var document =
-            documents != null && index >= 0 && index < documents.Count ? documents[index] : null;
-        var indexText = index.ToString(CultureInfo.InvariantCulture);
+            documents != null && documentNumber >= 0 && documentNumber < documents.Count
+                ? documents[documentNumber]
+                : null;
         return new Citation(
             new GeneratedDocumentSource(
-                AnthropicJson.String(citation, "file_id") ?? indexText,
+                AnthropicJson.String(citation, "file_id") ?? index,
                 document?.MediaType ?? "text/plain",
                 AnthropicJson.String(citation, "document_title")
                     ?? document?.Title
-                    ?? "Document " + indexText,
+                    ?? "Document " + index,
                 document?.Filename,
                 metadata
             ),

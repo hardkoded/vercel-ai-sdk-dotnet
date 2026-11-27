@@ -445,9 +445,12 @@ public static class AnthropicMessagesRequest
                     display = mapped.Display;
                 }
 
+                var effectiveThinkingType = HasThinking(anthropic)
+                    ? ThinkingType(anthropic)
+                    : thinkingType;
                 if (
                     mapped.Effort != null
-                    && thinkingType != "disabled"
+                    && effectiveThinkingType != "disabled"
                     && String(anthropic, "thinkingType") != "disabled"
                 )
                 {

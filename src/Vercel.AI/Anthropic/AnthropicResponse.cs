@@ -59,6 +59,10 @@ public sealed class AnthropicParseContext
 
     /// <summary>Id factory for citation sources. Defaults to <c>source-n</c>.</summary>
     public Func<string>? GenerateId { get; set; }
+
+    /// <summary>The documents of the prompt that have citations enabled. A citation refers to one by its document index.</summary>
+    internal IReadOnlyList<CitationDocument> CitationDocuments { get; init; } =
+        Array.Empty<CitationDocument>();
 }
 
 /// <summary>Maps an Anthropic Messages JSON body onto a generate result.</summary>
@@ -68,11 +72,12 @@ public static class AnthropicResponse
     public static LanguageModelGenerateResult Parse(
         string json,
         AnthropicParseContext context,
-        IReadOnlyDictionary<string, string>? headers = null
+        IReadOnlyDictionary<string, string>? headers = null,
+        LanguageModelStreamRequest? request = null
     )
     {
         using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(json) ? "{}" : json);
-        return Parse(document.RootElement, context, json, headers);
+        return Parse(document.RootElement, context, json, headers, request);
     }
 
     /// <summary>Parses a Messages response object.</summary>
@@ -80,7 +85,8 @@ public static class AnthropicResponse
         JsonElement root,
         AnthropicParseContext context,
         string? raw = null,
-        IReadOnlyDictionary<string, string>? headers = null
+        IReadOnlyDictionary<string, string>? headers = null,
+        LanguageModelStreamRequest? request = null
     )
     {
         var content = new List<GeneratedContent>();
@@ -134,7 +140,9 @@ public static class AnthropicResponse
             raw,
             root.TryGetProperty("model", out var model) ? model.GetString() : null,
             null,
-            headers
+            headers,
+            null,
+            request
         );
     }
 
@@ -221,7 +229,7 @@ public static class AnthropicResponse
             case "text":
                 if (includeText)
                 {
-                    MapText(part, content, generateId, hasWebSearchResults);
+                    MapText(part, content, context, generateId, hasWebSearchResults);
                 }
 
                 break;
@@ -324,6 +332,7 @@ public static class AnthropicResponse
     private static void MapText(
         JsonElement part,
         List<GeneratedContent> content,
+        AnthropicParseContext context,
         Func<string> generateId,
         bool hasWebSearchResults
     )
@@ -344,7 +353,7 @@ public static class AnthropicResponse
                 new AnthropicText(
                     text,
                     AnthropicCitations.TextMetadata(citations),
-                    AnthropicCitations.MapAll(citations)
+                    AnthropicCitations.MapAll(citations, context.CitationDocuments)
                 )
             );
         }
@@ -364,7 +373,7 @@ public static class AnthropicResponse
                 continue;
             }
 
-            var source = CitationSource(citation, generateId);
+            var source = CitationSource(citation, context.CitationDocuments, generateId);
             if (source != null)
             {
                 content.Add(source);
@@ -372,7 +381,11 @@ public static class AnthropicResponse
         }
     }
 
-    private static GeneratedSource? CitationSource(JsonElement citation, Func<string> generateId)
+    private static GeneratedContent? CitationSource(
+        JsonElement citation,
+        IReadOnlyList<CitationDocument> documents,
+        Func<string> generateId
+    )
     {
         var type = AnthropicJson.String(citation, "type");
         if (type == "web_search_result_location")
@@ -393,7 +406,52 @@ public static class AnthropicResponse
             );
         }
 
-        return null;
+        if (type != "page_location" && type != "char_location")
+        {
+            return null;
+        }
+
+        var documentIndex =
+            citation.TryGetProperty("document_index", out var indexValue)
+            && indexValue.ValueKind == JsonValueKind.Number
+                ? indexValue.GetInt32()
+                : -1;
+        if (documentIndex < 0 || documentIndex >= documents.Count)
+        {
+            return null;
+        }
+
+        var document = documents[documentIndex];
+        var documentMetadata = new JsonObject
+        {
+            ["citedText"] = AnthropicJson.String(citation, "cited_text"),
+        };
+        if (type == "page_location")
+        {
+            documentMetadata["startPageNumber"] = Number(citation, "start_page_number");
+            documentMetadata["endPageNumber"] = Number(citation, "end_page_number");
+        }
+        else
+        {
+            documentMetadata["startCharIndex"] = Number(citation, "start_char_index");
+            documentMetadata["endCharIndex"] = Number(citation, "end_char_index");
+        }
+
+        return new GeneratedDocumentSource(
+            generateId(),
+            document.MediaType,
+            AnthropicJson.String(citation, "document_title") ?? document.Title,
+            document.Filename,
+            ObjectElement(new JsonObject { ["anthropic"] = documentMetadata })
+        );
+    }
+
+    private static JsonNode? Number(JsonElement element, string name)
+    {
+        return
+            element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number
+            ? AnthropicJson.Node(value)
+            : null;
     }
 
     private static void MapToolUse(
@@ -411,7 +469,9 @@ public static class AnthropicResponse
             jsonTool = true;
             content.Add(
                 new GeneratedText(
-                    input.ValueKind == JsonValueKind.Undefined ? "null" : input.GetRawText()
+                    input.ValueKind == JsonValueKind.Undefined
+                        ? "null"
+                        : AnthropicJson.Compact(input)
                 )
             );
             return;
@@ -456,7 +516,7 @@ public static class AnthropicResponse
             new GeneratedToolCall(
                 id,
                 CustomName(context, name),
-                input.ValueKind == JsonValueKind.Undefined ? "{}" : input.GetRawText(),
+                input.ValueKind == JsonValueKind.Undefined ? "{}" : AnthropicJson.Compact(input),
                 metadata
             )
         );
@@ -544,7 +604,7 @@ public static class AnthropicResponse
             }
         );
         var input = part.TryGetProperty("input", out var inputElement)
-            ? inputElement.GetRawText()
+            ? AnthropicJson.Compact(inputElement)
             : "{}";
         content.Add(
             new GeneratedToolCall(id, name, input, metadata)
@@ -813,16 +873,23 @@ public static class AnthropicResponse
         }
 
         if (
-            root.TryGetProperty("container", out var container)
-            && container.ValueKind == JsonValueKind.Object
+            root.TryGetProperty("stop_details", out var stopDetails)
+            && stopDetails.ValueKind == JsonValueKind.Object
         )
         {
-            var mapped = new JsonObject
-            {
-                ["expiresAt"] = AnthropicJson.String(container, "expires_at"),
-                ["id"] = AnthropicJson.String(container, "id"),
-            };
-            anthropic["container"] = mapped;
+            var details = new JsonObject { ["type"] = AnthropicJson.String(stopDetails, "type") };
+            CopyString(stopDetails, "category", details, "category");
+            CopyString(stopDetails, "explanation", details, "explanation");
+            CopyString(stopDetails, "recommended_model", details, "recommendedModel");
+            anthropic["stopDetails"] = details;
+        }
+
+        if (
+            root.TryGetProperty("input_transformations", out var transformations)
+            && transformations.ValueKind != JsonValueKind.Null
+        )
+        {
+            anthropic["inputTransformations"] = AnthropicJson.Node(transformations);
         }
 
         if (
@@ -833,6 +900,23 @@ public static class AnthropicResponse
             anthropic["safeguardResults"] = AnthropicJson.Node(safeguardResults);
         }
 
+        anthropic["iterations"] =
+            usage.ValueKind == JsonValueKind.Object
+            && usage.TryGetProperty("iterations", out var iterations)
+            && iterations.ValueKind == JsonValueKind.Array
+                ? MapIterations(iterations)
+                : null;
+        anthropic["container"] =
+            root.TryGetProperty("container", out var container)
+            && container.ValueKind == JsonValueKind.Object
+                ? MapContainer(container)
+                : null;
+        anthropic["contextManagement"] =
+            root.TryGetProperty("context_management", out var contextManagement)
+            && contextManagement.ValueKind == JsonValueKind.Object
+                ? MapContextManagement(contextManagement)
+                : null;
+
         var metadata = new JsonObject { ["anthropic"] = anthropic };
         if (context.UsedCustomProviderKey && context.ProviderOptionsName != "anthropic")
         {
@@ -840,6 +924,150 @@ public static class AnthropicResponse
         }
 
         return ObjectElement(metadata);
+    }
+
+    private static JsonArray MapIterations(JsonElement iterations)
+    {
+        var mapped = new JsonArray();
+        foreach (var iteration in iterations.EnumerateArray())
+        {
+            var item = new JsonObject { ["type"] = AnthropicJson.String(iteration, "type") };
+            CopyString(iteration, "model", item, "model");
+            item["inputTokens"] = iteration.TryGetProperty("input_tokens", out var input)
+                ? AnthropicJson.Node(input)
+                : null;
+            item["outputTokens"] = iteration.TryGetProperty("output_tokens", out var output)
+                ? AnthropicJson.Node(output)
+                : null;
+            CopyTruthyNumber(
+                iteration,
+                "cache_creation_input_tokens",
+                item,
+                "cacheCreationInputTokens"
+            );
+            CopyTruthyNumber(iteration, "cache_read_input_tokens", item, "cacheReadInputTokens");
+            mapped.Add(item);
+        }
+
+        return mapped;
+    }
+
+    private static JsonObject MapContainer(JsonElement container)
+    {
+        JsonNode? skills = null;
+        if (
+            container.TryGetProperty("skills", out var skillArray)
+            && skillArray.ValueKind == JsonValueKind.Array
+        )
+        {
+            var mapped = new JsonArray();
+            foreach (var skill in skillArray.EnumerateArray())
+            {
+                mapped.Add(
+                    new JsonObject
+                    {
+                        ["type"] = AnthropicJson.String(skill, "type"),
+                        ["skillId"] = AnthropicJson.String(skill, "skill_id"),
+                        ["version"] = AnthropicJson.String(skill, "version"),
+                    }
+                );
+            }
+
+            skills = mapped;
+        }
+
+        return new JsonObject
+        {
+            ["expiresAt"] = AnthropicJson.String(container, "expires_at"),
+            ["id"] = AnthropicJson.String(container, "id"),
+            ["skills"] = skills,
+        };
+    }
+
+    private static JsonObject MapContextManagement(JsonElement contextManagement)
+    {
+        var edits = new JsonArray();
+        if (
+            contextManagement.TryGetProperty("applied_edits", out var applied)
+            && applied.ValueKind == JsonValueKind.Array
+        )
+        {
+            foreach (var edit in applied.EnumerateArray())
+            {
+                var type = AnthropicJson.String(edit, "type");
+                var mapped = new JsonObject { ["type"] = type };
+                switch (type)
+                {
+                    case "clear_tool_uses_20250919":
+                        mapped["clearedToolUses"] = edit.TryGetProperty(
+                            "cleared_tool_uses",
+                            out var uses
+                        )
+                            ? AnthropicJson.Node(uses)
+                            : null;
+                        mapped["clearedInputTokens"] = edit.TryGetProperty(
+                            "cleared_input_tokens",
+                            out var toolTokens
+                        )
+                            ? AnthropicJson.Node(toolTokens)
+                            : null;
+                        break;
+                    case "clear_thinking_20251015":
+                        mapped["clearedThinkingTurns"] = edit.TryGetProperty(
+                            "cleared_thinking_turns",
+                            out var turns
+                        )
+                            ? AnthropicJson.Node(turns)
+                            : null;
+                        mapped["clearedInputTokens"] = edit.TryGetProperty(
+                            "cleared_input_tokens",
+                            out var thinkingTokens
+                        )
+                            ? AnthropicJson.Node(thinkingTokens)
+                            : null;
+                        break;
+                    case "compact_20260112":
+                        break;
+                    default:
+                        // An edit of an unknown type is left out.
+                        continue;
+                }
+
+                edits.Add(mapped);
+            }
+        }
+
+        return new JsonObject { ["appliedEdits"] = edits };
+    }
+
+    private static void CopyString(
+        JsonElement source,
+        string name,
+        JsonObject target,
+        string targetName
+    )
+    {
+        if (AnthropicJson.String(source, name) is { } value)
+        {
+            target[targetName] = value;
+        }
+    }
+
+    private static void CopyTruthyNumber(
+        JsonElement source,
+        string name,
+        JsonObject target,
+        string targetName
+    )
+    {
+        if (
+            source.TryGetProperty(name, out var value)
+            && value.ValueKind == JsonValueKind.Number
+            && value.GetDouble() != 0
+        )
+        {
+            target[targetName] = AnthropicJson.Node(value);
+        }
     }
 
     private static JsonElement ObjectElement(JsonNode node)

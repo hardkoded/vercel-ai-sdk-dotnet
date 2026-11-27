@@ -878,6 +878,11 @@ public sealed partial class AnthropicUpstreamTests
         Coverage = UpstreamCoverage.Covered,
         Commit = "61a315e3331c0a147294fc1a391feba2631b3fa2"
     )]
+    [UpstreamTest(
+        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate > top-level reasoning (newer models with adaptive thinking)::should map reasoning \"xhigh\" to adaptive thinking with effort \"max\"",
+        Coverage = UpstreamCoverage.Covered,
+        Note = "Upstream renamed this test to effort \"high\" (commit 61a315e), so the catalog title is the former one. The test checks the current behavior."
+    )]
     public async Task Case_0121()
     {
         await AnthropicCases

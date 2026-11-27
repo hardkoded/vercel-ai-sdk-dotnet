@@ -674,6 +674,49 @@ public class AnthropicLanguageModel : ILanguageModel
             );
     }
 
+    // Maps extractCitationDocuments.
+    private static IReadOnlyList<CitationDocument> ExtractCitationDocuments(
+        IReadOnlyList<ModelMessage> prompt
+    )
+    {
+        var documents = new List<CitationDocument>();
+        foreach (var message in prompt)
+        {
+            if (message is not UserModelMessage user)
+            {
+                continue;
+            }
+
+            foreach (var part in user.Content)
+            {
+                if (
+                    part is not FileContentPart file
+                    || (file.MediaType != "application/pdf" && file.MediaType != "text/plain")
+                    || file.ProviderOptions == null
+                    || !file.ProviderOptions.TryGetValue("anthropic", out var anthropic)
+                    || anthropic.ValueKind != JsonValueKind.Object
+                    || !anthropic.TryGetProperty("citations", out var citations)
+                    || citations.ValueKind != JsonValueKind.Object
+                    || !citations.TryGetProperty("enabled", out var enabled)
+                    || enabled.ValueKind != JsonValueKind.True
+                )
+                {
+                    continue;
+                }
+
+                documents.Add(
+                    new CitationDocument(
+                        file.FileName ?? "Untitled Document",
+                        file.FileName,
+                        file.MediaType
+                    )
+                );
+            }
+        }
+
+        return documents;
+    }
+
     /// <inheritdoc />
     public virtual async Task<LanguageModelGenerateResult> DoGenerateAsync(
         LanguageModelCallOptions options,
@@ -704,13 +747,19 @@ public class AnthropicLanguageModel : ILanguageModel
             MarkCodeExecutionDynamic = prepared.MarkCodeExecutionDynamic,
             PreparedTools = prepared.PreparedTools,
             ComputerToolsetName = prepared.ComputerToolsetName,
+            CitationDocuments = ExtractCitationDocuments(options.Prompt),
         };
         foreach (var pair in prepared.ToolNames)
         {
             context.ToolNames[pair.Key] = pair.Value;
         }
 
-        return AnthropicResponse.Parse(response.Body, context, response.Headers);
+        return AnthropicResponse.Parse(
+            response.Body,
+            context,
+            response.Headers,
+            LanguageModelStreamRequest.FromJson(body)
+        );
     }
 
     /// <inheritdoc />

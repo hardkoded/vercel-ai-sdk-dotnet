@@ -181,9 +181,24 @@ internal static class AnthropicJson
         return node.ToJsonString();
     }
 
+    // Maps JSON.stringify: no whitespace, and non-ASCII text is not escaped.
     public static string Compact(JsonElement element)
     {
-        return element.GetRawText();
+        using var stream = new System.IO.MemoryStream();
+        using (
+            var writer = new Utf8JsonWriter(
+                stream,
+                new JsonWriterOptions
+                {
+                    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                }
+            )
+        )
+        {
+            element.WriteTo(writer);
+        }
+
+        return System.Text.Encoding.UTF8.GetString(stream.ToArray());
     }
 
     public static bool LooksLikeUrl(string value)
