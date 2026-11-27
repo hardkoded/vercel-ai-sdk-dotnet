@@ -181,6 +181,12 @@ public sealed class GatewayProvider
         };
     }
 
+    /// <summary>Alias of <see cref="TranscriptionModel"/>. Maps to <c>transcription</c>. Returns the concrete model.</summary>
+    public GatewayTranscriptionModel Transcription(string modelId)
+    {
+        return new GatewayTranscriptionModel(this, modelId);
+    }
+
     /// <summary>
     /// Returns a streaming transcription model. Maps to <c>experimental_transcription(modelId)</c>.
     /// </summary>
@@ -479,15 +485,20 @@ public sealed class GatewayProvider
         CancellationToken cancellationToken
     )
     {
-        var apiKey = Options.ApiKey is null
+        var resolvedApiKey = Options.ApiKey is null
             ? null
             : await Options.ApiKey.ResolveAsync(cancellationToken).ConfigureAwait(false);
-        if (string.IsNullOrWhiteSpace(apiKey))
+        if (Options.ApiKey is { IsDynamic: true } && string.IsNullOrWhiteSpace(resolvedApiKey))
         {
-            apiKey = Environment.GetEnvironmentVariable(ApiKeyEnvironmentVariable);
+            throw new AiSdkException("AI Gateway API key must be a non-empty string.");
         }
 
-        if (!string.IsNullOrWhiteSpace(apiKey))
+        // Maps to loadOptionalSetting: an explicit string wins even when it is empty, otherwise the environment is read.
+        var apiKey = resolvedApiKey is not null
+            ? resolvedApiKey
+            : Environment.GetEnvironmentVariable(ApiKeyEnvironmentVariable);
+
+        if (!string.IsNullOrEmpty(apiKey))
         {
             return (apiKey!, "api-key");
         }
