@@ -2354,6 +2354,11 @@ public static class AnthropicPrompt
                             ["toolName"] = call.ToolCall.ToolName,
                             ["input"] = ToolInput(call.ToolCall.ArgumentsJson),
                         },
+                        AssistantCustomPart custom => new JsonObject
+                        {
+                            ["type"] = "custom",
+                            ["kind"] = custom.Kind,
+                        },
                         _ => null,
                     };
                     if (node != null)

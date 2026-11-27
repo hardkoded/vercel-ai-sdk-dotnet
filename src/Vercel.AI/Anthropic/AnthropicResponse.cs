@@ -340,8 +340,33 @@ public static class AnthropicResponse
                 MapAdvisor(part, content, context);
                 break;
             case "fallback":
+                MapFallback(part, content);
                 break;
         }
+    }
+
+    private static void MapFallback(JsonElement part, List<GeneratedContent> content)
+    {
+        content.Add(
+            new AnthropicCustomContent(
+                "anthropic.fallback",
+                ObjectElement(
+                    new JsonObject
+                    {
+                        ["anthropic"] = new JsonObject
+                        {
+                            ["type"] = "fallback",
+                            ["from"] = part.TryGetProperty("from", out var from)
+                                ? AnthropicJson.Node(from)
+                                : null,
+                            ["to"] = part.TryGetProperty("to", out var to)
+                                ? AnthropicJson.Node(to)
+                                : null,
+                        },
+                    }
+                )
+            )
+        );
     }
 
     private static void MapText(
@@ -686,6 +711,7 @@ public static class AnthropicResponse
                     ["pageAge"] =
                         result.TryGetProperty("page_age", out var age)
                         && age.ValueKind != JsonValueKind.Undefined
+                        && age.ValueKind != JsonValueKind.Null
                             ? AnthropicJson.Node(age)
                             : null,
                     ["encryptedContent"] = AnthropicJson.String(result, "encrypted_content"),

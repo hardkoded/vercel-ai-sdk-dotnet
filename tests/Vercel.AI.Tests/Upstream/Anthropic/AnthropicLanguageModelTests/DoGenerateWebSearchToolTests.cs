@@ -7,7 +7,7 @@ using static Vercel.AI.Tests.AnthropicLanguageModelTests.AnthropicLanguageModelT
 namespace Vercel.AI.Tests.AnthropicLanguageModelTests;
 
 /// <summary>Port of <c>anthropic-language-model.test.ts</c> &gt; <c>AnthropicLanguageModel &gt; doGenerate &gt; web search tool</c>.</summary>
-public sealed class DoGenerateWebSearchToolTests
+public sealed partial class DoGenerateWebSearchToolTests
 {
     [Fact]
     [UpstreamTest(

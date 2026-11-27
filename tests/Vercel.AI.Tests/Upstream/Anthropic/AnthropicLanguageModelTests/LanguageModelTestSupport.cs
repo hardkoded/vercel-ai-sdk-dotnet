@@ -34,6 +34,24 @@ internal static class LanguageModelTestSupport
         return handler;
     }
 
+    /// <summary>
+    /// Reads an upstream <c>toMatchSnapshot()</c> value from <c>__snapshots__/anthropic-language-model.test.ts.snap</c>,
+    /// converted to JSON. Properties that are <c>undefined</c> upstream are left out.
+    /// </summary>
+    public static JsonNode SnapshotFile(string name)
+    {
+        return JsonNode.Parse(
+            File.ReadAllText(
+                Path.Combine(
+                    AppContext.BaseDirectory,
+                    "Fixtures",
+                    "anthropic-language-model-snapshots",
+                    name + ".json"
+                )
+            )
+        )!;
+    }
+
     /// <summary>Maps <c>providerOptions: { anthropic: ... }</c>.</summary>
     public static IReadOnlyDictionary<string, JsonElement> Anthropic(string json)
     {
