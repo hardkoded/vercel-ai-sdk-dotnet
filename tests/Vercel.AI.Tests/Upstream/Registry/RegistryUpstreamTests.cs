@@ -647,6 +647,7 @@ public sealed class RegistryUpstreamTests
         Assert.Equal("override-model-1", registry.ImageModel("provider1:model-1").ModelId);
         Assert.Equal("override-model-2", registry.ImageModel("provider1:model-2").ModelId);
         Assert.Equal("override-model-3", registry.ImageModel("provider2:model-3").ModelId);
+        Assert.Equal(3, middleware.Models.Count);
         Assert.Equal(new[] { models[0], models[1], models[2] }, middleware.Models);
     }
 

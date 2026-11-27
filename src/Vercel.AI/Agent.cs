@@ -1167,6 +1167,11 @@ public sealed class CustomProvider
     /// <summary>Registers a language model under <paramref name="modelId"/>.</summary>
     public CustomProvider AddLanguageModel(string modelId, ILanguageModel model)
     {
+        if (model is null)
+        {
+            throw new ArgumentNullException(nameof(model));
+        }
+
         return Add(_language, modelId, () => model);
     }
 
@@ -1184,36 +1189,66 @@ public sealed class CustomProvider
     /// <summary>Registers an embedding model under <paramref name="modelId"/>.</summary>
     public CustomProvider AddEmbeddingModel(string modelId, IEmbeddingModel model)
     {
+        if (model is null)
+        {
+            throw new ArgumentNullException(nameof(model));
+        }
+
         return Add(_embedding, modelId, () => model);
     }
 
     /// <summary>Registers an image model under <paramref name="modelId"/>.</summary>
     public CustomProvider AddImageModel(string modelId, IImageModel model)
     {
+        if (model is null)
+        {
+            throw new ArgumentNullException(nameof(model));
+        }
+
         return Add(_image, modelId, () => model);
     }
 
     /// <summary>Registers a transcription model under <paramref name="modelId"/>.</summary>
     public CustomProvider AddTranscriptionModel(string modelId, ITranscriptionModel model)
     {
+        if (model is null)
+        {
+            throw new ArgumentNullException(nameof(model));
+        }
+
         return Add(_transcription, modelId, () => model);
     }
 
     /// <summary>Registers a speech model under <paramref name="modelId"/>.</summary>
     public CustomProvider AddSpeechModel(string modelId, ISpeechModel model)
     {
+        if (model is null)
+        {
+            throw new ArgumentNullException(nameof(model));
+        }
+
         return Add(_speech, modelId, () => model);
     }
 
     /// <summary>Registers a reranking model under <paramref name="modelId"/>.</summary>
     public CustomProvider AddRerankingModel(string modelId, IRerankingModel model)
     {
+        if (model is null)
+        {
+            throw new ArgumentNullException(nameof(model));
+        }
+
         return Add(_reranking, modelId, () => model);
     }
 
     /// <summary>Registers a video model under <paramref name="modelId"/>.</summary>
     public CustomProvider AddVideoModel(string modelId, IVideoModel model)
     {
+        if (model is null)
+        {
+            throw new ArgumentNullException(nameof(model));
+        }
+
         return Add(_video, modelId, () => model);
     }
 
@@ -1234,7 +1269,7 @@ public sealed class CustomProvider
     }
 
     /// <summary>
-    /// Registers a string alias for a embedding model. The id is resolved through
+    /// Registers a string alias for an embedding model. The id is resolved through
     /// <see cref="Operations.DecisionModels.DefaultProvider"/>, or Gateway when none is set, when <see cref="EmbeddingModel"/> is called.
     /// </summary>
     public CustomProvider AddEmbeddingModel(string modelId, string providerModelId)
@@ -1250,7 +1285,7 @@ public sealed class CustomProvider
     }
 
     /// <summary>
-    /// Registers a string alias for a image model. The id is resolved through
+    /// Registers a string alias for an image model. The id is resolved through
     /// <see cref="Operations.DecisionModels.DefaultProvider"/>, or Gateway when none is set, when <see cref="ImageModel"/> is called.
     /// </summary>
     public CustomProvider AddImageModel(string modelId, string providerModelId)
