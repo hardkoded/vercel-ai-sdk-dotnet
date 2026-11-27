@@ -8,6 +8,7 @@ using Vercel.AI.Gateway;
 namespace Vercel.AI.Tests.Upstream.Gateway.GatewayProviderTests;
 
 /// <summary>Port of <c>gateway-provider.test.ts</c> &gt; <c>GatewayProvider &gt; getCredits method</c>.</summary>
+[Collection("GatewayAuthEnvironment")]
 public sealed class GatewayProviderGetCreditsMethodTests
 {
     private const string Prefix =

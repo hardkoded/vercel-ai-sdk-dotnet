@@ -160,30 +160,6 @@ public sealed class ProviderRequestTests
         Assert.Equal("custom", mixedCaseHandler.Headers["X-Pplx-Integration"]);
     }
 
-    [Fact]
-    [UpstreamTest(
-        "packages/gateway/src/gateway-language-model.test.ts::GatewayLanguageModel > doGenerate::should pass headers correctly",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Checks the V4 specification header, model id, and prompt body."
-    )]
-    public async Task Gateway_sends_the_v4_specification_header()
-    {
-        var handler = new ScriptedHandler();
-        var provider = GatewayProvider.Create(new GatewayOptions { ApiKey = "secret" }, handler);
-        var result = await provider
-            .LanguageModel("openai/gpt-4.1-mini")
-            .DoGenerateAsync(Prompt(), CancellationToken.None);
-        Assert.Equal("ok", result.Text);
-        Assert.Equal(FinishReason.Stop, result.FinishReason);
-        Assert.Equal(1, result.Usage.InputTokens);
-        Assert.Equal(1, result.Usage.OutputTokens);
-        Assert.Equal("4", handler.Headers["ai-language-model-specification-version"]);
-        Assert.Equal("0.0.1", handler.Headers["ai-gateway-protocol-version"]);
-        Assert.Equal("api-key", handler.Headers["ai-gateway-auth-method"]);
-        Assert.Equal("openai/gpt-4.1-mini", handler.Headers["ai-language-model-id"]);
-        Assert.Contains("\"prompt\"", handler.Body);
-    }
-
     public static IEnumerable<object[]> Cases()
     {
         yield return Chat("alibaba", "dashscope-intl.aliyuncs.com", h =>

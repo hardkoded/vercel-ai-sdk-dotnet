@@ -172,6 +172,7 @@ public static class V4Json
             FinishReasons.Parse(raw),
             usage,
             raw,
+            ReadWarnings(root),
             responseId: id
         );
     }
@@ -364,6 +365,97 @@ public static class V4Json
         };
     }
 
+    private static JsonObject? UserPart(UserContentPart part)
+    {
+        if (part is TextContentPart text)
+        {
+            return new JsonObject { ["type"] = "text", ["text"] = text.Text };
+        }
+
+        if (part is FileContentPart file)
+        {
+            var filePart = new JsonObject
+            {
+                ["type"] = "file",
+                ["mediaType"] = file.MediaType,
+                ["data"] = FileData(file),
+            };
+            if (file.FileName is { } fileName)
+            {
+                filePart["filename"] = fileName;
+            }
+
+            if (file.ProviderOptions is { Count: > 0 } fileOptions)
+            {
+                var options = new JsonObject();
+                foreach (var pair in fileOptions)
+                {
+                    options[pair.Key] = JsonNode.Parse(pair.Value.GetRawText());
+                }
+
+                filePart["providerOptions"] = options;
+            }
+
+            return filePart;
+        }
+
+        return null;
+    }
+
+    // Assistant files keep their place among the other parts, with inline bytes as base64.
+    private static JsonArray AssistantParts(AssistantModelMessage assistant)
+    {
+        var parts = new JsonArray();
+        foreach (var part in assistant.Parts)
+        {
+            switch (part)
+            {
+                case AssistantTextPart text:
+                    parts.Add(new JsonObject { ["type"] = "text", ["text"] = text.Text });
+                    break;
+                case AssistantReasoningPart reasoning:
+                    parts.Add(new JsonObject { ["type"] = "reasoning", ["text"] = reasoning.Text });
+                    break;
+                case AssistantToolCallPart { ToolCall: var call }:
+                    parts.Add(
+                        new JsonObject
+                        {
+                            ["type"] = "tool-call",
+                            ["toolCallType"] = "function",
+                            ["toolCallId"] = call.ToolCallId,
+                            ["toolName"] = call.ToolName,
+                            ["input"] = JsonValue(call.ArgumentsJson),
+                        }
+                    );
+                    break;
+                case AssistantFilePart file:
+                    var filePart = new JsonObject
+                    {
+                        ["type"] = file.Type,
+                        ["mediaType"] = file.MediaType,
+                        ["data"] = file.Url is { } url
+                            ? new JsonObject { ["type"] = "url", ["url"] = url }
+                            : new JsonObject
+                            {
+                                ["type"] = "data",
+                                ["data"] = file.Data is null
+                                    ? null
+                                    : Convert.ToBase64String(file.Data),
+                            },
+                    };
+                    if (file.FileName is { } fileName)
+                    {
+                        filePart["filename"] = fileName;
+                    }
+
+                    parts.Add(filePart);
+                    break;
+            }
+        }
+
+        return parts;
+    }
+
     private static JsonObject Message(ModelMessage message)
     {
         switch (message)
@@ -374,39 +466,20 @@ public static class V4Json
                 var userParts = new JsonArray();
                 foreach (var part in user.Content)
                 {
-                    if (part is TextContentPart text)
+                    if (UserPart(part) is { } userPart)
                     {
-                        userParts.Add(new JsonObject { ["type"] = "text", ["text"] = text.Text });
-                    }
-                    else if (part is FileContentPart file)
-                    {
-                        var filePart = new JsonObject
-                        {
-                            ["type"] = "file",
-                            ["mediaType"] = file.MediaType,
-                            ["data"] = FileData(file),
-                        };
-                        if (file.FileName is { } fileName)
-                        {
-                            filePart["filename"] = fileName;
-                        }
-
-                        if (file.ProviderOptions is { Count: > 0 } fileOptions)
-                        {
-                            var options = new JsonObject();
-                            foreach (var pair in fileOptions)
-                            {
-                                options[pair.Key] = JsonNode.Parse(pair.Value.GetRawText());
-                            }
-
-                            filePart["providerOptions"] = options;
-                        }
-
-                        userParts.Add(filePart);
+                        userParts.Add(userPart);
                     }
                 }
 
                 return new JsonObject { ["role"] = "user", ["content"] = userParts };
+            case AssistantModelMessage assistant
+                when assistant.Parts.Any(part => part is AssistantFilePart):
+                return new JsonObject
+                {
+                    ["role"] = "assistant",
+                    ["content"] = AssistantParts(assistant),
+                };
             case AssistantModelMessage assistant:
                 var assistantParts = new JsonArray();
                 if (!string.IsNullOrEmpty(assistant.Reasoning))
@@ -449,7 +522,9 @@ public static class V4Json
                             ["type"] = "tool-result",
                             ["toolCallId"] = tool.ToolCallId,
                             ["toolName"] = tool.ToolName,
-                            ["output"] = ToolOutput(tool.OutputJson, tool.IsError),
+                            ["output"] = tool.OutputContent is { } content
+                                ? ToolContentOutput(content)
+                                : ToolOutput(tool.OutputJson, tool.IsError),
                         },
                     },
                 };
@@ -662,6 +737,20 @@ public static class V4Json
         {
             return json;
         }
+    }
+
+    private static JsonObject ToolContentOutput(IReadOnlyList<UserContentPart> content)
+    {
+        var value = new JsonArray();
+        foreach (var part in content)
+        {
+            if (UserPart(part) is { } item)
+            {
+                value.Add(item);
+            }
+        }
+
+        return new JsonObject { ["type"] = "content", ["value"] = value };
     }
 
     private static JsonObject ToolOutput(string? outputJson, bool isError)

@@ -9,6 +9,7 @@ using Vercel.AI.Gateway;
 namespace Vercel.AI.Tests.Upstream.Gateway.GatewayProviderTests;
 
 /// <summary>Port of <c>gateway-provider.test.ts</c> &gt; <c>GatewayProvider &gt; getSpendReport method</c>.</summary>
+[Collection("GatewayAuthEnvironment")]
 public sealed class GatewayProviderGetSpendReportMethodTests
 {
     private const string Prefix =
@@ -182,6 +183,24 @@ public sealed class GatewayProviderGetSpendReportMethodTests
             CancellationToken,
             Task<GatewaySpendReportResponse>
         > getSpendReport = provider.GetSpendReportAsync;
+
+        Assert.NotNull(getSpendReport);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should be available on the default gateway export",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void Should_be_available_on_the_default_gateway_export()
+    {
+        var gateway = GatewayProvider.Create();
+
+        Func<
+            GatewaySpendReportParams,
+            CancellationToken,
+            Task<GatewaySpendReportResponse>
+        > getSpendReport = gateway.GetSpendReportAsync;
 
         Assert.NotNull(getSpendReport);
     }

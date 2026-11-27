@@ -654,10 +654,11 @@ public static class GatewayErrors
         }
         catch (JsonException exception)
         {
+            // Upstream keeps the raw body as the response when it does not parse.
             return new GatewayResponseError(
                 "Invalid error response format: Gateway request failed",
                 statusCode,
-                null,
+                JsonSerializer.SerializeToElement(body),
                 exception.Message,
                 cause,
                 null

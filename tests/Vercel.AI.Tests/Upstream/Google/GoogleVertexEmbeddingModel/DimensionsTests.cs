@@ -52,7 +52,7 @@ public sealed class DimensionsTests
         {
             ResponseText =
                 endpoint == "predict"
-                    ? "{\"predictions\":[{\"embeddings\":{\"values\":[0.1,0.2,0.3]}}]}"
+                    ? "{\"predictions\":[{\"embeddings\":{\"values\":[0.1,0.2,0.3],\"statistics\":{\"token_count\":1}}}]}"
                     : "{\"embedding\":{\"values\":[0.1,0.2,0.3]}}",
         };
         var provider = GoogleVertexProvider.Create(

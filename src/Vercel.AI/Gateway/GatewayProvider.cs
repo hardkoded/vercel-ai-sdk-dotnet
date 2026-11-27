@@ -132,6 +132,18 @@ public sealed class GatewayProvider
     }
 
     /// <inheritdoc />
+    public override ISpeechModel SpeechModel(string modelId)
+    {
+        return new GatewaySpeechModel(this, modelId);
+    }
+
+    /// <summary>Alias of <see cref="SpeechModel"/>. Maps to <c>speech</c>. Returns the concrete model.</summary>
+    public GatewaySpeechModel Speech(string modelId)
+    {
+        return new GatewaySpeechModel(this, modelId);
+    }
+
+    /// <inheritdoc />
     public override ITranscriptionModel TranscriptionModel(string modelId)
     {
         return new GatewayTranscriptionModel(this, modelId);
@@ -179,6 +191,12 @@ public sealed class GatewayProvider
                 .DoCreateClientSecretAsync(expiresAfterSeconds, cancellationToken)
                 .ConfigureAwait(false),
         };
+    }
+
+    /// <summary>Alias of <see cref="TranscriptionModel"/>. Maps to <c>transcription</c>. Returns the concrete model.</summary>
+    public GatewayTranscriptionModel Transcription(string modelId)
+    {
+        return new GatewayTranscriptionModel(this, modelId);
     }
 
     /// <summary>
@@ -479,15 +497,20 @@ public sealed class GatewayProvider
         CancellationToken cancellationToken
     )
     {
-        var apiKey = Options.ApiKey is null
+        var resolvedApiKey = Options.ApiKey is null
             ? null
             : await Options.ApiKey.ResolveAsync(cancellationToken).ConfigureAwait(false);
-        if (string.IsNullOrWhiteSpace(apiKey))
+        if (Options.ApiKey is { IsDynamic: true } && string.IsNullOrWhiteSpace(resolvedApiKey))
         {
-            apiKey = Environment.GetEnvironmentVariable(ApiKeyEnvironmentVariable);
+            throw new AiSdkException("AI Gateway API key must be a non-empty string.");
         }
 
-        if (!string.IsNullOrWhiteSpace(apiKey))
+        // Maps to loadOptionalSetting: an explicit string wins even when it is empty, otherwise the environment is read.
+        var apiKey = resolvedApiKey is not null
+            ? resolvedApiKey
+            : Environment.GetEnvironmentVariable(ApiKeyEnvironmentVariable);
+
+        if (!string.IsNullOrEmpty(apiKey))
         {
             return (apiKey!, "api-key");
         }
@@ -931,21 +954,29 @@ public sealed class GatewayLanguageModel : ILanguageModel
     private readonly GatewayProvider _provider;
 
     /// <summary>Creates a Gateway language model.</summary>
-    public GatewayLanguageModel(GatewayProvider provider, string modelId)
+    /// <param name="provider">Gateway provider that sends the requests.</param>
+    /// <param name="modelId">Model id.</param>
+    /// <param name="providerName">Value of <see cref="Provider"/> (upstream <c>GatewayChatConfig.provider</c>). Defaults to <c>gateway</c>.</param>
+    public GatewayLanguageModel(
+        GatewayProvider provider,
+        string modelId,
+        string? providerName = null
+    )
     {
         _provider = provider;
         ModelId = modelId;
+        Provider = providerName ?? GatewayProvider.ProviderId;
     }
 
     /// <inheritdoc />
-    public string SpecificationVersion => "V4";
+    public string SpecificationVersion => "v4";
 
     /// <inheritdoc />
     public IReadOnlyDictionary<string, string> SupportedUrls { get; } =
         new Dictionary<string, string> { ["*/*"] = ".*" };
 
     /// <inheritdoc />
-    public string Provider => GatewayProvider.ProviderId;
+    public string Provider { get; }
 
     /// <inheritdoc />
     public string ModelId { get; }
@@ -1193,7 +1224,7 @@ public sealed class GatewayEmbeddingModel : IEmbeddingModel
             body["providerOptions"] = JsonNode.Parse(options.GetRawText());
         }
 
-        JsonDocument document;
+        ProviderTextResponse response;
         var requestHeaders = await _provider
             .HeadersAsync(
                 "ai-embedding-model-specification-version",
@@ -1207,8 +1238,8 @@ public sealed class GatewayEmbeddingModel : IEmbeddingModel
             .ConfigureAwait(false);
         try
         {
-            document = await _provider
-                .Http.SendJsonAsync(
+            response = await _provider
+                .Http.SendJsonStringAsync(
                     HttpMethod.Post,
                     _provider.Route("embedding-model"),
                     body.ToJsonString(),
@@ -1230,7 +1261,7 @@ public sealed class GatewayEmbeddingModel : IEmbeddingModel
             throw GatewayProvider.MapFailure(exception, requestHeaders, body.ToJsonString());
         }
 
-        using (document)
+        using (var document = JsonDocument.Parse(response.Body))
         {
             var vectors = new List<float[]>();
             foreach (
@@ -1257,8 +1288,53 @@ public sealed class GatewayEmbeddingModel : IEmbeddingModel
                 tokens = tokenCount.GetInt32();
             }
 
-            return new EmbeddingResult(vectors, tokens);
+            var warnings = new List<CallWarning>();
+            if (
+                document.RootElement.TryGetProperty("warnings", out var warningArray)
+                && warningArray.ValueKind == JsonValueKind.Array
+            )
+            {
+                foreach (var warning in warningArray.EnumerateArray())
+                {
+                    warnings.Add(ReadWarning(warning));
+                }
+            }
+
+            JsonElement? providerMetadata =
+                document.RootElement.TryGetProperty("providerMetadata", out var metadata)
+                && metadata.ValueKind == JsonValueKind.Object
+                    ? metadata.Clone()
+                    : null;
+            return new EmbeddingResult(
+                vectors,
+                tokens,
+                warnings,
+                new EmbeddingResponseInfo(response.Headers, response.Body),
+                providerMetadata
+            );
         }
+    }
+
+    private static CallWarning ReadWarning(JsonElement warning)
+    {
+        string? Text(string name) =>
+            warning.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+                ? value.GetString()
+                : null;
+        var type = Text("type") ?? "other";
+        return type switch
+        {
+            "deprecated" => CallWarning.Deprecated(
+                Text("setting") ?? string.Empty,
+                Text("message") ?? string.Empty
+            ),
+            "unsupported" or "compatibility" => new CallWarning(
+                type,
+                Text("feature") ?? string.Empty,
+                Text("details")
+            ),
+            _ => new CallWarning(type, Text("message") ?? string.Empty),
+        };
     }
 }
 
