@@ -1017,7 +1017,7 @@ public static class AnthropicMessagesRequest
         return new AnthropicPreparedRequest(
             body,
             warnings,
-            betas,
+            betas.Distinct().ToList(),
             usesJsonTool,
             providerOptionsName,
             usedCustom,
@@ -1396,18 +1396,25 @@ public static class AnthropicMessagesRequest
             var node = new JsonObject { ["type"] = type };
             if (type == "custom")
             {
+                var providerReference = new Dictionary<string, string>();
                 if (
-                    !skill.TryGetProperty("providerReference", out var reference)
-                    || reference.ValueKind != JsonValueKind.Object
-                    || !reference.TryGetProperty("anthropic", out var id)
+                    skill.TryGetProperty("providerReference", out var reference)
+                    && reference.ValueKind == JsonValueKind.Object
                 )
                 {
-                    throw new AiSdkException(
-                        "Custom skill provider reference does not include anthropic."
-                    );
+                    foreach (var entry in reference.EnumerateObject())
+                    {
+                        if (entry.Value.ValueKind == JsonValueKind.String)
+                        {
+                            providerReference[entry.Name] = entry.Value.GetString()!;
+                        }
+                    }
                 }
 
-                node["skill_id"] = id.GetString();
+                node["skill_id"] = ProviderReferences.ResolveProviderReference(
+                    providerReference,
+                    "anthropic"
+                );
             }
             else
             {
@@ -1601,6 +1608,7 @@ public static class AnthropicMessagesRequest
                                 examples.Select(example => new { input = example.Input })
                             )
                             : null,
+                        ProviderOptions = tool.ProviderOptions,
                     }
                 );
             }

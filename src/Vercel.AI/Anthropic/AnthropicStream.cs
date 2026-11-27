@@ -409,6 +409,14 @@ public sealed class AnthropicStream
 
         _blockType = type;
         var id = index.ToString(CultureInfo.InvariantCulture);
+        if (
+            type == "web_search_tool_result"
+            && block["content"] is JsonArray results
+            && results.Count > 0
+        )
+        {
+            _hasWebSearchResults = true;
+        }
 
         // Text before a tool call or result is preamble, not the answer.
         if (!TextOrThinkingBlockTypes.Contains(type ?? string.Empty))

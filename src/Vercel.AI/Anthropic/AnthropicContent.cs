@@ -89,4 +89,7 @@ public sealed class AnthropicToolResultContent : GeneratedContent
 
     /// <summary>Provider metadata, including caller information.</summary>
     public JsonElement? ProviderMetadata { get; }
+
+    /// <summary>True when the tool is not known up front, such as a provider-executed MCP tool. Maps to the result's <c>dynamic</c>.</summary>
+    public bool Dynamic { get; init; }
 }

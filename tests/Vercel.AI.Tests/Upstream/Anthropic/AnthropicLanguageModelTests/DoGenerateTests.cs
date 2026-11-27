@@ -11,7 +11,7 @@ using Vercel.AI.Tests.Upstream;
 namespace Vercel.AI.Tests.AnthropicLanguageModelTests;
 
 /// <summary>Port of <c>anthropic-language-model.test.ts</c> &gt; <c>AnthropicLanguageModel &gt; doGenerate</c>, the tests outside a nested <c>describe</c>.</summary>
-public sealed class DoGenerateTests
+public sealed partial class DoGenerateTests
 {
     private const string Prefix =
         "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate::";

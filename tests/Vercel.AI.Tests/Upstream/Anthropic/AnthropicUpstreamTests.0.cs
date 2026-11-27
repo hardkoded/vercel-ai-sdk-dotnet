@@ -1059,18 +1059,4 @@ public sealed partial class AnthropicUpstreamTests
             )
             .ConfigureAwait(false);
     }
-
-    [Fact]
-    [UpstreamTest(
-        "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate::should expose the raw response headers",
-        Coverage = UpstreamCoverage.Partial
-    )]
-    public async Task Case_0178()
-    {
-        await AnthropicCases
-            .Run(
-                "packages/anthropic/src/anthropic-language-model.test.ts::AnthropicLanguageModel > doGenerate::should expose the raw response headers"
-            )
-            .ConfigureAwait(false);
-    }
 }

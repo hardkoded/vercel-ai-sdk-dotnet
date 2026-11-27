@@ -68,6 +68,12 @@ public sealed class AnthropicParseContext
 /// <summary>Maps an Anthropic Messages JSON body onto a generate result.</summary>
 public static class AnthropicResponse
 {
+    // JSON.stringify leaves quotes, non-ASCII, and `+` unescaped in the text, so the tool call inputs do too.
+    private static readonly JsonSerializerOptions s_compact = new()
+    {
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    };
+
     /// <summary>Parses a Messages response body.</summary>
     public static LanguageModelGenerateResult Parse(
         string json,
@@ -90,7 +96,8 @@ public static class AnthropicResponse
     )
     {
         var content = new List<GeneratedContent>();
-        var mcpNames = new Dictionary<string, string>();
+        var mcpNames = new Dictionary<string, McpToolCall>();
+        var serverToolCalls = new Dictionary<string, string>();
         var jsonTool = false;
         var idFactory = context.GenerateId ?? SequentialId();
         if (root.TryGetProperty("content", out var parts) && parts.ValueKind == JsonValueKind.Array)
@@ -109,6 +116,7 @@ public static class AnthropicResponse
                     content,
                     context,
                     mcpNames,
+                    serverToolCalls,
                     idFactory,
                     hasWebSearchResults,
                     fallbackText == null || fallbackText.Contains(position),
@@ -216,7 +224,8 @@ public static class AnthropicResponse
         JsonElement part,
         List<GeneratedContent> content,
         AnthropicParseContext context,
-        Dictionary<string, string> mcpNames,
+        Dictionary<string, McpToolCall> mcpNames,
+        Dictionary<string, string> serverToolCalls,
         Func<string> generateId,
         bool hasWebSearchResults,
         bool includeText,
@@ -305,7 +314,7 @@ public static class AnthropicResponse
                 MapToolUse(part, content, context, ref jsonTool);
                 break;
             case "server_tool_use":
-                MapServerTool(part, content, context);
+                MapServerTool(part, content, context, serverToolCalls);
                 break;
             case "mcp_tool_use":
                 MapMcpUse(part, content, mcpNames);
@@ -323,6 +332,12 @@ public static class AnthropicResponse
             case "bash_code_execution_tool_result":
             case "text_editor_code_execution_tool_result":
                 MapCodeExecution(part, content, context);
+                break;
+            case "tool_search_tool_result":
+                MapToolSearch(part, content, context, serverToolCalls);
+                break;
+            case "advisor_tool_result":
+                MapAdvisor(part, content, context);
                 break;
             case "fallback":
                 break;
@@ -525,7 +540,8 @@ public static class AnthropicResponse
     private static void MapServerTool(
         JsonElement part,
         List<GeneratedContent> content,
-        AnthropicParseContext context
+        AnthropicParseContext context,
+        Dictionary<string, string> serverToolCalls
     )
     {
         var name = AnthropicJson.String(part, "name") ?? string.Empty;
@@ -565,14 +581,20 @@ public static class AnthropicResponse
             return;
         }
 
+        if (name == "tool_search_tool_regex" || name == "tool_search_tool_bm25")
+        {
+            serverToolCalls[id] = name;
+        }
+
         content.Add(
             new GeneratedToolCall(
                 id,
                 CustomName(context, toolName),
-                input.ToJsonString(),
+                input.ToJsonString(s_compact),
                 CallerMetadata(part)
             )
             {
+                ProviderExecuted = true,
                 Dynamic =
                     context.MarkCodeExecutionDynamic
                     && (
@@ -587,12 +609,11 @@ public static class AnthropicResponse
     private static void MapMcpUse(
         JsonElement part,
         List<GeneratedContent> content,
-        Dictionary<string, string> mcpNames
+        Dictionary<string, McpToolCall> mcpNames
     )
     {
         var id = AnthropicJson.String(part, "id") ?? "tool";
         var name = AnthropicJson.String(part, "name") ?? string.Empty;
-        mcpNames[id] = name;
         var metadata = ObjectElement(
             new JsonObject
             {
@@ -603,6 +624,7 @@ public static class AnthropicResponse
                 },
             }
         );
+        mcpNames[id] = new McpToolCall(name, metadata);
         var input = part.TryGetProperty("input", out var inputElement)
             ? AnthropicJson.Compact(inputElement)
             : "{}";
@@ -618,25 +640,24 @@ public static class AnthropicResponse
     private static void MapMcpResult(
         JsonElement part,
         List<GeneratedContent> content,
-        Dictionary<string, string> mcpNames
+        Dictionary<string, McpToolCall> mcpNames
     )
     {
         var id = AnthropicJson.String(part, "tool_use_id") ?? string.Empty;
-        string? name;
-        if (!mcpNames.TryGetValue(id, out name))
-        {
-            name = string.Empty;
-        }
+        mcpNames.TryGetValue(id, out var call);
 
         var result = part.TryGetProperty("content", out var body) ? body.GetRawText() : "null";
         content.Add(
             new AnthropicToolResultContent(
                 id,
-                name,
+                call.Name ?? string.Empty,
                 result,
                 AnthropicJson.Bool(part, "is_error") == true,
-                null
+                call.Metadata
             )
+            {
+                Dynamic = true,
+            }
         );
     }
 
@@ -748,11 +769,35 @@ public static class AnthropicResponse
         var contentType = AnthropicJson.String(body, "type");
         if (contentType == "web_fetch_result")
         {
+            var fetched = new JsonObject
+            {
+                ["type"] = "web_fetch_result",
+                ["url"] = AnthropicJson.String(body, "url"),
+                ["retrievedAt"] = Copy(body, "retrieved_at"),
+            };
+            if (body.TryGetProperty("content", out var document))
+            {
+                var documentNode = new JsonObject { ["type"] = Copy(document, "type") };
+                SetIfPresent(documentNode, "title", document, "title");
+                SetIfPresent(documentNode, "citations", document, "citations");
+                if (document.TryGetProperty("source", out var source))
+                {
+                    documentNode["source"] = new JsonObject
+                    {
+                        ["type"] = Copy(source, "type"),
+                        ["mediaType"] = Copy(source, "media_type"),
+                        ["data"] = Copy(source, "data"),
+                    };
+                }
+
+                fetched["content"] = documentNode;
+            }
+
             content.Add(
                 new AnthropicToolResultContent(
                     id,
                     name,
-                    body.GetRawText(),
+                    fetched.ToJsonString(s_compact),
                     false,
                     CallerMetadata(part)
                 )
@@ -789,15 +834,189 @@ public static class AnthropicResponse
             return;
         }
 
-        content.Add(
-            new AnthropicToolResultContent(
-                id,
-                CustomName(context, "code_execution"),
-                body.GetRawText(),
-                false,
-                null
+        var name = CustomName(context, "code_execution");
+        if (AnthropicJson.String(part, "type") != "code_execution_tool_result")
+        {
+            // code execution 20250825: the result is passed through.
+            content.Add(new AnthropicToolResultContent(id, name, body.GetRawText(), false, null));
+            return;
+        }
+
+        var type = AnthropicJson.String(body, "type");
+        if (type == "code_execution_result" || type == "encrypted_code_execution_result")
+        {
+            var result = new JsonObject { ["type"] = type };
+            if (type == "code_execution_result")
+            {
+                result["stdout"] = Copy(body, "stdout");
+            }
+            else
+            {
+                result["encrypted_stdout"] = Copy(body, "encrypted_stdout");
+            }
+
+            result["stderr"] = Copy(body, "stderr");
+            result["return_code"] = Copy(body, "return_code");
+            result["content"] = Copy(body, "content") ?? new JsonArray();
+            content.Add(
+                new AnthropicToolResultContent(
+                    id,
+                    name,
+                    result.ToJsonString(s_compact),
+                    false,
+                    null
+                )
+            );
+        }
+        else if (type == "code_execution_tool_result_error")
+        {
+            var error = new JsonObject
+            {
+                ["type"] = "code_execution_tool_result_error",
+                ["errorCode"] = AnthropicJson.String(body, "error_code"),
+            };
+            content.Add(
+                new AnthropicToolResultContent(id, name, error.ToJsonString(s_compact), true, null)
+            );
+        }
+    }
+
+    private static void MapToolSearch(
+        JsonElement part,
+        List<GeneratedContent> content,
+        AnthropicParseContext context,
+        Dictionary<string, string> serverToolCalls
+    )
+    {
+        var id = AnthropicJson.String(part, "tool_use_id") ?? string.Empty;
+        if (!part.TryGetProperty("content", out var body))
+        {
+            return;
+        }
+
+        if (!serverToolCalls.TryGetValue(id, out var providerToolName))
+        {
+            // The call was made in an earlier response, so the custom name tells which variant is in use.
+            providerToolName =
+                CustomName(context, "tool_search_tool_bm25") != "tool_search_tool_bm25"
+                    ? "tool_search_tool_bm25"
+                    : "tool_search_tool_regex";
+        }
+
+        var name = CustomName(context, providerToolName);
+        if (AnthropicJson.String(body, "type") == "tool_search_tool_search_result")
+        {
+            var references = new JsonArray();
+            if (
+                body.TryGetProperty("tool_references", out var toolReferences)
+                && toolReferences.ValueKind == JsonValueKind.Array
             )
+            {
+                foreach (var reference in toolReferences.EnumerateArray())
+                {
+                    references.Add(
+                        new JsonObject
+                        {
+                            ["type"] = Copy(reference, "type"),
+                            ["toolName"] = Copy(reference, "tool_name"),
+                        }
+                    );
+                }
+            }
+
+            content.Add(
+                new AnthropicToolResultContent(
+                    id,
+                    name,
+                    references.ToJsonString(s_compact),
+                    false,
+                    null
+                )
+            );
+        }
+        else
+        {
+            var error = new JsonObject
+            {
+                ["type"] = "tool_search_tool_result_error",
+                ["errorCode"] = AnthropicJson.String(body, "error_code"),
+            };
+            content.Add(
+                new AnthropicToolResultContent(id, name, error.ToJsonString(s_compact), true, null)
+            );
+        }
+    }
+
+    private static void MapAdvisor(
+        JsonElement part,
+        List<GeneratedContent> content,
+        AnthropicParseContext context
+    )
+    {
+        var id = AnthropicJson.String(part, "tool_use_id") ?? string.Empty;
+        if (!part.TryGetProperty("content", out var body))
+        {
+            return;
+        }
+
+        var name = CustomName(context, "advisor");
+        var type = AnthropicJson.String(body, "type");
+        JsonObject result;
+        var isError = false;
+        if (type == "advisor_result")
+        {
+            result = new JsonObject { ["type"] = "advisor_result", ["text"] = Copy(body, "text") };
+        }
+        else if (type == "advisor_redacted_result")
+        {
+            result = new JsonObject
+            {
+                ["type"] = "advisor_redacted_result",
+                ["encryptedContent"] = Copy(body, "encrypted_content"),
+            };
+        }
+        else
+        {
+            isError = true;
+            result = new JsonObject
+            {
+                ["type"] = "advisor_tool_result_error",
+                ["errorCode"] = AnthropicJson.String(body, "error_code"),
+            };
+        }
+
+        if (!isError && AnthropicJson.String(body, "stop_reason") is { } stopReason)
+        {
+            result["stopReason"] = stopReason;
+        }
+
+        content.Add(
+            new AnthropicToolResultContent(id, name, result.ToJsonString(s_compact), isError, null)
         );
+    }
+
+    private static string Stringify(JsonElement element)
+    {
+        return JsonSerializer.Serialize(element, s_compact);
+    }
+
+    private static JsonNode? Copy(JsonElement element, string name)
+    {
+        return
+            element.ValueKind == JsonValueKind.Object && element.TryGetProperty(name, out var value)
+            ? JsonNode.Parse(value.GetRawText())
+            : null;
+    }
+
+    private static void SetIfPresent(JsonObject target, string to, JsonElement element, string from)
+    {
+        if (
+            element.ValueKind == JsonValueKind.Object
+            && element.TryGetProperty(from, out var value)
+        )
+        {
+            target[to] = JsonNode.Parse(value.GetRawText());
+        }
     }
 
     private static JsonObject WithType(string type, JsonNode input)
@@ -1081,4 +1300,6 @@ public static class AnthropicResponse
         var n = 0;
         return () => "source-" + (n++).ToString(CultureInfo.InvariantCulture);
     }
+
+    private readonly record struct McpToolCall(string Name, JsonElement Metadata);
 }

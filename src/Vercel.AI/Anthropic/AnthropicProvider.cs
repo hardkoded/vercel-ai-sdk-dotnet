@@ -911,7 +911,7 @@ public class AnthropicLanguageModel : ILanguageModel
         }
     }
 
-    private static async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(
+    private async IAsyncEnumerable<LanguageModelStreamPart> StreamAsync(
         LanguageModelCallOptions options,
         AnthropicPreparedRequest prepared,
         IAsyncEnumerable<string> events,

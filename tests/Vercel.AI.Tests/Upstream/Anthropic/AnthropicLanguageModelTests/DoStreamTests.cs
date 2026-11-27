@@ -12,7 +12,7 @@ using Vercel.AI.Tests.Upstream;
 namespace Vercel.AI.Tests.AnthropicLanguageModelTests;
 
 /// <summary>Port of <c>anthropic-language-model.test.ts</c> &gt; <c>AnthropicLanguageModel &gt; doStream</c>.</summary>
-public sealed class DoStreamTests
+public sealed partial class DoStreamTests
 {
     // Stands for a message_delta event that is not sent at all.
     private const string Undefined = "<undefined>";
