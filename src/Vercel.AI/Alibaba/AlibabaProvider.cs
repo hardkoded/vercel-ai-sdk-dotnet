@@ -92,7 +92,7 @@ public sealed class AlibabaProvider : OpenAICompatibleProvider
 
         options.TransformChatRequest = AlibabaChatRequest.Transform;
         options.PreparesOwnTools = true;
-        options.ConvertUsage = AlibabaChatRequest.ConvertUsage;
+        options.ConvertUsage = static usage => ConvertAlibabaUsage.Convert(usage);
         options.TextBlockId = "0";
         options.StreamToolInput = true;
         options.ReasoningBlockId ??= static () => JsonValues.GenerateId(string.Empty);

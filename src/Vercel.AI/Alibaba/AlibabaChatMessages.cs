@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Json.Nodes;
 using Vercel.AI.OpenAICompatible;
 using Vercel.AI.Provider;
+using Vercel.AI.ProviderUtils;
 
 namespace Vercel.AI.Alibaba;
 
@@ -167,29 +168,28 @@ internal static class AlibabaChatMessages
 
     private static JsonObject MapFile(FileContentPart file)
     {
+        if (file.Text != null)
+        {
+            throw OpenAICompatibleChat.Unsupported("text file parts");
+        }
+
         if (file.Url == null && file.Data == null)
         {
             throw OpenAICompatibleChat.Unsupported("file parts with provider references");
         }
 
         var mediaType = file.MediaType ?? string.Empty;
-        var slash = mediaType.IndexOf('/');
-        if (
-            !string.Equals(
-                slash < 0 ? mediaType : mediaType.Substring(0, slash),
-                "image",
-                StringComparison.OrdinalIgnoreCase
-            )
-        )
+        if (MediaTypes.GetTopLevelMediaType(mediaType) != "image")
         {
             throw OpenAICompatibleChat.Unsupported("Only image file parts are supported");
         }
 
+        // Maps to formatImageUrl: a URL passes through, inline data gets its full media type.
         var url =
             file.Url != null && file.Data == null
                 ? file.Url
                 : "data:"
-                    + mediaType
+                    + MediaTypes.ResolveFullMediaType(mediaType, file.Data)
                     + ";base64,"
                     + System.Convert.ToBase64String(file.Data ?? Array.Empty<byte>());
         return new JsonObject
