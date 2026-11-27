@@ -2,6 +2,7 @@
 // Copyright 2026 Darío Kondratiuk
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Provider;
@@ -74,6 +75,11 @@ public sealed class GoogleEmbeddingModel : IEmbeddingModel
             );
         }
 
+        var callOptions = CallEmbeddingOptions(providerOptions)
+            ?? _provider.Options.EmbeddingProviderOptions;
+        var multimodalContent = ReadMultimodalContent(callOptions);
+        ValidateMultimodalContentLength(multimodalContent, inputs.Count);
+
         if (inputs.Count <= 1)
         {
             var value = inputs.Count == 0 ? string.Empty : inputs[0];
@@ -82,23 +88,26 @@ public sealed class GoogleEmbeddingModel : IEmbeddingModel
                 ["model"] = "models/" + ModelId,
                 ["content"] = new JsonObject
                 {
-                    ["parts"] = new JsonArray { new JsonObject { ["text"] = value } },
+                    ["parts"] = ContentParts(value, multimodalContent, 0),
                 },
             };
-            ApplyEmbeddingOptions(body, _provider.Options, dimensions);
-            using var document = await PostAsync(":embedContent", body, headers, cancellationToken)
+            ApplyEmbeddingOptions(body, callOptions, dimensions);
+            var single = await PostTextAsync(":embedContent", body, headers, cancellationToken)
                 .ConfigureAwait(false);
+            using var document = JsonDocument.Parse(single.Body);
             return new EmbeddingResult(
                 new[]
                 {
                     ReadVector(document.RootElement.GetProperty("embedding").GetProperty("values")),
                 },
-                null
+                null,
+                null,
+                new EmbeddingResponseInfo(single.Headers, single.Body)
             );
         }
 
         var requests = new JsonArray();
-        foreach (var value in inputs)
+        for (var index = 0; index < inputs.Count; index++)
         {
             var request = new JsonObject
             {
@@ -106,27 +115,33 @@ public sealed class GoogleEmbeddingModel : IEmbeddingModel
                 ["content"] = new JsonObject
                 {
                     ["role"] = "user",
-                    ["parts"] = new JsonArray { new JsonObject { ["text"] = value } },
+                    ["parts"] = ContentParts(inputs[index], multimodalContent, index),
                 },
             };
-            ApplyEmbeddingOptions(request, _provider.Options, dimensions);
+            ApplyEmbeddingOptions(request, callOptions, dimensions);
             requests.Add(request);
         }
 
-        using var batch = await PostAsync(
+        var batchResponse = await PostTextAsync(
                 ":batchEmbedContents",
                 new JsonObject { ["requests"] = requests },
                 headers,
                 cancellationToken
             )
             .ConfigureAwait(false);
+        using var batch = JsonDocument.Parse(batchResponse.Body);
         var vectors = new List<float[]>();
         foreach (var embedding in batch.RootElement.GetProperty("embeddings").EnumerateArray())
         {
             vectors.Add(ReadVector(embedding.GetProperty("values")));
         }
 
-        return new EmbeddingResult(vectors, null);
+        return new EmbeddingResult(
+            vectors,
+            null,
+            null,
+            new EmbeddingResponseInfo(batchResponse.Headers, batchResponse.Body)
+        );
     }
 
     private async Task<EmbeddingResult> EmbedVertexAsync(
@@ -227,6 +242,18 @@ public sealed class GoogleEmbeddingModel : IEmbeddingModel
         CancellationToken cancellationToken
     )
     {
+        var response = await PostTextAsync(method, body, callHeaders, cancellationToken)
+            .ConfigureAwait(false);
+        return JsonDocument.Parse(response.Body);
+    }
+
+    private async Task<ProviderTextResponse> PostTextAsync(
+        string method,
+        JsonObject body,
+        IReadOnlyDictionary<string, string?>? callHeaders,
+        CancellationToken cancellationToken
+    )
+    {
         var headers = await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false);
         if (callHeaders != null)
         {
@@ -237,7 +264,7 @@ public sealed class GoogleEmbeddingModel : IEmbeddingModel
         }
 
         return await _provider
-            .Http.SendJsonAsync(
+            .Http.SendJsonStringAsync(
                 HttpMethod.Post,
                 ApiKeys.Combine(_provider.Options.BaseUrl, GoogleModelPath.Get(ModelId) + method),
                 GoogleJson.Write(body),
@@ -276,13 +303,80 @@ public sealed class GoogleEmbeddingModel : IEmbeddingModel
         return null;
     }
 
-    private static void ApplyEmbeddingOptions(
-        JsonObject body,
-        GoogleOptions options,
-        int? dimensions
+    private static JsonElement? CallEmbeddingOptions(
+        IReadOnlyDictionary<string, JsonElement>? providerOptions
     )
     {
-        var google = EmbeddingOptions(options);
+        return
+            providerOptions != null
+            && providerOptions.TryGetValue("google", out var bag)
+            && bag.ValueKind == JsonValueKind.Object
+            ? bag
+            : null;
+    }
+
+    private static List<JsonNode?>? ReadMultimodalContent(JsonElement? options)
+    {
+        if (
+            options is not { ValueKind: JsonValueKind.Object } bag
+            || !bag.TryGetProperty("content", out var content)
+            || content.ValueKind != JsonValueKind.Array
+        )
+        {
+            return null;
+        }
+
+        var entries = new List<JsonNode?>();
+        foreach (var entry in content.EnumerateArray())
+        {
+            entries.Add(
+                entry.ValueKind == JsonValueKind.Null ? null : JsonNode.Parse(entry.GetRawText())
+            );
+        }
+
+        return entries;
+    }
+
+    private static void ValidateMultimodalContentLength(List<JsonNode?>? content, int valueCount)
+    {
+        if (content != null && content.Count != valueCount)
+        {
+            throw new AiSdkException(
+                "The number of multimodal content entries ("
+                    + content.Count.ToString(CultureInfo.InvariantCulture)
+                    + ") must match the number of values ("
+                    + valueCount.ToString(CultureInfo.InvariantCulture)
+                    + ")."
+            );
+        }
+    }
+
+    private static JsonArray ContentParts(string value, List<JsonNode?>? content, int index)
+    {
+        var valueParts =
+            content != null && index < content.Count ? content[index] as JsonArray : null;
+        var parts = new JsonArray();
+        if (valueParts == null)
+        {
+            parts.Add(new JsonObject { ["text"] = value });
+            return parts;
+        }
+
+        if (!string.IsNullOrEmpty(value))
+        {
+            parts.Add(new JsonObject { ["text"] = value });
+        }
+
+        foreach (var part in valueParts)
+        {
+            parts.Add(part?.DeepClone());
+        }
+
+        return parts;
+    }
+
+    private static void ApplyEmbeddingOptions(JsonObject body, JsonElement? google, int? dimensions)
+    {
         if (
             google != null
             && google.Value.TryGetProperty("outputDimensionality", out var providerDimensions)
