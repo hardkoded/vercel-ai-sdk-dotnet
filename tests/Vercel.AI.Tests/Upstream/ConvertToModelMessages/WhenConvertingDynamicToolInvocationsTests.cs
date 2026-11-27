@@ -22,7 +22,7 @@ public sealed class WhenConvertingDynamicToolInvocationsTests : WarningsOff
     public void Should_convert_a_dynamic_tool_invocation()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [
                   {

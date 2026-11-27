@@ -20,7 +20,7 @@ public sealed class SystemMessageTests : WarningsOff
     public void Should_convert_a_simple_system_message()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [{"role":"system","parts":[{"text":"System message","type":"text"}]}]
                 """
@@ -43,7 +43,7 @@ public sealed class SystemMessageTests : WarningsOff
     public void Should_convert_a_system_message_with_provider_metadata()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [{"role":"system","parts":[{"text":"System message with metadata","type":"text","providerMetadata":{"testProvider":{"systemSignature":"abc123"}}}]}]
                 """
@@ -66,7 +66,7 @@ public sealed class SystemMessageTests : WarningsOff
     public void Should_merge_provider_metadata_from_multiple_text_parts_in_system_message()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [{"role":"system","parts":[{"text":"Part 1","type":"text","providerMetadata":{"provider1":{"key1":"value1"}}},{"text":" Part 2","type":"text","providerMetadata":{"provider2":{"key2":"value2"}}}]}]
                 """
@@ -89,7 +89,7 @@ public sealed class SystemMessageTests : WarningsOff
     public void Should_convert_a_system_message_with_Anthropic_cache_control_metadata()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [{"id":"system","role":"system","parts":[{"type":"text","text":"You are a helpful assistant.","providerMetadata":{"anthropic":{"cacheControl":{"type":"ephemeral"}}}}]}]
                 """

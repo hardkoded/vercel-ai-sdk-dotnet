@@ -23,7 +23,7 @@ public sealed class WhenConvertingProviderExecutedDynamicToolInvocationsTests : 
     public void Should_convert_a_provider_executed_dynamic_tool_invocation()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [
                   {
@@ -88,7 +88,7 @@ public sealed class WhenConvertingProviderExecutedDynamicToolInvocationsTests : 
     public void Should_convert_a_denied_provider_executed_tool_approval_request_with_an_execution_denied_result()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [
                   {

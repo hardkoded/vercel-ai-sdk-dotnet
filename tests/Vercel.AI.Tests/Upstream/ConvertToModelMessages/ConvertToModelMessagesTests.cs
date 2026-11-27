@@ -20,7 +20,7 @@ public sealed class ConvertToModelMessagesTests : WarningsOff
     public void Should_not_include_filename_for_user_file_parts_when_not_provided()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [{"role":"user","parts":[{"type":"file","mediaType":"image/jpeg","url":"https://example.com/image.jpg"}]}]
                 """

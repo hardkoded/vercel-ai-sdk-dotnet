@@ -20,7 +20,7 @@ public sealed class UserMessageTests : WarningsOff
     public void Should_convert_a_simple_user_message()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [{"role":"user","parts":[{"text":"Hello, AI!","type":"text"}]}]
                 """
@@ -43,7 +43,7 @@ public sealed class UserMessageTests : WarningsOff
     public void Should_convert_a_simple_user_message_with_provider_metadata()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [{"role":"user","parts":[{"text":"Hello, AI!","type":"text","providerMetadata":{"testProvider":{"signature":"1234567890"}}}]}]
                 """
@@ -66,7 +66,7 @@ public sealed class UserMessageTests : WarningsOff
     public void Should_handle_user_message_file_parts()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [{"role":"user","parts":[{"type":"file","mediaType":"image/jpeg","url":"https://example.com/image.jpg"},{"type":"text","text":"Check this image"}]}]
                 """
@@ -89,7 +89,7 @@ public sealed class UserMessageTests : WarningsOff
     public void Should_handle_user_message_file_parts_with_provider_metadata()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [{"role":"user","parts":[{"type":"file","mediaType":"image/jpeg","url":"https://example.com/image.jpg","providerMetadata":{"testProvider":{"signature":"1234567890"}}},{"type":"text","text":"Check this image"}]}]
                 """
@@ -112,7 +112,7 @@ public sealed class UserMessageTests : WarningsOff
     public void Should_include_filename_for_user_file_parts_when_provided()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [{"role":"user","parts":[{"type":"file","mediaType":"image/jpeg","url":"https://example.com/image.jpg","filename":"image.jpg"}]}]
                 """
@@ -135,7 +135,7 @@ public sealed class UserMessageTests : WarningsOff
     public void Should_use_providerReference_as_data_for_user_file_parts()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [{"role":"user","parts":[{"type":"file","mediaType":"application/pdf","filename":"doc.pdf","url":"data:application/pdf;base64,abc","providerReference":{"openai":"file-abc123"}},{"type":"text","text":"Summarize this"}]}]
                 """

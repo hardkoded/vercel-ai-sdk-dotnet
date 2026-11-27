@@ -21,7 +21,7 @@ public sealed class MultipleMessagesTests : WarningsOff
     public void Should_handle_a_conversation_with_multiple_messages()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [
                   { "role": "user", "parts": [{ "type": "text", "text": "What's the weather like?" }] },
@@ -53,7 +53,7 @@ public sealed class MultipleMessagesTests : WarningsOff
     public void Should_handle_conversation_with_multiple_tool_invocations_and_user_message_at_the_end()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [
                   {

@@ -21,7 +21,7 @@ public sealed class PendingToolApprovalsTests : WarningsOff
     public void Should_ignore_a_pending_approval_when_followed_by_a_user_message()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [
                   {
