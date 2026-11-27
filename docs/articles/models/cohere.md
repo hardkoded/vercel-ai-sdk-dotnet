@@ -33,4 +33,14 @@ var result = await Ai.GenerateTextAsync(
 Console.WriteLine(result.Text);
 ```
 
+## Embedding options
+
+Pass the `cohere` provider options to `DoEmbedAsync` to set `inputType`, `truncate`, `embeddingType` (`float`, `int8`, `uint8`, `binary`, or `ubinary`), and `outputDimension`. `outputDimension` must be 256, 512, 768, 1024, 1536, or 2048. Any other value throws before the request is sent. The embeddings come back in the requested format without conversion.
+
+## Files and images
+
+Image files in a user message are sent inline as `image_url` parts. Set the `cohere` provider option `detail` on the file part to pass `image_url.detail`. Other files are sent as documents that carry only their text and file name, so the model can cite them. A file part that refers to a provider upload is not supported and throws `UnsupportedFunctionalityException`.
+
+Provider-defined tools are not supported. They are skipped and add an `unsupported` warning.
+
 See the [Providers](providers.md) guide for authentication and provider options.
