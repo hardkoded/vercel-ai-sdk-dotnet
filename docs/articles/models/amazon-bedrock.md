@@ -35,3 +35,15 @@ Console.WriteLine(result.Text);
 ```
 
 See the [Providers](providers.md) guide for authentication and provider options.
+
+## Provider options
+
+Pass these under the `amazon-bedrock` provider options key.
+
+- `structuredOutputMode` is `outputFormat`, `jsonTool`, or `auto` (the default). Any other value, or a value that is not a string, throws `ArgumentException` before the request is sent.
+- `serviceTier` is `reserved`, `priority`, `default`, or `flex`. Any other value throws `ArgumentException`.
+- `requestMetadata` is an object whose values are all strings.
+
+## Cache points
+
+`AmazonBedrockApiTypes.CreateAmazonBedrockCachePoint(ttl)` is the C# name of upstream `createAmazonBedrockCachePoint`. It returns the complete `{ "cachePoint": { "type": "default", "ttl": ... } }` block. The `ttl` is `5m` or `1h`. When it is null, the `ttl` field is left out and Bedrock uses its default of five minutes. Pass the `cachePoint` value of the block, not the block itself, as the `cachePoint` provider option.

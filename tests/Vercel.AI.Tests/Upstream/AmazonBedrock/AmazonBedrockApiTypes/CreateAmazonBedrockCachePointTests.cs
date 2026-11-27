@@ -20,7 +20,9 @@ public sealed class CreateAmazonBedrockCachePointTests
     {
         Assert.Equal(
             "{\"cachePoint\":{\"type\":\"default\"}}",
-            AmazonBedrockCachePoint.Create().ToJsonString()
+            global::Vercel
+                .AI.AmazonBedrock.AmazonBedrockApiTypes.CreateAmazonBedrockCachePoint()
+                .ToJsonString()
         );
     }
 
@@ -33,7 +35,9 @@ public sealed class CreateAmazonBedrockCachePointTests
     {
         Assert.Equal(
             "{\"cachePoint\":{\"type\":\"default\",\"ttl\":\"5m\"}}",
-            AmazonBedrockCachePoint.Create("5m").ToJsonString()
+            global::Vercel
+                .AI.AmazonBedrock.AmazonBedrockApiTypes.CreateAmazonBedrockCachePoint("5m")
+                .ToJsonString()
         );
     }
 
@@ -46,7 +50,9 @@ public sealed class CreateAmazonBedrockCachePointTests
     {
         Assert.Equal(
             "{\"cachePoint\":{\"type\":\"default\",\"ttl\":\"1h\"}}",
-            AmazonBedrockCachePoint.Create("1h").ToJsonString()
+            global::Vercel
+                .AI.AmazonBedrock.AmazonBedrockApiTypes.CreateAmazonBedrockCachePoint("1h")
+                .ToJsonString()
         );
     }
 }
