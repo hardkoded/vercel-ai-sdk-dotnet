@@ -22,7 +22,10 @@ public sealed class RegisterTelemetryTests : IDisposable
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "adds an integration to the global registry")]
+    [UpstreamTest(
+        Prefix + "adds an integration to the global registry",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Adds_an_integration_to_the_global_registry()
     {
         var integration = new TestTelemetry();
@@ -36,7 +39,10 @@ public sealed class RegisterTelemetryTests : IDisposable
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "adds multiple integrations in registration order")]
+    [UpstreamTest(
+        Prefix + "adds multiple integrations in registration order",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Adds_multiple_integrations_in_registration_order()
     {
         var integration1 = new TestTelemetry();
@@ -52,7 +58,10 @@ public sealed class RegisterTelemetryTests : IDisposable
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "adds multiple integrations passed in a single call")]
+    [UpstreamTest(
+        Prefix + "adds multiple integrations passed in a single call",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Adds_multiple_integrations_passed_in_a_single_call()
     {
         var integration1 = new TestTelemetry();
@@ -68,7 +77,10 @@ public sealed class RegisterTelemetryTests : IDisposable
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "is a no-op when called with no integrations")]
+    [UpstreamTest(
+        Prefix + "is a no-op when called with no integrations",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public void Is_a_no_op_when_called_with_no_integrations()
     {
         Vercel.AI.TelemetryRegistry.RegisterTelemetry();

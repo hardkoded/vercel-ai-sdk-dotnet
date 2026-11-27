@@ -8,7 +8,7 @@ using Vercel.AI.Operations;
 namespace Vercel.AI.Tests.Upstream.Telemetry;
 
 /// <summary>Stands in for the object literal integrations (<c>{ onEnd }</c>) that upstream tests pass.</summary>
-internal sealed class TestTelemetry : ITelemetry
+internal class TestTelemetry : ITelemetry
 {
     public Func<IOperationStartEvent, CancellationToken, Task>? OnStart { get; init; }
 

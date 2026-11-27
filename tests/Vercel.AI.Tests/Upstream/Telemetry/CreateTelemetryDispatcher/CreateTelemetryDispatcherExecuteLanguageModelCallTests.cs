@@ -18,7 +18,10 @@ public sealed class CreateTelemetryDispatcherExecuteLanguageModelCallTests
         "packages/ai/src/telemetry/create-telemetry-dispatcher.test.ts::createTelemetryDispatcher > executeLanguageModelCall::";
 
     [Fact]
-    [UpstreamTest(Id + "passes through when no integrations implement executeLanguageModelCall")]
+    [UpstreamTest(
+        Id + "passes through when no integrations implement executeLanguageModelCall",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Passes_through_when_no_integrations_implement_executeLanguageModelCall()
     {
         var telemetry = Vercel.AI.TelemetryDispatcher.Create(
@@ -38,7 +41,10 @@ public sealed class CreateTelemetryDispatcherExecuteLanguageModelCallTests
     }
 
     [Fact]
-    [UpstreamTest(Id + "wraps execute with a single integration")]
+    [UpstreamTest(
+        Id + "wraps execute with a single integration",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Wraps_execute_with_a_single_integration()
     {
         var executed = 0;
@@ -207,6 +213,44 @@ public sealed class CreateTelemetryDispatcherExecuteLanguageModelCallTests
             }
 
             return result;
+        }
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Id + "auto-binds class-based executeLanguageModelCall integrations",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Auto_binds_class_based_executeLanguageModelCall_integrations()
+    {
+        var integration = new CountingWrapper();
+        var telemetry = Vercel.AI.TelemetryDispatcher.Create(
+            CreateTelemetryDispatcherTests.Options(
+                new TestTelemetry { ExecuteLanguageModelCall = integration }
+            )
+        );
+
+        await telemetry.ExecuteLanguageModelCallAsync(
+            new LanguageModelCallStartEvent { CallId = "call-1" },
+            () => Task.FromResult("done"),
+            CancellationToken.None
+        );
+
+        Assert.Equal(1, integration.Calls);
+    }
+
+    // Stands in for upstream's class whose executeLanguageModelCall method uses this.
+    private sealed class CountingWrapper : IExecuteLanguageModelCall
+    {
+        public int Calls { get; private set; }
+
+        public Task<T> ExecuteAsync<T>(
+            ExecuteLanguageModelCallOptions<T> options,
+            CancellationToken cancellationToken
+        )
+        {
+            Calls++;
+            return options.Execute();
         }
     }
 

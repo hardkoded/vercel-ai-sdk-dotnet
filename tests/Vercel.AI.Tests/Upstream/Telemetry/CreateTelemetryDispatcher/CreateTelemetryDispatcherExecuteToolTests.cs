@@ -25,7 +25,10 @@ public sealed class CreateTelemetryDispatcherExecuteToolTests : IDisposable
         new(DispatcherEvents.ToolCall(), []) { CallId = "call-1" };
 
     [Fact]
-    [UpstreamTest(Id + "passes through when no integrations implement executeTool")]
+    [UpstreamTest(
+        Id + "passes through when no integrations implement executeTool",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Passes_through_when_no_integrations_implement_executeTool()
     {
         var telemetry = Vercel.AI.TelemetryDispatcher.Create(
@@ -45,7 +48,10 @@ public sealed class CreateTelemetryDispatcherExecuteToolTests : IDisposable
     }
 
     [Fact]
-    [UpstreamTest(Id + "wraps execute with a single integration")]
+    [UpstreamTest(
+        Id + "wraps execute with a single integration",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Wraps_execute_with_a_single_integration()
     {
         var executed = 0;
@@ -73,7 +79,10 @@ public sealed class CreateTelemetryDispatcherExecuteToolTests : IDisposable
     }
 
     [Fact]
-    [UpstreamTest(Id + "uses only local executeTool when provided, ignoring global")]
+    [UpstreamTest(
+        Id + "uses only local executeTool when provided, ignoring global",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Uses_only_local_executeTool_when_provided_ignoring_global()
     {
         var order = new List<string>();
@@ -101,7 +110,10 @@ public sealed class CreateTelemetryDispatcherExecuteToolTests : IDisposable
     }
 
     [Fact]
-    [UpstreamTest(Id + "uses global executeTool when no local integrations are provided")]
+    [UpstreamTest(
+        Id + "uses global executeTool when no local integrations are provided",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task Uses_global_executeTool_when_no_local_integrations_are_provided()
     {
         var order = new List<string>();
@@ -122,6 +134,42 @@ public sealed class CreateTelemetryDispatcherExecuteToolTests : IDisposable
 
         Assert.Equal("global:done", result);
         Assert.Equal(["global-before", "execute", "global-after"], order);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Id + "auto-binds class-based executeTool integrations",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Auto_binds_class_based_executeTool_integrations()
+    {
+        var integration = new CountingWrapper();
+        var telemetry = Vercel.AI.TelemetryDispatcher.Create(
+            CreateTelemetryDispatcherTests.Options(new TestTelemetry { ExecuteTool = integration })
+        );
+
+        await telemetry.ExecuteToolAsync(
+            Event(),
+            () => Task.FromResult("done"),
+            CancellationToken.None
+        );
+
+        Assert.Equal(1, integration.Calls);
+    }
+
+    // Stands in for upstream's class whose executeTool method uses this.
+    private sealed class CountingWrapper : IExecuteTool
+    {
+        public int Calls { get; private set; }
+
+        public Task<T> ExecuteAsync<T>(
+            ExecuteToolOptions<T> options,
+            CancellationToken cancellationToken
+        )
+        {
+            Calls++;
+            return options.Execute();
+        }
     }
 
     private sealed class Wrapper(string name, List<string> order) : IExecuteTool

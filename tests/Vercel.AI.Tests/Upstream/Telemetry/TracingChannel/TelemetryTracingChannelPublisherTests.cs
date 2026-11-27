@@ -556,6 +556,11 @@ public sealed class TelemetryTracingChannelPublisherTests
 
     [Fact]
     [UpstreamTest(
+        "packages/ai/src/telemetry/tracing-channel.test.ts::telemetry tracing channel publisher::filters tracing context using telemetry allowlists",
+        Coverage = UpstreamCoverage.Covered,
+        Note = "Upstream later renamed this test to the one below and added the SDK version check."
+    )]
+    [UpstreamTest(
         "packages/ai/src/telemetry/tracing-channel.test.ts::telemetry tracing channel publisher::includes the SDK version with allowlisted context on every tracing span",
         Coverage = UpstreamCoverage.Covered,
         Commit = UpstreamCommit
