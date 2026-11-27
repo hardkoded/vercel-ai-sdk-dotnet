@@ -30,13 +30,7 @@ public sealed class GoogleImageModel : IImageModel, IImageCaller
     /// <inheritdoc />
     public string Provider
     {
-        get
-        {
-            return
-                _provider.ModelProvider.IndexOf("vertex", StringComparison.OrdinalIgnoreCase) >= 0
-                ? "google.vertex.image"
-                : _provider.ModelProvider;
-        }
+        get { return _provider.ModelProvider; }
     }
 
     /// <inheritdoc />
