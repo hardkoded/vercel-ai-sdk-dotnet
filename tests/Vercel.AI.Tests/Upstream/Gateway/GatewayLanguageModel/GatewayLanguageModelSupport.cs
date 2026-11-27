@@ -26,7 +26,12 @@ internal sealed class GatewayLanguageModelServer : HttpMessageHandler
     /// <summary>Runs while the request is handled, before the response is returned.</summary>
     public Action? BeforeRespond { get; set; }
 
+    /// <summary>When set, the body is read in these chunks, as upstream <c>stream-chunks</c>.</summary>
+    public IReadOnlyList<string>? ResponseChunks { get; set; }
+
     public int Calls { get; private set; }
+
+    public string RequestUrl { get; private set; } = string.Empty;
 
     public string RequestBody { get; private set; } = string.Empty;
 
@@ -43,6 +48,7 @@ internal sealed class GatewayLanguageModelServer : HttpMessageHandler
     )
     {
         Calls++;
+        RequestUrl = request.RequestUri?.AbsoluteUri ?? string.Empty;
         RequestToken = cancellationToken;
         RequestBody = request.Content is null
             ? string.Empty
@@ -59,9 +65,62 @@ internal sealed class GatewayLanguageModelServer : HttpMessageHandler
             throw Failure;
         }
 
-        var content = new StringContent(ResponseBody, Encoding.UTF8);
+        HttpContent content = ResponseChunks is null
+            ? new StringContent(ResponseBody, Encoding.UTF8)
+            : new StreamContent(new ChunkedStream(ResponseChunks));
         content.Headers.ContentType = MediaTypeHeaderValue.Parse(ContentType);
         return new HttpResponseMessage(Status) { Content = content };
+    }
+
+    /// <summary>A read-only stream that returns one chunk per read.</summary>
+    private sealed class ChunkedStream(IReadOnlyList<string> chunks) : Stream
+    {
+        private int _index;
+        private byte[] _pending = [];
+        private int _offset;
+
+        public override bool CanRead => true;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => false;
+
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            if (_offset >= _pending.Length)
+            {
+                if (_index >= chunks.Count)
+                {
+                    return 0;
+                }
+
+                _pending = Encoding.UTF8.GetBytes(chunks[_index++]);
+                _offset = 0;
+            }
+
+            var length = Math.Min(count, _pending.Length - _offset);
+            Array.Copy(_pending, _offset, buffer, offset, length);
+            _offset += length;
+            return length;
+        }
+
+        public override void Flush() { }
+
+        public override long Seek(long offset, SeekOrigin origin) =>
+            throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count) =>
+            throw new NotSupportedException();
     }
 }
 
@@ -77,8 +136,8 @@ internal static class GatewayLanguageModelSupport
         HttpMessageHandler handler,
         IReadOnlyDictionary<string, string>? o11yHeaders = null
     ) =>
-        GatewayProvider
-            .Create(
+        new Vercel.AI.Gateway.GatewayLanguageModel(
+            GatewayProvider.Create(
                 new GatewayOptions
                 {
                     ApiKey = "test-token",
@@ -86,8 +145,10 @@ internal static class GatewayLanguageModelSupport
                     O11yHeaders = o11yHeaders ?? new Dictionary<string, string>(),
                 },
                 handler
-            )
-            .LanguageModel("test-model");
+            ),
+            "test-model",
+            "test-provider"
+        );
 
     /// <summary>
     /// Builds the model with a <c>fetch</c> hook, as upstream <c>createTestModel({ fetch })</c>. The hook receives the token the
@@ -107,7 +168,7 @@ internal static class GatewayLanguageModelSupport
             new GatewayLanguageModelServer()
         );
         provider.Http.Fetch = fetch;
-        return provider.LanguageModel("test-model");
+        return new Vercel.AI.Gateway.GatewayLanguageModel(provider, "test-model", "test-provider");
     }
 
     /// <summary>A fetch that sends through <paramref name="server"/> and records the token it was given, as <c>vi.fn().mockImplementation(globalThis.fetch)</c>.</summary>
@@ -141,6 +202,35 @@ internal static class GatewayLanguageModelSupport
         );
         return new GatewayLanguageModelServer { ResponseBody = body.ToString() };
     }
+
+    /// <summary>
+    /// Builds the server response of upstream <c>prepareJsonResponse</c>. The port reads typed results, so the content is the
+    /// array the Gateway returns and the usage uses the V4 token counts.
+    /// </summary>
+    internal static GatewayLanguageModelServer PrepareJsonResponse(
+        string text = "",
+        string? warnings = null,
+        string usage = "{\"inputTokens\":{\"total\":4},\"outputTokens\":{\"total\":30}}"
+    ) =>
+        new()
+        {
+            ContentType = "application/json",
+            ResponseBody =
+                "{\"id\":\"test-id\",\"created\":1711115037,\"model\":\"test-model\",\"content\":[{\"type\":\"text\",\"text\":"
+                + System.Text.Json.JsonSerializer.Serialize(text)
+                + "}],\"finish_reason\":\"stop\",\"usage\":"
+                + usage
+                + (warnings is null ? string.Empty : ",\"warnings\":" + warnings)
+                + "}",
+        };
+
+    internal static GatewayLanguageModelServer ErrorResponse(int status, string body) =>
+        new()
+        {
+            Status = (HttpStatusCode)status,
+            ContentType = "application/json",
+            ResponseBody = body,
+        };
 
     internal static GatewayLanguageModelServer StreamChunks(params string[] chunks) =>
         new() { ResponseBody = string.Concat(chunks.Select(chunk => "data: " + chunk + "\n\n")) };

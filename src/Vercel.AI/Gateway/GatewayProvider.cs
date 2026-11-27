@@ -931,21 +931,29 @@ public sealed class GatewayLanguageModel : ILanguageModel
     private readonly GatewayProvider _provider;
 
     /// <summary>Creates a Gateway language model.</summary>
-    public GatewayLanguageModel(GatewayProvider provider, string modelId)
+    /// <param name="provider">Gateway provider that sends the requests.</param>
+    /// <param name="modelId">Model id.</param>
+    /// <param name="providerName">Value of <see cref="Provider"/> (upstream <c>GatewayChatConfig.provider</c>). Defaults to <c>gateway</c>.</param>
+    public GatewayLanguageModel(
+        GatewayProvider provider,
+        string modelId,
+        string? providerName = null
+    )
     {
         _provider = provider;
         ModelId = modelId;
+        Provider = providerName ?? GatewayProvider.ProviderId;
     }
 
     /// <inheritdoc />
-    public string SpecificationVersion => "V4";
+    public string SpecificationVersion => "v4";
 
     /// <inheritdoc />
     public IReadOnlyDictionary<string, string> SupportedUrls { get; } =
         new Dictionary<string, string> { ["*/*"] = ".*" };
 
     /// <inheritdoc />
-    public string Provider => GatewayProvider.ProviderId;
+    public string Provider { get; }
 
     /// <inheritdoc />
     public string ModelId { get; }
