@@ -263,6 +263,9 @@ public sealed class RealtimeModelV4ClientEvent
         Type = type ?? throw new ArgumentNullException(nameof(type));
     }
 
+    /// <summary>Returns a shallow copy, as the object spread of the upstream union does.</summary>
+    internal RealtimeModelV4ClientEvent Clone() => (RealtimeModelV4ClientEvent)MemberwiseClone();
+
     /// <summary>The union tag.</summary>
     public string Type { get; }
 
