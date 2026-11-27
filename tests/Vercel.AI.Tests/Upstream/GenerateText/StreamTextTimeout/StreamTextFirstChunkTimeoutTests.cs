@@ -271,4 +271,68 @@ public sealed class StreamTextFirstChunkTimeoutTests
 
         Assert.False(signal.Aborted);
     }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "should clear firstChunkMs when the registered step stream is cancelled",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Should_clear_firstChunkMs_when_the_registered_step_stream_is_cancelled()
+    {
+        var model = new DelegateModel
+        {
+            Stream = (_, _) =>
+                Task.FromResult(
+                    new LanguageModelStreamResult(
+                        PartsThenStall(
+                            new LanguageModelStreamPart[]
+                            {
+                                new StreamStartStreamPart(Array.Empty<CallWarning>()),
+                                new ResponseMetadataStreamPart("response-1", null, null),
+                            },
+                            new TaskCompletionSource().Task
+                        )
+                    )
+                ),
+        };
+
+        var result = Client()
+            .StreamTextAsync(
+                new StreamTextOptions
+                {
+                    Model = model,
+                    Prompt = "test-input",
+                    Timeout = new TimeoutConfiguration { FirstChunkMs = 150 },
+                    OnError = (_, _) => Task.CompletedTask,
+                    ExperimentalTransform =
+                    [
+                        options => (stream, token) => StopOnStartStep(stream, options.StopStream),
+                    ],
+                }
+            );
+
+        await Consume(result).WaitAsync(SettleTimeout);
+
+        Assert.False(Assert.Single(model.Calls).AbortSignal!.Aborted);
+
+        await Task.Delay(Overrun);
+
+        Assert.False(model.Calls[0].AbortSignal!.Aborted);
+    }
+
+    private static async IAsyncEnumerable<TextStreamPart> StopOnStartStep(
+        IAsyncEnumerable<TextStreamPart> stream,
+        Action stopStream
+    )
+    {
+        await foreach (var part in stream)
+        {
+            if (part is StartStepPart)
+            {
+                stopStream();
+            }
+
+            yield return part;
+        }
+    }
 }

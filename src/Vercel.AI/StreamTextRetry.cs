@@ -5,6 +5,7 @@
 using System.Runtime.CompilerServices;
 using Vercel.AI.GenerateText;
 using Vercel.AI.Provider;
+using Vercel.AI.Util;
 
 namespace Vercel.AI;
 
@@ -20,6 +21,7 @@ internal sealed class StreamTextRetry
     private readonly bool _bufferToolParts;
     private readonly Func<CancellationToken, Task<StreamLanguageModelCallResult>> _callAgain;
     private readonly StreamTextErrorHandling _errors;
+    private readonly CallTimeouts? _timeouts;
     private int _automaticRetries;
     private int _callbackRetries;
 
@@ -29,9 +31,11 @@ internal sealed class StreamTextRetry
         StreamLanguageModelCallResult initial,
         int streamRetries,
         StreamTextErrorHandling errors,
-        Func<CancellationToken, Task<StreamLanguageModelCallResult>> callAgain
+        Func<CancellationToken, Task<StreamLanguageModelCallResult>> callAgain,
+        CallTimeouts? timeouts = null
     )
     {
+        _timeouts = timeouts;
         _options = options;
         _abort = abort;
         _streamRetries = streamRetries;
@@ -116,6 +120,8 @@ internal sealed class StreamTextRetry
                     continue;
                 }
 
+                // The failed attempt's output timers end with its error part.
+                _timeouts?.ClearModelOutput();
                 var failure = error.Error ?? new AiSdkException(error.Message);
                 // The part carries its error, so the event processor can tell that the error was reported.
                 var forwarded =
@@ -184,6 +190,8 @@ internal sealed class StreamTextRetry
                 }
 
                 Current = retried;
+                // The retried attempt gets a fresh firstChunkMs budget as soon as its response stream starts.
+                _timeouts?.StartFirstChunk();
                 _abort.Track(retried.Disposal);
                 enumerator = retried.Stream.GetAsyncEnumerator(cancellationToken);
                 boundaryPending = true;

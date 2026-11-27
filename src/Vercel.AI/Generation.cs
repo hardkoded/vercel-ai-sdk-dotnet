@@ -1715,12 +1715,23 @@ internal static class Generation
                     && timeouts?.Signal.Aborted != true
                     && options.AbortSignal?.Aborted != true;
 
+                // Maps to retry(...) around streamLanguageModelCall: a retryable request error reruns the model call within the step budget.
+                Task<StreamLanguageModelCallResult> callLanguageModel(
+                    CancellationToken callToken
+                ) =>
+                    PrepareRetries
+                        .Prepare(options.MaxRetries, callToken)
+                        .Retry.ExecuteAsync(() =>
+                            LanguageModelCallStreaming.StreamLanguageModelCall(
+                                streamOptions,
+                                callToken
+                            )
+                        );
+
                 StreamLanguageModelCallResult streamResult;
                 try
                 {
-                    streamResult = await LanguageModelCallStreaming
-                        .StreamLanguageModelCall(streamOptions, attemptToken)
-                        .ConfigureAwait(false);
+                    streamResult = await callLanguageModel(attemptToken).ConfigureAwait(false);
                 }
                 catch (Exception) when (IsInterrupted())
                 {
@@ -1786,11 +1797,8 @@ internal static class Generation
                             streamResult,
                             streamRetries,
                             errors,
-                            retryToken =>
-                                LanguageModelCallStreaming.StreamLanguageModelCall(
-                                    streamOptions,
-                                    retryToken
-                                )
+                            retryToken => callLanguageModel(retryToken),
+                            timeouts
                         );
                 var enumerator = ExecuteToolsFromStream
                     .Execute(
@@ -2183,9 +2191,6 @@ internal static class Generation
                                 )();
                                 stepResponseModelId = current.ModelId;
                                 warnings = attemptBoundary.Warnings;
-                                // The retried attempt gets its own timeout windows.
-                                timeouts?.ClearModelOutput();
-                                timeouts?.StartFirstChunk();
                                 stepRequest = RequestMetadata(retry?.Current.Request);
                                 buffer.Add(new StreamRetryBoundaryPart(stepRequest, warnings));
                                 break;
