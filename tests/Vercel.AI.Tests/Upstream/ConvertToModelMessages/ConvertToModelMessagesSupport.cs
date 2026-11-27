@@ -17,7 +17,7 @@ internal static class ConvertToModelMessagesSupport
     internal static JsonElement Json(string json) => JsonDocument.Parse(json).RootElement.Clone();
 
     /// <summary>Builds UI messages from the JSON array that upstream passes to <c>convertToModelMessages</c>.</summary>
-    internal static IReadOnlyList<UIMessage> UiMessages(string messagesJson) =>
+    internal static IReadOnlyList<UIMessage> UIMessagesFromJson(string messagesJson) =>
         ((JsonArray)JsonNode.Parse(messagesJson)!)
             .Select(node => UIMessageJson.FromJson((JsonObject)node!))
             .ToList();

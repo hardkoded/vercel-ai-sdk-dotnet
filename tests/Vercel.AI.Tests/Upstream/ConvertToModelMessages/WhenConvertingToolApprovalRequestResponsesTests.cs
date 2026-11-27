@@ -23,7 +23,7 @@ public sealed class WhenConvertingToolApprovalRequestResponsesTests : WarningsOf
     public void Should_convert_an_approved_tool_approval_request_static_tool()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [
                   {
@@ -114,7 +114,7 @@ public sealed class WhenConvertingToolApprovalRequestResponsesTests : WarningsOf
     public void Should_convert_an_approved_tool_approval_request_dynamic_tool()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [
                   {
@@ -206,7 +206,7 @@ public sealed class WhenConvertingToolApprovalRequestResponsesTests : WarningsOf
     public void Should_preserve_automatic_approval_metadata_for_approved_tool_results()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [
                   {
@@ -315,7 +315,7 @@ public sealed class WhenConvertingToolApprovalRequestResponsesTests : WarningsOf
     public void Should_convert_a_denied_tool_approval_request_and_follow_up_text_static_tool()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [
                   {
@@ -434,7 +434,7 @@ public sealed class WhenConvertingToolApprovalRequestResponsesTests : WarningsOf
     public void Should_convert_a_denied_tool_approval_request_and_follow_up_text_dynamic_tool()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [
                   {
@@ -554,7 +554,7 @@ public sealed class WhenConvertingToolApprovalRequestResponsesTests : WarningsOf
     public void Should_convert_tool_output_denied_static_tool()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [
                   {
@@ -656,7 +656,7 @@ public sealed class WhenConvertingToolApprovalRequestResponsesTests : WarningsOf
     public void Should_convert_tool_output_denied_without_approval_static_tool()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [
                   {
@@ -739,7 +739,7 @@ public sealed class WhenConvertingToolApprovalRequestResponsesTests : WarningsOf
     public void Should_convert_tool_output_denied_dynamic_tool()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [
                   {
@@ -842,7 +842,7 @@ public sealed class WhenConvertingToolApprovalRequestResponsesTests : WarningsOf
     public void Should_convert_tool_output_result_with_approval_and_follow_up_text_static_tool()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [
                   {
@@ -1167,7 +1167,7 @@ public sealed class WhenConvertingToolApprovalRequestResponsesTests : WarningsOf
     public void Should_convert_tool_error_result_with_approval_and_follow_up_text_static_tool()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [
                   {

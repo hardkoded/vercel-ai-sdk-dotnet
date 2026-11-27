@@ -25,7 +25,7 @@ public sealed class AssistantMessageTests : WarningsOff
     public void Should_convert_an_assistant_message_with_reasoning()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [{"role":"assistant","parts":[{"type":"reasoning","text":"Thinking...","providerMetadata":{"testProvider":{"signature":"1234567890"}},"state":"done"},{"type":"reasoning","text":"redacted-data","providerMetadata":{"testProvider":{"isRedacted":true}},"state":"done"},{"type":"text","text":"Hello, human!","state":"done"}]}]
                 """
@@ -202,7 +202,7 @@ public sealed class AssistantMessageTests : WarningsOff
     public void Should_convert_custom_assistant_parts()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [{"role":"assistant","parts":[{"type":"custom","kind":"test-provider.compaction","providerMetadata":{"openai":{"itemId":"cmp_123"}}}]}]
                 """
@@ -225,7 +225,7 @@ public sealed class AssistantMessageTests : WarningsOff
     public void Should_convert_a_simple_assistant_text_message()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [{"role":"assistant","parts":[{"type":"text","text":"Hello, human!","state":"done"}]}]
                 """
@@ -248,7 +248,7 @@ public sealed class AssistantMessageTests : WarningsOff
     public void Should_convert_a_simple_assistant_text_message_with_provider_metadata()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [{"role":"assistant","parts":[{"type":"text","text":"Hello, human!","state":"done","providerMetadata":{"testProvider":{"signature":"1234567890"}}}]}]
                 """
@@ -331,7 +331,7 @@ public sealed class AssistantMessageTests : WarningsOff
     public void Should_handle_assistant_message_with_tool_output_available()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [{"role":"assistant","parts":[{"type":"step-start"},{"type":"text","text":"Let me calculate that for you."},{"type":"tool-calculator","state":"output-available","toolCallId":"call1","input":{"operation":"add","numbers":[1,2]},"output":"3","callProviderMetadata":{"testProvider":{"signature":"1234567890"}}}]}]
                 """
@@ -475,7 +475,7 @@ public sealed class AssistantMessageTests : WarningsOff
     public void Should_handle_assistant_message_with_provider_executed_tool_output_available()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [{"role":"assistant","parts":[{"type":"step-start"},{"type":"text","text":"Let me calculate that for you."},{"type":"tool-calculator","state":"output-available","toolCallId":"call1","input":{"operation":"add","numbers":[1,2]},"output":"3","providerExecuted":true}]}]
                 """
@@ -498,7 +498,7 @@ public sealed class AssistantMessageTests : WarningsOff
     public void Should_handle_assistant_message_with_provider_executed_tool_output_error()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [{"role":"assistant","parts":[{"type":"step-start"},{"type":"text","text":"Let me calculate that for you."},{"type":"tool-calculator","state":"output-error","toolCallId":"call1","input":{"operation":"add","numbers":[1,2]},"errorText":"Error: Invalid input","providerExecuted":true}]}]
                 """
@@ -521,7 +521,7 @@ public sealed class AssistantMessageTests : WarningsOff
     public void Should_propagate_provider_metadata_to_provider_executed_tool_result()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [{"role":"assistant","parts":[{"type":"step-start"},{"type":"tool-calculator","state":"output-available","toolCallId":"call1","input":{"operation":"multiply","numbers":[3,4]},"output":"12","providerExecuted":true,"callProviderMetadata":{"testProvider":{"executionTime":75}}}]}]
                 """
@@ -545,7 +545,7 @@ public sealed class AssistantMessageTests : WarningsOff
     public void Should_prefer_result_provider_metadata_over_call_provider_metadata_for_provider_executed_tool_result()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [{"role":"assistant","parts":[{"type":"step-start"},{"type":"tool-calculator","state":"output-available","toolCallId":"call1","input":{"operation":"multiply","numbers":[3,4]},"output":"12","providerExecuted":true,"callProviderMetadata":{"testProvider":{"itemId":"call-item"}},"resultProviderMetadata":{"testProvider":{"itemId":"result-item"}}}]}]
                 """
@@ -569,7 +569,7 @@ public sealed class AssistantMessageTests : WarningsOff
     public void Should_handle_assistant_message_with_tool_invocations_that_have_multi_part_responses()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [{"role":"assistant","parts":[{"type":"step-start"},{"type":"text","text":"Let me calculate that for you."},{"type":"tool-screenshot","state":"output-available","toolCallId":"call1","input":{},"output":"imgbase64"}]}]
                 """
@@ -593,7 +593,7 @@ public sealed class AssistantMessageTests : WarningsOff
     public void Should_handle_conversation_with_an_assistant_message_that_has_empty_tool_invocations()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [{"role":"user","parts":[{"type":"text","text":"text1"}]},{"role":"assistant","parts":[{"type":"text","text":"text2","state":"done"}]}]
                 """
@@ -617,7 +617,7 @@ public sealed class AssistantMessageTests : WarningsOff
     public void Should_handle_conversation_with_multiple_tool_invocations_that_have_step_information()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [{"role":"assistant","parts":[{"type":"step-start"},{"type":"text","text":"response","state":"done"},{"type":"tool-screenshot","state":"output-available","toolCallId":"call-1","input":{"value":"value-1"},"output":"result-1"},{"type":"step-start"},{"type":"tool-screenshot","state":"output-available","toolCallId":"call-2","input":{"value":"value-2"},"output":"result-2"},{"type":"tool-screenshot","state":"output-available","toolCallId":"call-3","input":{"value":"value-3"},"output":"result-3"},{"type":"step-start"},{"type":"tool-screenshot","state":"output-available","toolCallId":"call-4","input":{"value":"value-4"},"output":"result-4"}]}]
                 """
@@ -640,7 +640,7 @@ public sealed class AssistantMessageTests : WarningsOff
     public void Should_handle_conversation_with_mix_of_tool_invocations_and_text()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [{"role":"assistant","parts":[{"type":"step-start"},{"type":"text","text":"i am gonna use tool1","state":"done"},{"type":"tool-screenshot","state":"output-available","toolCallId":"call-1","input":{"value":"value-1"},"output":"result-1"},{"type":"step-start"},{"type":"text","text":"i am gonna use tool2 and tool3","state":"done"},{"type":"tool-screenshot","state":"output-available","toolCallId":"call-2","input":{"value":"value-2"},"output":"result-2"},{"type":"tool-screenshot","state":"output-available","toolCallId":"call-3","input":{"value":"value-3"},"output":"result-3"},{"type":"step-start"},{"type":"tool-screenshot","state":"output-available","toolCallId":"call-4","input":{"value":"value-4"},"output":"result-4"},{"type":"step-start"},{"type":"text","text":"final response","state":"done"}]}]
                 """

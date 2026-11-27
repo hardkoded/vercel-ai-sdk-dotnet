@@ -175,6 +175,12 @@ Redacting tool errors changes the message history. The tool result that `Convert
 
 The validated messages are new objects. The messages that you pass in are not changed.
 
+## Inspecting UI message parts and chat completion
+
+`UIMessageParts` holds the type guards of `ui-messages.ts`: `IsTextUIPart`, `IsCustomContentUIPart`, `IsFileUIPart`, `IsReasoningFileUIPart`, `IsReasoningUIPart`, `IsDataUIPart`, `IsStaticToolUIPart`, `IsDynamicToolUIPart`, `IsToolUIPart`, and `IsToolOutputErrorUIPart`. `GetStaticToolName` returns the part type after `tool-`, and `GetToolName` returns the name of a static or dynamic tool part.
+
+`UIMessageCompletion.LastAssistantMessageIsCompleteWithToolCalls(messages)` is true when the last message is an assistant message whose last step has at least one tool call that the provider did not execute, every such call has a final result (a preliminary output does not count), and no text part after the last call is still streaming. `UIMessageCompletion.LastAssistantMessageIsCompleteWithApprovalResponses(messages)` is true when the last step has at least one `approval-responded` tool part and every tool part is answered, finished, failed, or denied. Use them to decide when a client sends a chat again after a tool result or an approval.
+
 ## Reading UI message streams
 
 `UIMessageStreamConverter.ReadUIMessageStream(new ReadUIMessageStreamOptions(chunks))` turns a stream of UI message chunks into an `IAsyncEnumerable<UIMessage>`. Each element is another state of the same message while it is being built. Set `Message` to continue the last assistant message when you resume a conversation. A chunk that starts a different message id replaces it. `OnError` receives errors, including `error` chunks, and `TerminateOnError` ends the enumeration with the error instead. Stopping the enumeration early disposes the chunk stream. The typed `UIMessage` keeps the fields that the chunks carry: `TextUIPart.Citations`, `ToolUIPart.InputEncoding` (while the call is `InputStreaming`, an input with `Text` encoding stays a raw string), `ToolUIPart.ToolMetadata`, and `SteeringMessageUIPart` (`steering-message`).

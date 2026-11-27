@@ -25,7 +25,7 @@ public sealed class DataPartConversionInUserMessagesTests : WarningsOff
     public void Should_convert_data_parts_to_text_when_converter_provided()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [
                   {
@@ -77,7 +77,7 @@ public sealed class DataPartConversionInUserMessagesTests : WarningsOff
     public void Should_skip_data_parts_when_no_converter_provided()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [
                   {
@@ -126,7 +126,7 @@ public sealed class DataPartConversionInUserMessagesTests : WarningsOff
     public void Should_selectively_convert_data_parts()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [
                   {
@@ -184,7 +184,7 @@ public sealed class DataPartConversionInUserMessagesTests : WarningsOff
     public void Should_convert_data_parts_to_file_parts()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [
                   {
@@ -239,7 +239,7 @@ public sealed class DataPartConversionInUserMessagesTests : WarningsOff
     public void Should_handle_multiple_data_parts_of_different_types()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [
                   {
@@ -324,7 +324,7 @@ public sealed class DataPartConversionInUserMessagesTests : WarningsOff
     public void Should_work_with_messages_that_have_no_data_parts()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [
                   {
@@ -384,7 +384,7 @@ public sealed class DataPartConversionInUserMessagesTests : WarningsOff
     public void Should_preserve_order_of_parts_including_converted_data_parts()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [
                   {

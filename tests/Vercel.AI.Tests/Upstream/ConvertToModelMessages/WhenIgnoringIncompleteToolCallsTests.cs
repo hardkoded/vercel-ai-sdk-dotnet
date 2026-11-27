@@ -148,7 +148,7 @@ public sealed class WhenIgnoringIncompleteToolCallsTests : WarningsOff
     public void Should_ignore_tool_calls_that_are_awaiting_approval_or_have_no_state()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [
                   {
@@ -185,7 +185,7 @@ public sealed class WhenIgnoringIncompleteToolCallsTests : WarningsOff
     public void Should_preserve_tool_calls_with_approval_responses()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [
                   {
@@ -231,7 +231,7 @@ public sealed class WhenIgnoringIncompleteToolCallsTests : WarningsOff
     public void Should_handle_conversation_with_multiple_tool_invocations_and_user_message_at_the_end()
     {
         var result = Convert(
-            UiMessages(
+            UIMessagesFromJson(
                 """
                 [
                   {
