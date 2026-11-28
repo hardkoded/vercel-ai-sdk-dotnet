@@ -40,6 +40,9 @@ public class GoogleOptions
 
     /// <summary>Embedding provider options read by <see cref="GoogleEmbeddingModel"/>.</summary>
     public JsonElement? EmbeddingProviderOptions { get; set; }
+
+    /// <summary>Custom WebSocket implementation for streaming speech translation and transcription. Defaults to <c>ClientWebSocket</c>. Maps to <c>webSocket</c>.</summary>
+    public WebSocketFactory? WebSocket { get; set; }
 }
 
 /// <summary>Google Gemini provider.</summary>
@@ -254,6 +257,12 @@ public class GoogleProvider
     public override IRealtimeModel RealtimeModel(string modelId)
     {
         return new GoogleRealtimeModel(this, modelId);
+    }
+
+    /// <inheritdoc />
+    public override ISpeechTranslationModel SpeechTranslationModel(string modelId)
+    {
+        return new GoogleSpeechTranslationModel(this, modelId);
     }
 
     /// <summary>Builds request headers. An API key or a bearer token is required.</summary>
