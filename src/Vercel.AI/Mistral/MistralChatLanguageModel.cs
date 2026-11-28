@@ -52,8 +52,7 @@ public sealed class MistralChatLanguageModel : ILanguageModel
     /// <inheritdoc />
     public IReadOnlyDictionary<string, string> SupportedUrls => PdfUrls;
 
-    private Uri ChatCompletionsUri =>
-        ApiKeys.Combine(_provider.Options.BaseUrl, "chat/completions");
+    private Uri ChatCompletionsUri => _provider.ChatUri(ModelId);
 
     /// <inheritdoc />
     public async Task<LanguageModelGenerateResult> DoGenerateAsync(
