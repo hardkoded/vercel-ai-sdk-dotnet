@@ -31,6 +31,10 @@ internal sealed class SseStreamHandler : HttpMessageHandler
 
     public string Body { get; private set; } = string.Empty;
 
+    /// <summary>The headers of the last request, as the HTTP client sends them.</summary>
+    public Dictionary<string, string> RequestHeaders { get; } =
+        new(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>Builds the chunks of an upstream <c>*.chunks.txt</c> fixture: one <c>data:</c> event per line, and a final <c>[DONE]</c> when asked.</summary>
     public static IEnumerable<string> FixtureChunks(string name, bool done)
     {
@@ -67,6 +71,25 @@ internal sealed class SseStreamHandler : HttpMessageHandler
     )
     {
         Uri = request.RequestUri?.AbsoluteUri ?? string.Empty;
+        RequestHeaders.Clear();
+        foreach (var header in request.Headers)
+        {
+            RequestHeaders[header.Key] = string.Join(",", header.Value);
+        }
+
+        if (request.Headers.Authorization != null)
+        {
+            RequestHeaders["Authorization"] = request.Headers.Authorization.ToString();
+        }
+
+        if (request.Content != null)
+        {
+            foreach (var header in request.Content.Headers)
+            {
+                RequestHeaders[header.Key] = string.Join(",", header.Value);
+            }
+        }
+
         Body = request.Content is null
             ? string.Empty
             : await request.Content.ReadAsStringAsync().ConfigureAwait(false);

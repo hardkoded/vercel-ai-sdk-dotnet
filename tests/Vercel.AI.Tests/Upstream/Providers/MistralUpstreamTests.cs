@@ -30,7 +30,7 @@ public sealed class MistralUpstreamTests
             ["Custom-Request-Header"] = "request-header-value",
         };
         await (
-            (OpenAICompatibleLanguageModel)provider.LanguageModel("mistral-small-latest")
+            (MistralChatLanguageModel)provider.LanguageModel("mistral-small-latest")
         ).DoGenerateAsync(options, CancellationToken.None);
         Assert.Equal(
             "https://api.mistral.ai/v1/chat/completions",
