@@ -79,28 +79,39 @@ internal static class MistralPrepareTools
             mistralTools.Add(new JsonObject { ["type"] = "function", ["function"] = function });
         }
 
-        JsonNode? choice = null;
-        if (toolChoice != null)
+        if (toolChoice == null)
         {
-            choice = toolChoice.Type switch
-            {
-                "auto" or "none" => toolChoice.Type,
-                "required" => "any",
-                "tool" => new JsonObject
-                {
-                    ["type"] = "function",
-                    ["function"] = new JsonObject
-                    {
-                        ["name"] = ((ToolChoice.NamedChoice)toolChoice).ToolName,
-                    },
-                },
-                _ => throw new UnsupportedFunctionalityException(
-                    "tool choice type: " + toolChoice.Type,
-                    "'tool choice type: " + toolChoice.Type + "' functionality not supported."
-                ),
-            };
+            return new MistralPreparedTools(mistralTools, null, toolWarnings);
         }
 
-        return new MistralPreparedTools(mistralTools, choice, toolWarnings);
+        switch (toolChoice.Type)
+        {
+            case "auto":
+            case "none":
+                return new MistralPreparedTools(mistralTools, toolChoice.Type, toolWarnings);
+            case "required":
+                return new MistralPreparedTools(mistralTools, "any", toolWarnings);
+
+            // Mistral does not support tool mode directly, so the tools are filtered and the tool choice is forced through 'any'.
+            case "tool":
+                var toolName = ((ToolChoice.NamedChoice)toolChoice).ToolName;
+                return new MistralPreparedTools(
+                    new JsonArray(
+                        mistralTools
+                            .Where(tool =>
+                                tool!["function"]!["name"]!.GetValue<string>() == toolName
+                            )
+                            .Select(tool => tool!.DeepClone())
+                            .ToArray()
+                    ),
+                    "any",
+                    toolWarnings
+                );
+            default:
+                throw new UnsupportedFunctionalityException(
+                    "tool choice type: " + toolChoice.Type,
+                    "'tool choice type: " + toolChoice.Type + "' functionality not supported."
+                );
+        }
     }
 }

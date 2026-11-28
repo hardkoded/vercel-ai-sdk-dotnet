@@ -463,7 +463,7 @@ Set `CohereOptions.GenerateId` to control the ids of the sources (upstream `gene
 - A JSON response format with a schema uses `json_schema` (`name` defaults to `response`, `strict` follows `strictJsonSchema`). Without a schema, or with `structuredOutputs` set to `false`, the request uses `json_object` and a JSON instruction is added to the system message.
 - A response `content` array keeps its order: `thinking` parts become reasoning, `text` parts become text, `reference` and `image_url` parts are ignored. Streams open and close reasoning and text parts as the content switches.
 - `usage` is checked with `MistralUsageSchema` (maps to `mistralUsageSchema`), converted with `ConvertMistralUsage`, and the full object stays in `Usage.Raw`. Finish reasons go through `MapMistralFinishReason`. A stream that ends without a finish reason reports `FinishReason.Interrupted`.
-- Tools go through `MistralPrepareTools` (maps to `prepareTools`): `strict` is passed on, `required` becomes `any`, and a named tool choice keeps every tool in the request.
+- Tools go through `MistralPrepareTools` (maps to `prepareTools`): `strict` is passed on, `required` becomes `any`, and a named tool choice filters the tools to that one and sends `any`.
 
 ## Mistral Conversations API
 

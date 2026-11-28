@@ -34,7 +34,7 @@ public sealed class DoGenerateTests
             "{\"model\":\"mistral-small-latest\",\"messages\":[{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"Hello\"}]}],"
                 + "\"tools\":[{\"type\":\"function\",\"function\":{\"name\":\"test-tool\",\"parameters\":"
                 + schema
-                + "}}],\"tool_choice\":{\"type\":\"function\",\"function\":{\"name\":\"test-tool\"}}}"
+                + "}}],\"tool_choice\":\"any\"}"
         );
         Assert.True(JsonNode.DeepEquals(Body(capture), expected), Body(capture).ToJsonString());
     }
