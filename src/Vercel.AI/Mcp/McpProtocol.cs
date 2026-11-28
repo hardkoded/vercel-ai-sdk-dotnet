@@ -942,8 +942,17 @@ public static class StdioEnvironment
             ?? System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(
                 System.Runtime.InteropServices.OSPlatform.Windows
             );
+        var customKeys = new HashSet<string>(
+            environment.Keys,
+            windowsPlatform ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal
+        );
         foreach (var key in windowsPlatform ? WindowsKeys : UnixKeys)
         {
+            if (customKeys.Contains(key))
+            {
+                continue;
+            }
+
             var value = Environment.GetEnvironmentVariable(key);
             if (value == null || value.StartsWith("()", StringComparison.Ordinal))
             {
