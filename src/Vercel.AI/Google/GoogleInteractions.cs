@@ -421,8 +421,7 @@ public static class GoogleInteractionsInput
         }
         else
         {
-            block["uri"] =
-                url ?? ProviderReferences.ResolveProviderReference(reference!, "google");
+            block["uri"] = url ?? ProviderReferences.ResolveProviderReference(reference!, "google");
             if (MediaTypes.IsFullMediaType(mediaType))
             {
                 block["mime_type"] = mediaType;
@@ -458,7 +457,10 @@ public static class GoogleInteractionsInput
         }
 
         string? resolution = null;
-        if (google.TryGetProperty("resolution", out var value) && value.ValueKind == JsonValueKind.String)
+        if (
+            google.TryGetProperty("resolution", out var value)
+            && value.ValueKind == JsonValueKind.String
+        )
         {
             resolution = value.GetString();
             if (resolution is not ("low" or "medium" or "high"))
@@ -618,7 +620,11 @@ public static class GoogleInteractionsInput
     {
         try
         {
-            var parsed = JsonNode.Parse(string.IsNullOrWhiteSpace(input) ? "{}" : input);
+            var text = string.IsNullOrWhiteSpace(input) ? "{}" : input;
+
+            // secureJsonParse: rejects __proto__ and constructor.prototype keys.
+            SecureJson.Parse(text);
+            var parsed = JsonNode.Parse(text);
             if (parsed is JsonObject)
             {
                 return parsed;
@@ -658,7 +664,16 @@ public static class GoogleInteractionsInput
                 }
 
                 var block = ConvertUserPart(item, warnings, mediaResolution);
-                if (item.Type is "file" or "file-url" or "file-data" or "file-reference" or "image-url" or "image-data" or "image-file-reference")
+                if (
+                    item.Type
+                    is "file"
+                        or "file-url"
+                        or "file-data"
+                        or "file-reference"
+                        or "image-url"
+                        or "image-data"
+                        or "image-file-reference"
+                )
                 {
                     if (block != null)
                     {
@@ -814,12 +829,7 @@ public static class GoogleInteractionsOutput
                         {
                             if (blockNode is JsonObject block)
                             {
-                                ParseModelOutputBlock(
-                                    block,
-                                    content,
-                                    generateId,
-                                    interactionId
-                                );
+                                ParseModelOutputBlock(block, content, generateId, interactionId);
                             }
                         }
                     }
@@ -962,8 +972,7 @@ public static class GoogleInteractionsOutput
                 break;
             case "image":
             case "video":
-                var mediaType =
-                    GoogleInteractionsStreaming.String(block, "mime_type")
+                var mediaType = GoogleInteractionsStreaming.String(block, "mime_type")
                     ?? (blockType == "image" ? "image/png" : "video/mp4");
                 var data = GoogleInteractionsStreaming.String(block, "data");
                 var uri = GoogleInteractionsStreaming.String(block, "uri");
