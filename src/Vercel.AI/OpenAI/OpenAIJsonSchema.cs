@@ -108,11 +108,8 @@ public static class OpenAIJsonSchema
             && propertyNames != null
         )
         {
-            // Property names are always strings in JSON, so an omitted type is a string schema.
-            if (
-                propertyNames is not JsonObject nameSchema
-                || (nameSchema["type"] is { } type && !IsString(type))
-            )
+            // The pinned upstream requires an explicit string schema.
+            if (propertyNames is not JsonObject nameSchema || !IsString(nameSchema["type"]))
             {
                 throw new Provider.AiSdkException(
                     "JSON Schema propertyNames that does not use a string schema"
@@ -211,6 +208,8 @@ public static class OpenAIJsonSchema
         }
 
         normalized.Remove("allOf");
+        // The root overlays the referenced schema, as upstream does. A root key such as `required` replaces the
+        // definition's own (https://github.com/hardkoded/vercel-ai-sdk-dotnet/issues/1960).
         var expanded = (JsonObject)referencedSchema.DeepClone();
         foreach (var property in normalized)
         {
@@ -297,7 +296,7 @@ public static class OpenAIJsonSchema
             : null;
     }
 
-    private static bool IsString(JsonNode type)
+    private static bool IsString(JsonNode? type)
     {
         return type is JsonValue value
             && value.TryGetValue<string>(out var text)

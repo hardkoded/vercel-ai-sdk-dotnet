@@ -42,8 +42,4 @@ A decision state image part takes the file part provider option `openai.imageDet
 
 ## Structured output schemas
 
-OpenAI structured output does not accept `propertyNames` or regex lookaround in `pattern`, so both are removed before the schema is sent, with a `compatibility` warning. A singleton local reference `allOf` (`{ "allOf": [{ "$ref": "#/definitions/person" }] }`, which Zod 4 emits for recursive schemas) becomes a direct `$ref`. At the schema root, the referenced definition is expanded in place, because OpenAI requires an object at the root.
-
-## Language model capabilities
-
-`OpenAILanguageModelCapabilities.ForModel(modelId)` also reports `SupportsChatFunctionToolsWithReasoning`, which says whether Chat Completions accepts function tools together with reasoning for that model.
+OpenAI structured output does not accept `propertyNames` or regex lookaround in `pattern`, so both are removed before the schema is sent, with a `compatibility` warning. A `propertyNames` that is a boolean or has no explicit `type: "string"` is rejected with an `AiSdkException`. A singleton local reference `allOf` (`{ "allOf": [{ "$ref": "#/definitions/person" }] }`, which Zod 4 emits for recursive schemas) becomes a direct `$ref`. At the schema root, the referenced definition is expanded in place, because OpenAI requires an object at the root.
