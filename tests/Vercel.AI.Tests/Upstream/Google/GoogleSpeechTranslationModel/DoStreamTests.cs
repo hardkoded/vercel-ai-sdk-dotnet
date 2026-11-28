@@ -21,7 +21,10 @@ public sealed class DoStreamTests
         "packages/google/src/speech-translation/google-speech-translation-model.test.ts::doStream::";
 
     [Fact]
-    [UpstreamTest(Prefix + "should stream translation over the Gemini Live API WebSocket", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should stream translation over the Gemini Live API WebSocket",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task should_stream_translation_over_the_Gemini_Live_API_WebSocket()
     {
         MockWebSocket.Reset();
@@ -104,7 +107,10 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should warn about unsupported sourceLanguage and outputAudioFormat", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should warn about unsupported sourceLanguage and outputAudioFormat",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task should_warn_about_unsupported_sourceLanguage_and_outputAudioFormat()
     {
         MockWebSocket.Reset();
@@ -148,7 +154,10 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should reject non-PCM input audio formats", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should reject non-PCM input audio formats",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task should_reject_non_PCM_input_audio_formats()
     {
         var model = CreateModel();
@@ -167,7 +176,10 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should reject unsupported input audio sample rates", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should reject unsupported input audio sample rates",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task should_reject_unsupported_input_audio_sample_rates()
     {
         var model = CreateModel();
@@ -186,7 +198,10 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should accumulate multiple turns before the audio ends", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should accumulate multiple turns before the audio ends",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task should_accumulate_multiple_turns_before_the_audio_ends()
     {
         MockWebSocket.Reset();
@@ -241,7 +256,10 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should include all turns that arrive after the audio ended early", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should include all turns that arrive after the audio ended early",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task should_include_all_turns_that_arrive_after_the_audio_ended_early()
     {
         MockWebSocket.Reset();
@@ -283,13 +301,21 @@ public sealed class DoStreamTests
         Assert.Equal("Hola mundo", last.OutputText);
         Assert.Null(last.Usage);
         Assert.Equal(
-            new[] { "output-text-final:google-item-0:Hola ", "output-text-final:google-item-1:mundo" },
+            new[]
+            {
+                "output-text-final:google-item-0:Hola ",
+                "output-text-final:google-item-1:mundo",
+            },
             Shape(result).Where(part => part.StartsWith("output-text-final")).ToArray()
         );
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should finish without further server messages when the turn completed before the audio ended", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "should finish without further server messages when the turn completed before the audio ended",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task should_finish_without_further_server_messages_when_the_turn_completed_before_the_audio_ended()
     {
         MockWebSocket.Reset();
@@ -324,7 +350,10 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should finish continuous translation after trailing output silence", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should finish continuous translation after trailing output silence",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task should_finish_continuous_translation_after_trailing_output_silence()
     {
         MockWebSocket.Reset();
@@ -367,7 +396,10 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should parse a real Google Live translation response", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should parse a real Google Live translation response",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task should_parse_a_real_Google_Live_translation_response()
     {
         MockWebSocket.Reset();
@@ -414,7 +446,10 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should finish when the server closes while a finish is pending", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should finish when the server closes while a finish is pending",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task should_finish_when_the_server_closes_while_a_finish_is_pending()
     {
         MockWebSocket.Reset();
@@ -442,7 +477,11 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should error the stream with close diagnostics when the socket closes before finishing", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix
+            + "should error the stream with close diagnostics when the socket closes before finishing",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task should_error_the_stream_with_close_diagnostics_when_the_socket_closes_before_finishing()
     {
         MockWebSocket.Reset();
@@ -464,7 +503,10 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should error the stream when the abort signal fires mid-stream", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should error the stream when the abort signal fires mid-stream",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task should_error_the_stream_when_the_abort_signal_fires_mid_stream()
     {
         MockWebSocket.Reset();
@@ -491,7 +533,10 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should ignore server messages after the stream finished", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should ignore server messages after the stream finished",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task should_ignore_server_messages_after_the_stream_finished()
     {
         MockWebSocket.Reset();
@@ -516,7 +561,10 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should include raw provider chunks when includeRawChunks is enabled", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should include raw provider chunks when includeRawChunks is enabled",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task should_include_raw_provider_chunks_when_includeRawChunks_is_enabled()
     {
         MockWebSocket.Reset();
@@ -541,7 +589,10 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should throw when no API key is available", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should throw when no API key is available",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task should_throw_when_no_API_key_is_available()
     {
         var model = CreateModel(headers: () => new Dictionary<string, string?>());
@@ -556,7 +607,10 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should find the API key with case-insensitive header lookup", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should find the API key with case-insensitive header lookup",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task should_find_the_API_key_with_case_insensitive_header_lookup()
     {
         MockWebSocket.Reset();
@@ -572,7 +626,10 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should pass non-credential headers to the WebSocket constructor", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should pass non-credential headers to the WebSocket constructor",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task should_pass_non_credential_headers_to_the_WebSocket_constructor()
     {
         MockWebSocket.Reset();
@@ -593,7 +650,10 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should error the stream on server error messages", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should error the stream on server error messages",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task should_error_the_stream_on_server_error_messages()
     {
         MockWebSocket.Reset();
@@ -610,7 +670,10 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should cancel the audio stream when the WebSocket constructor throws", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should cancel the audio stream when the WebSocket constructor throws",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task should_cancel_the_audio_stream_when_the_WebSocket_constructor_throws()
     {
         var audioCancelled = false;
@@ -627,7 +690,10 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should close the WebSocket and stop reading audio when the stream is cancelled", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should close the WebSocket and stop reading audio when the stream is cancelled",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task should_close_the_WebSocket_and_stop_reading_audio_when_the_stream_is_cancelled()
     {
         MockWebSocket.Reset();
@@ -647,7 +713,10 @@ public sealed class DoStreamTests
     }
 
     [Fact]
-    [UpstreamTest(Prefix + "should be created by the provider translation factory", Coverage = UpstreamCoverage.Covered)]
+    [UpstreamTest(
+        Prefix + "should be created by the provider translation factory",
+        Coverage = UpstreamCoverage.Covered
+    )]
     public async Task should_be_created_by_the_provider_translation_factory()
     {
         MockWebSocket.Reset();
@@ -680,7 +749,10 @@ public sealed class DoStreamTests
                 _ =>
                     Task.FromResult<IReadOnlyDictionary<string, string?>>(
                         headers?.Invoke()
-                            ?? new Dictionary<string, string?> { ["x-goog-api-key"] = "test-api-key" }
+                            ?? new Dictionary<string, string?>
+                            {
+                                ["x-goog-api-key"] = "test-api-key",
+                            }
                     )
             )
             {
@@ -707,11 +779,21 @@ public sealed class DoStreamTests
             .Select(part =>
                 part.Type switch
                 {
-                    "source-transcript-delta" or "output-text-delta" =>
-                        part.Type + ":" + part.Id + ":" + part.Delta,
-                    "source-transcript-final" or "output-text-final" =>
-                        part.Type + ":" + part.Id + ":" + part.Text,
-                    "audio" => part.Type + ":" + part.Id + ":" + Convert.ToBase64String(part.Audio!),
+                    "source-transcript-delta" or "output-text-delta" => part.Type
+                        + ":"
+                        + part.Id
+                        + ":"
+                        + part.Delta,
+                    "source-transcript-final" or "output-text-final" => part.Type
+                        + ":"
+                        + part.Id
+                        + ":"
+                        + part.Text,
+                    "audio" => part.Type
+                        + ":"
+                        + part.Id
+                        + ":"
+                        + Convert.ToBase64String(part.Audio!),
                     "finish" => part.Type + ":" + part.SourceText + ":" + part.OutputText,
                     _ => part.Type,
                 }

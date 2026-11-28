@@ -60,10 +60,7 @@ public sealed class GoogleSpeechTranslationModel : ISpeechTranslationModel, ISpe
     private readonly GoogleSpeechTranslationModelConfig _config;
 
     /// <summary>Creates a speech translation model.</summary>
-    public GoogleSpeechTranslationModel(
-        string modelId,
-        GoogleSpeechTranslationModelConfig config
-    )
+    public GoogleSpeechTranslationModel(string modelId, GoogleSpeechTranslationModelConfig config)
     {
         ModelId = modelId ?? throw new ArgumentNullException(nameof(modelId));
         _config = config ?? throw new ArgumentNullException(nameof(config));
@@ -173,9 +170,7 @@ public sealed class GoogleSpeechTranslationModel : ISpeechTranslationModel, ISpe
         }
 
         var headers = new Dictionary<string, string?>(StringComparer.Ordinal);
-        foreach (
-            var pair in await _config.Headers(cancellationToken).ConfigureAwait(false)
-        )
+        foreach (var pair in await _config.Headers(cancellationToken).ConfigureAwait(false))
         {
             headers[pair.Key] = pair.Value;
         }
@@ -389,8 +384,9 @@ public sealed class GoogleSpeechTranslationModel : ISpeechTranslationModel, ISpe
 
         // The Live API contract requires waiting for the `setupComplete` server message before sending realtime
         // input: the audio send loop is gated on this task.
-        private readonly TaskCompletionSource<bool> _setupComplete =
-            new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource<bool> _setupComplete = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
 
         private WebSocketConnection? _connection;
         private AudioChunkReader? _reader;
@@ -868,9 +864,12 @@ public sealed class GoogleSpeechTranslationModel : ISpeechTranslationModel, ISpe
                 return Task.CompletedTask;
             }
 
-            var inputTranscriptionText =
-                Text(message, "serverContent", "inputTranscription", "text")
-                ?? Text(message, "inputTranscription", "text");
+            var inputTranscriptionText = Text(
+                message,
+                "serverContent",
+                "inputTranscription",
+                "text"
+            ) ?? Text(message, "inputTranscription", "text");
             if (!string.IsNullOrEmpty(inputTranscriptionText))
             {
                 OnTurnActivity();
