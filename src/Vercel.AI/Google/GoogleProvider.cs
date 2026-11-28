@@ -38,6 +38,12 @@ public class GoogleOptions
     /// <summary>Id factory used for tool calls that the response does not identify.</summary>
     public Func<string>? GenerateId { get; set; }
 
+    /// <summary>Custom WebSocket implementation for Gemini Live transcription streaming. Defaults to <c>ClientWebSocket</c>. Maps to <c>webSocket</c>.</summary>
+    public WebSocketFactory? WebSocket { get; set; }
+
+    /// <summary>Quiet window after the input audio ends before a live transcription finishes. Maps to <c>_internal.finishGraceMs</c>.</summary>
+    internal int? FinishGraceMs { get; set; }
+
     /// <summary>Embedding provider options read by <see cref="GoogleEmbeddingModel"/>.</summary>
     public JsonElement? EmbeddingProviderOptions { get; set; }
 }
