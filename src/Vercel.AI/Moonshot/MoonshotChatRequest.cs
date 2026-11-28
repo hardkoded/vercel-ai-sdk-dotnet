@@ -54,6 +54,12 @@ internal static class MoonshotChatRequest
     )
     {
         var moonshot = ParseOptions(options.ProviderOptions);
+        if (options.Seed != null)
+        {
+            body.Remove("seed");
+            warnings.Add(new CallWarning("unsupported", "seed", null));
+        }
+
         ApplySamplingOptions(modelId, options, body, warnings);
         ApplyMaxOutputTokens(options, body);
         ApplyOptionFields(moonshot, options.ProviderOptions, body);

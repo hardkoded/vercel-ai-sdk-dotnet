@@ -236,12 +236,36 @@ public static class OpenAICompatibleChat
     /// <summary>Copies an API exception onto the same status type with a new message.</summary>
     public static ApiException WithMessage(ApiException exception, string message)
     {
-        return ProviderHttp.MapStatusWithHeaders(
-            exception.StatusCode,
-            message,
-            exception.ResponseBody,
-            exception.ResponseHeaders
+        return WithErrorData(
+            ProviderHttp.MapStatusWithHeaders(
+                exception.StatusCode,
+                message,
+                exception.ResponseBody,
+                exception.ResponseHeaders
+            ),
+            exception.ResponseBody
         );
+    }
+
+    /// <summary>Keeps the parsed JSON error body as <see cref="ApiException.ErrorData"/>, like <c>APICallError.data</c>.</summary>
+    public static ApiException WithErrorData(ApiException exception, string? body)
+    {
+        if (exception.ErrorData != null || string.IsNullOrWhiteSpace(body))
+        {
+            return exception;
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(body!);
+            if (document.RootElement.ValueKind == JsonValueKind.Object)
+            {
+                exception.SetErrorData(document.RootElement.Clone());
+            }
+        }
+        catch (JsonException) { }
+
+        return exception;
     }
 
     /// <summary>Top-level reasoning values other than <c>provider-default</c> are sent as <c>reasoning_effort</c>.</summary>
