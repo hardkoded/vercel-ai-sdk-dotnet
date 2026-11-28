@@ -10,8 +10,6 @@ namespace Vercel.AI.Tests.Upstream.Google.GoogleInteractionsLanguageModel;
 
 /// <summary>
 /// Port of <c>google-interactions-language-model.test.ts</c> &gt; <c>GoogleInteractionsLanguageModel agent polling</c>.
-/// The two tests that surface image and video outputs as file parts are not ported: <c>FileStreamPart</c> carries bytes only,
-/// so it cannot hold the <c>uri</c> outputs they check.
 /// </summary>
 public sealed class GoogleInteractionsLanguageModelAgentPollingTests
 {
@@ -209,6 +207,54 @@ public sealed class GoogleInteractionsLanguageModelAgentPollingTests
         Assert.Equal(new[] { "POST", "GET", "GET" }, handler.Methods);
         Assert.False(Query(handler.Uris[1]).ContainsKey("last_event_id"));
         Assert.Equal("evt-3", Query(handler.Uris[2])["last_event_id"]);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/google/src/interactions/google-interactions-language-model.test.ts::GoogleInteractionsLanguageModel agent polling::surfaces image outputs as file parts in the synthesized stream",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Surfaces_image_outputs_as_file_parts_in_the_synthesized_stream()
+    {
+        var handler = new SequencedHandler().Json(
+            "{\"id\":\""
+                + PollId
+                + "\",\"status\":\"completed\",\"steps\":[{\"type\":\"model_output\",\"content\":[{\"type\":\"text\",\"text\":\"here is your image\"},{\"type\":\"image\",\"data\":\"aGVsbG8=\",\"mime_type\":\"image/png\"},{\"type\":\"image\",\"uri\":\"https://example.com/img.png\",\"mime_type\":\"image/png\"}]}],\"usage\":{\"total_input_tokens\":5,\"total_output_tokens\":3,\"total_tokens\":8}}"
+        );
+        var agentModel = Provider(handler).Interactions(new GoogleInteractionsAgent(AgentName));
+
+        var parts = await StreamParts(agentModel, BackgroundOptions());
+
+        var fileParts = parts.OfType<FileStreamPart>().ToList();
+        Assert.Equal(2, fileParts.Count);
+        Assert.Equal("image/png", fileParts[0].MediaType);
+        Assert.Equal(Convert.FromBase64String("aGVsbG8="), fileParts[0].Data);
+        Assert.Equal("image/png", fileParts[1].MediaType);
+        Assert.Equal(new Uri("https://example.com/img.png"), fileParts[1].Url);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/google/src/interactions/google-interactions-language-model.test.ts::GoogleInteractionsLanguageModel agent polling::surfaces video outputs as file parts in the synthesized stream",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Surfaces_video_outputs_as_file_parts_in_the_synthesized_stream()
+    {
+        var handler = new SequencedHandler().Json(
+            "{\"id\":\""
+                + PollId
+                + "\",\"status\":\"completed\",\"steps\":[{\"type\":\"model_output\",\"content\":[{\"type\":\"text\",\"text\":\"here is your video\"},{\"type\":\"video\",\"data\":\"AAAAIGZ0eXBpc29t\",\"mime_type\":\"video/mp4\"},{\"type\":\"video\",\"uri\":\"https://example.com/clip.mp4\",\"mime_type\":\"video/mp4\"}]}],\"usage\":{\"total_input_tokens\":5,\"total_output_tokens\":3,\"total_tokens\":8}}"
+        );
+        var agentModel = Provider(handler).Interactions(new GoogleInteractionsAgent(AgentName));
+
+        var parts = await StreamParts(agentModel, BackgroundOptions());
+
+        var fileParts = parts.OfType<FileStreamPart>().ToList();
+        Assert.Equal(2, fileParts.Count);
+        Assert.Equal("video/mp4", fileParts[0].MediaType);
+        Assert.Equal(Convert.FromBase64String("AAAAIGZ0eXBpc29t"), fileParts[0].Data);
+        Assert.Equal("video/mp4", fileParts[1].MediaType);
+        Assert.Equal(new Uri("https://example.com/clip.mp4"), fileParts[1].Url);
     }
 
     [Fact]

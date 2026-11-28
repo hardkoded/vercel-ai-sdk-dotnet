@@ -9,7 +9,7 @@ namespace Vercel.AI.Tests.Upstream.Google.GoogleInteractionsLanguageModel;
 
 /// <summary>
 /// Port of <c>google-interactions-language-model.test.ts</c> &gt; <c>GoogleInteractionsLanguageModel.doStream</c>
-/// (the tests outside a nested <c>describe</c>; only the labels tests are ported here).
+/// (the tests outside a nested <c>describe</c>).
 /// </summary>
 public sealed class DoStreamTests
 {
@@ -91,5 +91,47 @@ public sealed class DoStreamTests
         );
         var start = Assert.IsType<StreamStartStreamPart>(parts[0]);
         Assert.Empty(start.Warnings);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "serializes video response format controls and streams inline video data",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Serializes_video_response_format_controls_and_streams_inline_video_data()
+    {
+        var handler = new SequencedHandler().Sse(
+            GoogleInteractionsStreamSupport.Sse(
+                new[]
+                {
+                    "{\"event_type\":\"interaction.created\",\"interaction\":{\"id\":\"v1_video\",\"status\":\"in_progress\",\"model\":\"gemini-omni-flash-preview\"}}",
+                    "{\"event_type\":\"step.start\",\"index\":0,\"step\":{\"type\":\"model_output\"}}",
+                    "{\"event_type\":\"step.delta\",\"index\":0,\"delta\":{\"type\":\"video\",\"mime_type\":\"video/mp4\",\"data\":\"AAAAIGZ0eXBpc29t\"}}",
+                    "{\"event_type\":\"step.stop\",\"index\":0}",
+                    "{\"event_type\":\"interaction.completed\",\"interaction\":{\"id\":\"v1_video\",\"status\":\"completed\"}}",
+                }.Select(json => JsonNode.Parse(json)!.AsObject())
+            )
+        );
+        var options = Options(
+            "{\"google\":{\"responseModalities\":[\"video\"],\"responseFormat\":[{\"type\":\"video\",\"aspectRatio\":\"9:16\",\"resolution\":\"4k\",\"duration\":\"8s\",\"delivery\":\"inline\"}]}}"
+        );
+        options.IncludeRawChunks = false;
+
+        var parts = await GoogleInteractionsStreamSupport.Stream(
+            GoogleInteractionsStreamSupport.Model(handler),
+            options
+        );
+
+        var body = JsonNode.Parse(handler.Bodies[0])!.AsObject();
+        GoogleUpstream.JsonEqual(
+            body["response_format"],
+            "[{\"type\":\"video\",\"aspect_ratio\":\"9:16\",\"resolution\":\"4k\",\"duration\":\"8s\",\"delivery\":\"inline\"}]"
+        );
+        Assert.Contains(parts, part =>
+            part is FileStreamPart file
+            && file.MediaType == "video/mp4"
+            && file.Data != null
+            && file.Data.SequenceEqual(Convert.FromBase64String("AAAAIGZ0eXBpc29t"))
+        );
     }
 }
