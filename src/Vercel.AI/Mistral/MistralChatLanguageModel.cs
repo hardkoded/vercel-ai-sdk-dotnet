@@ -24,13 +24,10 @@ public sealed class MistralChatLanguageModel : ILanguageModel
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 
-    private static readonly IReadOnlyDictionary<string, string> PdfUrls = new Dictionary<
-        string,
-        string
-    >
-    {
-        ["application/pdf"] = "^https://.*\\z",
-    };
+    private static readonly IReadOnlyDictionary<string, string> PdfUrls =
+        new System.Collections.ObjectModel.ReadOnlyDictionary<string, string>(
+            new Dictionary<string, string> { ["application/pdf"] = "^https://.*\\z" }
+        );
 
     private readonly OpenAICompatibleProvider _provider;
     private readonly Func<string> _generateId;
@@ -66,6 +63,7 @@ public sealed class MistralChatLanguageModel : ILanguageModel
     {
         options ??= new LanguageModelCallOptions();
         var (body, warnings) = GetArgs(options);
+        body = Transform(body, warnings);
         var requestJson = body.ToJsonString(CompactOptions);
         var response = await _provider
             .PostJsonAsync(
@@ -177,6 +175,7 @@ public sealed class MistralChatLanguageModel : ILanguageModel
         options ??= new LanguageModelCallOptions();
         var (args, warnings) = GetArgs(options);
         args["stream"] = true;
+        args = Transform(args, warnings);
         var json = args.ToJsonString(CompactOptions);
         var sse = await _provider
             .PostSseAsync(
@@ -206,6 +205,9 @@ public sealed class MistralChatLanguageModel : ILanguageModel
             throw;
         }
     }
+
+    private JsonObject Transform(JsonObject body, List<CallWarning> warnings) =>
+        _provider.Options.TransformRequestBody?.Invoke(body, warnings) ?? body;
 
     private static string? ContentType(JsonElement element) =>
         element.ValueKind == JsonValueKind.Object
@@ -251,9 +253,7 @@ public sealed class MistralChatLanguageModel : ILanguageModel
                         case "reference":
                             break;
                         default:
-                            throw new InvalidOperationException(
-                                "Unsupported type: " + ContentType(chunk)
-                            );
+                            throw Invalid("Unsupported type: " + ContentType(chunk), chunk);
                     }
                 }
 
@@ -267,6 +267,7 @@ public sealed class MistralChatLanguageModel : ILanguageModel
         root.TryGetProperty("created", out var created)
         && created.ValueKind == JsonValueKind.Number
         && created.TryGetInt64(out var seconds)
+        && seconds is >= -62135596800 and <= 253402300799
             ? DateTimeOffset.FromUnixTimeSeconds(seconds)
             : null;
 
@@ -365,7 +366,16 @@ public sealed class MistralChatLanguageModel : ILanguageModel
             .GetMistralLanguageModelEntry(ModelId)
             .Language.Reasoning;
         string? resolvedReasoningEffort = null;
-        if (reasoningCapabilities.Support)
+        if (_provider.Options.ResolveReasoningEffort is { } resolveReasoningEffort)
+        {
+            resolvedReasoningEffort = resolveReasoningEffort(
+                ModelId,
+                options.Reasoning,
+                providerOptions.ReasoningEffort,
+                warnings
+            );
+        }
+        else if (reasoningCapabilities.Support)
         {
             if (providerOptions.ReasoningEffort != null)
             {
@@ -580,6 +590,51 @@ public sealed class MistralChatLanguageModel : ILanguageModel
 
                 var choice = choices[0];
                 var delta = Require(choice, "delta", JsonValueKind.Object);
+
+                // Validate the whole chunk before it changes any stream state.
+                var finish = NullishString(choice, "finish_reason");
+                var chunkId = NullishString(value, "id");
+                var chunkModel = NullishString(value, "model");
+                delta.TryGetProperty("content", out var deltaContent);
+                var textContent = ExtractTextContent(deltaContent);
+                var reasoningParts = new List<string>();
+                if (deltaContent.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var part in deltaContent.EnumerateArray())
+                    {
+                        if (ContentType(part) == "thinking")
+                        {
+                            reasoningParts.Add(ExtractReasoningContent(part));
+                        }
+                    }
+                }
+
+                var toolDeltas = new List<StreamingToolCallDelta>();
+                if (
+                    delta.TryGetProperty("tool_calls", out var deltaToolCalls)
+                    && deltaToolCalls.ValueKind == JsonValueKind.Array
+                )
+                {
+                    foreach (var toolCall in deltaToolCalls.EnumerateArray())
+                    {
+                        var function = Require(toolCall, "function", JsonValueKind.Object);
+                        int? index =
+                            toolCall.TryGetProperty("index", out var indexValue)
+                            && indexValue.ValueKind == JsonValueKind.Number
+                            && indexValue.TryGetInt32(out var indexNumber)
+                                ? indexNumber
+                                : null;
+                        toolDeltas.Add(
+                            new StreamingToolCallDelta(
+                                index,
+                                NullishString(toolCall, "id"),
+                                NullishString(function, "name"),
+                                NullishString(function, "arguments")
+                            )
+                        );
+                    }
+                }
+
                 JsonElement? chunkUsage = null;
                 if (
                     value.TryGetProperty("usage", out var usageValue)
@@ -592,13 +647,7 @@ public sealed class MistralChatLanguageModel : ILanguageModel
                 if (isFirstChunk)
                 {
                     isFirstChunk = false;
-                    parts.Add(
-                        new ResponseMetadataStreamPart(
-                            NullishString(value, "id"),
-                            NullishString(value, "model"),
-                            Created(value)
-                        )
-                    );
+                    parts.Add(new ResponseMetadataStreamPart(chunkId, chunkModel, Created(value)));
                 }
 
                 if (chunkUsage != null)
@@ -606,38 +655,27 @@ public sealed class MistralChatLanguageModel : ILanguageModel
                     usage = chunkUsage;
                 }
 
-                delta.TryGetProperty("content", out var deltaContent);
-                var textContent = ExtractTextContent(deltaContent);
-                if (deltaContent.ValueKind == JsonValueKind.Array)
+                foreach (var reasoningDelta in reasoningParts)
                 {
-                    foreach (var part in deltaContent.EnumerateArray())
+                    if (reasoningDelta.Length == 0)
                     {
-                        if (ContentType(part) != "thinking")
-                        {
-                            continue;
-                        }
-
-                        var reasoningDelta = ExtractReasoningContent(part);
-                        if (reasoningDelta.Length == 0)
-                        {
-                            continue;
-                        }
-
-                        if (activeReasoningId == null)
-                        {
-                            // End any active text before starting reasoning.
-                            if (activeText)
-                            {
-                                parts.Add(new TextEndStreamPart("0"));
-                                activeText = false;
-                            }
-
-                            activeReasoningId = _generateId();
-                            parts.Add(new ReasoningStartStreamPart(activeReasoningId));
-                        }
-
-                        parts.Add(new ReasoningDeltaStreamPart(activeReasoningId, reasoningDelta));
+                        continue;
                     }
+
+                    if (activeReasoningId == null)
+                    {
+                        // End any active text before starting reasoning.
+                        if (activeText)
+                        {
+                            parts.Add(new TextEndStreamPart("0"));
+                            activeText = false;
+                        }
+
+                        activeReasoningId = _generateId();
+                        parts.Add(new ReasoningStartStreamPart(activeReasoningId));
+                    }
+
+                    parts.Add(new ReasoningDeltaStreamPart(activeReasoningId, reasoningDelta));
                 }
 
                 if (!string.IsNullOrEmpty(textContent))
@@ -658,46 +696,25 @@ public sealed class MistralChatLanguageModel : ILanguageModel
                     parts.Add(new TextDeltaStreamPart("0", textContent!));
                 }
 
-                if (
-                    delta.TryGetProperty("tool_calls", out var deltaToolCalls)
-                    && deltaToolCalls.ValueKind == JsonValueKind.Array
-                )
+                foreach (var toolDelta in toolDeltas)
                 {
-                    foreach (var toolCall in deltaToolCalls.EnumerateArray())
+                    var input = toolCalls.ProcessDelta(toolDelta);
+                    if (input == null)
                     {
-                        var function = Require(toolCall, "function", JsonValueKind.Object);
-                        int? index =
-                            toolCall.TryGetProperty("index", out var indexValue)
-                            && indexValue.ValueKind == JsonValueKind.Number
-                            && indexValue.TryGetInt32(out var indexNumber)
-                                ? indexNumber
-                                : null;
-                        var input = toolCalls.ProcessDelta(
-                            new StreamingToolCallDelta(
-                                index,
-                                NullishString(toolCall, "id"),
-                                NullishString(function, "name"),
-                                NullishString(function, "arguments")
-                            )
-                        );
-                        if (input == null)
-                        {
-                            continue;
-                        }
+                        continue;
+                    }
 
-                        if (input.Started)
-                        {
-                            parts.Add(new ToolInputStartStreamPart(input.Id, input.Name));
-                        }
+                    if (input.Started)
+                    {
+                        parts.Add(new ToolInputStartStreamPart(input.Id, input.Name));
+                    }
 
-                        if (input.ArgumentsDelta != null)
-                        {
-                            parts.Add(new ToolInputDeltaStreamPart(input.Id, input.ArgumentsDelta));
-                        }
+                    if (input.ArgumentsDelta != null)
+                    {
+                        parts.Add(new ToolInputDeltaStreamPart(input.Id, input.ArgumentsDelta));
                     }
                 }
 
-                var finish = NullishString(choice, "finish_reason");
                 if (finish != null)
                 {
                     finishReason = MapMistralFinishReason.Map(finish);
