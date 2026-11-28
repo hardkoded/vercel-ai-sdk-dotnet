@@ -37,3 +37,7 @@ Console.WriteLine(result.Text);
 ```
 
 See the [Providers](providers.md) guide for authentication and provider options.
+
+## Multimodal embeddings
+
+Pass `content` in the call's `google` provider options to embed images, audio, video or files together with the text. There is one entry per value. An entry is a list of Gemini parts, such as `inlineData` or `fileData`, or `null` for a text-only value. The parts follow the value's text in the request. The number of entries must match the number of values, or the call throws.
