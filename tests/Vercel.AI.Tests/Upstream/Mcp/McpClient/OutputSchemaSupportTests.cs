@@ -288,7 +288,7 @@ public sealed class OutputSchemaSupportTests
             var json = method switch
             {
                 "initialize" =>
-                    "{\"protocolVersion\":\"2025-11-25\",\"capabilities\":{},\"serverInfo\":{\"name\":\"mock\",\"version\":\"1.0.0\"}}",
+                    "{\"protocolVersion\":\"2025-11-25\",\"capabilities\":{\"tools\":{}},\"serverInfo\":{\"name\":\"mock\",\"version\":\"1.0.0\"}}",
                 "tools/call" => callResult,
                 "tools/list" => "{\"tools\":[{\"name\":"
                     + JsonSerializer.Serialize(toolName)
