@@ -210,6 +210,9 @@ internal sealed class SequencedHandler : HttpMessageHandler
 
     public List<string> Bodies { get; } = new();
 
+    /// <summary>The headers of each request, in order.</summary>
+    public List<Dictionary<string, string>> RequestHeaders { get; } = new();
+
     /// <summary>Headers added to every response.</summary>
     public Dictionary<string, string> ResponseHeaders { get; } =
         new(StringComparer.OrdinalIgnoreCase);
@@ -248,6 +251,13 @@ internal sealed class SequencedHandler : HttpMessageHandler
         var index = Uris.Count;
         Uris.Add(request.RequestUri?.AbsoluteUri ?? string.Empty);
         Methods.Add(request.Method.Method);
+        var requestHeaders = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var header in request.Headers)
+        {
+            requestHeaders[header.Key] = string.Join(",", header.Value);
+        }
+
+        RequestHeaders.Add(requestHeaders);
         Bodies.Add(
             request.Content is null
                 ? string.Empty

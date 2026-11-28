@@ -9,10 +9,6 @@ namespace Vercel.AI.Tests.Upstream.Google.GoogleInteractionsLanguageModel;
 
 /// <summary>
 /// Port of <c>google-interactions-language-model.test.ts</c> &gt; <c>GoogleInteractionsLanguageModel.doGenerate</c> &gt; <c>stateful chaining (previousInteractionId, store, thinking)</c>.
-/// Not ported: <c>compacts assistant turns matching previousInteractionId out of the wire body</c>,
-/// <c>compacts the turn-2 wire body and references prior interaction (fixture-driven)</c>, and
-/// <c>round-trips a thought signature on an input reasoning part to the wire thought block</c>. The port sends the whole history and
-/// does not read the interaction id or signature from a message part.
 /// </summary>
 public sealed class DoGenerateStatefulChainingTests
 {
@@ -97,6 +93,46 @@ public sealed class DoGenerateStatefulChainingTests
         Assert.False((bool?)body["store"]);
         Assert.Contains(result.Warnings, warning =>
             warning.Type == "other" && warning.Message.Contains("store: false")
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "compacts assistant turns matching previousInteractionId out of the wire body",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Compacts_assistant_turns_matching_previousInteractionId_out_of_the_wire_body()
+    {
+        const string PrevId = "v1_prev-compaction";
+        var handler = Basic();
+        var options = GoogleUpstream.Prompt(
+            new UserModelMessage("What is the largest city in Spain?"),
+            new AssistantModelMessage(
+                new AssistantContentPart[]
+                {
+                    new AssistantTextPart(
+                        "Madrid is the largest.",
+                        GoogleUpstream.ProviderOptions(
+                            "{\"google\":{\"interactionId\":\"" + PrevId + "\"}}"
+                        )
+                    ),
+                }
+            ),
+            new UserModelMessage("And the second largest?")
+        );
+        options.ProviderOptions = GoogleUpstream.ProviderOptions(
+            "{\"google\":{\"previousInteractionId\":\"" + PrevId + "\"}}"
+        );
+
+        await GoogleInteractionsStreamSupport
+            .Model(handler)
+            .DoGenerateAsync(options, CancellationToken.None);
+
+        var body = JsonNode.Parse(handler.Bodies[0])!.AsObject();
+        Assert.Equal(PrevId, (string?)body["previous_interaction_id"]);
+        GoogleUpstream.JsonEqual(
+            body["input"],
+            "[{\"content\":[{\"text\":\"What is the largest city in Spain?\",\"type\":\"text\"}],\"type\":\"user_input\"},{\"content\":[{\"text\":\"And the second largest?\",\"type\":\"text\"}],\"type\":\"user_input\"}]"
         );
     }
 
@@ -268,5 +304,99 @@ public sealed class DoGenerateStatefulChainingTests
         Assert.Contains("Madrid", text);
         Assert.Contains("Barcelona", text);
         Assert.Contains("Valencia", text);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "compacts the turn-2 wire body and references prior interaction (fixture-driven)",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Compacts_the_turn_2_wire_body_and_references_prior_interaction_fixture_driven()
+    {
+        const string Turn1Id =
+            "v1_ChdWV3NIYXNYZEc5S19xdHNQcmVYeG1BRRIXVldzSGFzWGRHOUtfcXRzUHJlWHhtQUU";
+        var handler = new SequencedHandler().Json(
+            GoogleInteractionsStreamSupport.JsonFixture("multi-turn-stateful-turn2")
+        );
+        var options = GoogleUpstream.Prompt(
+            new UserModelMessage("What are the three largest cities in Spain?"),
+            new AssistantModelMessage(
+                new AssistantContentPart[]
+                {
+                    new AssistantReasoningPart(
+                        "",
+                        GoogleUpstream.ProviderOptions(
+                            "{\"google\":{\"interactionId\":\""
+                                + Turn1Id
+                                + "\",\"signature\":\"thought-sig-from-turn-1\"}}"
+                        )
+                    ),
+                    new AssistantTextPart(
+                        "The three largest cities in Spain are Madrid, Barcelona, and Valencia.",
+                        GoogleUpstream.ProviderOptions(
+                            "{\"google\":{\"interactionId\":\"" + Turn1Id + "\"}}"
+                        )
+                    ),
+                }
+            ),
+            new UserModelMessage("What is the most famous landmark in the second one?")
+        );
+        options.ProviderOptions = GoogleUpstream.ProviderOptions(
+            "{\"google\":{\"previousInteractionId\":\"" + Turn1Id + "\"}}"
+        );
+
+        var result = await GoogleInteractionsStreamSupport
+            .Model(handler)
+            .DoGenerateAsync(options, CancellationToken.None);
+
+        var body = JsonNode.Parse(handler.Bodies[0])!.AsObject();
+        Assert.Equal(Turn1Id, (string?)body["previous_interaction_id"]);
+        // Compaction: only the two surviving user messages remain on the wire.
+        GoogleUpstream.JsonEqual(
+            body["input"],
+            "[{\"content\":[{\"text\":\"What are the three largest cities in Spain?\",\"type\":\"text\"}],\"type\":\"user_input\"},{\"content\":[{\"text\":\"What is the most famous landmark in the second one?\",\"type\":\"text\"}],\"type\":\"user_input\"}]"
+        );
+
+        // Turn 2 references "Barcelona", the second city from the prior turn.
+        var text = string.Concat(result.Content.OfType<GeneratedText>().Select(part => part.Text));
+        Assert.Contains("Barcelona", text);
+        Assert.Matches("Sagrada Fam.lia", text);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix
+            + "round-trips a thought signature on an input reasoning part to the wire thought block",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Round_trips_a_thought_signature_on_an_input_reasoning_part_to_the_wire_thought_block()
+    {
+        var handler = Basic();
+        var options = GoogleUpstream.Prompt(
+            new UserModelMessage("q"),
+            new AssistantModelMessage(
+                new AssistantContentPart[]
+                {
+                    new AssistantReasoningPart(
+                        "",
+                        GoogleUpstream.ProviderOptions(
+                            "{\"google\":{\"signature\":\"sig-roundtrip\"}}"
+                        )
+                    ),
+                    new AssistantTextPart("old answer"),
+                }
+            ),
+            new UserModelMessage("q2")
+        );
+
+        await GoogleInteractionsStreamSupport
+            .Model(handler)
+            .DoGenerateAsync(options, CancellationToken.None);
+
+        // `thought` is a top-level step type, not a content block under a turn.
+        var thought = JsonNode.Parse(handler.Bodies[0])!["input"]!
+            .AsArray()
+            .First(step => (string?)step!["type"] == "thought");
+        Assert.Equal("sig-roundtrip", (string?)thought!["signature"]);
     }
 }

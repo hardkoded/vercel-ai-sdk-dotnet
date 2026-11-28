@@ -1132,16 +1132,19 @@ public sealed class GoogleInteractionsModel : ILanguageModel
         CancellationToken cancellationToken
     )
     {
+        // An aborted call fails before the request is dispatched.
+        cancellationToken.ThrowIfCancellationRequested();
         var (input, warnings) = Prepare(options);
         var background = Background(options);
         var pollingTimeout = PollingTimeout(options);
         var headers = await _provider.HeadersAsync(cancellationToken).ConfigureAwait(false);
         var baseUrl = InteractionsBase(_provider.Options.BaseUrl);
+        var requestJson = GoogleJson.Write(input);
         var post = await _provider
             .Http.SendJsonStringAsync(
                 HttpMethod.Post,
                 ProviderUtils.ApiKeys.Combine(baseUrl, "interactions"),
-                GoogleJson.Write(input),
+                requestJson,
                 headers,
                 cancellationToken
             )
@@ -1191,7 +1194,10 @@ public sealed class GoogleInteractionsModel : ILanguageModel
                 status,
                 warnings,
                 interactionId,
-                ProviderMetadata(interactionId, serviceTier, OutputTokensByModality(usage))
+                ProviderMetadata(interactionId, serviceTier, OutputTokensByModality(usage)),
+                post.Body,
+                responseHeaders: post.Headers,
+                request: LanguageModelStreamRequest.FromJson(requestJson)
             );
         }
     }
@@ -1322,6 +1328,24 @@ public sealed class GoogleInteractionsModel : ILanguageModel
             }
         }
 
+        // `providerOptions.google.responseFormat` entries are appended in order, with camelCase renamed to snake_case.
+        if (GoogleOption(options, "responseFormat") is { ValueKind: JsonValueKind.Array } entries)
+        {
+            responseFormat ??= new JsonArray();
+            foreach (var entry in entries.EnumerateArray())
+            {
+                if (ResponseFormatEntry(entry) is { } mapped)
+                {
+                    responseFormat.Add(mapped);
+                }
+            }
+
+            if (responseFormat.Count == 0)
+            {
+                responseFormat = null;
+            }
+        }
+
         var converted = GoogleInteractionsInput.Convert(
             options.Prompt,
             previousInteractionId,
@@ -1351,6 +1375,14 @@ public sealed class GoogleInteractionsModel : ILanguageModel
         GoogleJson.Set(input, "labels", labels);
         GoogleJson.Set(input, "tools", preparedTools?.Tools);
         GoogleJson.Set(input, "response_format", responseFormat);
+        if (
+            GoogleOption(options, "responseModalities") is
+            { ValueKind: JsonValueKind.Array } modalities
+        )
+        {
+            input["response_modalities"] = JsonNode.Parse(modalities.GetRawText());
+        }
+
         GoogleJson.Set(input, "previous_interaction_id", previousInteractionId);
         GoogleJson.Set(input, "service_tier", serviceTier);
         GoogleJson.Set(input, "store", store);
@@ -1451,6 +1483,69 @@ public sealed class GoogleInteractionsModel : ILanguageModel
         }
 
         return (input, warnings);
+    }
+
+    // One `providerOptions.google.responseFormat` entry as a wire entry. A null or missing field is left out.
+    private static JsonObject? ResponseFormatEntry(JsonElement entry)
+    {
+        if (
+            entry.ValueKind != JsonValueKind.Object
+            || !entry.TryGetProperty("type", out var typeValue)
+            || typeValue.ValueKind != JsonValueKind.String
+        )
+        {
+            return null;
+        }
+
+        var type = typeValue.GetString();
+        string[] fields;
+        switch (type)
+        {
+            case "text":
+                fields = new[] { "mimeType", "schema" };
+                break;
+            case "image":
+                fields = new[] { "mimeType", "aspectRatio", "imageSize" };
+                break;
+            case "audio":
+                fields = new[] { "mimeType" };
+                break;
+            case "video":
+                fields = new[] { "aspectRatio", "resolution", "duration", "delivery", "gcsUri" };
+                break;
+            default:
+                return null;
+        }
+
+        var result = new JsonObject { ["type"] = type };
+        foreach (var field in fields)
+        {
+            if (entry.TryGetProperty(field, out var value) && value.ValueKind != JsonValueKind.Null)
+            {
+                result[ToSnakeCase(field)] = JsonNode.Parse(value.GetRawText());
+            }
+        }
+
+        return result;
+    }
+
+    private static string ToSnakeCase(string name)
+    {
+        var builder = new System.Text.StringBuilder();
+        foreach (var character in name)
+        {
+            if (char.IsUpper(character))
+            {
+                builder.Append('_');
+                builder.Append(char.ToLowerInvariant(character));
+            }
+            else
+            {
+                builder.Append(character);
+            }
+        }
+
+        return builder.ToString();
     }
 
     // `providerOptions.google.agentConfig`: a `deep-research` config renames its fields to snake_case, a `dynamic` config is `{ type: 'dynamic' }`.
