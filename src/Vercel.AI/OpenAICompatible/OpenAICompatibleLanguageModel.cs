@@ -915,7 +915,9 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
                 ["strict"] = strict,
                 ["name"] = options.JsonSchemaName ?? "response",
             };
-            var description = options.JsonSchemaDescription ?? settings.ResponseFormatDescription;
+            var description = (
+                _provider.Options.SendsCallSchemaDescription ? options.JsonSchemaDescription : null
+            ) ?? settings.ResponseFormatDescription;
             if (!string.IsNullOrEmpty(description))
             {
                 schemaObject["description"] = description;

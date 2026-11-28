@@ -177,6 +177,12 @@ public class OpenAICompatibleOptions
     internal Action<JsonElement>? ValidateChatResponse { get; set; }
 
     /// <summary>
+    /// When true, the <c>response_format</c> JSON schema carries the call's schema description. Groq sends it
+    /// (<c>description: responseFormat.description</c>); Moonshot AI does not.
+    /// </summary>
+    internal bool SendsCallSchemaDescription { get; set; }
+
+    /// <summary>
     /// When true, a streamed chunk carries its usage only in <c>x_groq.usage</c>, and a top-level <c>usage</c> is ignored.
     /// Maps to the Groq chunk schema in <c>groq-chat-language-model.ts</c>.
     /// </summary>

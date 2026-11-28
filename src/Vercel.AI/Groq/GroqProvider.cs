@@ -137,6 +137,7 @@ public sealed class GroqProvider : OpenAICompatibleProvider
         options.UsesJsonResponseToolWithTools = true;
         options.PreparesOwnTools = true;
         options.StreamToolInput = true;
+        options.SendsCallSchemaDescription = true;
         options.StreamUsageFromXGroqOnly = true;
         options.CreateStreamError = GroqChatLanguageModel.CreateGroqStreamError;
         options.ConvertUsage = usage =>
