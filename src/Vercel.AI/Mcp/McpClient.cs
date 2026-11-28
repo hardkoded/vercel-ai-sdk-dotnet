@@ -269,19 +269,41 @@ public sealed class McpClient
         CancellationToken cancellationToken = default
     )
     {
-        using var empty = JsonDocument.Parse("{}");
-        var listed = await RequestAsync("tools/list", empty.RootElement, cancellationToken)
-            .ConfigureAwait(false);
+        AssertToolsCapability();
         var tools = new List<Tool>();
-        if (
-            !listed.TryGetProperty("tools", out var array)
-            || array.ValueKind != JsonValueKind.Array
-        )
+        var items = new List<JsonElement>();
+        string? cursor = null;
+        do
         {
-            return tools;
-        }
+            var request = new JsonObject();
+            if (cursor is not null)
+            {
+                request["cursor"] = cursor;
+            }
 
-        foreach (var item in array.EnumerateArray())
+            using var requestParameters = JsonDocument.Parse(request.ToJsonString());
+            var listed = await RequestAsync(
+                    "tools/list",
+                    requestParameters.RootElement,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
+            if (
+                listed.TryGetProperty("tools", out var page)
+                && page.ValueKind == JsonValueKind.Array
+            )
+            {
+                items.AddRange(page.EnumerateArray().Select(item => item.Clone()));
+            }
+
+            cursor =
+                listed.TryGetProperty("nextCursor", out var next)
+                && next.ValueKind == JsonValueKind.String
+                    ? next.GetString()
+                    : null;
+        } while (cursor is not null);
+
+        foreach (var item in items)
         {
             var name = item.TryGetProperty("name", out var nameElement)
                 ? nameElement.GetString() ?? "tool"
@@ -321,6 +343,14 @@ public sealed class McpClient
         }
 
         return tools;
+    }
+
+    private void AssertToolsCapability()
+    {
+        if (_initializeResult is not null && !_serverCapabilities.TryGetProperty("tools", out _))
+        {
+            throw new MCPClientError("Server does not support tools");
+        }
     }
 
     private async Task InitAsync(CancellationToken cancellationToken)

@@ -393,7 +393,7 @@ Fetched content is untrusted and can contain prompt injections. When an agent ha
 
 ## MCP tool schemas and typed output
 
-`McpClient.ConnectAsync` discovers every tool by default, and a tool returns the call-tool result as JSON text. Pass `McpClientOptions.Schemas` (or `McpClient.ListToolsAsync(transport, schemas)`) to list only the named tools with your own schemas, like `client.tools({ schemas })` upstream. An entry is an `McpToolSchema` with the `InputSchema` JSON Schema and an optional `OutputSchema`.
+`McpClient.ConnectAsync` discovers every tool by default, and a tool returns the call-tool result as JSON text. The client follows `nextCursor` until the server has listed every tool. After initialization, listing tools throws an `MCPClientError` when the server does not advertise the `tools` capability. Pass `McpClientOptions.Schemas` (or `McpClient.ListToolsAsync(transport, schemas)`) to list only the named tools with your own schemas, like `client.tools({ schemas })` upstream. An entry is an `McpToolSchema` with the `InputSchema` JSON Schema and an optional `OutputSchema`.
 
 ```csharp
 var tools = await McpClient.ConnectAsync(

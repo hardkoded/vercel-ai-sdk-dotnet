@@ -152,7 +152,7 @@ public sealed class HttpMcpTransportTests
 
     [Fact]
     [UpstreamTest(
-        Prefix + "protocol version downgrade::should use LATEST_LEGACY_PROTOCOL_VERSION by default",
+        "packages/mcp/src/tool/mcp-http-transport.test.ts::HttpMCPTransport > protocol version downgrade::should use LATEST_LEGACY_PROTOCOL_VERSION by default",
         Coverage = UpstreamCoverage.Covered,
         Commit = "fac1d6a5882903594278edef0d58859d25c80ae8"
     )]
@@ -173,8 +173,7 @@ public sealed class HttpMcpTransportTests
 
     [Fact]
     [UpstreamTest(
-        Prefix
-            + "protocol version downgrade::should use negotiated protocolVersion in headers after it is set",
+        "packages/mcp/src/tool/mcp-http-transport.test.ts::HttpMCPTransport > protocol version downgrade::should use negotiated protocolVersion in headers after it is set",
         Coverage = UpstreamCoverage.Covered,
         Commit = "fac1d6a5882903594278edef0d58859d25c80ae8"
     )]

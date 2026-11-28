@@ -247,6 +247,263 @@ public sealed class McpClientTests
         Assert.Equal(1, transport.ToolCallAttempts);
     }
 
+    [Fact]
+    [UpstreamTest(
+        "packages/mcp/src/tool/mcp-client.test.ts::MCPClient::should return tools from all paginated tool list responses",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task ShouldReturnToolsFromAllPaginatedToolListResponses()
+    {
+        var cursors = new List<string?>();
+        var transport = new ScriptedTransport(
+            (
+                "initialize",
+                "{\"protocolVersion\":\"2025-11-25\",\"serverInfo\":{\"name\":\"paginated-tools-server\",\"version\":\"1.0.0\"},\"capabilities\":{\"tools\":{}}}"
+            ),
+            ("tools/list", null)
+        )
+        {
+            Handler = (method, parameters) =>
+            {
+                if (method != "tools/list")
+                {
+                    return null;
+                }
+
+                var cursor = parameters.TryGetProperty("cursor", out var value)
+                    ? value.GetString()
+                    : null;
+                cursors.Add(cursor);
+                return cursor is null
+                    ? "{\"tools\":[{\"name\":\"first-page-tool\",\"inputSchema\":{\"type\":\"object\"}}],\"nextCursor\":\"second-page\"}"
+                    : "{\"tools\":[{\"name\":\"second-page-tool\",\"inputSchema\":{\"type\":\"object\"}}]}";
+            },
+        };
+
+        var tools = await Client.ConnectAsync(transport);
+
+        Assert.Equal(["first-page-tool", "second-page-tool"], tools.Select(tool => tool.Name));
+        Assert.Equal([null, "second-page"], cursors);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/mcp/src/tool/mcp-client.test.ts::MCPClient::should throw if the server does not support any tools",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task ShouldThrowIfTheServerDoesNotSupportAnyTools()
+    {
+        var transport = new ScriptedTransport(
+            (
+                "initialize",
+                "{\"protocolVersion\":\"2025-11-25\",\"serverInfo\":{\"name\":\"mock-mcp-server\",\"version\":\"1.0.0\"},\"capabilities\":{\"resources\":{}}}"
+            )
+        );
+        var client = await Client.CreateAsync(transport);
+
+        await Assert.ThrowsAsync<MCPClientError>(() => client.ListToolsAsync());
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/mcp/src/tool/mcp-client.test.ts::MCPClient::should throw if server sends invalid initialize result",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task ShouldThrowIfServerSendsInvalidInitializeResult()
+    {
+        var transport = new ScriptedTransport(("initialize", "{}"));
+
+        await Assert.ThrowsAsync<MCPClientError>(() => Client.CreateAsync(transport));
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/mcp/src/tool/mcp-client.test.ts::MCPClient::should throw if server sends invalid protocol version",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task ShouldThrowIfServerSendsInvalidProtocolVersion()
+    {
+        var transport = new ScriptedTransport(
+            (
+                "initialize",
+                "{\"protocolVersion\":\"foo\",\"serverInfo\":{\"name\":\"mock-mcp-server\",\"version\":\"1.0.0\"},\"capabilities\":{}}"
+            )
+        );
+
+        await Assert.ThrowsAsync<MCPClientError>(() => Client.CreateAsync(transport));
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/mcp/src/tool/mcp-client.test.ts::MCPClient::should accept server responding with 2025-11-25 protocol version",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task ShouldAcceptServerRespondingWith20251125ProtocolVersion()
+    {
+        var transport = new ScriptedTransport(("initialize", InitializeResult("2025-11-25")));
+        var client = await Client.CreateAsync(transport);
+
+        var tools = await client.ListToolsAsync();
+
+        Assert.NotNull(tools);
+    }
+
+    [Theory]
+    [InlineData("2025-06-18")]
+    [InlineData("2025-03-26")]
+    [InlineData("2024-11-05")]
+    [UpstreamTest(
+        "packages/mcp/src/tool/mcp-client.test.ts::MCPClient::should accept server responding with older supported protocol versions",
+        Coverage = UpstreamCoverage.Covered,
+        Note = "Upstream loops over the versions in one test; the port runs one theory case per version."
+    )]
+    public async Task ShouldAcceptServerRespondingWithOlderSupportedProtocolVersions(string version)
+    {
+        var transport = new ScriptedTransport(("initialize", InitializeResult(version)));
+        var client = await Client.CreateAsync(transport);
+
+        var tools = await client.ListToolsAsync();
+
+        Assert.NotNull(tools);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/mcp/src/tool/mcp-client.test.ts::MCPClient::should expose serverInfo from initialization",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task ShouldExposeServerInfoFromInitialization()
+    {
+        var transport = new ScriptedTransport(
+            (
+                "initialize",
+                "{\"protocolVersion\":\"2025-11-25\",\"serverInfo\":{\"name\":\"my-server\",\"version\":\"2.0.0\",\"title\":\"My Server\"},\"capabilities\":{\"tools\":{}}}"
+            )
+        );
+
+        var client = await Client.CreateAsync(transport);
+
+        Assert.Equal("my-server", client.ServerInfo.Name);
+        Assert.Equal("2.0.0", client.ServerInfo.Version);
+        Assert.Equal("My Server", client.ServerInfo.Title);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/mcp/src/tool/mcp-client.test.ts::MCPClient::should expose serverInfo without title when server omits it",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task ShouldExposeServerInfoWithoutTitleWhenServerOmitsIt()
+    {
+        var transport = new ScriptedTransport(("initialize", InitializeResult("2025-11-25")));
+
+        var client = await Client.CreateAsync(transport);
+
+        Assert.Equal("mock-mcp-server", client.ServerInfo.Name);
+        Assert.Equal("1.0.0", client.ServerInfo.Version);
+        Assert.Null(client.ServerInfo.Title);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/mcp/src/tool/mcp-client.test.ts::MCPClient::should expose instructions from initialization when server provides them",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task ShouldExposeInstructionsFromInitializationWhenServerProvidesThem()
+    {
+        var transport = new ScriptedTransport(
+            (
+                "initialize",
+                InitializeResult(
+                    "2025-11-25",
+                    "Use search tools to resolve IDs — never ask the user."
+                )
+            )
+        );
+
+        var client = await Client.CreateAsync(transport);
+
+        Assert.Equal("Use search tools to resolve IDs — never ask the user.", client.Instructions);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/mcp/src/tool/mcp-client.test.ts::MCPClient::should expose undefined instructions when server omits them",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task ShouldExposeUndefinedInstructionsWhenServerOmitsThem()
+    {
+        var transport = new ScriptedTransport(("initialize", InitializeResult("2025-11-25")));
+
+        var client = await Client.CreateAsync(transport);
+
+        Assert.Null(client.Instructions);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/mcp/src/tool/mcp-client.test.ts::MCPClient::should not return user-defined tool if it is nonexistent",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task ShouldNotReturnUserDefinedToolIfItIsNonexistent()
+    {
+        var transport = new ScriptedTransport(
+            ("initialize", InitializeResult("2025-11-25")),
+            (
+                "tools/list",
+                "{\"tools\":[{\"name\":\"mock-tool\",\"inputSchema\":{\"type\":\"object\"}}]}"
+            )
+        );
+        var client = await Client.CreateAsync(transport);
+
+        var tools = await client.ListToolsAsync(
+            new Dictionary<string, McpToolSchema>
+            {
+                ["nonexistent-tool"] = new(
+                    "{\"type\":\"object\",\"properties\":{\"bar\":{\"type\":\"string\"}}}"
+                ),
+            }
+        );
+
+        Assert.DoesNotContain(tools, tool => tool.Name == "nonexistent-tool");
+    }
+
+    private static string InitializeResult(string version, string? instructions = null) =>
+        "{\"protocolVersion\":\""
+        + version
+        + "\",\"serverInfo\":{\"name\":\"mock-mcp-server\",\"version\":\"1.0.0\"},\"capabilities\":{\"tools\":{}}"
+        + (
+            instructions is null
+                ? string.Empty
+                : ",\"instructions\":" + JsonSerializer.Serialize(instructions)
+        )
+        + "}";
+
+    private sealed class ScriptedTransport(params (string Method, string? Result)[] results)
+        : IMcpNotificationTransport
+    {
+        public Func<string, JsonElement, string?>? Handler { get; init; }
+
+        public Task<JsonElement> CallAsync(
+            string method,
+            JsonElement parameters,
+            CancellationToken cancellationToken
+        )
+        {
+            var json = Handler?.Invoke(method, parameters)
+                ?? results.FirstOrDefault(entry => entry.Method == method).Result
+                ?? (method == "tools/list" ? "{\"tools\":[]}" : "{}");
+            using var document = JsonDocument.Parse(json);
+            return Task.FromResult(document.RootElement.Clone());
+        }
+
+        public Task NotifyAsync(
+            string method,
+            JsonElement parameters,
+            CancellationToken cancellationToken
+        ) => Task.CompletedTask;
+    }
+
     private sealed class MockMcpTransport : IMcpTransport
     {
         private readonly string _toolName;
