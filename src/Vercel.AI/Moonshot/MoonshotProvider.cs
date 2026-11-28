@@ -93,6 +93,9 @@ public sealed class MoonshotProvider : OpenAICompatibleProvider
         options.ResolveReasoningEffort = (_, _, _, _) => null;
         options.ConvertUsage = usage => MoonshotChatUsage.ConvertMoonshotAIChatUsage(usage);
         options.ExtractResponseHeaderMetadata = MoonshotChatUsage.ExtractCacheWriteTokensByTtl;
+        options.MetadataExtractor ??= new MoonshotChatMetadata();
+        options.CreateStreamError = MoonshotChatLanguageModel.CreateMoonshotAIStreamError;
+        options.StreamToolIndexAndChoiceUsage = true;
         options.TransformChatRequest = MoonshotChatRequest.Apply;
         options.PreparesOwnTools = true;
         options.ConvertChatMessages = (

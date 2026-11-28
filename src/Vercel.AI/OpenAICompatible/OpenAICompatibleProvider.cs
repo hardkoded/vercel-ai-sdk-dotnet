@@ -251,7 +251,7 @@ public class OpenAICompatibleProvider : ProviderBase
                 ?? OpenAICompatibleChat.ReadErrorMessage(exception.ResponseBody);
             if (string.IsNullOrEmpty(message) || message == exception.Message)
             {
-                throw;
+                throw OpenAICompatibleChat.WithErrorData(exception, exception.ResponseBody);
             }
 
             throw OpenAICompatibleChat.WithMessage(exception, message!);
@@ -310,7 +310,7 @@ public class OpenAICompatibleProvider : ProviderBase
                 throw OpenAICompatibleChat.WithMessage(error, message!);
             }
 
-            throw error;
+            throw OpenAICompatibleChat.WithErrorData(error, body);
         }
 
         return new OpenAICompatibleSseResponse(response);

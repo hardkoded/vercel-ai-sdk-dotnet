@@ -61,7 +61,19 @@ public class ApiException : AiSdkException
     /// The provider error parsed from the response body, when the handler could parse it.
     /// Maps to <c>APICallError.data</c>. Named <c>ErrorData</c> because <see cref="Exception.Data"/> already exists.
     /// </summary>
-    public object? ErrorData { get; init; }
+    public object? ErrorData
+    {
+        get => _errorData;
+        init => _errorData = value;
+    }
+
+    private object? _errorData;
+
+    /// <summary>Sets <see cref="ErrorData"/> on an exception a response handler already built, when it carries none.</summary>
+    internal void SetErrorData(object? data)
+    {
+        _errorData ??= data;
+    }
 
     /// <summary>True when the call can be retried. Defaults to 408, 409, 429, and 500 and above, like <c>APICallError.isRetryable</c>.</summary>
     public bool IsRetryable

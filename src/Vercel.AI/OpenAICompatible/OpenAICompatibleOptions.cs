@@ -195,6 +195,13 @@ public class OpenAICompatibleOptions
     internal Func<JsonObject, ProviderStreamError?>? CreateStreamError { get; set; }
 
     /// <summary>
+    /// .NET-only switch. When true, a streamed tool-call delta without an <c>index</c> takes its position in the
+    /// <c>tool_calls</c> array, and a finish chunk's choice-level <c>usage</c> is used when no top-level usage arrives.
+    /// Moonshot sets it for <c>toolCallDelta.index ?? index</c> and <c>topLevelUsage ?? choiceUsage</c>.
+    /// </summary>
+    internal bool StreamToolIndexAndChoiceUsage { get; set; }
+
+    /// <summary>
     /// .NET-only hook. Validates a streamed chat chunk and returns the error message when it does not match, or null.
     /// Moonshot uses it for <c>moonshotAIChatChunkSchema</c>.
     /// </summary>

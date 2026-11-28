@@ -368,6 +368,7 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
         string? finishRaw = null;
         var sawFinish = false;
         JsonElement? usageElement = null;
+        JsonElement? choiceUsageElement = null;
         var metadataSent = false;
         var textOpen = false;
         var textBlockId = _provider.Options.TextBlockId;
@@ -476,6 +477,17 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
                 continue;
             }
 
+            if (
+                _provider.Options.StreamToolIndexAndChoiceUsage
+                && choice["usage"] is JsonObject choiceUsageObject
+            )
+            {
+                using var choiceUsageDocument = JsonDocument.Parse(
+                    choiceUsageObject.ToJsonString()
+                );
+                choiceUsageElement = choiceUsageDocument.RootElement.Clone();
+            }
+
             var finishText = AsString(choice["finish_reason"]);
             if (!string.IsNullOrEmpty(finishText))
             {
@@ -563,8 +575,10 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
                     yield return new TextEndStreamPart(textBlockId);
                 }
 
+                var toolPosition = -1;
                 foreach (var item in toolDeltas)
                 {
+                    toolPosition++;
                     if (item is JsonObject tool)
                     {
                         var input = HandleToolDelta(
@@ -572,7 +586,8 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
                             toolCalls,
                             pending,
                             forwarded,
-                            signatures
+                            signatures,
+                            _provider.Options.StreamToolIndexAndChoiceUsage ? toolPosition : null
                         );
                         foreach (
                             var part in ToolInput(
@@ -656,6 +671,7 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
             yield return new ErrorStreamPart("Response stream ended without a finish reason.");
         }
 
+        usageElement ??= choiceUsageElement;
         var converted = OpenAICompatibleChat.ConvertUsage(usageElement);
         var finishReason =
             interrupted ? FinishReason.Interrupted
@@ -1239,10 +1255,11 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
         StreamingToolCallTracker tracker,
         Dictionary<int, PendingTool> pending,
         HashSet<int> forwarded,
-        Dictionary<string, string> signatures
+        Dictionary<string, string> signatures,
+        int? positionalIndex = null
     )
     {
-        var delta = ReadToolDelta(tool);
+        var delta = ReadToolDelta(tool, positionalIndex);
         var signature = ReadWireSignature(tool);
         if (delta.Index == null || forwarded.Contains(delta.Index.Value))
         {
@@ -1435,9 +1452,12 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
         return null;
     }
 
-    private static StreamingToolCallDelta ReadToolDelta(JsonObject tool)
+    private static StreamingToolCallDelta ReadToolDelta(
+        JsonObject tool,
+        int? positionalIndex = null
+    )
     {
-        int? index = null;
+        int? index = tool["index"] is null ? positionalIndex : null;
         if (
             tool["index"] is JsonValue indexValue
             && indexValue.TryGetValue<int>(out var parsedIndex)
