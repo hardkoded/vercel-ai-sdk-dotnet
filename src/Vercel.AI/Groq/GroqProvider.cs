@@ -135,9 +135,60 @@ public sealed class GroqProvider : OpenAICompatibleProvider
         }
         options.SupportsStructuredOutputs = true;
         options.UsesJsonResponseToolWithTools = true;
-        options.TransformChatRequest = (_, call, body, _) =>
+        options.PreparesOwnTools = true;
+        options.StreamToolInput = true;
+        options.SendsCallSchemaDescription = true;
+        options.StreamUsageFromXGroqOnly = true;
+        options.CreateStreamError = GroqChatLanguageModel.CreateGroqStreamError;
+        options.ConvertUsage = usage =>
+            ConvertGroqUsage.Convert(GroqChatApiTypes.ParseUsage(usage));
+        options.TransformChatRequest = (modelId, call, body, warnings) =>
         {
+            // Validates the provider options like `parseProviderOptions` with `groqLanguageModelChatOptions`.
+            var groqOptions = GroqChatLanguageModelOptions.Parse(call.ProviderOptions);
+            body.Remove("reasoningFormat");
+            body.Remove("parallelToolCalls");
+            body.Remove("serviceTier");
+            if (groqOptions?.ReasoningFormat is { } reasoningFormat)
+            {
+                body["reasoning_format"] = reasoningFormat;
+            }
+
+            if (
+                groqOptions?.ParallelToolCalls is { } parallelToolCalls
+                && !body.ContainsKey("parallel_tool_calls")
+            )
+            {
+                body["parallel_tool_calls"] = parallelToolCalls;
+            }
+
+            if (groqOptions?.ServiceTier is { } serviceTier)
+            {
+                body["service_tier"] = serviceTier;
+            }
+
             body["messages"] = ConvertToGroqChatMessages.Convert(call.Prompt);
+
+            // A JSON response tool is already in the body. Otherwise `prepareTools` maps the call tools.
+            if (!body.ContainsKey("tools"))
+            {
+                var prepared = GroqPrepareTools.PrepareTools(modelId, call.Tools, call.ToolChoice);
+                foreach (var warning in prepared.ToolWarnings)
+                {
+                    warnings.Add(warning);
+                }
+
+                if (prepared.Tools != null)
+                {
+                    body["tools"] = prepared.Tools;
+                }
+
+                if (prepared.ToolChoice != null)
+                {
+                    body["tool_choice"] = prepared.ToolChoice;
+                }
+            }
+
             return body;
         };
         options.ResolveReasoningEffort ??= ResolveReasoningEffort;

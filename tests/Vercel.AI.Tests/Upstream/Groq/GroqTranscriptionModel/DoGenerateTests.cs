@@ -241,6 +241,10 @@ public sealed class DoGenerateTests
     [InlineData("file")]
     [InlineData("url")]
     [UpstreamTest(
+        Id + "should extract a plain-text transcription response",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    [UpstreamTest(
         Id + "should extract a plain-text transcription response for %s input",
         Coverage = UpstreamCoverage.Covered,
         Commit = Commit
