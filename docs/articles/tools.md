@@ -447,6 +447,8 @@ A server that answers with `-32022` and lists only legacy versions in `data.supp
 
 After `server/discover` the client treats the server as modern. It adds `io.modelcontextprotocol/protocolVersion`, `io.modelcontextprotocol/clientCapabilities` and `io.modelcontextprotocol/clientInfo` to the `_meta` of every request, and throws an `MCPClientError` (`Modern MCP result is missing resultType`) when a result has no `resultType`. After `initialize` the client sets the negotiated protocol version on the transport and sends `notifications/initialized` through `IMcpNotificationTransport.NotifyAsync`. `StdioMcpTransport`, `HttpMcpTransport` and `SseMcpTransport` implement it. A transport that does not implement it gets no notification. `initialize` sends the client info `ai-sdk-mcp-client` `1.0.0`, like upstream's defaults.
 
+`StdioMcpOptions.Environment` values are added to a small set of inherited variables (`PATH`, `HOME` and similar). A value you set replaces the inherited one with the same name. On Windows the names are compared without regard to case, so `Path` replaces `PATH`.
+
 An `initialize` result must carry `protocolVersion`, `capabilities` and `serverInfo`, and the version must be one the client supports. Otherwise `CreateAsync` throws an `MCPClientError`.
 
 ## MCP tool output

@@ -596,55 +596,6 @@ public sealed class McpProtocolTests
 
     [Fact]
     [UpstreamTest(
-        "packages/mcp/src/tool/mcp-stdio/mcp-stdio-transport.test.ts::StdioMCPTransport > send::should successfully send a message",
-        Coverage = UpstreamCoverage.Covered
-    )]
-    public void Ndjson_writes_one_json_line()
-    {
-        using var document = JsonDocument.Parse(
-            "{\"jsonrpc\":\"2.0\",\"id\":\"1\",\"method\":\"test\",\"params\":{}}"
-        );
-        using var stream = new MemoryStream();
-        McpNdjson.Write(stream, document.RootElement);
-        Assert.Equal(
-            document.RootElement.GetRawText() + "\n",
-            Encoding.UTF8.GetString(stream.ToArray())
-        );
-    }
-
-    [Fact]
-    [UpstreamTest(
-        "packages/mcp/src/tool/mcp-stdio/mcp-stdio-transport.test.ts::StdioMCPTransport > send::should throw error if transport is not connected",
-        Coverage = UpstreamCoverage.Covered
-    )]
-    public void Ndjson_write_requires_a_stream()
-    {
-        using var document = JsonDocument.Parse(
-            "{\"jsonrpc\":\"2.0\",\"id\":\"1\",\"method\":\"test\",\"params\":{}}"
-        );
-        var error = Assert.Throws<MCPClientError>(() =>
-            McpNdjson.Write(null, document.RootElement)
-        );
-        Assert.Contains("StdioClientTransport not connected", error.Message);
-    }
-
-    [Fact]
-    [UpstreamTest(
-        "packages/mcp/src/tool/mcp-stdio/get-environment.test.ts::getEnvironment::should not mutate the original custom environment object",
-        Coverage = UpstreamCoverage.Covered
-    )]
-    public void Stdio_environment_copies_the_custom_dictionary()
-    {
-        var custom = new Dictionary<string, string> { ["CUSTOM_VAR"] = "custom_value" };
-        var result = StdioEnvironment.GetEnvironment(custom);
-        Assert.Equal("custom_value", custom["CUSTOM_VAR"]);
-        Assert.Single(custom);
-        Assert.NotSame(custom, result);
-        Assert.Equal("custom_value", result["CUSTOM_VAR"]);
-    }
-
-    [Fact]
-    [UpstreamTest(
         "packages/mcp/src/tool/mcp-stdio/create-child-process.test.ts::createChildProcess::should reject line breaks in arguments on Windows",
         Coverage = UpstreamCoverage.Covered
     )]

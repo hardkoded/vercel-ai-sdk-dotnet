@@ -4,10 +4,25 @@
 
 using Vercel.AI.Mcp;
 
-namespace Vercel.AI.Tests.Upstream.Mcp.McpStdio;
+namespace Vercel.AI.Tests.Upstream.Mcp.GetEnvironment;
 
 public sealed class GetEnvironmentTests
 {
+    [Fact]
+    [UpstreamTest(
+        "packages/mcp/src/tool/mcp-stdio/get-environment.test.ts::getEnvironment::should not mutate the original custom environment object",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void ShouldNotMutateTheOriginalCustomEnvironmentObject()
+    {
+        var custom = new Dictionary<string, string> { ["CUSTOM_VAR"] = "custom_value" };
+        var result = StdioEnvironment.GetEnvironment(custom);
+        Assert.Equal("custom_value", custom["CUSTOM_VAR"]);
+        Assert.Single(custom);
+        Assert.NotSame(custom, result);
+        Assert.Equal("custom_value", result["CUSTOM_VAR"]);
+    }
+
     [Fact]
     [UpstreamTest(
         "packages/mcp/src/tool/mcp-stdio/get-environment.test.ts::getEnvironment::should let a custom value override an inherited default",
