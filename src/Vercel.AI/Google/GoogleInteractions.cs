@@ -620,6 +620,7 @@ public static class GoogleInteractionsInput
     {
         try
         {
+            // A call without arguments has a blank ArgumentsJson in this port. Upstream has no such value, so it sends {}.
             var text = string.IsNullOrWhiteSpace(input) ? "{}" : input;
 
             // secureJsonParse: rejects __proto__ and constructor.prototype keys.
