@@ -729,6 +729,16 @@ public sealed class GoogleGeneratedFile : GeneratedFile
         ProviderMetadata = providerMetadata;
     }
 
+    /// <summary>Creates a file the provider returned as a URL. <see cref="GeneratedFile.Data"/> is empty and <see cref="Url"/> holds the location.</summary>
+    public GoogleGeneratedFile(Uri url, string mediaType, JsonElement? providerMetadata)
+        : this(Array.Empty<byte>(), mediaType, providerMetadata)
+    {
+        Url = url ?? throw new ArgumentNullException(nameof(url));
+    }
+
+    /// <summary>The file URL, or null when the file is inline.</summary>
+    public Uri? Url { get; }
+
     /// <summary>Provider metadata.</summary>
     public JsonElement? ProviderMetadata { get; }
 }

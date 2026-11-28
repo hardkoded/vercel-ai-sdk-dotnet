@@ -10,9 +10,6 @@ namespace Vercel.AI.Tests.Upstream.Google.GoogleInteractionsLanguageModel;
 
 /// <summary>
 /// Port of <c>google-interactions-language-model.test.ts</c> &gt; <c>GoogleInteractionsLanguageModel.doGenerate</c> &gt; <c>structured output (responseFormat)</c>.
-/// Not ported: <c>serializes video response format controls and returns inline video data</c> (the port does not read
-/// <c>providerOptions.google.responseFormat</c> or parse video outputs) and <c>returns the JSON-shaped text content from the parsed response</c>
-/// (the port does not return thought steps as reasoning or stamp the interaction id on content parts).
 /// </summary>
 public sealed class DoGenerateStructuredOutputResponseFormatTests
 {
@@ -104,6 +101,55 @@ public sealed class DoGenerateStructuredOutputResponseFormatTests
         var body = JsonNode.Parse(handler.Bodies[0])!.AsObject();
         Assert.False(body.ContainsKey("response_mime_type"));
         Assert.False(body.ContainsKey("response_format"));
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "serializes video response format controls and returns inline video data",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Serializes_video_response_format_controls_and_returns_inline_video_data()
+    {
+        var handler = new SequencedHandler().Json(
+            "{\"id\":\"v1_video\",\"status\":\"completed\",\"model\":\"gemini-omni-flash-preview\",\"steps\":[{\"type\":\"model_output\",\"content\":[{\"type\":\"video\",\"mime_type\":\"video/mp4\",\"data\":\"AAAAIGZ0eXBpc29t\"}]}]}"
+        );
+        var options = Options(false, false);
+        options.ProviderOptions = GoogleUpstream.ProviderOptions(
+            "{\"google\":{\"responseModalities\":[\"video\"],\"responseFormat\":[{\"type\":\"video\",\"aspectRatio\":\"16:9\",\"resolution\":\"360p\",\"duration\":\"4s\",\"delivery\":\"uri\",\"gcsUri\":\"gs://video-output/clip.mp4\"}]}}"
+        );
+
+        var result = await GoogleInteractionsStreamSupport
+            .Model(handler)
+            .DoGenerateAsync(options, CancellationToken.None);
+
+        var body = JsonNode.Parse(handler.Bodies[0])!.AsObject();
+        GoogleUpstream.JsonEqual(body["response_modalities"], "[\"video\"]");
+        GoogleUpstream.JsonEqual(
+            body["response_format"],
+            "[{\"type\":\"video\",\"aspect_ratio\":\"16:9\",\"resolution\":\"360p\",\"duration\":\"4s\",\"delivery\":\"uri\",\"gcs_uri\":\"gs://video-output/clip.mp4\"}]"
+        );
+        Assert.Contains(result.Content.OfType<GeneratedFile>(), file =>
+            file.MediaType == "video/mp4"
+            && System.Convert.ToBase64String(file.Data) == "AAAAIGZ0eXBpc29t"
+        );
+    }
+
+    [Fact]
+    [UpstreamTest(
+        Prefix + "returns the JSON-shaped text content from the parsed response",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Returns_the_JSON_shaped_text_content_from_the_parsed_response()
+    {
+        var result = await GoogleInteractionsStreamSupport
+            .Model(Handler())
+            .DoGenerateAsync(Options(true, true), CancellationToken.None);
+
+        GoogleUpstream.JsonEqual(
+            DoGenerateSupport.Content(result.Content),
+            "[{\"providerMetadata\":{\"google\":{\"interactionId\":\"v1_ChdUV3NIYW9LTk9OYXlxdHNQb2RpcC1RRRIXVFdzSGFvS05PTmF5cXRzUG9kaXAtUUU\",\"signature\":\"CqACAQw51sc7wSan2PLLtHG+z0j4AgWR8MPPe76QUDZpwhGeQ1AGXBWGqSm7nhjwbkyXhJ7JlfZ/R3iLZAmqxGH9mLrdkzQooTu5YKptE0+D1jb+PLv7PM/pkCeI8E2IUDtamWiQP2/eG3Rgouxd7+kNxcaERwGTLFsGMdZttew0aP8+xd0hKPAZVkkqKtjVVNYQaSVsnXpTxZrE+spikYx1T/lB9tl6tYkJrB/SmkGO/tsTqDVsaejBXheSM+pu/Nt7s9gAhiNxJnoTvFENezmmiGwiho1lkkPrK8u5uODO5MldRXefJnv8mkZAw/3l6Cxd63hKPGP5za6sjFr/0Scsv0LcrOU65e+YEqZOkp7OXcCoqTCZZITx89JjkOA/pN1T\"}},\"text\":\"\",\"type\":\"reasoning\"},{\"providerMetadata\":{\"google\":{\"interactionId\":\"v1_ChdUV3NIYW9LTk9OYXlxdHNQb2RpcC1RRRIXVFdzSGFvS05PTmF5cXRzUG9kaXAtUUU\"}},\"text\":\"{\\\"name\\\":\\\"John Doe\\\",\\\"age\\\":30}\",\"type\":\"text\"}]"
+        );
+        Assert.Empty(result.Warnings);
     }
 
     [Fact]

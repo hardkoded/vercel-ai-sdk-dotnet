@@ -270,7 +270,6 @@ internal static class GoogleInteractionsStreaming
 /// <summary>
 /// Turns Interactions events into language model stream parts: response metadata, text, reasoning, function calls,
 /// built-in tool calls and results, sources, custom processing parts, errors, and the finish part.
-/// Image and video outputs are not yet surfaced.
 /// </summary>
 internal sealed class GoogleInteractionsStreamTransform
 {
@@ -306,6 +305,7 @@ internal sealed class GoogleInteractionsStreamTransform
     private string? _serviceTier;
     private string? _finishStatus;
     private bool _hasFunctionCall;
+    private bool _hasCompletionEvent;
 
     /// <param name="warnings">Warnings for the stream-start part.</param>
     /// <param name="includeRawChunks">Whether to emit a raw part for every event.</param>
@@ -369,6 +369,7 @@ internal sealed class GoogleInteractionsStreamTransform
 
         var id = GoogleInteractionsStreaming.String(response, "id");
         _interactionId = string.IsNullOrEmpty(id) ? null : id;
+        _hasCompletionEvent = true;
         _finishStatus = GoogleInteractionsStreaming.String(response, "status");
         _usage = response["usage"] as JsonObject;
         _serviceTier = GoogleInteractionsStreaming.String(response, "service_tier") ?? _serviceTier;
@@ -390,39 +391,100 @@ internal sealed class GoogleInteractionsStreamTransform
             yield return new RawStreamPart(response.ToJsonString());
         }
 
-        var (content, hasFunctionCall) = GoogleInteractionsOutput.Parse(response);
+        var (content, hasFunctionCall) = GoogleInteractionsOutput.Parse(
+            response["steps"] as JsonArray,
+            _generateId,
+            _interactionId
+        );
         _hasFunctionCall = hasFunctionCall;
         var block = 0;
         foreach (var item in content)
         {
-            if (item is GeneratedText text)
+            switch (item)
             {
-                var blockId =
-                    (_interactionId ?? "agent")
-                    + ":"
-                    + (block++).ToString(CultureInfo.InvariantCulture);
-                yield return new TextStartStreamPart(blockId);
-                if (text.Text.Length > 0)
-                {
-                    yield return new TextDeltaStreamPart(blockId, text.Text);
-                }
+                case GeneratedText text:
+                    var textId = NextBlockId(ref block);
+                    yield return new TextStartStreamPart(textId);
+                    if (text.Text.Length > 0)
+                    {
+                        yield return new TextDeltaStreamPart(textId, text.Text);
+                    }
 
-                yield return new TextEndStreamPart(blockId, null, GoogleMetadata());
-            }
-            else if (item is GeneratedToolCall call)
-            {
-                yield return new ToolInputStartStreamPart(call.ToolCallId, call.ToolName);
-                yield return new ToolInputDeltaStreamPart(call.ToolCallId, call.ArgumentsJson);
-                yield return new ToolInputEndStreamPart(call.ToolCallId);
-                yield return new ToolCallStreamPart(
-                    call.ToolCallId,
-                    call.ToolName,
-                    call.ArgumentsJson
-                );
+                    yield return new TextEndStreamPart(textId, null, text.ProviderMetadata);
+                    break;
+                case GeneratedReasoning reasoning:
+                    var reasoningId = NextBlockId(ref block);
+                    yield return new ReasoningStartStreamPart(reasoningId);
+                    if (reasoning.Text.Length > 0)
+                    {
+                        yield return new ReasoningDeltaStreamPart(reasoningId, reasoning.Text);
+                    }
+
+                    yield return new ReasoningEndStreamPart(
+                        reasoningId,
+                        reasoning.ProviderMetadata
+                    );
+                    break;
+                case GeneratedToolCall call:
+                    yield return new ToolInputStartStreamPart(
+                        call.ToolCallId,
+                        call.ToolName,
+                        null,
+                        call.ProviderExecuted ? true : null
+                    );
+                    yield return new ToolInputDeltaStreamPart(call.ToolCallId, call.ArgumentsJson);
+                    yield return new ToolInputEndStreamPart(call.ToolCallId);
+                    yield return new ToolCallStreamPart(
+                        call.ToolCallId,
+                        call.ToolName,
+                        call.ArgumentsJson,
+                        call.ProviderMetadata
+                    )
+                    {
+                        ProviderExecuted = call.ProviderExecuted,
+                    };
+                    break;
+                case GeneratedToolResult result:
+                    yield return new ToolResultStreamPart(
+                        result.ToolCallId,
+                        result.ToolName,
+                        JsonSerializer.SerializeToElement(JsonNode.Parse(result.ResultJson))
+                    );
+                    break;
+                case GeneratedCustom custom:
+                    yield return new CustomStreamPart(custom.Kind, custom.ProviderMetadata);
+                    break;
+                case GoogleGeneratedFile file:
+                    yield return file.Url != null
+                        ? new FileStreamPart(file.Url, file.MediaType, file.ProviderMetadata)
+                        : new FileStreamPart(file.Data, file.MediaType, file.ProviderMetadata);
+                    break;
+                case GeneratedSource source:
+                    yield return new SourceStreamPart(
+                        source.Id,
+                        source.Url,
+                        source.Title,
+                        source.ProviderMetadata
+                    );
+                    break;
+                case GeneratedDocumentSource document:
+                    yield return new DocumentSourceStreamPart(
+                        document.Id,
+                        document.MediaType,
+                        document.Title,
+                        document.Filename,
+                        document.ProviderMetadata
+                    );
+                    break;
             }
         }
 
         yield return Finish();
+    }
+
+    private string NextBlockId(ref int block)
+    {
+        return (_interactionId ?? "agent") + ":" + (block++).ToString(CultureInfo.InvariantCulture);
     }
 
     internal IEnumerable<LanguageModelStreamPart> Transform(GoogleInteractionsEvent streamEvent)
@@ -511,10 +573,15 @@ internal sealed class GoogleInteractionsStreamTransform
 
     private FinishStreamPart Finish()
     {
+        // A feed that ends cleanly without a completion event, while the interaction is still running, was interrupted.
+        var interrupted =
+            !_hasCompletionEvent && (_finishStatus == null || _finishStatus == "in_progress");
         return new FinishStreamPart(
-            GoogleInteractionsFinish.Map(_finishStatus, _hasFunctionCall),
+            interrupted
+                ? FinishReason.Interrupted
+                : GoogleInteractionsFinish.Map(_finishStatus, _hasFunctionCall),
             GoogleInteractionsModel.Usage(_usage),
-            _finishStatus,
+            interrupted ? null : _finishStatus,
             GoogleInteractionsModel.ProviderMetadata(
                 _interactionId,
                 _serviceTier,
@@ -592,6 +659,15 @@ internal sealed class GoogleInteractionsStreamTransform
                         ),
                         parts
                     );
+                }
+                else if (GoogleInteractionsStreaming.String(first, "type") == "image")
+                {
+                    _openBlocks[index] = new OpenBlock(blockId, OpenBlockKind.Image)
+                    {
+                        ImageData = GoogleInteractionsStreaming.String(first, "data"),
+                        ImageMimeType = GoogleInteractionsStreaming.String(first, "mime_type"),
+                        ImageUri = GoogleInteractionsStreaming.String(first, "uri"),
+                    };
                 }
                 else
                 {
@@ -700,6 +776,30 @@ internal sealed class GoogleInteractionsStreamTransform
         }
     }
 
+    // A `file` part for an image or video block that carries inline data or a uri.
+    private FileStreamPart? File(JsonObject block, string type)
+    {
+        var mediaType = GoogleInteractionsStreaming.String(block, "mime_type")
+            ?? (type == "image" ? "image/png" : "video/mp4");
+        return FileOf(
+            GoogleInteractionsStreaming.String(block, "data"),
+            GoogleInteractionsStreaming.String(block, "uri"),
+            mediaType
+        );
+    }
+
+    private FileStreamPart? FileOf(string? data, string? uri, string mediaType)
+    {
+        if (!string.IsNullOrEmpty(data))
+        {
+            return new FileStreamPart(Convert.FromBase64String(data), mediaType, GoogleMetadata());
+        }
+
+        return !string.IsNullOrEmpty(uri)
+            ? new FileStreamPart(new Uri(uri), mediaType, GoogleMetadata())
+            : null;
+    }
+
     private void StepDelta(JsonObject value, List<LanguageModelStreamPart> parts)
     {
         if (Index(value) is not { } index || !_openBlocks.TryGetValue(index, out var open))
@@ -720,9 +820,33 @@ internal sealed class GoogleInteractionsStreamTransform
             parts.Add(new TextStartStreamPart(open.Id));
         }
 
-        // Image and video deltas are not yet surfaced. FileStreamPart carries bytes and cannot hold a uri.
-        if (type == "image" || type == "video")
+        // Image and video deltas carry the whole payload in one chunk. The file part is emitted as soon as it arrives, whether or not a text block is open.
+        if (
+            (
+                type == "image"
+                && open.Kind
+                    is OpenBlockKind.PendingModelOutput
+                        or OpenBlockKind.Text
+                        or OpenBlockKind.Image
+            )
+            || (
+                type == "video"
+                && open.Kind is OpenBlockKind.PendingModelOutput or OpenBlockKind.Text
+            )
+        )
         {
+            if (File(delta!, type!) is { } file)
+            {
+                parts.Add(file);
+            }
+
+            // The file was emitted inline. Clear an eagerly promoted image block so step.stop does not emit it again.
+            if (open.Kind == OpenBlockKind.Image)
+            {
+                open.ImageData = null;
+                open.ImageUri = null;
+            }
+
             return;
         }
 
@@ -845,6 +969,16 @@ internal sealed class GoogleInteractionsStreamTransform
             case OpenBlockKind.Text:
                 parts.Add(new TextEndStreamPart(open.Id, null, GoogleMetadata()));
                 break;
+            case OpenBlockKind.Image:
+                if (
+                    FileOf(open.ImageData, open.ImageUri, open.ImageMimeType ?? "image/png") is
+                    { } image
+                )
+                {
+                    parts.Add(image);
+                }
+
+                break;
             case OpenBlockKind.Reasoning:
                 parts.Add(new ReasoningEndStreamPart(open.Id, GoogleMetadata(open.Signature)));
                 break;
@@ -923,6 +1057,7 @@ internal sealed class GoogleInteractionsStreamTransform
 
     private void Completed(JsonObject value)
     {
+        _hasCompletionEvent = true;
         if (value["interaction"] is not JsonObject interaction)
         {
             return;
@@ -981,6 +1116,7 @@ internal sealed class GoogleInteractionsStreamTransform
         BuiltinToolCall,
         BuiltinToolResult,
         Custom,
+        Image,
     }
 
     private sealed class OpenBlock
@@ -1012,5 +1148,11 @@ internal sealed class GoogleInteractionsStreamTransform
         internal string? CustomKind { get; init; }
 
         internal JsonObject? Google { get; init; }
+
+        internal string? ImageData { get; set; }
+
+        internal string? ImageMimeType { get; set; }
+
+        internal string? ImageUri { get; set; }
     }
 }
