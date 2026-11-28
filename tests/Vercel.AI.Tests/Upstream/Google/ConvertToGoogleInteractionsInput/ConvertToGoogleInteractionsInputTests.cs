@@ -19,7 +19,8 @@ public sealed class ConvertToGoogleInteractionsInputTests
     [InlineData(true)]
     [UpstreamTest(
         Prefix + "keeps mixed file content inside its tool result (compact: %s)",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3d45b091f3107bbd4685ca8aaacdbed4ccf71b54"
     )]
     public void Keeps_mixed_file_content_inside_its_tool_result(bool compact)
     {

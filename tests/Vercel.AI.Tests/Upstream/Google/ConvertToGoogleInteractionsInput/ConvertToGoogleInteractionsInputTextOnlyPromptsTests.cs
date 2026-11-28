@@ -9,7 +9,8 @@ namespace Vercel.AI.Tests.Upstream.Google.ConvertToGoogleInteractionsInput;
 /// <summary>Port of <c>convert-to-google-interactions-input.test.ts</c> &gt; <c>convertToGoogleInteractionsInput</c> &gt; <c>text-only prompts</c>.</summary>
 public sealed class ConvertToGoogleInteractionsInputTextOnlyPromptsTests
 {
-    private const string Prefix = ConvertToGoogleInteractionsInputSupport.Id + "text-only prompts::";
+    private const string Prefix =
+        ConvertToGoogleInteractionsInputSupport.Id + "text-only prompts::";
 
     [Fact]
     [UpstreamTest(

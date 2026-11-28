@@ -15,8 +15,14 @@ public sealed class ConvertToGoogleInteractionsInputToolResultMessagesTests
 
     [Fact]
     [UpstreamTest(
+        Prefix + "maps a text tool result to a function_result block on a user turn",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "The parity snapshot title. Upstream later renamed it to the top-level function_result it below, and the result is no longer nested in a user turn."
+    )]
+    [UpstreamTest(
         Prefix + "maps a text tool result to a top-level function_result input",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3d45b091f3107bbd4685ca8aaacdbed4ccf71b54"
     )]
     public void Maps_a_text_tool_result_to_a_top_level_function_result_input()
     {
@@ -106,7 +112,8 @@ public sealed class ConvertToGoogleInteractionsInputToolResultMessagesTests
     [Fact]
     [UpstreamTest(
         Prefix + "nests a document inside its top-level function result",
-        Coverage = UpstreamCoverage.Covered
+        Coverage = UpstreamCoverage.Covered,
+        Commit = "3d45b091f3107bbd4685ca8aaacdbed4ccf71b54"
     )]
     public void Nests_a_document_inside_its_top_level_function_result()
     {

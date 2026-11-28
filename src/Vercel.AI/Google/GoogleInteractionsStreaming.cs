@@ -420,7 +420,10 @@ internal sealed class GoogleInteractionsStreamTransform
                         yield return new ReasoningDeltaStreamPart(reasoningId, reasoning.Text);
                     }
 
-                    yield return new ReasoningEndStreamPart(reasoningId, reasoning.ProviderMetadata);
+                    yield return new ReasoningEndStreamPart(
+                        reasoningId,
+                        reasoning.ProviderMetadata
+                    );
                     break;
                 case GeneratedToolCall call:
                     yield return new ToolInputStartStreamPart(
@@ -481,9 +484,7 @@ internal sealed class GoogleInteractionsStreamTransform
 
     private string NextBlockId(ref int block)
     {
-        return (_interactionId ?? "agent")
-            + ":"
-            + (block++).ToString(CultureInfo.InvariantCulture);
+        return (_interactionId ?? "agent") + ":" + (block++).ToString(CultureInfo.InvariantCulture);
     }
 
     internal IEnumerable<LanguageModelStreamPart> Transform(GoogleInteractionsEvent streamEvent)
@@ -778,8 +779,7 @@ internal sealed class GoogleInteractionsStreamTransform
     // A `file` part for an image or video block that carries inline data or a uri.
     private FileStreamPart? File(JsonObject block, string type)
     {
-        var mediaType =
-            GoogleInteractionsStreaming.String(block, "mime_type")
+        var mediaType = GoogleInteractionsStreaming.String(block, "mime_type")
             ?? (type == "image" ? "image/png" : "video/mp4");
         return FileOf(
             GoogleInteractionsStreaming.String(block, "data"),
@@ -828,7 +828,11 @@ internal sealed class GoogleInteractionsStreamTransform
                     is OpenBlockKind.PendingModelOutput
                         or OpenBlockKind.Text
                         or OpenBlockKind.Image
-            ) || (type == "video" && open.Kind is OpenBlockKind.PendingModelOutput or OpenBlockKind.Text)
+            )
+            || (
+                type == "video"
+                && open.Kind is OpenBlockKind.PendingModelOutput or OpenBlockKind.Text
+            )
         )
         {
             if (File(delta!, type!) is { } file)
@@ -967,8 +971,8 @@ internal sealed class GoogleInteractionsStreamTransform
                 break;
             case OpenBlockKind.Image:
                 if (
-                    FileOf(open.ImageData, open.ImageUri, open.ImageMimeType ?? "image/png")
-                    is { } image
+                    FileOf(open.ImageData, open.ImageUri, open.ImageMimeType ?? "image/png") is
+                    { } image
                 )
                 {
                     parts.Add(image);

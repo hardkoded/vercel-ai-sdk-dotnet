@@ -39,6 +39,11 @@ public sealed class PrepareGoogleInteractionsToolsToolChoiceMappingTests
 
     [Fact]
     [UpstreamTest(
+        Prefix + "maps \"none\" to \"none\"",
+        Coverage = UpstreamCoverage.Partial,
+        Note = "The parity snapshot title. Upstream later changed it to omit function tools when toolChoice is none."
+    )]
+    [UpstreamTest(
         Prefix + "omits function tools when toolChoice is none",
         Coverage = UpstreamCoverage.Covered,
         Commit = "83d6b7da4df4bdf62f2cc17d3a8a5bb4647b1023"

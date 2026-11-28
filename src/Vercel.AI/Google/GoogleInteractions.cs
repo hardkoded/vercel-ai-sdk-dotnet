@@ -1346,6 +1346,34 @@ public sealed class GoogleInteractionsModel : ILanguageModel
             }
         }
 
+        // The deprecated `imageConfig` adds an image entry only when none was supplied, and always warns.
+        if (
+            !_isAgent
+            && GoogleOption(options, "imageConfig")
+                is { ValueKind: JsonValueKind.Object } imageConfig
+        )
+        {
+            var alreadyHasImageEntry =
+                responseFormat != null
+                && responseFormat.Any(entry => (string?)entry?["type"] == "image");
+            warnings.Add(
+                new CallWarning(
+                    "other",
+                    alreadyHasImageEntry
+                        ? "google.interactions: providerOptions.google.imageConfig is deprecated and was ignored because providerOptions.google.responseFormat already supplies an image entry. Use responseFormat exclusively."
+                        : "google.interactions: providerOptions.google.imageConfig is deprecated. Use providerOptions.google.responseFormat with a { type: \"image\", ... } entry instead."
+                )
+            );
+            if (!alreadyHasImageEntry)
+            {
+                var imageEntry = new JsonObject { ["type"] = "image", ["mime_type"] = "image/png" };
+                GoogleJson.Set(imageEntry, "aspect_ratio", Str(imageConfig, "aspectRatio"));
+                GoogleJson.Set(imageEntry, "image_size", Str(imageConfig, "imageSize"));
+                responseFormat ??= new JsonArray();
+                responseFormat.Add(imageEntry);
+            }
+        }
+
         var converted = GoogleInteractionsInput.Convert(
             options.Prompt,
             previousInteractionId,
@@ -1400,6 +1428,7 @@ public sealed class GoogleInteractionsModel : ILanguageModel
             AddIf(dropped, ReasoningMap.IsCustomReasoning(options.Reasoning), "reasoning");
             AddIf(dropped, thinkingLevel != null, "thinkingLevel");
             AddIf(dropped, thinkingSummaries != null, "thinkingSummaries");
+            AddIf(dropped, GoogleOption(options, "imageConfig") != null, "imageConfig");
             if (dropped.Count > 0)
             {
                 warnings.Add(
