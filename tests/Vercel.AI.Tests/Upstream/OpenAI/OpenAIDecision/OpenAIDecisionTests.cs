@@ -917,6 +917,54 @@ public sealed class OpenAIDecisionTests
     }
 
     [Theory]
+    [InlineData("low")]
+    [InlineData("high")]
+    [InlineData("auto")]
+    [InlineData("original")]
+    [UpstreamTest(
+        Prefix + "sends %s image detail from file part provider options",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Sends_image_detail_from_file_part_provider_options(string imageDetail)
+    {
+        var (model, capture) = Setup();
+        var state = new List<object?>
+        {
+            new Dictionary<string, object?>
+            {
+                ["type"] = "file",
+                ["mediaType"] = "image/png",
+                ["data"] = new Dictionary<string, object?>
+                {
+                    ["type"] = "data",
+                    ["data"] = "iVBORw==",
+                },
+                ["providerOptions"] = new Dictionary<string, object?>
+                {
+                    ["openai"] = new Dictionary<string, object?> { ["imageDetail"] = imageDetail },
+                },
+            },
+            new Dictionary<string, object?>
+            {
+                ["type"] = "file",
+                ["mediaType"] = "image/png",
+                ["data"] = new Dictionary<string, object?>
+                {
+                    ["type"] = "data",
+                    ["data"] = "iVBORw==",
+                },
+            },
+        };
+        await model.DoDecideAsync(Call(state: state));
+        JsonAssert.Equal(
+            RequestBody(capture)["input"]![0]!["content"],
+            "[{\"type\":\"input_image\",\"image_url\":\"data:image/png;base64,iVBORw==\",\"detail\":\""
+                + imageDetail
+                + "\"},{\"type\":\"input_image\",\"image_url\":\"data:image/png;base64,iVBORw==\"}]"
+        );
+    }
+
+    [Theory]
     [MemberData(nameof(UnsupportedFiles))]
     [UpstreamTest(
         Prefix + "rejects unsupported decision files before the API call: %j",

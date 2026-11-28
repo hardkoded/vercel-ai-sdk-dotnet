@@ -388,13 +388,24 @@ public sealed class OpenAIDecisionModel : IEvaluationDecisionCaller
             }
 
             var base64 = bytes != null ? Convert.ToBase64String(bytes) : base64Text;
-            content.Add(
-                new JsonObject
-                {
-                    ["type"] = "input_image",
-                    ["image_url"] = "data:" + resolved + ";base64," + base64,
-                }
-            );
+            var image = new JsonObject
+            {
+                ["type"] = "input_image",
+                ["image_url"] = "data:" + resolved + ";base64," + base64,
+            };
+            if (
+                file.ProviderOptions != null
+                && file.ProviderOptions.TryGetValue("openai", out var openAIOptions)
+                && openAIOptions.ValueKind == JsonValueKind.Object
+                && openAIOptions.TryGetProperty("imageDetail", out var detail)
+                && detail.ValueKind != JsonValueKind.Null
+                && detail.ValueKind != JsonValueKind.Undefined
+            )
+            {
+                image["detail"] = JsonNode.Parse(detail.GetRawText());
+            }
+
+            content.Add(image);
         }
 
         return new JsonArray(new JsonObject { ["role"] = "user", ["content"] = content });
