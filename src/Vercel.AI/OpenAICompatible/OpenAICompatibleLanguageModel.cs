@@ -137,14 +137,15 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
             string.IsNullOrWhiteSpace(response.Body) ? "{}" : response.Body
         );
         return ConvertGenerateResponse(
-            document.RootElement,
-            prepared.MetadataKey,
-            prepared.JsonResponseToolName,
-            prepared.JsonTextOverridesToolCalls,
-            prepared.Warnings,
-            response.Body,
-            response.Headers
-        );
+                document.RootElement,
+                prepared.MetadataKey,
+                prepared.JsonResponseToolName,
+                prepared.JsonTextOverridesToolCalls,
+                prepared.Warnings,
+                response.Body,
+                response.Headers
+            )
+            .WithRequest(LanguageModelStreamRequest.FromJson(prepared.Json));
     }
 
     private LanguageModelGenerateResult ConvertGenerateResponse(
@@ -418,7 +419,9 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
                 failed = true;
                 sawFinish = true;
                 finishRaw = null;
-                yield return new ErrorStreamPart(ErrorText(root["error"]));
+                yield return _provider.Options.CreateStreamError?.Invoke(root) is { } streamError
+                    ? new ErrorStreamPart(streamError)
+                    : new ErrorStreamPart(ErrorText(root["error"]));
                 continue;
             }
 
@@ -453,7 +456,11 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
             }
 
             if (
-                (root["usage"] ?? (root["x_groq"] as JsonObject)?["usage"])
+                (
+                    _provider.Options.StreamUsageFromXGroqOnly
+                        ? (root["x_groq"] as JsonObject)?["usage"]
+                        : root["usage"] ?? (root["x_groq"] as JsonObject)?["usage"]
+                )
                 is JsonObject usageObject
             )
             {
@@ -908,9 +915,10 @@ public class OpenAICompatibleLanguageModel : ILanguageModel
                 ["strict"] = strict,
                 ["name"] = options.JsonSchemaName ?? "response",
             };
-            if (!string.IsNullOrEmpty(settings.ResponseFormatDescription))
+            var description = options.JsonSchemaDescription ?? settings.ResponseFormatDescription;
+            if (!string.IsNullOrEmpty(description))
             {
-                schemaObject["description"] = settings.ResponseFormatDescription;
+                schemaObject["description"] = description;
             }
 
             body["response_format"] = new JsonObject

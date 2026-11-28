@@ -5,6 +5,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Vercel.AI.Operations;
+using Vercel.AI.Prompt;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
 
@@ -174,6 +175,18 @@ public class OpenAICompatibleOptions
     /// when it does not match. Moonshot uses it for <c>moonshotAIChatResponseSchema</c>.
     /// </summary>
     internal Action<JsonElement>? ValidateChatResponse { get; set; }
+
+    /// <summary>
+    /// When true, a streamed chunk carries its usage only in <c>x_groq.usage</c>, and a top-level <c>usage</c> is ignored.
+    /// Maps to the Groq chunk schema in <c>groq-chat-language-model.ts</c>.
+    /// </summary>
+    internal bool StreamUsageFromXGroqOnly { get; set; }
+
+    /// <summary>
+    /// .NET-only hook. Maps a streamed <c>error</c> chunk to a structured provider error. Null keeps the message-only error part.
+    /// Groq uses it for <c>createGroqStreamError</c>, which upstream calls from its own chat model.
+    /// </summary>
+    internal Func<JsonObject, ProviderStreamError?>? CreateStreamError { get; set; }
 
     /// <summary>
     /// .NET-only hook. Validates a streamed chat chunk and returns the error message when it does not match, or null.
