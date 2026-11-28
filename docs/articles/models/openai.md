@@ -35,3 +35,15 @@ Console.WriteLine(result.Text);
 ```
 
 See the [Providers](providers.md) guide for authentication and provider options.
+
+## Decision model images
+
+A decision state image part takes the file part provider option `openai.imageDetail` (`low`, `high`, `auto`, or `original`). The value is sent as `detail` on the `input_image` item. Without the option no `detail` is sent.
+
+## Structured output schemas
+
+OpenAI structured output does not accept `propertyNames` or regex lookaround in `pattern`, so both are removed before the schema is sent, with a `compatibility` warning. A singleton local reference `allOf` (`{ "allOf": [{ "$ref": "#/definitions/person" }] }`, which Zod 4 emits for recursive schemas) becomes a direct `$ref`. At the schema root, the referenced definition is expanded in place, because OpenAI requires an object at the root.
+
+## Language model capabilities
+
+`OpenAILanguageModelCapabilities.ForModel(modelId)` also reports `SupportsChatFunctionToolsWithReasoning`, which says whether Chat Completions accepts function tools together with reasoning for that model.

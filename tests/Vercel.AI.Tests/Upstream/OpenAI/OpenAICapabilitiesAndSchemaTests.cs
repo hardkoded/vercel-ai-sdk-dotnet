@@ -383,6 +383,77 @@ public sealed class OpenAICapabilitiesAndSchemaTests
         Assert.Empty(result.Warnings);
     }
 
+    [Fact]
+    [UpstreamTest(
+        "packages/openai/src/normalize-openai-json-schema.test.ts::normalizeOpenAIJsonSchema::unwraps singleton reference allOf schemas from recursive Zod schemas",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void UnwrapsSingletonReferenceAllOfSchemas()
+    {
+        const string definitions =
+            "{\"person\":{\"type\":\"object\",\"properties\":{\"firstName\":{\"type\":\"string\"}},\"required\":[\"firstName\"],\"additionalProperties\":false}}";
+        var result = OpenAIJsonSchema.Normalize(
+            JsonNode.Parse(
+                "{\"type\":\"object\",\"properties\":{\"relatives\":{\"type\":\"array\",\"items\":{\"allOf\":[{\"$ref\":\"#/definitions/person\"}]}}},\"definitions\":"
+                    + definitions
+                    + ",\"required\":[\"relatives\"],\"additionalProperties\":false}"
+            )!
+        );
+        OpenAIUpstream.Equal(
+            result.Schema,
+            "{\"type\":\"object\",\"properties\":{\"relatives\":{\"type\":\"array\",\"items\":{\"$ref\":\"#/definitions/person\"}}},\"definitions\":"
+                + definitions
+                + ",\"required\":[\"relatives\"],\"additionalProperties\":false}"
+        );
+        Assert.Empty(result.Warnings);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/openai/src/normalize-openai-json-schema.test.ts::normalizeOpenAIJsonSchema::expands a singleton local reference allOf at the root",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void ExpandsSingletonLocalReferenceAllOfAtTheRoot()
+    {
+        var result = OpenAIJsonSchema.Normalize(
+            JsonNode.Parse(
+                "{\"default\":{\"firstName\":\"John\"},\"allOf\":[{\"$ref\":\"#/definitions/person\"}],\"definitions\":{\"person\":{\"type\":\"object\",\"properties\":{\"firstName\":{\"type\":\"string\"},\"relatives\":{\"type\":\"array\",\"items\":{\"allOf\":[{\"$ref\":\"#/definitions/person\"}]}}},\"required\":[\"firstName\",\"relatives\"],\"additionalProperties\":false}}}"
+            )!
+        );
+        const string person =
+            "{\"type\":\"object\",\"properties\":{\"firstName\":{\"type\":\"string\"},\"relatives\":{\"type\":\"array\",\"items\":{\"$ref\":\"#/definitions/person\"}}},\"required\":[\"firstName\",\"relatives\"],\"additionalProperties\":false}";
+        OpenAIUpstream.Equal(
+            result.Schema,
+            "{\"type\":\"object\",\"properties\":{\"firstName\":{\"type\":\"string\"},\"relatives\":{\"type\":\"array\",\"items\":{\"$ref\":\"#/definitions/person\"}}},\"required\":[\"firstName\",\"relatives\"],\"additionalProperties\":false,\"default\":{\"firstName\":\"John\"},\"definitions\":{\"person\":"
+                + person
+                + "}}"
+        );
+        Assert.Empty(result.Warnings);
+    }
+
+    [Fact]
+    [UpstreamTest(
+        "packages/openai/src/openai-language-model-capabilities.test.ts::getOpenAILanguageModelCapabilities > GPT-6 and later reasoning capabilities::supports the documented GPT-6.1 Sol capabilities",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public void SupportsTheDocumentedGpt61SolCapabilities()
+    {
+        var capabilities = OpenAILanguageModelCapabilities.ForModel("gpt-6.1-sol");
+
+        Assert.True(capabilities.IsReasoningModel);
+        Assert.Equal("developer", capabilities.SystemMessageMode);
+        Assert.True(capabilities.SupportsFlexProcessing);
+        Assert.True(capabilities.SupportsPriorityProcessing);
+        Assert.True(capabilities.SupportsConfigurationUpdate);
+        Assert.True(capabilities.SupportsAsyncToolCalling);
+        Assert.Equal(
+            new[] { "low", "medium", "high", "xhigh", "max" },
+            capabilities.SupportedReasoningEfforts
+        );
+        Assert.False(capabilities.SupportsNonReasoningParameters);
+        Assert.False(capabilities.SupportsChatFunctionToolsWithReasoning);
+    }
+
     private static void AssertPair(bool expected, params string[] ids)
     {
         foreach (var id in ids)

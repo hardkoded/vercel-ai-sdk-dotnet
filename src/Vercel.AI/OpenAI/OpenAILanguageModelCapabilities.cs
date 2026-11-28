@@ -20,7 +20,8 @@ public sealed class OpenAILanguageModelCapabilities
         bool supportsConfigurationUpdate,
         bool supportsAsyncToolCalling,
         IReadOnlyList<string>? supportedReasoningEfforts,
-        bool supportsNonReasoningParameters
+        bool supportsNonReasoningParameters,
+        bool supportsChatFunctionToolsWithReasoning
     )
     {
         IsReasoningModel = isReasoningModel;
@@ -31,6 +32,7 @@ public sealed class OpenAILanguageModelCapabilities
         SupportsAsyncToolCalling = supportsAsyncToolCalling;
         SupportedReasoningEfforts = supportedReasoningEfforts;
         SupportsNonReasoningParameters = supportsNonReasoningParameters;
+        SupportsChatFunctionToolsWithReasoning = supportsChatFunctionToolsWithReasoning;
     }
 
     /// <summary>Whether sampling parameters such as temperature are limited.</summary>
@@ -56,6 +58,9 @@ public sealed class OpenAILanguageModelCapabilities
 
     /// <summary>Whether temperature and top_p stay when reasoning effort is <c>none</c>.</summary>
     public bool SupportsNonReasoningParameters { get; }
+
+    /// <summary>Whether Chat Completions accepts function tools together with reasoning.</summary>
+    public bool SupportsChatFunctionToolsWithReasoning { get; }
 
     /// <summary>Classifies <paramref name="modelId"/> the way the OpenAI provider does.</summary>
     public static OpenAILanguageModelCapabilities ForModel(string modelId)
@@ -105,7 +110,66 @@ public sealed class OpenAILanguageModelCapabilities
             isGpt6OrLater,
             isGpt6OrLater,
             efforts,
-            supportsNonReasoning
+            supportsNonReasoning,
+            SupportsChatFunctionToolsWithReasoningFor(modelId)
+        );
+    }
+
+    // Listed models whose catalog row sets chatFunctionToolsWithReasoning to false.
+    // Every other model, including an unlisted one, accepts function tools with reasoning.
+    private static readonly HashSet<string> NoChatFunctionToolsWithReasoning = new(
+        StringComparer.Ordinal
+    )
+    {
+        "gpt-6.2-astra",
+        "gpt-6.2-sol",
+        "gpt-6-astra",
+        "gpt-6.1-sol",
+        "gpt-6.1-terra",
+        "gpt-6-luna",
+        "gpt-6-sol",
+        "gpt-5.6",
+        "gpt-5.6-luna",
+        "gpt-5.6-sol",
+        "gpt-5.6-terra",
+        "gpt-5.5",
+        "gpt-5.4",
+        "gpt-5.4-mini",
+        "gpt-5.4-nano",
+    };
+
+    // Dated snapshots that have their own catalog row, which accepts function tools with reasoning.
+    private static readonly HashSet<string> ListedChatFunctionToolsSnapshots = new(
+        StringComparer.Ordinal
+    )
+    {
+        "gpt-5.4-2026-03-05",
+        "gpt-5.4-mini-2026-03-17",
+        "gpt-5.4-nano-2026-03-17",
+        "gpt-5.5-2026-04-23",
+    };
+
+    private static readonly Regex DatedSnapshotSuffix = new Regex(
+        "-[0-9]{4}-[0-9]{2}-[0-9]{2}\\z",
+        RegexOptions.CultureInvariant,
+        TimeSpan.FromMilliseconds(100)
+    );
+
+    private static bool SupportsChatFunctionToolsWithReasoningFor(string modelId)
+    {
+        if (NoChatFunctionToolsWithReasoning.Contains(modelId))
+        {
+            return false;
+        }
+
+        if (ListedChatFunctionToolsSnapshots.Contains(modelId))
+        {
+            return true;
+        }
+
+        // A dated snapshot of a listed model uses that model's row.
+        return !NoChatFunctionToolsWithReasoning.Contains(
+            DatedSnapshotSuffix.Replace(modelId, string.Empty)
         );
     }
 

@@ -4,6 +4,7 @@
 
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 
 namespace Vercel.AI.OpenAI;
 
@@ -25,7 +26,8 @@ public sealed class OpenAIJsonSchemaResult
 
 /// <summary>
 /// Removes JSON Schema keywords OpenAI does not enforce: string <c>propertyNames</c>
-/// and regex lookaround in <c>pattern</c>.
+/// and regex lookaround in <c>pattern</c>. A singleton local reference <c>allOf</c> becomes
+/// a direct <c>$ref</c>, and at the schema root the referenced definition is expanded.
 /// </summary>
 public static class OpenAIJsonSchema
 {
@@ -53,11 +55,10 @@ public static class OpenAIJsonSchema
 
     private static OpenAIJsonSchemaResult NormalizeNode(JsonNode clone)
     {
-        var removedPropertyNames = false;
-        var removedLookaround = false;
-        Walk(clone, ref removedPropertyNames, ref removedLookaround);
+        var state = new NormalizeState();
+        var normalized = NormalizeDefinition(clone, state, isRoot: true);
         var warnings = new List<OpenAICallWarning>();
-        if (removedPropertyNames)
+        if (state.RemovedPropertyNames)
         {
             warnings.Add(
                 new OpenAICallWarning(
@@ -68,7 +69,7 @@ public static class OpenAIJsonSchema
             );
         }
 
-        if (removedLookaround)
+        if (state.RemovedLookaround)
         {
             warnings.Add(
                 new OpenAICallWarning(
@@ -79,61 +80,227 @@ public static class OpenAIJsonSchema
             );
         }
 
-        return new OpenAIJsonSchemaResult(clone, warnings);
+        return new OpenAIJsonSchemaResult(normalized, warnings);
     }
 
-    private static void Walk(
-        JsonNode? node,
-        ref bool removedPropertyNames,
-        ref bool removedLookaround
+    private sealed class NormalizeState
+    {
+        public bool RemovedPropertyNames { get; set; }
+
+        public bool RemovedLookaround { get; set; }
+    }
+
+    // Maps to normalizeDefinition: a boolean schema is returned as it is.
+    private static JsonNode NormalizeDefinition(
+        JsonNode? definition,
+        NormalizeState state,
+        bool isRoot = false
     )
     {
-        if (node is JsonObject obj)
-        {
-            if (
-                obj.TryGetPropertyValue("propertyNames", out var propertyNames)
-                && propertyNames != null
-            )
-            {
-                if (propertyNames is not JsonObject nameSchema || !IsStringSchema(nameSchema))
-                {
-                    throw new Provider.AiSdkException(
-                        "JSON Schema propertyNames that does not use a string schema"
-                    );
-                }
-
-                obj.Remove("propertyNames");
-                removedPropertyNames = true;
-            }
-
-            if (
-                obj["pattern"] is JsonValue patternValue
-                && patternValue.TryGetValue<string>(out var pattern)
-                && ContainsRegexLookaround(pattern)
-            )
-            {
-                obj.Remove("pattern");
-                removedLookaround = true;
-            }
-
-            foreach (var property in obj.ToList())
-            {
-                Walk(property.Value, ref removedPropertyNames, ref removedLookaround);
-            }
-        }
-        else if (node is JsonArray array)
-        {
-            foreach (var item in array)
-            {
-                Walk(item, ref removedPropertyNames, ref removedLookaround);
-            }
-        }
+        return definition is JsonObject obj ? NormalizeSchema(obj, state, isRoot) : definition!;
     }
 
-    private static bool IsStringSchema(JsonObject schema)
+    // Maps to normalizeSchema. Only the keywords that hold sub-schemas are walked.
+    private static JsonObject NormalizeSchema(JsonObject schema, NormalizeState state, bool isRoot)
     {
-        return schema["type"] is JsonValue type
-            && type.TryGetValue<string>(out var text)
+        if (
+            schema.TryGetPropertyValue("propertyNames", out var propertyNames)
+            && propertyNames != null
+        )
+        {
+            // Property names are always strings in JSON, so an omitted type is a string schema.
+            if (
+                propertyNames is not JsonObject nameSchema
+                || (nameSchema["type"] is { } type && !IsString(type))
+            )
+            {
+                throw new Provider.AiSdkException(
+                    "JSON Schema propertyNames that does not use a string schema"
+                );
+            }
+
+            state.RemovedPropertyNames = true;
+        }
+
+        var normalized = new JsonObject();
+        foreach (var property in schema)
+        {
+            if (property.Key != "propertyNames")
+            {
+                normalized[property.Key] = property.Value?.DeepClone();
+            }
+        }
+
+        if (
+            normalized["pattern"] is JsonValue patternValue
+            && patternValue.TryGetValue<string>(out var pattern)
+            && ContainsRegexLookaround(pattern)
+        )
+        {
+            normalized.Remove("pattern");
+            state.RemovedLookaround = true;
+        }
+
+        foreach (var keyword in SchemaRecordKeywords)
+        {
+            if (normalized[keyword] is JsonObject record)
+            {
+                normalized[keyword] = NormalizeRecord(record, state);
+            }
+        }
+
+        foreach (var keyword in SchemaKeywords)
+        {
+            if (normalized[keyword] is JsonObject child)
+            {
+                normalized[keyword] = NormalizeDefinition(child, state);
+            }
+        }
+
+        if (normalized["items"] is JsonArray tuple)
+        {
+            normalized["items"] = NormalizeArray(tuple, state);
+        }
+        else if (normalized["items"] is JsonObject itemSchema)
+        {
+            normalized["items"] = NormalizeDefinition(itemSchema, state);
+        }
+
+        foreach (var keyword in SchemaArrayKeywords)
+        {
+            if (normalized[keyword] is JsonArray list)
+            {
+                normalized[keyword] = NormalizeArray(list, state);
+            }
+        }
+
+        if (normalized["dependencies"] is JsonObject dependencies)
+        {
+            var normalizedDependencies = new JsonObject();
+            foreach (var dependency in dependencies)
+            {
+                normalizedDependencies[dependency.Key] = dependency.Value
+                    is JsonObject dependencySchema
+                    ? NormalizeDefinition(dependencySchema, state)
+                    : dependency.Value?.DeepClone();
+            }
+
+            normalized["dependencies"] = normalizedDependencies;
+        }
+
+        var reference = GetSingletonReference(normalized);
+        if (reference == null)
+        {
+            return normalized;
+        }
+
+        if (!isRoot)
+        {
+            // A one-item allOf has the same validation behavior as its reference.
+            normalized.Remove("allOf");
+            normalized["$ref"] = reference;
+            return normalized;
+        }
+
+        // OpenAI requires an object at the schema root, so a local root reference
+        // must be expanded instead of being sent as a direct $ref.
+        var referencedSchema = GetLocalReferenceSchema(reference, normalized);
+        if (referencedSchema == null)
+        {
+            return normalized;
+        }
+
+        normalized.Remove("allOf");
+        var expanded = (JsonObject)referencedSchema.DeepClone();
+        foreach (var property in normalized)
+        {
+            expanded[property.Key] = property.Value?.DeepClone();
+        }
+
+        return expanded;
+    }
+
+    private static readonly string[] SchemaRecordKeywords =
+    [
+        "properties",
+        "patternProperties",
+        "definitions",
+        "$defs",
+    ];
+
+    private static readonly string[] SchemaKeywords =
+    [
+        "additionalProperties",
+        "additionalItems",
+        "contains",
+        "not",
+        "if",
+        "then",
+        "else",
+    ];
+
+    private static readonly string[] SchemaArrayKeywords = ["allOf", "anyOf", "oneOf"];
+
+    private static JsonObject NormalizeRecord(JsonObject schemas, NormalizeState state)
+    {
+        var result = new JsonObject();
+        foreach (var entry in schemas)
+        {
+            result[entry.Key] = NormalizeDefinition(entry.Value, state)?.DeepClone();
+        }
+
+        return result;
+    }
+
+    private static JsonArray NormalizeArray(JsonArray schemas, NormalizeState state)
+    {
+        var result = new JsonArray();
+        foreach (var entry in schemas)
+        {
+            result.Add(NormalizeDefinition(entry, state)?.DeepClone());
+        }
+
+        return result;
+    }
+
+    // Do not rewrite intersections: only a single reference is equivalent to a direct $ref.
+    private static string? GetSingletonReference(JsonObject schema)
+    {
+        return
+            schema["allOf"] is JsonArray { Count: 1 } allOf
+            && allOf[0] is JsonObject { Count: 1 } only
+            && only["$ref"] is JsonValue value
+            && value.TryGetValue<string>(out var reference)
+            ? reference
+            : null;
+    }
+
+    private static readonly Regex LocalReference = new Regex(
+        "^#/(definitions|\\$defs)/(.+)\\z",
+        RegexOptions.CultureInvariant | RegexOptions.Singleline,
+        TimeSpan.FromMilliseconds(100)
+    );
+
+    private static JsonObject? GetLocalReferenceSchema(string reference, JsonObject normalized)
+    {
+        var match = LocalReference.Match(reference);
+        if (!match.Success)
+        {
+            return null;
+        }
+
+        var name = match.Groups[2].Value.Replace("~1", "/").Replace("~0", "~");
+        return
+            normalized[match.Groups[1].Value] is JsonObject definitions
+            && definitions[name] is JsonObject definition
+            ? definition
+            : null;
+    }
+
+    private static bool IsString(JsonNode type)
+    {
+        return type is JsonValue value
+            && value.TryGetValue<string>(out var text)
             && text == "string";
     }
 
