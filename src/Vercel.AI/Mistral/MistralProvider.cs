@@ -54,6 +54,15 @@ public sealed class MistralProvider : OpenAICompatibleProvider
         return new MistralProvider(client, options);
     }
 
+    /// <inheritdoc />
+    public override ILanguageModel LanguageModel(string modelId) => Chat(modelId);
+
+    /// <summary>Creates a Chat Completions model. Maps to <c>chat</c>.</summary>
+    public MistralChatLanguageModel Chat(string modelId)
+    {
+        return new MistralChatLanguageModel(this, modelId);
+    }
+
     /// <summary>Creates a model that uses the Conversations API, with support for web search. Maps to <c>conversation</c>.</summary>
     public MistralConversationLanguageModel Conversation(string modelId)
     {

@@ -204,6 +204,11 @@ public sealed class DoGenerateTests
         Coverage = UpstreamCoverage.Covered,
         Commit = Commit
     )]
+    [UpstreamTest(
+        Id + "should reject language combined with timestamp granularities",
+        Coverage = UpstreamCoverage.Covered,
+        Note = "Upstream renamed this test and runs it for each legacy model id."
+    )]
     public async Task Should_reject_language_combined_with_timestamps_for(string legacyModelId)
     {
         var error = await Assert.ThrowsAsync<InvalidArgumentException>(() =>

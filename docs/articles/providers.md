@@ -456,9 +456,20 @@ Set `CohereOptions.GenerateId` to control the ids of the sources (upstream `gene
 
 `MistralProvider.EmbeddingModel(id)` creates a `MistralEmbeddingModel` (provider id `mistral.embedding`, at most 32 values per call, no parallel calls). It posts to `{base}/embeddings` with `encoding_format` set to `float`. `MistralEmbeddingModelOptions` (maps to `mistralEmbeddingModelOptions`) reads `providerOptions.mistral`: `metadata` is attached to the request, `outputDimension` is sent as `output_dimension` and wins over the `dimensions` call setting, and `outputDtype` (`float`, `int8`, `uint8`, `binary` or `ubinary`) is sent as `output_dtype`. A value of the wrong shape throws `InvalidArgumentException`. The model ids and per-model option support are in `MistralModelCatalog`.
 
+## Mistral chat
+
+`MistralProvider.Chat(modelId)` (and `LanguageModel(modelId)`) creates a `MistralChatLanguageModel`, as upstream `createMistral().chat()` does. It calls `POST {base}/chat/completions` with provider id `mistral.chat`. It maps to `mistral-chat-language-model.ts` and follows its request and response handling:
+
+- The request carries `safe_prompt`, `document_image_limit`, `document_page_limit`, `prompt_cache_key` and `parallel_tool_calls` (only with tools) from the `mistral` provider options, next to the standard settings.
+- `reasoning_effort` is resolved from `Reasoning` and the model catalog (`Language.Reasoning`). A model without reasoning configuration adds an `unsupported` warning.
+- A JSON response format with a schema uses `json_schema` (`name` defaults to `response`, `strict` follows `strictJsonSchema`). Without a schema, or with `structuredOutputs` set to `false`, the request uses `json_object` and a JSON instruction is added to the system message.
+- A response `content` array keeps its order: `thinking` parts become reasoning, `text` parts become text, `reference` and `image_url` parts are ignored. Streams open and close reasoning and text parts as the content switches.
+- `usage` is checked with `MistralUsageSchema` (maps to `mistralUsageSchema`), converted with `ConvertMistralUsage`, and the full object stays in `Usage.Raw`. Finish reasons go through `MapMistralFinishReason`. A stream that ends without a finish reason reports `FinishReason.Interrupted`.
+- Tools go through `MistralPrepareTools` (maps to `prepareTools`): `strict` is passed on, `required` becomes `any`, and a named tool choice filters the tools to that one and sends `any`.
+
 ## Mistral Conversations API
 
-`MistralProvider.Conversation(modelId)` creates a `MistralConversationLanguageModel` that calls Mistral's Conversations API (`POST {base}/conversations`, provider id `mistral.conversation`). It works with `GenerateTextAsync` and `StreamTextAsync`, and it adds Mistral's built-in web search. `MistralProvider.LanguageModel(id)` and the default chat model keep using Chat Completions, which has no web search.
+`MistralProvider.Conversation(modelId)` creates a `MistralConversationLanguageModel` that calls Mistral's Conversations API (`POST {base}/conversations`, provider id `mistral.conversation`). It works with `GenerateTextAsync` and `StreamTextAsync`, and it adds Mistral's built-in web search. `MistralProvider.LanguageModel(id)` and `MistralProvider.Chat(id)` create a `MistralChatLanguageModel` that uses Chat Completions, which has no web search.
 
 ### Web search
 

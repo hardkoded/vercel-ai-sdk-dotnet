@@ -293,12 +293,12 @@ public sealed class DoGenerateReasoningEffortTests
         );
     }
 
-    private static OpenAICompatibleLanguageModel Model(
+    private static MistralChatLanguageModel Model(
         UpstreamCapture capture,
         string modelId = "mistral-small-latest"
     )
     {
-        return (OpenAICompatibleLanguageModel)
+        return (MistralChatLanguageModel)
             MistralProvider
                 .Create(new OpenAICompatibleOptions { ApiKey = "test-api-key" }, capture)
                 .LanguageModel(modelId);

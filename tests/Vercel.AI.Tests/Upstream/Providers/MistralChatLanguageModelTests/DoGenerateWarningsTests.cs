@@ -94,9 +94,9 @@ public sealed class DoGenerateWarningsTests
         Assert.DoesNotContain(result.Warnings, warning => warning.Type == "unsupported");
     }
 
-    private static OpenAICompatibleLanguageModel Model(UpstreamCapture capture, string modelId)
+    private static MistralChatLanguageModel Model(UpstreamCapture capture, string modelId)
     {
-        return (OpenAICompatibleLanguageModel)
+        return (MistralChatLanguageModel)
             MistralProvider
                 .Create(new OpenAICompatibleOptions { ApiKey = "test-api-key" }, capture)
                 .LanguageModel(modelId);
