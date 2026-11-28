@@ -23,24 +23,23 @@ public sealed class CloseTests
             Arguments = windows ? new[] { "-n", "60", "127.0.0.1" } : new[] { "60" },
         };
         var transport = StdioMcpTransport.Start(options);
-        Process process;
+        var disposed = false;
         try
         {
-            process = Process.GetProcessById(transport.ProcessId);
-        }
-        catch
-        {
-            transport.Dispose();
-            throw;
-        }
-
-        using (process)
-        {
+            using var process = Process.GetProcessById(transport.ProcessId);
             Assert.False(process.HasExited);
 
+            disposed = true;
             transport.Dispose();
 
             Assert.True(process.WaitForExit(10000));
+        }
+        finally
+        {
+            if (!disposed)
+            {
+                transport.Dispose();
+            }
         }
     }
 }
