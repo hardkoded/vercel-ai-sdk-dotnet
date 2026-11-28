@@ -276,6 +276,45 @@ public sealed class OpenAICompatibleProviderUpstreamTests
 
     [Fact]
     [UpstreamTest(
+        "packages/openai-compatible/src/openai-compatible-provider.test.ts::OpenAICompatibleProvider > supportsMultiPartToolContent setting::should pass supportsMultiPartToolContent to chat models only",
+        Coverage = UpstreamCoverage.Covered
+    )]
+    public async Task Multi_part_tool_content_applies_to_chat_models_only()
+    {
+        var capture = new UpstreamCapture();
+        var provider = Provider(capture, "test-provider", "k", "https://api.example.com");
+        provider.Options.SupportsMultiPartToolContent = true;
+        var options = UpstreamChat.Prompt();
+        options.Prompt =
+        [
+            .. options.Prompt,
+            new ToolModelMessage(
+                "call-1",
+                "useImage",
+                new UserContentPart[] { new TextContentPart("image result") }
+            ),
+        ];
+
+        await provider
+            .CreateChatModel("chat-model")
+            .DoGenerateAsync(options, CancellationToken.None);
+
+        var toolContent = JsonNode.Parse(capture.Requests[0].Body)!["messages"]!
+            .AsArray()
+            .Single(message => message!["role"]!.GetValue<string>() == "tool")!["content"];
+        Assert.IsType<JsonArray>(toolContent);
+
+        await provider
+            .CompletionModel("completion-model")
+            .DoGenerateAsync(UpstreamChat.Prompt(), CancellationToken.None);
+
+        var completionBody = JsonNode.Parse(capture.Requests[1].Body)!.AsObject();
+        Assert.Null(completionBody["messages"]);
+        Assert.NotNull(completionBody["prompt"]);
+    }
+
+    [Fact]
+    [UpstreamTest(
         "packages/openai-compatible/src/openai-compatible-provider.test.ts::OpenAICompatibleProvider > metadataExtractor setting::should pass metadataExtractor to chat model",
         Coverage = UpstreamCoverage.Covered
     )]
