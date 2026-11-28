@@ -48,6 +48,21 @@ public sealed class ByteDanceImageModel : IImageModel, IImageCaller
     /// <summary>The API has no output count, so each call returns one image.</summary>
     public int? MaxImagesPerCall => 1;
 
+    /// <summary>True when the model takes input images, null when unknown. Maps to <c>supportsFileInputs</c>.</summary>
+    public bool? SupportsFileInputs =>
+        ModelId switch
+        {
+            "dola-seedream-5-0-pro-260628"
+            or "seedream-5-0-260128"
+            or "seedream-5-0-lite-260128"
+            or "seedream-4-5-251128"
+            or "seedream-4-0-250828" => true,
+            _ => null,
+        };
+
+    /// <summary>False when the model takes input images but no mask, null when unknown. Maps to <c>supportsMaskInputs</c>.</summary>
+    public bool? SupportsMaskInputs => SupportsFileInputs == true ? false : null;
+
     /// <inheritdoc />
     public Task<int?> ResolveMaxImagesPerCallAsync(CancellationToken cancellationToken)
     {
@@ -154,17 +169,26 @@ public sealed class ByteDanceImageModel : IImageModel, IImageCaller
 
         // Always ask for base64 so the SDK receives the image bytes.
         body["response_format"] = "b64_json";
+        var url = ApiKeys.Combine(_provider.Options.BaseUrl, "/images/generations");
         var response = await ProviderExchange
             .SendAsync(
                 _provider._httpClient,
                 HttpMethod.Post,
-                ApiKeys.Combine(_provider.Options.BaseUrl, "/images/generations"),
+                url,
                 ProviderExchange.Json(body.ToJsonString()),
                 ProviderExchange.Merge(
                     await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false),
                     call.Headers
                 ),
-                cancellationToken
+                cancellationToken,
+                (status, errorBody) =>
+                    ProviderHttp.MapStatusWithHeaders(
+                        status,
+                        JsonValues.ExtractErrorMessage(errorBody, status),
+                        errorBody,
+                        null,
+                        url.AbsoluteUri
+                    )
             )
             .ConfigureAwait(false);
         using var document = JsonDocument.Parse(response.Body);

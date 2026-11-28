@@ -45,9 +45,17 @@ public sealed class ByteDanceProvider : OpenAICompatibleProvider
         HttpMessageHandler? handler = null
     )
     {
+        // Redirects are followed by hand so a status poll cannot be bounced to a private address.
+        RedirectGuard.DisableAutoRedirect(handler);
         var client = handler is null
-            ? new HttpClient()
+            ? new HttpClient(new HttpClientHandler { AllowAutoRedirect = false })
             : new HttpClient(handler, disposeHandler: false);
+        if (handler is not null)
+        {
+            options = options?.Copy() ?? new OpenAICompatibleOptions();
+            options.DownloadHttpClient ??= client;
+        }
+
         return new ByteDanceProvider(client, options);
     }
 
@@ -100,7 +108,12 @@ public static class ByteDanceServiceCollectionExtensions
         Action<OpenAICompatibleOptions>? configure = null
     )
     {
-        services.AddHttpClient(ByteDanceProvider.ProviderId);
+        // Redirects are followed by hand so a status poll cannot be bounced to a private address.
+        services
+            .AddHttpClient(ByteDanceProvider.ProviderId)
+            .ConfigurePrimaryHttpMessageHandler(() =>
+                new HttpClientHandler { AllowAutoRedirect = false }
+            );
         services.AddSingleton(sp =>
         {
             var options = new OpenAICompatibleOptions();

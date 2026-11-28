@@ -7,6 +7,7 @@ using System.Text.Json.Nodes;
 using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.ProviderUtils;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.ByteDance;
 
@@ -220,20 +221,25 @@ public sealed class ByteDanceVideoModel : IVideoModel, IVideoCaller
             );
         }
 
+        var headers = ProviderExchange.Merge(
+            await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false),
+            call.Headers
+        );
         var response = await ProviderExchange
-            .SendAsync(
+            .GetResponseUrlAsync(
                 _provider._httpClient,
-                HttpMethod.Get,
-                ApiKeys.Combine(
-                    _provider.Options.BaseUrl,
-                    "contents/generations/tasks/" + PathSegments.Encode(taskId)
-                ),
-                null,
-                ProviderExchange.Merge(
-                    await _provider.CreateHeadersAsync(cancellationToken).ConfigureAwait(false),
-                    call.Headers
-                ),
-                cancellationToken
+                ApiKeys
+                    .Combine(
+                        _provider.Options.BaseUrl,
+                        "contents/generations/tasks/" + PathSegments.Encode(taskId)
+                    )
+                    .AbsoluteUri,
+                _provider.Options.BaseUrl,
+                Download.ValidateDownloadUrl,
+                headers,
+                cancellationToken,
+                ProviderExchange.DownloadClient(_provider.Options),
+                ProviderExchange.UserAgentOnly(headers)
             )
             .ConfigureAwait(false);
         using var document = JsonDocument.Parse(response.Body);

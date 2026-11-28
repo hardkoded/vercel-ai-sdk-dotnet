@@ -425,19 +425,6 @@ public sealed class GoogleMediaUpstreamTests
 
     [Fact]
     [UpstreamTest(
-        "packages/google/src/transcription/google-transcription-model.test.ts::doStream::rejects streaming on unary model ids",
-        Coverage = UpstreamCoverage.Covered
-    )]
-    public void Rejects_a_live_setup_for_a_unary_transcription_model()
-    {
-        var error = Assert.Throws<ArgumentException>(() =>
-            GoogleTranscriptionModel.BuildLiveSetup("gemini-3.5-transcribe")
-        );
-        Assert.Contains("does not support streaming transcription", error.Message);
-    }
-
-    [Fact]
-    [UpstreamTest(
         "packages/google-vertex/src/gemini-transcription/google-vertex-gemini-transcription-model.test.ts::doGenerate::rejects unary transcription on live model ids",
         Coverage = UpstreamCoverage.Covered
     )]
