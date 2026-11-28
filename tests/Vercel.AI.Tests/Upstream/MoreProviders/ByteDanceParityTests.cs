@@ -12,6 +12,7 @@ using Vercel.AI.Operations;
 using Vercel.AI.Provider;
 using Vercel.AI.Tests.MoreProviders;
 using Vercel.AI.Tests.Upstream;
+using Vercel.AI.Util;
 
 namespace Vercel.AI.Tests;
 
@@ -161,8 +162,7 @@ public sealed class ByteDanceParityTests
     [Fact]
     [UpstreamTest(
         Image + "doGenerate::should handle API errors",
-        Coverage = UpstreamCoverage.Partial,
-        Note = "Checks the message and status code. ApiException has no request URL."
+        Coverage = UpstreamCoverage.Covered
     )]
     public async Task Image_api_errors_keep_message_and_status()
     {
@@ -179,6 +179,7 @@ public sealed class ByteDanceParityTests
             .ConfigureAwait(false);
         Assert.Equal("Invalid prompt content", error.Message);
         Assert.Equal(400, error.StatusCode);
+        Assert.Equal("https://api.example.com/images/generations", error.Url);
     }
 
     [Fact]
