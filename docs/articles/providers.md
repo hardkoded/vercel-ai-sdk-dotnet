@@ -2491,6 +2491,28 @@ var result = StreamTranscribe.Start(new StreamTranscribeRequest
 - **Authentication.** A native WebSocket cannot send headers, so the bearer token goes in the `openai-insecure-api-key.{token}` subprotocol next to `realtime`, and the `Authorization` header is removed because OpenAI rejects handshakes that send both. Other headers are passed on. The scheme is case-insensitive, and a per-call header overrides the provider header whatever its casing. Without an `Authorization` header only `realtime` is requested.
 - **Custom socket.** `OpenAIOptions.WebSocket` sets the `WebSocketFactory`. It defaults to `ClientWebSocket`. Backpressure pauses audio reads while the socket buffer is full, and cancelling the stream closes the socket and cancels the audio (`AudioChunkStream(onCancel)`).
 
+## Google speech translation
+
+Speech translation is experimental. `GoogleProvider.SpeechTranslationModel(id)` returns a `GoogleSpeechTranslationModel`. It implements `ISpeechTranslationCaller`, so it works with `StreamTranslate`. It translates live speech over the [Gemini Live API](https://ai.google.dev/gemini-api/docs/live) WebSocket and is streaming-only. The model id is `gemini-3.5-live-translate-preview`. The provider id is `google.generative-ai.speech-translation`.
+
+```csharp
+var audio = new AudioChunkStream();
+var result = StreamTranslate.Start(new StreamTranslateRequest
+{
+    Model = (ISpeechTranslationCaller)google.SpeechTranslationModel("gemini-3.5-live-translate-preview"),
+    Audio = audio,
+    InputAudioFormat = new AudioFormat("audio/pcm", 16000),
+    TargetLanguage = "es",
+});
+```
+
+- Input audio must be 16 kHz 16-bit PCM (`audio/pcm`). Any other format throws `InvalidArgumentException`.
+- The Live API auto-detects the source language and always outputs 24 kHz 16-bit PCM audio. `SourceLanguage` and `OutputAudioFormat` are not supported and surface as `unsupported` warnings.
+- The provider option `google.echoTargetLanguage` (boolean) echoes input audio that is already in the target language instead of producing silence.
+- The API key travels in the `key` query parameter. Other headers go to the WebSocket handshake. `GoogleOptions.WebSocket` replaces the default `ClientWebSocket`.
+- Audio is sent only after the server's `setupComplete`. The stream finishes when a turn completed after the audio ended, or after trailing output silence. A close while a finish is pending finishes the stream. Any other close before that is an error with the close code and reason.
+- `finish.Usage` carries `InputAudioTokens` and `OutputAudioTokens`. Only the `AUDIO` modality is counted.
+
 ## OpenAI speech translation
 
 Speech translation is experimental. `OpenAIProvider.SpeechTranslationModel(id)` returns an `OpenAISpeechTranslationModel`. It implements `ISpeechTranslationCaller`, so it works with `StreamTranslate`. It translates live speech over the OpenAI Realtime translations WebSocket (`wss://.../realtime/translations?model={id}`) and is streaming-only. The one model is `gpt-realtime-translate`, which produces translated audio, translated text, and a source transcript.

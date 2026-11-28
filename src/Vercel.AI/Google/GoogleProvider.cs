@@ -38,7 +38,7 @@ public class GoogleOptions
     /// <summary>Id factory used for tool calls that the response does not identify.</summary>
     public Func<string>? GenerateId { get; set; }
 
-    /// <summary>Custom WebSocket implementation for Gemini Live transcription streaming. Defaults to <c>ClientWebSocket</c>. Maps to <c>webSocket</c>.</summary>
+    /// <summary>Custom WebSocket implementation for Gemini Live transcription and speech translation streaming. Defaults to <c>ClientWebSocket</c>. Maps to <c>webSocket</c>.</summary>
     public WebSocketFactory? WebSocket { get; set; }
 
     /// <summary>Quiet window after the input audio ends before a live transcription finishes. Maps to <c>_internal.finishGraceMs</c>.</summary>
@@ -260,6 +260,12 @@ public class GoogleProvider
     public override IRealtimeModel RealtimeModel(string modelId)
     {
         return new GoogleRealtimeModel(this, modelId);
+    }
+
+    /// <inheritdoc />
+    public override ISpeechTranslationModel SpeechTranslationModel(string modelId)
+    {
+        return new GoogleSpeechTranslationModel(this, modelId);
     }
 
     /// <summary>Builds request headers. An API key or a bearer token is required.</summary>

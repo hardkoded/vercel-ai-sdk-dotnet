@@ -520,9 +520,19 @@ public sealed class OperationUsage
         int? outputTokens = null,
         int? totalTokens = null,
         double? tokens = null,
-        double? seconds = null
+        double? seconds = null,
+        double? inputAudioSeconds = null,
+        int? inputAudioTokens = null,
+        int? outputAudioTokens = null,
+        int? inputTextTokens = null,
+        int? outputTextTokens = null
     )
     {
+        InputAudioSeconds = inputAudioSeconds;
+        InputAudioTokens = inputAudioTokens;
+        OutputAudioTokens = outputAudioTokens;
+        InputTextTokens = inputTextTokens;
+        OutputTextTokens = outputTextTokens;
         InputTokens = inputTokens;
         OutputTokens = outputTokens;
         TotalTokens = totalTokens;
@@ -544,6 +554,21 @@ public sealed class OperationUsage
 
     /// <summary>Seconds of audio processed. Reported by streaming transcription.</summary>
     public double? Seconds { get; }
+
+    /// <summary>Seconds of input audio processed by a speech translation model, if reported.</summary>
+    public double? InputAudioSeconds { get; }
+
+    /// <summary>Input audio tokens of a speech translation model, if reported.</summary>
+    public int? InputAudioTokens { get; }
+
+    /// <summary>Output audio tokens of a speech translation model, if reported.</summary>
+    public int? OutputAudioTokens { get; }
+
+    /// <summary>Input text tokens of a speech translation model, if reported.</summary>
+    public int? InputTextTokens { get; }
+
+    /// <summary>Output text tokens of a speech translation model, if reported.</summary>
+    public int? OutputTextTokens { get; }
 
     /// <summary>Adds two image usage values. A missing count stays missing until one side reports it.</summary>
     public static OperationUsage AddImage(OperationUsage left, OperationUsage right)
